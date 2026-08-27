@@ -1,0 +1,41 @@
+# Sanas — Gotchas
+
+*Non-obvious traps. Read before touching the related area.*
+
+## Audio
+- **Windows mic exclusivity/quality:** some conferencing apps grab the mic with
+  echo-cancellation/AGC processing. Sanas usually runs while the meeting is on a
+  *different* device, but if a meeting ever runs on the same laptop, expect the mic to
+  be shared — capture still works, but disable Chromium's `echoCancellation`/
+  `noiseSuppression` constraints deliberately or Deepgram gets over-processed audio.
+- **AudioWorklet, not ScriptProcessor:** ScriptProcessorNode is deprecated and janky;
+  use an AudioWorklet for the downsample to 16 kHz mono.
+- **Diarization is per-connection:** Deepgram speaker indices (0/1/2…) are stable only
+  within one WS session; a reconnect can reshuffle them. Re-pin "that's me" after a
+  reconnect, or persist a voice heuristic.
+
+## Electron
+- **`better-sqlite3` is a native module** — must be rebuilt for Electron's ABI
+  (`electron-rebuild` / electron-builder handles it). Version bumps of Electron require
+  a rebuild; CI/packaging must not skip it.
+- **API keys never in the renderer.** All Deepgram/Anthropic traffic goes through the
+  main process. `contextIsolation: true`, `nodeIntegration: false`, no exceptions.
+- **Always-on-top overlays vs fullscreen apps:** `setAlwaysOnTop(true, 'screen-saver')`
+  level needed to float above some fullscreen windows on Windows.
+- **Global hotkeys collide.** `globalShortcut` registration fails silently if another
+  app owns the combo — check the return value and surface a settings warning.
+
+## APIs
+- **Deepgram WS idle timeout:** the socket closes after ~10 s without audio. Send
+  keepalive messages (or continuous silence frames) during pauses, and implement
+  auto-reconnect with transcript continuity.
+- **Interim vs final results:** interims mutate/replace; only persist finals or the
+  transcript in SQLite will accrete duplicates.
+- **Claude prompt growth:** a long meeting's transcript exceeds sensible prompt sizes —
+  always window the transcript (recent N tokens) + optionally a rolling summary;
+  never send the whole thing per suggestion.
+
+## Product/legal
+- **Recording consent:** some jurisdictions are two-party consent for recording.
+  Transcription-without-audio-retention is lighter but not automatically exempt.
+  Sanas records/transcribes only on explicit start; audio saving is opt-in per meeting.
