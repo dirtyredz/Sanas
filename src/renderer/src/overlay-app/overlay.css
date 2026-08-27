@@ -1,0 +1,69 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+body.overlay-body {
+  background: transparent;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.overlay-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: rgba(20, 22, 26, 0.92);
+  border: 1px solid rgba(90, 167, 160, 0.35);
+  border-radius: 12px;
+  color: #e6e8ec;
+  overflow: hidden;
+}
+
+.overlay-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  -webkit-app-region: drag; /* draggable strip */
+  user-select: none;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #5aa7a0;
+}
+
+.title {
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  color: #5aa7a0;
+}
+
+.hint {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: #8a919e;
+}
+
+.overlay-transcript {
+  flex: 1;
+  padding: 12px;
+  overflow-y: auto;
+  font-size: 0.85rem;
+}
+
+.overlay-suggestion {
+  padding: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  min-height: 110px;
+  font-size: 0.9rem;
+}
+
+.muted {
+  color: #8a919e;
+}

@@ -6,32 +6,32 @@
 Last full review: never (pre-code)
 
 ## Status
-Pre-code. The layout below is the **intended** shape — keep it honest as code lands.
+Phase 0 (scaffold) built. Layout reflects what exists; `services/` and `repos/` land in Phases 1–3.
 
-## Intended layout
+## Layout
 
 ```
 sanas/
 ├── src/
 │   ├── main/                    # Electron main process
-│   │   ├── index.ts             # app lifecycle, window creation
+│   │   ├── index.ts             # app lifecycle, hotkeys, userData pinning
 │   │   ├── windows/             # main-window + overlay-window builders
 │   │   ├── ipc/                 # typed IPC channel handlers (thin — delegate to services)
-│   │   ├── services/
+│   │   ├── services/            # (Phase 1+)
 │   │   │   ├── stt/             # SttProvider interface + DeepgramProvider
 │   │   │   ├── assistant/       # AssistantProvider interface + ClaudeProvider,
 │   │   │   │                    #   prompt assembly, trigger engine
 │   │   │   ├── meetings/        # meeting lifecycle orchestration
 │   │   │   └── audio-store/     # optional raw-audio file writing
 │   │   ├── db/                  # better-sqlite3 open, migrations, repositories
-│   │   │   └── repos/           # jobs, glossary, meetings, segments, suggestions
+│   │   │   └── repos/           # (Phase 2) jobs, glossary, meetings, segments, suggestions
 │   │   └── config/              # settings + API key storage
 │   ├── preload/                 # contextBridge API surface (typed)
-│   ├── renderer/                # main window UI (React)
-│   │   ├── pages/               # Jobs, JobDetail, Meeting, LiveMeeting, Settings
-│   │   ├── components/
-│   │   └── audio/               # mic capture + AudioWorklet (downsample)
-│   ├── overlay/                 # overlay window UI (React, minimal & separate bundle)
+│   ├── renderer/                # vite root: index.html (library) + overlay.html
+│   │   └── src/
+│   │       ├── app/             # library UI (React): App, pages/, styles
+│   │       ├── overlay-app/     # overlay UI (React, separate tiny bundle)
+│   │       └── audio/           # (Phase 1) mic capture + AudioWorklet downsample
 │   └── shared/                  # IPC channel types, domain types (Job, Meeting, Segment…)
 ├── docs/                        # living docs (this set)
 └── STRUCTURE.md

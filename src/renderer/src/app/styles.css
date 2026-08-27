@@ -1,0 +1,130 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+:root {
+  --bg: #14161a;
+  --panel: #1c1f26;
+  --text: #e6e8ec;
+  --muted: #8a919e;
+  --accent: #5aa7a0; /* misty loch teal */
+  --ok: #6fbf73;
+  --warn: #d9a44a;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.app {
+  display: flex;
+  height: 100vh;
+}
+
+.sidebar {
+  width: 200px;
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 12px;
+}
+
+.logo {
+  font-size: 1.3rem;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+
+.sidebar button {
+  background: none;
+  border: none;
+  color: var(--muted);
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.sidebar button:hover {
+  background: #262a33;
+  color: var(--text);
+}
+
+.sidebar button.active {
+  background: #262a33;
+  color: var(--accent);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.status {
+  font-size: 0.75rem;
+  color: var(--muted);
+  padding: 4px 10px;
+}
+
+.content {
+  flex: 1;
+  padding: 32px;
+  overflow-y: auto;
+}
+
+.placeholder p {
+  color: var(--muted);
+  margin-top: 8px;
+}
+
+.settings {
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.settings label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.9rem;
+}
+
+.settings input,
+.settings select {
+  background: var(--panel);
+  border: 1px solid #2e333d;
+  border-radius: 6px;
+  color: var(--text);
+  padding: 8px 10px;
+  font-size: 0.9rem;
+}
+
+.settings small {
+  color: var(--muted);
+}
+
+.settings button {
+  align-self: flex-start;
+  background: var(--accent);
+  border: none;
+  border-radius: 6px;
+  color: #0e1113;
+  padding: 8px 20px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ok {
+  color: var(--ok);
+}
+
+.warn {
+  color: var(--warn);
+}

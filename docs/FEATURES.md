@@ -12,7 +12,7 @@
 | "That's me" speaker pinning | 📋 | map diarized speaker → user |
 | Ambient AI nudges (question/moment detection) | 📋 | debounced, short |
 | On-demand full answer (global hotkey) | 📋 | |
-| Always-on-top overlay window | 📋 | frameless, summon/dismiss hotkey |
+| Always-on-top overlay window | ✅ | frameless, screen-saver level, hotkey toggle |
 
 ## Organization
 | Feature | Status | Notes |
@@ -27,7 +27,9 @@
 ## App
 | Feature | Status | Notes |
 |---|---|---|
-| Settings: API keys, hotkeys, audio device, retention | 📋 | keys main-process only |
+| Settings: API keys, hotkey, audio device | ✅ | keys main-process only, masked view to renderer |
+| SQLite storage + v1 schema + migrations | ✅ | %APPDATA%/sanas/sanas.db, WAL |
+| Retention controls | 📋 | Phase 4 |
 | Meeting search (across jobs) | 💤 | post-v1 |
 | Export (markdown transcript/summary) | 💤 | post-v1 |
 | Ask-your-history chat ("what did we decide about X?") | 💤 | post-v1, RAG over segments |

@@ -2,15 +2,15 @@
 
 *Prioritized task trough. P0 = next up, P1 = soon, P2 = someday.*
 
-## P0 — Phase 0: Scaffold
-- [ ] Electron + Vite + TS + React scaffold (electron-vite)
-- [ ] Two windows: main (library) + overlay (frameless, always-on-top, hidden by default)
-- [ ] Global hotkey: toggle overlay
-- [ ] IPC skeleton (typed channels, contextIsolation on)
-- [ ] SQLite via better-sqlite3 + migration runner + v1 schema
-- [ ] Settings screen: Deepgram key, Anthropic key, input device picker
+## ✅ Phase 0: Scaffold (done 2026-08-27)
+- [x] Electron + Vite + TS + React scaffold (electron-vite)
+- [x] Two windows: main (library) + overlay (frameless, always-on-top, hidden by default)
+- [x] Global hotkey: toggle overlay (default Ctrl+Shift+Space)
+- [x] IPC skeleton (typed channels, contextIsolation on)
+- [x] SQLite via better-sqlite3 + migration runner + v1 schema
+- [x] Settings screen: Deepgram key, Anthropic key, input device picker
 
-## P1 — Phase 1: Hear & transcribe
+## P0 — Phase 1: Hear & transcribe
 - [ ] Mic capture + AudioWorklet downsample to 16 kHz mono linear16
 - [ ] Audio chunk IPC stream renderer → main
 - [ ] Deepgram WS client (main): connect, stream, reconnect, keyterms param
