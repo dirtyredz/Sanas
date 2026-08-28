@@ -1,10 +1,10 @@
 import { readFileSync } from 'fs'
 import type {
   SttBatchOptions,
+  SttBatchTranscript,
   SttProvider,
   SttSession,
-  SttSessionOptions,
-  SttTranscript
+  SttSessionOptions
 } from './types'
 
 // Deepgram streaming over Node's built-in WebSocket.
@@ -184,7 +184,7 @@ export const deepgramProvider: SttProvider = {
     return session
   },
 
-  async transcribeFile(wavPath: string, opts: SttBatchOptions): Promise<SttTranscript[]> {
+  async transcribeFile(wavPath: string, opts: SttBatchOptions): Promise<SttBatchTranscript[]> {
     const params = new URLSearchParams({
       model: 'nova-3',
       diarize: 'true',
@@ -203,13 +203,12 @@ export const deepgramProvider: SttProvider = {
       results?: { channels?: { alternatives?: { words?: DeepgramWord[] }[] }[] }
     }
 
-    const out: SttTranscript[] = []
+    const out: SttBatchTranscript[] = []
     const chans = json.results?.channels ?? []
     for (let channel = 0; channel < chans.length; channel++) {
       const words = chans[channel]?.alternatives?.[0]?.words ?? []
       for (const run of splitBySpeaker(words)) {
         out.push({
-          isFinal: true,
           channel,
           speaker: run[0].speaker ?? -1,
           tStartMs: Math.round(run[0].start * 1000),

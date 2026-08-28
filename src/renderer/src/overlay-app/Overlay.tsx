@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranscript } from '../lib/useTranscript'
 import { useSuggestion } from '../lib/useSuggestion'
+import { speakerDisplay } from '../lib/speaker-label'
 
 export function Overlay(): React.JSX.Element {
   const { lines, state } = useTranscript()
@@ -37,7 +38,9 @@ export function Overlay(): React.JSX.Element {
         )}
         {tail.map((l, i) => (
           <p key={i} className={`line ${l.interim ? 'interim' : ''}`}>
-            {l.speaker >= 0 && <span className="who">{l.isUser ? 'Me' : `S${l.speaker + 1}`}</span>}
+            {(l.speaker >= 0 || l.isUser) && (
+              <span className="who">{speakerDisplay(l.speaker, l.isUser)}</span>
+            )}
             {l.text}
           </p>
         ))}

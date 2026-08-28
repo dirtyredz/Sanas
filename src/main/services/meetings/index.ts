@@ -1,8 +1,8 @@
 import { BrowserWindow } from 'electron'
 import { IPC } from '@shared/ipc'
-import type { MeetingState, SuggestionEvent, TranscriptEvent } from '@shared/types'
+import type { ChannelCount, MeetingState, SuggestionEvent, TranscriptEvent } from '@shared/types'
 import { loadSettings } from '../../config/settings'
-import { deepgramProvider } from '../stt/deepgram'
+import { sttProvider } from '../stt'
 import type { SttSession } from '../stt/types'
 import { ensureDefaultJob, getGlossaryTerms, getJob, listGlossary } from '../../db/repos/jobs'
 import {
@@ -13,6 +13,7 @@ import {
 } from '../../db/repos/meetings'
 import { startRecording, stopRecording, writeAudio } from '../audio-store'
 import { rediarizeMeeting } from './rediarize'
+import { resolveSpeakerIdentity } from './channel-identity'
 import { insertSegment, setSpeakerIsUser } from '../../db/repos/segments'
 import { insertSuggestion } from '../../db/repos/suggestions'
 import { claudeProvider } from '../assistant/claude'
@@ -30,7 +31,7 @@ import { resetTriggers, shouldTrigger } from '../assistant/triggers'
 let session: SttSession | null = null
 let meetingId: number | null = null
 let meetingJobId: number | null = null
-let meetingChannels = 1
+let meetingChannels: ChannelCount = 1
 let meetingStartedAt = 0
 const userSpeakers = new Set<number>() // diarized indices pinned as "me"
 const transcriptWindow: TranscriptLine[] = [] // rolling finals for prompt assembly
@@ -48,7 +49,7 @@ function setState(state: MeetingState): void {
   broadcast(IPC.MeetingState, state)
 }
 
-export async function startMeeting(jobId?: number, channels = 1): Promise<MeetingState> {
+export async function startMeeting(jobId?: number, channels: ChannelCount = 1): Promise<MeetingState> {
   if (session) return { meetingId, status: 'live' } // already running
   const stereo = channels === 2 // mic + loopback: channel tells us who's who
 
@@ -78,20 +79,18 @@ export async function startMeeting(jobId?: number, channels = 1): Promise<Meetin
   }
 
   try {
-    session = await deepgramProvider.start({
+    session = await sttProvider.start({
       apiKey: settings.deepgramApiKey,
       channels,
       keyterms: getGlossaryTerms(job),
       onTranscript: (t) => {
-        // stereo: the channel IS the identity — ch 0 mic = user, ch 1 loopback = others
-        // (loopback speakers still get diarized apart from each other).
-        // mono: fall back to manual "that's me" pinning.
-        const isUser = stereo ? t.channel === 0 : userSpeakers.has(t.speaker)
+        // stereo: channel IS identity; mono: manual "that's me" pinning
+        const who = resolveSpeakerIdentity(t.channel, t.speaker, stereo, userSpeakers)
         const ev: TranscriptEvent = {
           meetingId: id,
           isFinal: t.isFinal,
-          speaker: stereo && t.channel === 0 ? -1 : t.speaker,
-          isUser,
+          speaker: who.speaker,
+          isUser: who.isUser,
           tStartMs: t.tStartMs,
           tEndMs: t.tEndMs,
           text: t.text
@@ -145,7 +144,10 @@ export async function stopMeeting(): Promise<MeetingState> {
     endMeeting(meetingId)
     // fire-and-forget: summarize + re-diarize; UI reads results from the DB later
     void summarizeMeeting(meetingId, [...transcriptWindow])
-    void rediarizeMeeting(meetingId, meetingChannels)
+    const endedId = meetingId
+    void rediarizeMeeting(endedId, meetingChannels).then((changed) => {
+      if (changed) broadcast(IPC.MeetingUpdated, endedId) // open views reload
+    })
     meetingId = null
     meetingJobId = null
   }

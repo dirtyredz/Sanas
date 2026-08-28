@@ -18,11 +18,14 @@ sanas/
 │   │   ├── index.ts             # app lifecycle, hotkeys, userData pinning
 │   │   ├── windows/             # main-window + overlay-window builders
 │   │   ├── ipc/                 # typed IPC channel handlers (thin — delegate to services)
+│   │   ├── system-audio.ts      # display-media loopback handler (same-PC meeting audio)
 │   │   ├── services/
-│   │   │   ├── stt/             # SttProvider seam + DeepgramSession (reconnect, diarization splits)
+│   │   │   ├── stt/             # SttProvider seam + DeepgramSession (reconnect, splits, batch)
 │   │   │   ├── assistant/       # AssistantProvider seam + claude.ts, prompts.ts, triggers.ts
-│   │   │   ├── meetings/        # orchestration: STT session, persistence, assist loop, summaries
-│   │   │   └── audio-store/     # opt-in WAV recording of the 16 kHz stream
+│   │   │   ├── meetings/        # index (live orchestration) + rediarize, export,
+│   │   │   │                    #   channel-identity (ch0=user semantics, one place)
+│   │   │   ├── transcript-format.ts # canonical main-side line formatting/windowing
+│   │   │   └── audio-store/     # WAV recording of the capture stream (default on)
 │   │   ├── db/                  # better-sqlite3 open + migrations
 │   │   │   └── repos/           # jobs+glossary, meetings+segments, suggestions (SQL lives here only)
 │   │   └── config/              # settings + API key storage

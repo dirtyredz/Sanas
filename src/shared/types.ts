@@ -48,6 +48,9 @@ export interface Suggestion {
   text: string
 }
 
+/** Capture topology: 1 = mic only, 2 = mic + system loopback. */
+export type ChannelCount = 1 | 2
+
 /** Live transcript event pushed from main to windows. */
 export interface TranscriptEvent {
   meetingId: number

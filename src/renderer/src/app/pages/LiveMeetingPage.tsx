@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Job } from '@shared/types'
 import { startCapture, type CaptureSession } from '../../audio/mic'
 import { useTranscript } from '../../lib/useTranscript'
+import { speakerDisplay } from '../../lib/speaker-label'
 
 export function LiveMeetingPage(): React.JSX.Element {
   const { lines, state } = useTranscript()
@@ -141,16 +142,19 @@ export function LiveMeetingPage(): React.JSX.Element {
             {live ? 'Listening — say something…' : 'Start listening to see the live transcript.'}
           </p>
         )}
-        {lines.map((l, i) => (
-          <p key={i} className={`line ${l.interim ? 'interim' : ''}`}>
-            {l.speaker >= 0 && (
-              <span className={`who ${userSpeakers.has(l.speaker) ? 'me' : ''}`}>
-                {userSpeakers.has(l.speaker) ? 'Me' : `S${l.speaker + 1}`}
-              </span>
-            )}
-            {l.text}
-          </p>
-        ))}
+        {lines.map((l, i) => {
+          const isUser = l.isUser || userSpeakers.has(l.speaker)
+          return (
+            <p key={i} className={`line ${l.interim ? 'interim' : ''}`}>
+              {(l.speaker >= 0 || isUser) && (
+                <span className={`who ${isUser ? 'me' : ''}`}>
+                  {speakerDisplay(l.speaker, isUser)}
+                </span>
+              )}
+              {l.text}
+            </p>
+          )
+        })}
       </div>
     </div>
   )

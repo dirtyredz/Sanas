@@ -33,9 +33,12 @@ export interface SttBatchOptions {
   keyterms: string[]
 }
 
+/** Batch results are all final by definition — the streaming-only flag is omitted. */
+export type SttBatchTranscript = Omit<SttTranscript, 'isFinal'>
+
 export interface SttProvider {
   start(opts: SttSessionOptions): Promise<SttSession>
   /** Batch-transcribe a finished recording. Batch diarization sees the whole
    *  file with lookahead, so speaker labels are far more stable than streaming. */
-  transcribeFile(wavPath: string, opts: SttBatchOptions): Promise<SttTranscript[]>
+  transcribeFile(wavPath: string, opts: SttBatchOptions): Promise<SttBatchTranscript[]>
 }

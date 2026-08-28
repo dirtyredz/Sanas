@@ -1,4 +1,4 @@
-import { app, desktopCapturer, globalShortcut, session } from 'electron'
+import { app, globalShortcut } from 'electron'
 import { join } from 'path'
 
 // Pin the app name/userData path so dev and packaged builds share one data dir
@@ -11,21 +11,14 @@ import { openDb } from './db'
 import { loadSettings } from './config/settings'
 import { registerIpcHandlers } from './ipc'
 import { runSuggestion } from './services/meetings'
+import { registerSystemAudioLoopback } from './system-audio'
 
 // Single-instance lock: a second launch focuses the existing window instead.
 if (!app.requestSingleInstanceLock()) {
   app.quit()
 } else {
   app.whenReady().then(() => {
-    // System-audio loopback (Windows): when the renderer asks for display media,
-    // grant a screen source with audio:'loopback' — the signal headed to the
-    // output device. No AEC in this path, so same-PC meeting audio survives.
-    session.defaultSession.setDisplayMediaRequestHandler((_request, callback) => {
-      desktopCapturer
-        .getSources({ types: ['screen'] })
-        .then((sources) => callback({ video: sources[0], audio: 'loopback' }))
-        .catch(() => callback({}))
-    })
+    registerSystemAudioLoopback()
     openDb()
     registerIpcHandlers()
     createMainWindow()

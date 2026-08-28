@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Meeting, Segment, Suggestion } from '@shared/types'
+import { speakerDisplay } from '../../lib/speaker-label'
 
 export function MeetingView({
   meeting,
@@ -25,6 +26,10 @@ export function MeetingView({
   useEffect(() => {
     reload()
     window.sanas.meetings.suggestions(meeting.id).then(setSuggestions)
+    // re-diarization rewrote this meeting's record — refresh so edits target real indices
+    return window.sanas.meetings.onUpdated((id) => {
+      if (id === meeting.id) reload()
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [meeting.id])
 
@@ -32,7 +37,7 @@ export function MeetingView({
     (a, b) => a - b
   )
   const label = (s: Pick<Segment, 'speaker' | 'isUser'>): string =>
-    s.isUser ? 'Me' : (names.get(s.speaker) ?? (s.speaker >= 0 ? `S${s.speaker + 1}` : '?'))
+    speakerDisplay(s.speaker, s.isUser, names)
 
   const fmt = (ms: number): string => {
     const s = Math.floor(ms / 1000)

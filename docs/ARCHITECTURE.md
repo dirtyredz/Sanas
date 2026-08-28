@@ -27,16 +27,22 @@ Mic (getUserMedia, renderer)
 
 ### Audio capture
 
-- **Mic only.** The user's meetings often run on a *different* device with room speakers,
-  so the laptop mic hears both sides acoustically. No system-audio loopback needed.
-- Renderer captures via `getUserMedia`; an `AudioWorklet` downsamples to 16 kHz mono
-  PCM (linear16) chunks for Deepgram.
-- Raw audio is optionally saved to disk (`.wav`/`.ogg`) per meeting, user-controlled.
+- **Mic + system-audio loopback (default).** For meetings on THIS PC, driver echo-
+  cancellation erases the other side from the mic — so Sanas also taps the signal
+  headed to the output device via Electron's display-media loopback
+  (`src/main/system-audio.ts`). Channels: **0 = mic (user), 1 = loopback (others)** —
+  identity is structural, resolved in one place (`services/meetings/channel-identity.ts`).
+- **Mic-only mono fallback** when the capture setting is off, loopback is unavailable,
+  or the meeting runs on another device (room audio through the mic, "that's me" pinning).
+- Renderer captures via `getUserMedia` (+ `getDisplayMedia` for loopback); an
+  `AudioWorklet` downsamples to 16 kHz linear16, interleaved when stereo.
+- Raw audio saved to a per-meeting WAV by default (feeds re-diarization; can be disabled).
 
 ### Transcription (Deepgram)
 
 - Streaming WebSocket, `nova-3` model (or current best), `diarize=true`,
-  `interim_results=true`, `smart_format=true`.
+  `interim_results=true`, `smart_format=true`; `multichannel=true` in stereo mode so
+  mic and loopback transcribe independently.
 - The active job's **glossary terms are sent as keyterm boosts** — the same data that
   feeds the AI also improves STT accuracy on jargon. (This is the *sanas* double meaning.)
 - Interim results update the overlay live; only finals are persisted.
@@ -73,6 +79,7 @@ segments    (id, meeting_id, t_start_ms, t_end_ms, speaker,
              is_user, text)              -- final transcript segments
 suggestions (id, meeting_id, t_ms, trigger,     -- 'ambient' | 'hotkey'
              prompt_window, text)
+speakers    (meeting_id, speaker, name)         -- user-assigned names (v2)
 ```
 
 ### Process/IPC boundaries
@@ -93,5 +100,9 @@ Both keys stored locally in the app config. Nothing else leaves the machine.
 
 ## Post-meeting
 
-On meeting end: one Claude call generates summary + action items from the full
-transcript; stored on the meeting row and shown in the library.
+On meeting end, two fire-and-forget passes:
+1. **Summary** — one Claude call generates summary + action items; stored on the meeting row.
+2. **Re-diarization** — the recorded WAV goes through Deepgram's batch API
+   (`SttProvider.transcribeFile`); batch diarization sees the whole file, so speaker
+   labels are stable. Live segments are replaced wholesale (streaming labels drift).
+   Speaker names/merges are then user-editable per meeting in the transcript view.

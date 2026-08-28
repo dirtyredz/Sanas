@@ -90,7 +90,12 @@ const api = {
     renameSpeaker: (meetingId: number, speaker: number, name: string): Promise<void> =>
       ipcRenderer.invoke(IPC.SpeakersRename, meetingId, speaker, name),
     mergeSpeakers: (meetingId: number, from: number, to: number): Promise<void> =>
-      ipcRenderer.invoke(IPC.SpeakersMerge, meetingId, from, to)
+      ipcRenderer.invoke(IPC.SpeakersMerge, meetingId, from, to),
+    onUpdated: (cb: (meetingId: number) => void): (() => void) => {
+      const listener = (_e: unknown, meetingId: number): void => cb(meetingId)
+      ipcRenderer.on(IPC.MeetingUpdated, listener)
+      return () => ipcRenderer.removeListener(IPC.MeetingUpdated, listener)
+    }
   }
 }
 
