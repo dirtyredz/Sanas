@@ -15,7 +15,12 @@ import { startRecording, stopRecording, writeAudio } from '../audio-store'
 import { insertSegment, setSpeakerIsUser } from '../../db/repos/segments'
 import { insertSuggestion } from '../../db/repos/suggestions'
 import { claudeProvider } from '../assistant/claude'
-import { buildSystemPrompt, buildUserContent, type TranscriptLine } from '../assistant/prompts'
+import {
+  buildSummaryPrompt,
+  buildSystemPrompt,
+  buildUserContent,
+  type TranscriptLine
+} from '../assistant/prompts'
 import { resetTriggers, shouldTrigger } from '../assistant/triggers'
 
 // Orchestrates one live meeting at a time: STT session, persistence, event fan-out,
@@ -139,39 +144,19 @@ export async function stopMeeting(): Promise<MeetingState> {
   return state
 }
 
-const SUMMARY_TRANSCRIPT_CAP = 30_000 // chars — a very long meeting still summarizes
-
 async function summarizeMeeting(id: number, window: TranscriptLine[]): Promise<void> {
   if (window.length < 5) return // nothing worth summarizing
   const { anthropicApiKey } = loadSettings()
   if (!anthropicApiKey) return
 
-  let transcript = window
-    .map((l) => `${l.isUser ? 'Me' : l.speaker >= 0 ? `S${l.speaker + 1}` : '?'}: ${l.text}`)
-    .join('\n')
-  if (transcript.length > SUMMARY_TRANSCRIPT_CAP) {
-    transcript = transcript.slice(-SUMMARY_TRANSCRIPT_CAP)
-    transcript = transcript.slice(transcript.indexOf('\n') + 1)
-  }
-
   try {
-    const text = await claudeProvider.streamSuggestion({
+    const text = await claudeProvider.complete({
       apiKey: anthropicApiKey,
       system: systemPrompt,
-      userContent: `The meeting just ended. Here is the transcript ("Me" = the user):
-
-${transcript}
-
-Write two sections in exactly this format:
-
-SUMMARY
-<4-8 sentence summary of what was discussed and decided>
-
-ACTION ITEMS
-<bulleted list of concrete follow-ups, each starting with "- "; write "- none" if there are none>`,
+      userContent: buildSummaryPrompt(window),
       maxTokens: 1500,
-      effort: 'medium',
-      onDelta: () => {} // not streamed to UI — persisted when done
+      effort: 'medium'
+      // no onDelta — one-shot; persisted when done
     })
     const idx = text.indexOf('ACTION ITEMS')
     const summary = (idx >= 0 ? text.slice(0, idx) : text).replace(/^SUMMARY\s*/i, '').trim()
@@ -208,7 +193,7 @@ export async function runSuggestion(trigger: 'ambient' | 'hotkey'): Promise<void
   suggestionBusy = true
   const userContent = buildUserContent(transcriptWindow, trigger)
   try {
-    const text = await claudeProvider.streamSuggestion({
+    const text = await claudeProvider.complete({
       apiKey: anthropicApiKey,
       system: systemPrompt,
       userContent,

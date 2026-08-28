@@ -84,9 +84,6 @@ const api = {
       query: string
     ): Promise<{ meeting: Meeting; jobName: string; tStartMs: number; snippet: string }[]> =>
       ipcRenderer.invoke(IPC.SegmentsSearch, query)
-  },
-  db: {
-    ping: (): Promise<{ ok: boolean; jobs: number }> => ipcRenderer.invoke(IPC.DbPing)
   }
 }
 

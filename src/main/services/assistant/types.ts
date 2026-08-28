@@ -6,12 +6,14 @@ export interface AssistRequest {
   system: string
   userContent: string
   maxTokens: number
-  /** Provider-specific effort/quality dial: 'low' favors latency, 'high' depth. */
+  /** Effort/quality dial: 'low' favors latency, 'high' depth. Providers map it
+   *  to their nearest native knob (Claude: output_config.effort). */
   effort: 'low' | 'medium' | 'high'
-  onDelta: (text: string) => void
+  /** Streaming callback; omit for one-shot completions (e.g. summaries). */
+  onDelta?: (text: string) => void
 }
 
 export interface AssistantProvider {
-  /** Streams a completion; resolves with the full text. */
-  streamSuggestion(req: AssistRequest): Promise<string>
+  /** Runs a completion (streamed via onDelta when given); resolves with the full text. */
+  complete(req: AssistRequest): Promise<string>
 }

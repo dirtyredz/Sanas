@@ -21,9 +21,8 @@
 | Jobs (create/edit/archive) | ✅ | archive UI pending, repo supports it |
 | Job context pack: company info, project scope, notes, talking points, persona/tone | ✅ | feeds AI in Phase 3 |
 | Per-job glossary (terms + notes) | ✅ | feeds STT now, AI in Phase 3 |
-| Meetings under a job; transcript view | ✅ | job picker on Live, history per job |
+| Meetings under a job; transcript view | ✅ | job picker on Live, history per job, rename |
 | Post-meeting summary + action items | ✅ | fire-and-forget on stop; shown in meeting view |
-| Audio recording per meeting (opt-in) | 📋 | local files |
 
 ## App
 | Feature | Status | Notes |
@@ -35,6 +34,7 @@
 | Per-meeting suggestion log | ✅ | Transcript / Suggestions tabs |
 | Audio recording (opt-in, local WAV) | ✅ | off by default |
 | Windows installer | ✅ | `npm run dist` → release/Sanas Setup.exe |
-| Meeting search (across jobs) | 💤 | post-v1 |
-| Export (markdown transcript/summary) | 💤 | post-v1 |
+| Meeting search (across jobs) | ✅ | Search page, snippet highlight |
+| Export (markdown transcript/summary) | ✅ | Export button in meeting view |
+| Overlay opacity slider | ✅ | Settings, live-applied |
 | Ask-your-history chat ("what did we decide about X?") | 💤 | post-v1, RAG over segments |

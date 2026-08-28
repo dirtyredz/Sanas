@@ -7,7 +7,7 @@ import type { AssistantProvider, AssistRequest } from './types'
 const MODEL = 'claude-opus-5'
 
 export const claudeProvider: AssistantProvider = {
-  async streamSuggestion(req: AssistRequest): Promise<string> {
+  async complete(req: AssistRequest): Promise<string> {
     const client = new Anthropic({ apiKey: req.apiKey })
     const stream = client.messages.stream({
       model: MODEL,
@@ -17,7 +17,7 @@ export const claudeProvider: AssistantProvider = {
       system: [{ type: 'text', text: req.system, cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content: req.userContent }]
     })
-    stream.on('text', (delta) => req.onDelta(delta))
+    if (req.onDelta) stream.on('text', req.onDelta)
     const final = await stream.finalMessage()
     return final.content
       .filter((b): b is Anthropic.TextBlock => b.type === 'text')

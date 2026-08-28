@@ -1,8 +1,10 @@
 import { dialog } from 'electron'
 import { writeFileSync } from 'fs'
-import { getMeeting, listSegments } from '../../db/repos/meetings'
+import { getMeeting } from '../../db/repos/meetings'
+import { listSegments } from '../../db/repos/segments'
 import { listSuggestions } from '../../db/repos/suggestions'
 import { getJob } from '../../db/repos/jobs'
+import { speakerLabel } from '../transcript-format'
 
 function fmt(ms: number): string {
   const s = Math.floor(ms / 1000)
@@ -34,8 +36,7 @@ export async function exportMeetingMarkdown(meetingId: number): Promise<string |
   lines.push('## Transcript', '')
   if (segments.length === 0) lines.push('_No transcript captured._', '')
   for (const s of segments) {
-    const who = s.isUser ? 'Me' : s.speaker >= 0 ? `S${s.speaker + 1}` : '?'
-    lines.push(`- \`${fmt(s.tStartMs)}\` **${who}:** ${s.text}`)
+    lines.push(`- \`${fmt(s.tStartMs)}\` **${speakerLabel(s)}:** ${s.text}`)
   }
   lines.push('')
 

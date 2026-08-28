@@ -3,7 +3,6 @@ import { IPC } from '@shared/ipc'
 import type { Settings } from '@shared/types'
 import { loadSettings, saveSettings, toView } from '../config/settings'
 import { applyOverlayOpacity, setClickThrough, toggleOverlay } from '../windows/overlay-window'
-import { getDb } from '../db'
 import {
   startMeeting,
   stopMeeting,
@@ -21,13 +20,8 @@ import {
   addGlossaryTerm,
   removeGlossaryTerm
 } from '../db/repos/jobs'
-import {
-  listMeetings,
-  listSegments,
-  deleteMeeting,
-  renameMeeting,
-  searchSegments
-} from '../db/repos/meetings'
+import { listMeetings, deleteMeeting, renameMeeting } from '../db/repos/meetings'
+import { listSegments, searchSegments } from '../db/repos/segments'
 import { exportMeetingMarkdown } from '../services/meetings/export'
 import { listSuggestions } from '../db/repos/suggestions'
 
@@ -80,10 +74,4 @@ export function registerIpcHandlers(): void {
     query.trim().length >= 2 ? searchSegments(query.trim()) : []
   )
   ipcMain.handle(IPC.OverlayClickThrough, (_e, on: boolean) => setClickThrough(on))
-
-  // Phase 0 smoke-test: proves SQLite is open and migrated.
-  ipcMain.handle(IPC.DbPing, () => {
-    const row = getDb().prepare('SELECT COUNT(*) AS jobs FROM jobs').get() as { jobs: number }
-    return { ok: true, jobs: row.jobs }
-  })
 }

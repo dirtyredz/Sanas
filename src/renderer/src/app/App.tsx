@@ -8,14 +8,6 @@ type Page = 'live' | 'jobs' | 'search' | 'settings'
 
 export function App(): React.JSX.Element {
   const [page, setPage] = useState<Page>('live')
-  const [dbStatus, setDbStatus] = useState<string>('…')
-
-  useEffect(() => {
-    window.sanas.db
-      .ping()
-      .then((r) => setDbStatus(`db ok · ${r.jobs} jobs`))
-      .catch((e) => setDbStatus(`db error: ${e.message}`))
-  }, [])
 
   return (
     <div className="app">
@@ -35,7 +27,6 @@ export function App(): React.JSX.Element {
         </button>
         <div className="spacer" />
         <button onClick={() => window.sanas.overlay.toggle()}>Toggle overlay</button>
-        <div className="status">{dbStatus}</div>
       </nav>
       <main className="content">
         {page === 'live' && <LiveMeetingPage />}

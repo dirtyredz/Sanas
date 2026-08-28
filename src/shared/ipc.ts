@@ -37,9 +37,7 @@ export const IPC = {
   SegmentsSearch: 'segments:search',
   // overlay ghost mode (clicks pass through; overlay hotkey restores)
   OverlayClickThrough: 'overlay:click-through',
-  OverlayGhostState: 'overlay:ghost-state',
-  // db smoke-test (Phase 0 only; replaced by real repos in later phases)
-  DbPing: 'db:ping'
+  OverlayGhostState: 'overlay:ghost-state'
 } as const
 
 export type IpcChannel = (typeof IPC)[keyof typeof IPC]

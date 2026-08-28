@@ -1,15 +1,13 @@
 import type { GlossaryTerm, Job } from '@shared/types'
+import { renderTranscriptWindow, type FormattableLine } from '../transcript-format'
 
 // Prompt assembly: stable system prompt (cacheable, per meeting) + volatile
 // transcript window in the user turn. Never send the whole meeting (GOTCHAS.md).
 
-export interface TranscriptLine {
-  speaker: number
-  isUser: boolean
-  text: string
-}
+export type TranscriptLine = FormattableLine
 
 const WINDOW_CHARS = 6000 // ~recent few minutes of conversation
+const SUMMARY_CHARS = 30_000 // a very long meeting still summarizes
 
 export function buildSystemPrompt(job: Job | null, glossary: GlossaryTerm[]): string {
   const parts: string[] = [
@@ -51,13 +49,7 @@ export function buildUserContent(
   window: TranscriptLine[],
   trigger: 'ambient' | 'hotkey'
 ): string {
-  let transcript = window
-    .map((l) => `${l.isUser ? 'Me' : l.speaker >= 0 ? `S${l.speaker + 1}` : '?'}: ${l.text}`)
-    .join('\n')
-  if (transcript.length > WINDOW_CHARS) {
-    transcript = transcript.slice(-WINDOW_CHARS)
-    transcript = transcript.slice(transcript.indexOf('\n') + 1) // drop partial first line
-  }
+  const transcript = renderTranscriptWindow(window, WINDOW_CHARS)
 
   const ask =
     trigger === 'hotkey'
@@ -68,4 +60,20 @@ next. Give a direct, speakable answer to the current moment of the conversation
 them the essence of what to say. Telegraphic, glanceable — no preamble.`
 
   return `Rolling transcript (most recent last):\n\n${transcript}\n\n---\n${ask}`
+}
+
+/** Post-meeting summary prompt — all prompt text lives here, not in the orchestrator. */
+export function buildSummaryPrompt(window: TranscriptLine[]): string {
+  const transcript = renderTranscriptWindow(window, SUMMARY_CHARS)
+  return `The meeting just ended. Here is the transcript ("Me" = the user):
+
+${transcript}
+
+Write two sections in exactly this format:
+
+SUMMARY
+<4-8 sentence summary of what was discussed and decided>
+
+ACTION ITEMS
+<bulleted list of concrete follow-ups, each starting with "- "; write "- none" if there are none>`
 }

@@ -1,7 +1,7 @@
 import { getDb } from '../index'
 import type { Meeting, Segment } from '@shared/types'
 
-interface MeetingRow {
+export interface MeetingRow {
   id: number
   job_id: number
   title: string
@@ -12,7 +12,7 @@ interface MeetingRow {
   action_items: string | null
 }
 
-function toMeeting(r: MeetingRow): Meeting {
+export function toMeeting(r: MeetingRow): Meeting {
   return {
     id: r.id,
     jobId: r.job_id,
@@ -68,52 +68,6 @@ export function listMeetings(jobId: number): Meeting[] {
     .prepare(`SELECT * FROM meetings WHERE job_id = ? ORDER BY started_at DESC`)
     .all(jobId) as MeetingRow[]
   return rows.map(toMeeting)
-}
-
-export function listSegments(meetingId: number): Segment[] {
-  return getDb()
-    .prepare(
-      `SELECT id, meeting_id AS meetingId, t_start_ms AS tStartMs, t_end_ms AS tEndMs,
-              speaker, is_user AS isUser, text
-       FROM segments WHERE meeting_id = ? ORDER BY t_start_ms`
-    )
-    .all(meetingId)
-    .map((r) => {
-      const row = r as Omit<Segment, 'isUser'> & { isUser: number }
-      return { ...row, isUser: row.isUser === 1 }
-    })
-}
-
-export interface SegmentMatch {
-  meeting: Meeting
-  jobName: string
-  tStartMs: number
-  snippet: string
-}
-
-/** Case-insensitive substring search over all transcripts, newest meetings first. */
-export function searchSegments(query: string, limit = 50): SegmentMatch[] {
-  const rows = getDb()
-    .prepare(
-      `SELECT m.*, j.name AS job_name, s.t_start_ms AS t_start, s.text AS snippet
-       FROM segments s
-       JOIN meetings m ON m.id = s.meeting_id
-       JOIN jobs j ON j.id = m.job_id
-       WHERE s.text LIKE ? ESCAPE '\\'
-       ORDER BY m.started_at DESC, s.t_start_ms
-       LIMIT ?`
-    )
-    .all(`%${query.replace(/[\\%_]/g, (c) => `\\${c}`)}%`, limit) as (MeetingRow & {
-    job_name: string
-    t_start: number
-    snippet: string
-  })[]
-  return rows.map((r) => ({
-    meeting: toMeeting(r),
-    jobName: r.job_name,
-    tStartMs: r.t_start,
-    snippet: r.snippet
-  }))
 }
 
 export function deleteMeeting(meetingId: number): void {

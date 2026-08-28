@@ -3,7 +3,7 @@
 *Code-shape map: components, responsibilities, dependencies, structural debt.*
 *System design lives in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).*
 
-Last full review: never (pre-code)
+Last full review: 2026-08-27
 
 ## Status
 Phases 0–3 built + most of Phase 4 (summaries, recording, reconnect, packaging).
@@ -50,4 +50,16 @@ sanas/
 
 ## Structural debt
 
-(none yet — keep it that way)
+- `windows/main-window.ts` + `overlay-window.ts` share webPreferences/load-URL
+  boilerplate — extract a `createAppWindow(opts)` helper if a third window appears
+  (deliberately not abstracted at two call sites).
+- `AssistRequest.effort` on the provider seam maps 1:1 to an Anthropic-specific knob;
+  a second provider would need its own interpretation of low/medium/high.
+- `summarizeMeeting` lives in `services/meetings/index.ts` rather than its own module —
+  kept there because it shares the orchestrator's meeting state; split it out if it grows.
+- `services/meetings/index.ts` imports `deepgramProvider`/`claudeProvider` concretely
+  (no DI/composition root) — deliberate while there is exactly one of each; the swap
+  point is one import line. Revisit only when a second provider actually exists.
+
+(2026-08-27 review: transcript formatting/windowing extracted to
+`services/transcript-format.ts`; summary prompt moved into `assistant/prompts.ts`.)
