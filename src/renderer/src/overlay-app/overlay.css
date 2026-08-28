@@ -95,3 +95,54 @@ body.overlay-body {
 .muted {
   color: #8a919e;
 }
+
+.warn {
+  color: #d9a44a;
+  font-size: 0.85rem;
+}
+
+.overlay-suggestion {
+  max-height: 45vh;
+  overflow-y: auto;
+}
+
+.suggestion-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.suggestion-bar .label {
+  color: #5aa7a0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.cursor {
+  animation: pulse 1s ease-in-out infinite;
+  margin-left: 4px;
+}
+
+.answer-now {
+  background: #5aa7a0;
+  border: none;
+  border-radius: 6px;
+  color: #0e1113;
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.answer-now:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.suggestion-text {
+  line-height: 1.45;
+  white-space: pre-wrap;
+}

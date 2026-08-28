@@ -25,18 +25,21 @@
 - [x] Glossary editor; terms → Deepgram keyterms on meeting start
 - [x] Meeting lifecycle: start (job picker, remembers last) / stop; meeting list; transcript view
 
-## P1 — Phase 3: AI assist
-- [ ] Claude streaming client (main) + prompt assembly (context pack + transcript window)
-- [ ] Hotkey → full answer in overlay
-- [ ] Ambient trigger engine: question detection on non-user finals, debounce floor
-- [ ] Suggestion persistence + per-meeting log view
+## ✅ Phase 3: AI assist (done 2026-08-27; untested pending Anthropic key)
+- [x] Claude streaming client (main, claude-opus-5) + prompt assembly (cached system = context pack)
+- [x] Hotkey (Ctrl+Shift+Enter) → full answer streamed into overlay + "Answer now" button
+- [x] Ambient trigger engine: question detection on non-user finals, 20s debounce
+- [x] Suggestion persistence
+- [ ] Per-meeting suggestion log view (P2)
 
-## P2 — Phase 4: Wrap-up
-- [ ] Post-meeting summary + action items
+## Phase 4: Wrap-up (in progress 2026-08-27)
+- [x] Post-meeting summary + action items (generated on stop, shown in MeetingView)
+- [x] Overlay position/size memory
+- [x] Deepgram auto-reconnect with backoff + timestamp continuity
+- [x] electron-builder packaging (Windows NSIS)
 - [ ] Opt-in audio recording to disk
-- [ ] Overlay polish: opacity, position memory, click-through
+- [ ] Overlay opacity + click-through mode
 - [ ] Retention/delete controls
-- [ ] electron-builder packaging (Windows)
 
 ## P2 — Post-v1 ideas
 - [ ] Meeting search across jobs

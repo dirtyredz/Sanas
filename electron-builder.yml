@@ -1,0 +1,18 @@
+appId: com.dirtyredz.sanas
+productName: Sanas
+directories:
+  output: release
+files:
+  - out/**
+  - package.json
+asarUnpack:
+  - '**/*.node' # better-sqlite3 native binding
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+nsis:
+  oneClick: true
+  deleteAppDataOnUninstall: false
+electronLanguages: [en-US]
+npmRebuild: true

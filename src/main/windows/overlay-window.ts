@@ -1,15 +1,18 @@
 import { BrowserWindow, screen } from 'electron'
 import { join } from 'path'
+import { loadSettings, saveSettings } from '../config/settings'
 
 let overlay: BrowserWindow | null = null
+let saveBoundsTimer: ReturnType<typeof setTimeout> | null = null
 
 function createOverlay(): BrowserWindow {
   const { width } = screen.getPrimaryDisplay().workAreaSize
+  const saved = loadSettings().overlayBounds
   overlay = new BrowserWindow({
-    width: 380,
-    height: 460,
-    x: width - 400,
-    y: 60,
+    width: saved?.width ?? 380,
+    height: saved?.height ?? 460,
+    x: saved?.x ?? width - 400,
+    y: saved?.y ?? 60,
     show: false,
     frame: false,
     transparent: true,
@@ -28,6 +31,16 @@ function createOverlay(): BrowserWindow {
   overlay.setAlwaysOnTop(true, 'screen-saver')
   overlay.on('closed', () => (overlay = null))
 
+  // remember where the user parks it (debounced — move fires continuously)
+  const persistBounds = (): void => {
+    if (saveBoundsTimer) clearTimeout(saveBoundsTimer)
+    saveBoundsTimer = setTimeout(() => {
+      if (overlay && !overlay.isDestroyed()) saveSettings({ overlayBounds: overlay.getBounds() })
+    }, 500)
+  }
+  overlay.on('moved', persistBounds)
+  overlay.on('resized', persistBounds)
+
   if (process.env.ELECTRON_RENDERER_URL) {
     overlay.loadURL(`${process.env.ELECTRON_RENDERER_URL}/overlay.html`)
   } else {
@@ -43,4 +56,12 @@ export function toggleOverlay(): void {
   }
   if (overlay.isVisible()) overlay.hide()
   else overlay.show()
+}
+
+export function showOverlay(): void {
+  if (!overlay || overlay.isDestroyed()) {
+    createOverlay().once('ready-to-show', () => overlay?.show())
+    return
+  }
+  if (!overlay.isVisible()) overlay.show()
 }

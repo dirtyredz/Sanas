@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { SettingsView } from '@shared/types'
+import type { Settings, SettingsView } from '@shared/types'
 
 export function SettingsPage(): React.JSX.Element {
   const [view, setView] = useState<SettingsView | null>(null)
@@ -19,9 +19,11 @@ export function SettingsPage(): React.JSX.Element {
   if (!view) return <p>Loading…</p>
 
   const save = async (): Promise<void> => {
-    const patch: Record<string, string> = {
+    const patch: Partial<Settings> = {
       overlayHotkey: view.overlayHotkey,
-      audioDeviceId: view.audioDeviceId
+      assistHotkey: view.assistHotkey,
+      audioDeviceId: view.audioDeviceId,
+      recordAudio: view.recordAudio
     }
     // Only send keys the user actually typed — empty means "keep existing".
     if (deepgramKey) patch.deepgramApiKey = deepgramKey
@@ -69,6 +71,16 @@ export function SettingsPage(): React.JSX.Element {
       </label>
 
       <label>
+        Assist hotkey ("answer now")
+        <input
+          type="text"
+          value={view.assistHotkey}
+          onChange={(e) => setView({ ...view, assistHotkey: e.target.value })}
+        />
+        <small>Pops the overlay and streams a full answer. Takes effect on restart.</small>
+      </label>
+
+      <label>
         Microphone
         <select
           value={view.audioDeviceId}
@@ -81,6 +93,15 @@ export function SettingsPage(): React.JSX.Element {
             </option>
           ))}
         </select>
+      </label>
+
+      <label className="check">
+        <input
+          type="checkbox"
+          checked={view.recordAudio}
+          onChange={(e) => setView({ ...view, recordAudio: e.target.checked })}
+        />
+        Save meeting audio to disk (WAV, local only)
       </label>
 
       <button onClick={save}>Save</button>

@@ -60,6 +60,16 @@ export interface TranscriptEvent {
   text: string
 }
 
+/** Streaming suggestion event pushed from main to windows. */
+export interface SuggestionEvent {
+  suggestionId: number
+  meetingId: number
+  trigger: 'ambient' | 'hotkey'
+  /** 'delta' appends text; 'done' closes the suggestion; 'error' carries a message. */
+  kind: 'delta' | 'done' | 'error'
+  text: string
+}
+
 export interface MeetingState {
   meetingId: number | null
   status: 'idle' | 'live' | 'error'
@@ -70,7 +80,12 @@ export interface Settings {
   deepgramApiKey: string
   anthropicApiKey: string
   overlayHotkey: string
+  assistHotkey: string
   audioDeviceId: string
+  /** Save raw meeting audio to a local WAV file. */
+  recordAudio: boolean
+  /** Remembered overlay window bounds; null until first moved/resized. */
+  overlayBounds: { x: number; y: number; width: number; height: number } | null
 }
 
 /** Settings with secrets masked for display (renderer never needs raw keys). */

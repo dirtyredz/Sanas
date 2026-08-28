@@ -16,6 +16,9 @@ export const IPC = {
   // live events (main → all windows)
   TranscriptEvent: 'transcript:event',
   MeetingState: 'meeting:state',
+  SuggestionEvent: 'suggestion:event',
+  // assist (renderer → main; also fired by global hotkey in main)
+  AssistNow: 'assist:now',
   // jobs + context packs
   JobsList: 'jobs:list',
   JobsCreate: 'jobs:create',

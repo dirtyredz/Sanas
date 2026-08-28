@@ -41,6 +41,19 @@ export function MeetingView({
         {meeting.endedAt ? ` → ${meeting.endedAt}` : ' (never ended)'}
       </p>
 
+      {meeting.summary && (
+        <section className="summary-card">
+          <h3>Summary</h3>
+          <p>{meeting.summary}</p>
+          {meeting.actionItems && (
+            <>
+              <h3>Action items</h3>
+              <p className="action-items">{meeting.actionItems}</p>
+            </>
+          )}
+        </section>
+      )}
+
       <div className="transcript">
         {segments.length === 0 && <p className="muted">No transcript captured.</p>}
         {segments.map((s) => (

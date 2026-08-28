@@ -10,7 +10,10 @@ const DEFAULTS: Settings = {
   deepgramApiKey: '',
   anthropicApiKey: '',
   overlayHotkey: 'CommandOrControl+Shift+Space',
-  audioDeviceId: ''
+  assistHotkey: 'CommandOrControl+Shift+Enter',
+  audioDeviceId: '',
+  recordAudio: false,
+  overlayBounds: null
 }
 
 function settingsPath(): string {

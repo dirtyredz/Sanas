@@ -6,7 +6,8 @@
 Last full review: never (pre-code)
 
 ## Status
-Phase 0 (scaffold) built. Layout reflects what exists; `services/` and `repos/` land in Phases 1–3.
+Phases 0–3 built + most of Phase 4 (summaries, recording, reconnect, packaging).
+Layout below reflects what exists.
 
 ## Layout
 
@@ -17,14 +18,13 @@ sanas/
 │   │   ├── index.ts             # app lifecycle, hotkeys, userData pinning
 │   │   ├── windows/             # main-window + overlay-window builders
 │   │   ├── ipc/                 # typed IPC channel handlers (thin — delegate to services)
-│   │   ├── services/            # (Phase 1+)
-│   │   │   ├── stt/             # SttProvider interface + DeepgramProvider
-│   │   │   ├── assistant/       # AssistantProvider interface + ClaudeProvider,
-│   │   │   │                    #   prompt assembly, trigger engine
-│   │   │   ├── meetings/        # meeting lifecycle orchestration
-│   │   │   └── audio-store/     # optional raw-audio file writing
-│   │   ├── db/                  # better-sqlite3 open, migrations, repositories
-│   │   │   └── repos/           # (Phase 2) jobs, glossary, meetings, segments, suggestions
+│   │   ├── services/
+│   │   │   ├── stt/             # SttProvider seam + DeepgramSession (reconnect, diarization splits)
+│   │   │   ├── assistant/       # AssistantProvider seam + claude.ts, prompts.ts, triggers.ts
+│   │   │   ├── meetings/        # orchestration: STT session, persistence, assist loop, summaries
+│   │   │   └── audio-store/     # opt-in WAV recording of the 16 kHz stream
+│   │   ├── db/                  # better-sqlite3 open + migrations
+│   │   │   └── repos/           # jobs+glossary, meetings+segments, suggestions (SQL lives here only)
 │   │   └── config/              # settings + API key storage
 │   ├── preload/                 # contextBridge API surface (typed)
 │   ├── renderer/                # vite root: index.html (library) + overlay.html

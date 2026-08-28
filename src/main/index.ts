@@ -6,10 +6,11 @@ import { join } from 'path'
 app.setName('sanas')
 app.setPath('userData', join(app.getPath('appData'), 'sanas'))
 import { createMainWindow } from './windows/main-window'
-import { toggleOverlay } from './windows/overlay-window'
+import { showOverlay, toggleOverlay } from './windows/overlay-window'
 import { openDb } from './db'
 import { loadSettings } from './config/settings'
 import { registerIpcHandlers } from './ipc'
+import { runSuggestion } from './services/meetings'
 
 // Single-instance lock: a second launch focuses the existing window instead.
 if (!app.requestSingleInstanceLock()) {
@@ -24,11 +25,18 @@ if (!app.requestSingleInstanceLock()) {
 }
 
 function registerHotkeys(): void {
-  const { overlayHotkey } = loadSettings()
-  const ok = globalShortcut.register(overlayHotkey, () => toggleOverlay())
-  if (!ok) {
-    // Another app owns the combo — registration fails silently otherwise (see GOTCHAS.md).
+  const { overlayHotkey, assistHotkey } = loadSettings()
+  // Registration fails silently if another app owns the combo (see GOTCHAS.md).
+  if (!globalShortcut.register(overlayHotkey, () => toggleOverlay())) {
     console.warn(`[sanas] global hotkey ${overlayHotkey} is taken by another app`)
+  }
+  if (
+    !globalShortcut.register(assistHotkey, () => {
+      showOverlay() // the answer lands in the overlay — make sure it's visible
+      void runSuggestion('hotkey')
+    })
+  ) {
+    console.warn(`[sanas] global hotkey ${assistHotkey} is taken by another app`)
   }
 }
 

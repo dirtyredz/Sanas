@@ -8,6 +8,7 @@ import type {
   Segment,
   Settings,
   SettingsView,
+  SuggestionEvent,
   TranscriptEvent
 } from '../shared/types'
 
@@ -36,6 +37,14 @@ const api = {
       const listener = (_e: unknown, s: MeetingState): void => cb(s)
       ipcRenderer.on(IPC.MeetingState, listener)
       return () => ipcRenderer.removeListener(IPC.MeetingState, listener)
+    }
+  },
+  assist: {
+    now: (): Promise<void> => ipcRenderer.invoke(IPC.AssistNow),
+    onSuggestion: (cb: (ev: SuggestionEvent) => void): (() => void) => {
+      const listener = (_e: unknown, ev: SuggestionEvent): void => cb(ev)
+      ipcRenderer.on(IPC.SuggestionEvent, listener)
+      return () => ipcRenderer.removeListener(IPC.SuggestionEvent, listener)
     }
   },
   jobs: {

@@ -1,8 +1,10 @@
 import { useEffect, useRef } from 'react'
 import { useTranscript } from '../lib/useTranscript'
+import { useSuggestion } from '../lib/useSuggestion'
 
 export function Overlay(): React.JSX.Element {
   const { lines, state } = useTranscript()
+  const suggestion = useSuggestion()
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -31,7 +33,34 @@ export function Overlay(): React.JSX.Element {
         ))}
       </section>
       <section className="overlay-suggestion">
-        <p className="muted">Whispered suggestions land here (Phase 3).</p>
+        <div className="suggestion-bar">
+          <span className="label">
+            {suggestion
+              ? suggestion.trigger === 'hotkey'
+                ? 'Answer'
+                : 'Whisper'
+              : 'Sanas'}
+            {suggestion?.streaming && <span className="cursor">▍</span>}
+          </span>
+          <button
+            className="answer-now"
+            disabled={!live || suggestion?.streaming === true}
+            onClick={() => window.sanas.assist.now()}
+          >
+            Answer now
+          </button>
+        </div>
+        {suggestion?.error && <p className="warn">{suggestion.error}</p>}
+        {suggestion && !suggestion.error && (
+          <p className="suggestion-text">{suggestion.text}</p>
+        )}
+        {!suggestion && (
+          <p className="muted">
+            {live
+              ? 'Listening for key moments — or press the hotkey for an answer.'
+              : 'Suggestions appear here during a meeting.'}
+          </p>
+        )}
       </section>
     </div>
   )

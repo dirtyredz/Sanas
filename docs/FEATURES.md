@@ -10,9 +10,10 @@
 | Glossary → STT keyterm boosting | ✅ | per selected job |
 | Live transcript view (overlay + main) | ✅ | interims live, finals persisted |
 | "That's me" speaker pinning | ✅ | session-scoped; re-labels past segments |
-| Ambient AI nudges (question/moment detection) | 📋 | debounced, short |
-| On-demand full answer (global hotkey) | 📋 | |
-| Always-on-top overlay window | ✅ | frameless, screen-saver level, hotkey toggle |
+| Ambient AI nudges (question/moment detection) | ✅ | non-user questions, 20s debounce, effort=low |
+| On-demand full answer (global hotkey) | ✅ | Ctrl+Shift+Enter or "Answer now" button |
+| Always-on-top overlay window | ✅ | frameless, screen-saver level, hotkey toggle, position memory |
+| Deepgram auto-reconnect | ✅ | backoff, monotonic timestamps across reconnects |
 
 ## Organization
 | Feature | Status | Notes |
@@ -21,7 +22,7 @@
 | Job context pack: company info, project scope, notes, talking points, persona/tone | ✅ | feeds AI in Phase 3 |
 | Per-job glossary (terms + notes) | ✅ | feeds STT now, AI in Phase 3 |
 | Meetings under a job; transcript view | ✅ | job picker on Live, history per job |
-| Post-meeting summary + action items | 📋 | one Claude call at meeting end |
+| Post-meeting summary + action items | ✅ | fire-and-forget on stop; shown in meeting view |
 | Audio recording per meeting (opt-in) | 📋 | local files |
 
 ## App

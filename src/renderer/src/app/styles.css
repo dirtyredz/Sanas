@@ -423,6 +423,37 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.settings label.check {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.summary-card {
+  background: var(--panel);
+  border: 1px solid #2e333d;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.summary-card h3 {
+  color: var(--accent);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+
+.summary-card h3 + p {
+  margin-bottom: 12px;
+  line-height: 1.45;
+}
+
+.action-items {
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
 .live-toolbar select {
   background: var(--panel);
   border: 1px solid #2e333d;

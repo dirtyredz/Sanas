@@ -4,7 +4,13 @@ import type { Settings } from '@shared/types'
 import { loadSettings, saveSettings, toView } from '../config/settings'
 import { toggleOverlay } from '../windows/overlay-window'
 import { getDb } from '../db'
-import { startMeeting, stopMeeting, sendAudioChunk, pinSpeaker } from '../services/meetings'
+import {
+  startMeeting,
+  stopMeeting,
+  sendAudioChunk,
+  pinSpeaker,
+  runSuggestion
+} from '../services/meetings'
 import type { Job } from '@shared/types'
 import {
   listJobs,
@@ -31,6 +37,7 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.MeetingPinSpeaker, (_e, speaker: number, isUser: boolean) =>
     pinSpeaker(speaker, isUser)
   )
+  ipcMain.handle(IPC.AssistNow, () => runSuggestion('hotkey'))
 
   // fire-and-forget audio stream — .on, not .handle (no reply per chunk)
   ipcMain.on(IPC.AudioChunk, (_e, chunk: ArrayBuffer) => {

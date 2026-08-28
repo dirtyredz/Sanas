@@ -38,6 +38,20 @@ export function endMeeting(meetingId: number): void {
     .run(meetingId)
 }
 
+export function updateMeetingAudioPath(meetingId: number, audioPath: string): void {
+  getDb().prepare(`UPDATE meetings SET audio_path = ? WHERE id = ?`).run(audioPath, meetingId)
+}
+
+export function updateMeetingSummary(
+  meetingId: number,
+  summary: string,
+  actionItems: string
+): void {
+  getDb()
+    .prepare(`UPDATE meetings SET summary = ?, action_items = ? WHERE id = ?`)
+    .run(summary, actionItems, meetingId)
+}
+
 export function listMeetings(jobId: number): Meeting[] {
   const rows = getDb()
     .prepare(`SELECT * FROM meetings WHERE job_id = ? ORDER BY started_at DESC`)
