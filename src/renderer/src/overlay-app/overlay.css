@@ -35,7 +35,35 @@ body.overlay-body {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #5aa7a0;
+  background: #5a6572;
+}
+
+.dot.live {
+  background: #e05d5d;
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.line {
+  margin-bottom: 6px;
+  line-height: 1.35;
+}
+
+.line.interim {
+  opacity: 0.55;
+  font-style: italic;
+}
+
+.who {
+  color: #5aa7a0;
+  font-weight: 600;
+  margin-right: 6px;
+  font-size: 0.75rem;
 }
 
 .title {

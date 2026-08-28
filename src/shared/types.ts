@@ -48,6 +48,24 @@ export interface Suggestion {
   text: string
 }
 
+/** Live transcript event pushed from main to windows. */
+export interface TranscriptEvent {
+  meetingId: number
+  /** Interims replace the previous interim; finals append. */
+  isFinal: boolean
+  speaker: number
+  isUser: boolean
+  tStartMs: number
+  tEndMs: number
+  text: string
+}
+
+export interface MeetingState {
+  meetingId: number | null
+  status: 'idle' | 'live' | 'error'
+  error?: string
+}
+
 export interface Settings {
   deepgramApiKey: string
   anthropicApiKey: string

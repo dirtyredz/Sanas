@@ -10,18 +10,20 @@
 - [x] SQLite via better-sqlite3 + migration runner + v1 schema
 - [x] Settings screen: Deepgram key, Anthropic key, input device picker
 
-## P0 — Phase 1: Hear & transcribe
-- [ ] Mic capture + AudioWorklet downsample to 16 kHz mono linear16
-- [ ] Audio chunk IPC stream renderer → main
-- [ ] Deepgram WS client (main): connect, stream, reconnect, keyterms param
-- [ ] Transcript event fan-out: interims → UI, finals → SQLite `segments`
-- [ ] Live transcript component (main window first, overlay later)
-- [ ] "That's me" speaker pinning
+## ✅ Phase 1: Hear & transcribe (done 2026-08-27; transcription verified live)
+- [x] Mic capture + AudioWorklet downsample to 16 kHz mono linear16 (static worklet file — CSP)
+- [x] Audio chunk IPC stream renderer → main
+- [x] Deepgram WS client (main): connect, stream, keepalive, keyterms, per-speaker-run splitting
+- [x] Transcript event fan-out: interims → UI, finals → SQLite `segments`
+- [x] Live transcript in main window + overlay tail
+- [x] "That's me" speaker pinning
+- [ ] Deepgram auto-reconnect with transcript continuity (deferred — P1)
+- [ ] Validate diarization quality in a real meeting (short-fragment tests are worst-case)
 
-## P1 — Phase 2: Jobs & context
-- [ ] Jobs CRUD + context pack editor
-- [ ] Glossary editor; wire terms → Deepgram keyterms on meeting start
-- [ ] Meeting lifecycle: start (pick job) / stop; meeting list; transcript view
+## ✅ Phase 2: Jobs & context (done 2026-08-27)
+- [x] Jobs CRUD + context pack editor (company info, scope, notes, talking points, persona)
+- [x] Glossary editor; terms → Deepgram keyterms on meeting start
+- [x] Meeting lifecycle: start (job picker, remembers last) / stop; meeting list; transcript view
 
 ## P1 — Phase 3: AI assist
 - [ ] Claude streaming client (main) + prompt assembly (context pack + transcript window)

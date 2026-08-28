@@ -1,6 +1,15 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC } from '../shared/ipc'
-import type { Settings, SettingsView } from '../shared/types'
+import type {
+  GlossaryTerm,
+  Job,
+  Meeting,
+  MeetingState,
+  Segment,
+  Settings,
+  SettingsView,
+  TranscriptEvent
+} from '../shared/types'
 
 // The whole renderer-facing API surface. Keep it explicit — no generic invoke passthrough.
 const api = {
@@ -11,6 +20,43 @@ const api = {
   },
   overlay: {
     toggle: (): Promise<void> => ipcRenderer.invoke(IPC.OverlayToggle)
+  },
+  meeting: {
+    start: (jobId?: number): Promise<MeetingState> => ipcRenderer.invoke(IPC.MeetingStart, jobId),
+    stop: (): Promise<MeetingState> => ipcRenderer.invoke(IPC.MeetingStop),
+    pinSpeaker: (speaker: number, isUser: boolean): Promise<void> =>
+      ipcRenderer.invoke(IPC.MeetingPinSpeaker, speaker, isUser),
+    sendAudio: (chunk: ArrayBuffer): void => ipcRenderer.send(IPC.AudioChunk, chunk),
+    onTranscript: (cb: (ev: TranscriptEvent) => void): (() => void) => {
+      const listener = (_e: unknown, ev: TranscriptEvent): void => cb(ev)
+      ipcRenderer.on(IPC.TranscriptEvent, listener)
+      return () => ipcRenderer.removeListener(IPC.TranscriptEvent, listener)
+    },
+    onState: (cb: (s: MeetingState) => void): (() => void) => {
+      const listener = (_e: unknown, s: MeetingState): void => cb(s)
+      ipcRenderer.on(IPC.MeetingState, listener)
+      return () => ipcRenderer.removeListener(IPC.MeetingState, listener)
+    }
+  },
+  jobs: {
+    list: (): Promise<Job[]> => ipcRenderer.invoke(IPC.JobsList),
+    create: (name: string): Promise<Job> => ipcRenderer.invoke(IPC.JobsCreate, name),
+    update: (job: Omit<Job, 'createdAt' | 'archived'>): Promise<Job> =>
+      ipcRenderer.invoke(IPC.JobsUpdate, job),
+    archive: (id: number, archived: boolean): Promise<void> =>
+      ipcRenderer.invoke(IPC.JobsArchive, id, archived)
+  },
+  glossary: {
+    list: (jobId: number): Promise<GlossaryTerm[]> => ipcRenderer.invoke(IPC.GlossaryList, jobId),
+    add: (jobId: number, term: string, note: string): Promise<GlossaryTerm> =>
+      ipcRenderer.invoke(IPC.GlossaryAdd, jobId, term, note),
+    remove: (id: number): Promise<void> => ipcRenderer.invoke(IPC.GlossaryRemove, id)
+  },
+  meetings: {
+    list: (jobId: number): Promise<Meeting[]> => ipcRenderer.invoke(IPC.MeetingsList, jobId),
+    delete: (id: number): Promise<void> => ipcRenderer.invoke(IPC.MeetingsDelete, id),
+    segments: (meetingId: number): Promise<Segment[]> =>
+      ipcRenderer.invoke(IPC.SegmentsList, meetingId)
   },
   db: {
     ping: (): Promise<{ ok: boolean; jobs: number }> => ipcRenderer.invoke(IPC.DbPing)

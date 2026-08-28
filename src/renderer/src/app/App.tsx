@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { SettingsPage } from './pages/SettingsPage'
+import { LiveMeetingPage } from './pages/LiveMeetingPage'
+import { JobsPage } from './pages/JobsPage'
 
-type Page = 'jobs' | 'settings'
+type Page = 'live' | 'jobs' | 'settings'
 
 export function App(): React.JSX.Element {
-  const [page, setPage] = useState<Page>('jobs')
+  const [page, setPage] = useState<Page>('live')
   const [dbStatus, setDbStatus] = useState<string>('…')
 
   useEffect(() => {
@@ -18,6 +20,9 @@ export function App(): React.JSX.Element {
     <div className="app">
       <nav className="sidebar">
         <h1 className="logo">Sanas</h1>
+        <button className={page === 'live' ? 'active' : ''} onClick={() => setPage('live')}>
+          Live
+        </button>
         <button className={page === 'jobs' ? 'active' : ''} onClick={() => setPage('jobs')}>
           Jobs
         </button>
@@ -29,12 +34,8 @@ export function App(): React.JSX.Element {
         <div className="status">{dbStatus}</div>
       </nav>
       <main className="content">
-        {page === 'jobs' && (
-          <div className="placeholder">
-            <h2>Jobs</h2>
-            <p>Job library lands in Phase 2 — context packs, glossary, meetings.</p>
-          </div>
-        )}
+        {page === 'live' && <LiveMeetingPage />}
+        {page === 'jobs' && <JobsPage />}
         {page === 'settings' && <SettingsPage />}
       </main>
     </div>

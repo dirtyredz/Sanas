@@ -7,6 +7,27 @@ export const IPC = {
   SettingsSet: 'settings:set',
   // overlay
   OverlayToggle: 'overlay:toggle',
+  // meetings (renderer → main)
+  MeetingStart: 'meeting:start',
+  MeetingStop: 'meeting:stop',
+  MeetingPinSpeaker: 'meeting:pin-speaker',
+  // audio stream (renderer → main, fire-and-forget)
+  AudioChunk: 'audio:chunk',
+  // live events (main → all windows)
+  TranscriptEvent: 'transcript:event',
+  MeetingState: 'meeting:state',
+  // jobs + context packs
+  JobsList: 'jobs:list',
+  JobsCreate: 'jobs:create',
+  JobsUpdate: 'jobs:update',
+  JobsArchive: 'jobs:archive',
+  GlossaryList: 'glossary:list',
+  GlossaryAdd: 'glossary:add',
+  GlossaryRemove: 'glossary:remove',
+  // meeting history
+  MeetingsList: 'meetings:list',
+  MeetingsDelete: 'meetings:delete',
+  SegmentsList: 'segments:list',
   // db smoke-test (Phase 0 only; replaced by real repos in later phases)
   DbPing: 'db:ping'
 } as const

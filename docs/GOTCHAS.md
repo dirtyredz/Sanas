@@ -13,6 +13,11 @@
 - **Diarization is per-connection:** Deepgram speaker indices (0/1/2…) are stable only
   within one WS session; a reconnect can reshuffle them. Re-pin "that's me" after a
   reconnect, or persist a voice heuristic.
+- **Diarization needs warm-up + sentence-length speech.** 1–4 word alternating
+  utterances all collapse to speaker 0 — the model needs a few sentences per voice to
+  build fingerprints. Short-fragment tests are the worst case; judge diarization on
+  real meetings only. Also keep `autoGainControl: false` — AGC pumping erases the
+  level/timbre cues separation relies on.
 
 ## Electron
 - **`better-sqlite3` is a native module** — must be rebuilt for Electron's ABI
