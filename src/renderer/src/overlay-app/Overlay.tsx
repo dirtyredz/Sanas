@@ -1,11 +1,14 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranscript } from '../lib/useTranscript'
 import { useSuggestion } from '../lib/useSuggestion'
 
 export function Overlay(): React.JSX.Element {
   const { lines, state } = useTranscript()
   const suggestion = useSuggestion()
+  const [ghost, setGhost] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => window.sanas.overlay.onGhostState(setGhost), [])
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
@@ -19,7 +22,14 @@ export function Overlay(): React.JSX.Element {
       <header className="overlay-header">
         <span className={`dot ${live ? 'live' : ''}`} />
         <span className="title">Sanas</span>
-        <span className="hint">{live ? 'listening' : state.status}</span>
+        <span className="hint">{ghost ? 'ghost — hotkey restores' : live ? 'listening' : state.status}</span>
+        <button
+          className="ghost-btn"
+          title="Ghost mode: clicks pass through. Press the overlay hotkey to restore."
+          onClick={() => window.sanas.overlay.setClickThrough(true)}
+        >
+          👻
+        </button>
       </header>
       <section className="overlay-transcript" ref={scrollRef}>
         {tail.length === 0 && (

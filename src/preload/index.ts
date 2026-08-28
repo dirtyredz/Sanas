@@ -8,6 +8,7 @@ import type {
   Segment,
   Settings,
   SettingsView,
+  Suggestion,
   SuggestionEvent,
   TranscriptEvent
 } from '../shared/types'
@@ -20,7 +21,14 @@ const api = {
       ipcRenderer.invoke(IPC.SettingsSet, patch)
   },
   overlay: {
-    toggle: (): Promise<void> => ipcRenderer.invoke(IPC.OverlayToggle)
+    toggle: (): Promise<void> => ipcRenderer.invoke(IPC.OverlayToggle),
+    setClickThrough: (on: boolean): Promise<void> =>
+      ipcRenderer.invoke(IPC.OverlayClickThrough, on),
+    onGhostState: (cb: (on: boolean) => void): (() => void) => {
+      const listener = (_e: unknown, on: boolean): void => cb(on)
+      ipcRenderer.on(IPC.OverlayGhostState, listener)
+      return () => ipcRenderer.removeListener(IPC.OverlayGhostState, listener)
+    }
   },
   meeting: {
     start: (jobId?: number): Promise<MeetingState> => ipcRenderer.invoke(IPC.MeetingStart, jobId),
@@ -65,7 +73,9 @@ const api = {
     list: (jobId: number): Promise<Meeting[]> => ipcRenderer.invoke(IPC.MeetingsList, jobId),
     delete: (id: number): Promise<void> => ipcRenderer.invoke(IPC.MeetingsDelete, id),
     segments: (meetingId: number): Promise<Segment[]> =>
-      ipcRenderer.invoke(IPC.SegmentsList, meetingId)
+      ipcRenderer.invoke(IPC.SegmentsList, meetingId),
+    suggestions: (meetingId: number): Promise<Suggestion[]> =>
+      ipcRenderer.invoke(IPC.SuggestionsList, meetingId)
   },
   db: {
     ping: (): Promise<{ ok: boolean; jobs: number }> => ipcRenderer.invoke(IPC.DbPing)

@@ -2,7 +2,7 @@ import { ipcMain } from 'electron'
 import { IPC } from '@shared/ipc'
 import type { Settings } from '@shared/types'
 import { loadSettings, saveSettings, toView } from '../config/settings'
-import { toggleOverlay } from '../windows/overlay-window'
+import { setClickThrough, toggleOverlay } from '../windows/overlay-window'
 import { getDb } from '../db'
 import {
   startMeeting,
@@ -22,6 +22,7 @@ import {
   removeGlossaryTerm
 } from '../db/repos/jobs'
 import { listMeetings, listSegments, deleteMeeting } from '../db/repos/meetings'
+import { listSuggestions } from '../db/repos/suggestions'
 
 // Thin handlers only — validate and delegate (see STRUCTURE.md).
 
@@ -61,6 +62,8 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.MeetingsList, (_e, jobId: number) => listMeetings(jobId))
   ipcMain.handle(IPC.MeetingsDelete, (_e, id: number) => deleteMeeting(id))
   ipcMain.handle(IPC.SegmentsList, (_e, meetingId: number) => listSegments(meetingId))
+  ipcMain.handle(IPC.SuggestionsList, (_e, meetingId: number) => listSuggestions(meetingId))
+  ipcMain.handle(IPC.OverlayClickThrough, (_e, on: boolean) => setClickThrough(on))
 
   // Phase 0 smoke-test: proves SQLite is open and migrated.
   ipcMain.handle(IPC.DbPing, () => {

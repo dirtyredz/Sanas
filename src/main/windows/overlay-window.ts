@@ -1,5 +1,6 @@
 import { BrowserWindow, screen } from 'electron'
 import { join } from 'path'
+import { IPC } from '@shared/ipc'
 import { loadSettings, saveSettings } from '../config/settings'
 
 let overlay: BrowserWindow | null = null
@@ -49,9 +50,28 @@ function createOverlay(): BrowserWindow {
   return overlay
 }
 
+let clickThrough = false
+
+/** Ghost mode: overlay stays visible but mouse events pass through to the app
+ *  underneath. The overlay hotkey restores interactivity (see toggleOverlay). */
+export function setClickThrough(on: boolean): void {
+  clickThrough = on
+  if (overlay && !overlay.isDestroyed()) {
+    overlay.setIgnoreMouseEvents(on, { forward: true })
+    overlay.webContents.send(IPC.OverlayGhostState, on)
+  }
+}
+
 export function toggleOverlay(): void {
   if (!overlay || overlay.isDestroyed()) {
     createOverlay().once('ready-to-show', () => overlay?.show())
+    return
+  }
+  // ghost mode active → the hotkey un-ghosts instead of hiding (the only way
+  // back, since the window itself no longer receives clicks)
+  if (clickThrough) {
+    setClickThrough(false)
+    overlay.show()
     return
   }
   if (overlay.isVisible()) overlay.hide()

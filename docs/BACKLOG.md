@@ -30,16 +30,17 @@
 - [x] Hotkey (Ctrl+Shift+Enter) → full answer streamed into overlay + "Answer now" button
 - [x] Ambient trigger engine: question detection on non-user finals, 20s debounce
 - [x] Suggestion persistence
-- [ ] Per-meeting suggestion log view (P2)
+- [x] Per-meeting suggestion log view (tab in MeetingView)
 
 ## Phase 4: Wrap-up (in progress 2026-08-27)
 - [x] Post-meeting summary + action items (generated on stop, shown in MeetingView)
 - [x] Overlay position/size memory
 - [x] Deepgram auto-reconnect with backoff + timestamp continuity
 - [x] electron-builder packaging (Windows NSIS)
-- [ ] Opt-in audio recording to disk
-- [ ] Overlay opacity + click-through mode
-- [ ] Retention/delete controls
+- [x] Opt-in audio recording to disk (WAV, Settings checkbox)
+- [x] Overlay ghost mode (👻 → clicks pass through; overlay hotkey restores)
+- [ ] Retention/auto-purge controls (per-meeting delete exists)
+- [ ] Overlay opacity slider
 
 ## P2 — Post-v1 ideas
 - [ ] Meeting search across jobs

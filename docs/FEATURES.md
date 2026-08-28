@@ -31,6 +31,10 @@
 | Settings: API keys, hotkey, audio device | ✅ | keys main-process only, masked view to renderer |
 | SQLite storage + v1 schema + migrations | ✅ | %APPDATA%/sanas/sanas.db, WAL |
 | Retention controls | 📋 | Phase 4 |
+| Overlay ghost mode (click-through) | ✅ | 👻 button; overlay hotkey restores |
+| Per-meeting suggestion log | ✅ | Transcript / Suggestions tabs |
+| Audio recording (opt-in, local WAV) | ✅ | off by default |
+| Windows installer | ✅ | `npm run dist` → release/Sanas Setup.exe |
 | Meeting search (across jobs) | 💤 | post-v1 |
 | Export (markdown transcript/summary) | 💤 | post-v1 |
 | Ask-your-history chat ("what did we decide about X?") | 💤 | post-v1, RAG over segments |

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { Meeting, Segment } from '@shared/types'
+import type { Meeting, Segment, Suggestion } from '@shared/types'
 
 export function MeetingView({
   meeting,
@@ -9,9 +9,12 @@ export function MeetingView({
   onBack: () => void
 }): React.JSX.Element {
   const [segments, setSegments] = useState<Segment[]>([])
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([])
+  const [tab, setTab] = useState<'transcript' | 'suggestions'>('transcript')
 
   useEffect(() => {
     window.sanas.meetings.segments(meeting.id).then(setSegments)
+    window.sanas.meetings.suggestions(meeting.id).then(setSuggestions)
   }, [meeting.id])
 
   const fmt = (ms: number): string => {
@@ -54,20 +57,49 @@ export function MeetingView({
         </section>
       )}
 
-      <div className="transcript">
-        {segments.length === 0 && <p className="muted">No transcript captured.</p>}
-        {segments.map((s) => (
-          <p key={s.id} className="line">
-            <span className="ts">{fmt(s.tStartMs)}</span>
-            {s.speaker >= 0 && (
-              <span className={`who ${s.isUser ? 'me' : ''}`}>
-                {s.isUser ? 'Me' : `S${s.speaker + 1}`}
-              </span>
-            )}
-            {s.text}
-          </p>
-        ))}
+      <div className="tab-bar">
+        <button className={tab === 'transcript' ? 'active' : ''} onClick={() => setTab('transcript')}>
+          Transcript
+        </button>
+        <button
+          className={tab === 'suggestions' ? 'active' : ''}
+          onClick={() => setTab('suggestions')}
+        >
+          Suggestions ({suggestions.length})
+        </button>
       </div>
+
+      {tab === 'transcript' && (
+        <div className="transcript">
+          {segments.length === 0 && <p className="muted">No transcript captured.</p>}
+          {segments.map((s) => (
+            <p key={s.id} className="line">
+              <span className="ts">{fmt(s.tStartMs)}</span>
+              {s.speaker >= 0 && (
+                <span className={`who ${s.isUser ? 'me' : ''}`}>
+                  {s.isUser ? 'Me' : `S${s.speaker + 1}`}
+                </span>
+              )}
+              {s.text}
+            </p>
+          ))}
+        </div>
+      )}
+
+      {tab === 'suggestions' && (
+        <div className="transcript">
+          {suggestions.length === 0 && <p className="muted">No suggestions were generated.</p>}
+          {suggestions.map((s) => (
+            <div key={s.id} className="suggestion-entry">
+              <p className="line">
+                <span className="ts">{fmt(s.tMs)}</span>
+                <span className="who">{s.trigger === 'hotkey' ? 'Answer' : 'Whisper'}</span>
+              </p>
+              <p className="suggestion-body">{s.text}</p>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

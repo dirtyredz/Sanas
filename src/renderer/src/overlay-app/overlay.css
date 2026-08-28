@@ -78,6 +78,20 @@ body.overlay-body {
   color: #8a919e;
 }
 
+.ghost-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0 2px;
+  opacity: 0.6;
+  -webkit-app-region: no-drag; /* clickable inside the drag strip */
+}
+
+.ghost-btn:hover {
+  opacity: 1;
+}
+
 .overlay-transcript {
   flex: 1;
   padding: 12px;
