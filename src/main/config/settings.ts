@@ -13,6 +13,7 @@ const DEFAULTS: Settings = {
   assistHotkey: 'CommandOrControl+Shift+Enter',
   audioDeviceId: '',
   recordAudio: false,
+  overlayOpacity: 1,
   overlayBounds: null
 }
 

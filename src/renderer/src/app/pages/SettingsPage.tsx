@@ -23,7 +23,8 @@ export function SettingsPage(): React.JSX.Element {
       overlayHotkey: view.overlayHotkey,
       assistHotkey: view.assistHotkey,
       audioDeviceId: view.audioDeviceId,
-      recordAudio: view.recordAudio
+      recordAudio: view.recordAudio,
+      overlayOpacity: view.overlayOpacity
     }
     // Only send keys the user actually typed — empty means "keep existing".
     if (deepgramKey) patch.deepgramApiKey = deepgramKey
@@ -102,6 +103,19 @@ export function SettingsPage(): React.JSX.Element {
           onChange={(e) => setView({ ...view, recordAudio: e.target.checked })}
         />
         Save meeting audio to disk (WAV, local only)
+      </label>
+
+      <label>
+        Overlay opacity ({Math.round(view.overlayOpacity * 100)}%)
+        <input
+          type="range"
+          min="0.4"
+          max="1"
+          step="0.05"
+          value={view.overlayOpacity}
+          onChange={(e) => setView({ ...view, overlayOpacity: Number(e.target.value) })}
+        />
+        <small>Applies when you hit Save.</small>
       </label>
 
       <button onClick={save}>Save</button>

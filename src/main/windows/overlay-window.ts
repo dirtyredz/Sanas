@@ -30,6 +30,7 @@ function createOverlay(): BrowserWindow {
 
   // 'screen-saver' level floats above most fullscreen apps on Windows (see GOTCHAS.md).
   overlay.setAlwaysOnTop(true, 'screen-saver')
+  overlay.setOpacity(clampOpacity(loadSettings().overlayOpacity))
   overlay.on('closed', () => (overlay = null))
 
   // remember where the user parks it (debounced — move fires continuously)
@@ -48,6 +49,15 @@ function createOverlay(): BrowserWindow {
     overlay.loadFile(join(__dirname, '../renderer/overlay.html'))
   }
   return overlay
+}
+
+function clampOpacity(o: number): number {
+  return Math.min(1, Math.max(0.4, Number.isFinite(o) ? o : 1))
+}
+
+/** Live-applies opacity when settings change (no-op if overlay not open). */
+export function applyOverlayOpacity(opacity: number): void {
+  if (overlay && !overlay.isDestroyed()) overlay.setOpacity(clampOpacity(opacity))
 }
 
 let clickThrough = false

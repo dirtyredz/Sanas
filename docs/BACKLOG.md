@@ -39,10 +39,11 @@
 - [x] electron-builder packaging (Windows NSIS)
 - [x] Opt-in audio recording to disk (WAV, Settings checkbox)
 - [x] Overlay ghost mode (👻 → clicks pass through; overlay hotkey restores)
+- [x] Overlay opacity slider (Settings, live-applied)
+- [x] Meeting rename (inline title edit in MeetingView)
 - [ ] Retention/auto-purge controls (per-meeting delete exists)
-- [ ] Overlay opacity slider
 
 ## P2 — Post-v1 ideas
-- [ ] Meeting search across jobs
-- [ ] Markdown export
+- [x] Meeting search across jobs (Search page, snippet highlight)
+- [x] Markdown export (meeting → .md via save dialog)
 - [ ] Ask-your-history chat (RAG over segments)

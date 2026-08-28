@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react'
 import { SettingsPage } from './pages/SettingsPage'
 import { LiveMeetingPage } from './pages/LiveMeetingPage'
 import { JobsPage } from './pages/JobsPage'
+import { SearchPage } from './pages/SearchPage'
 
-type Page = 'live' | 'jobs' | 'settings'
+type Page = 'live' | 'jobs' | 'search' | 'settings'
 
 export function App(): React.JSX.Element {
   const [page, setPage] = useState<Page>('live')
@@ -26,6 +27,9 @@ export function App(): React.JSX.Element {
         <button className={page === 'jobs' ? 'active' : ''} onClick={() => setPage('jobs')}>
           Jobs
         </button>
+        <button className={page === 'search' ? 'active' : ''} onClick={() => setPage('search')}>
+          Search
+        </button>
         <button className={page === 'settings' ? 'active' : ''} onClick={() => setPage('settings')}>
           Settings
         </button>
@@ -36,6 +40,7 @@ export function App(): React.JSX.Element {
       <main className="content">
         {page === 'live' && <LiveMeetingPage />}
         {page === 'jobs' && <JobsPage />}
+        {page === 'search' && <SearchPage />}
         {page === 'settings' && <SettingsPage />}
       </main>
     </div>

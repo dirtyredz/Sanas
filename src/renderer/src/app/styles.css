@@ -423,6 +423,47 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.search-results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 640px;
+}
+
+.search-hit {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  background: var(--panel);
+  border: 1px solid #2e333d;
+  border-radius: 8px;
+  color: var(--text);
+  padding: 10px 14px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.search-hit:hover {
+  border-color: var(--accent);
+}
+
+.hit-meta {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.hit-snippet {
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.hit-snippet mark {
+  background: rgba(90, 167, 160, 0.3);
+  color: var(--text);
+  border-radius: 2px;
+}
+
 .tab-bar {
   display: flex;
   gap: 4px;

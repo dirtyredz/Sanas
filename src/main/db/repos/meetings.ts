@@ -38,6 +38,17 @@ export function endMeeting(meetingId: number): void {
     .run(meetingId)
 }
 
+export function getMeeting(meetingId: number): Meeting | null {
+  const row = getDb().prepare(`SELECT * FROM meetings WHERE id = ?`).get(meetingId) as
+    | MeetingRow
+    | undefined
+  return row ? toMeeting(row) : null
+}
+
+export function renameMeeting(meetingId: number, title: string): void {
+  getDb().prepare(`UPDATE meetings SET title = ? WHERE id = ?`).run(title, meetingId)
+}
+
 export function updateMeetingAudioPath(meetingId: number, audioPath: string): void {
   getDb().prepare(`UPDATE meetings SET audio_path = ? WHERE id = ?`).run(audioPath, meetingId)
 }
@@ -71,6 +82,38 @@ export function listSegments(meetingId: number): Segment[] {
       const row = r as Omit<Segment, 'isUser'> & { isUser: number }
       return { ...row, isUser: row.isUser === 1 }
     })
+}
+
+export interface SegmentMatch {
+  meeting: Meeting
+  jobName: string
+  tStartMs: number
+  snippet: string
+}
+
+/** Case-insensitive substring search over all transcripts, newest meetings first. */
+export function searchSegments(query: string, limit = 50): SegmentMatch[] {
+  const rows = getDb()
+    .prepare(
+      `SELECT m.*, j.name AS job_name, s.t_start_ms AS t_start, s.text AS snippet
+       FROM segments s
+       JOIN meetings m ON m.id = s.meeting_id
+       JOIN jobs j ON j.id = m.job_id
+       WHERE s.text LIKE ? ESCAPE '\\'
+       ORDER BY m.started_at DESC, s.t_start_ms
+       LIMIT ?`
+    )
+    .all(`%${query.replace(/[\\%_]/g, (c) => `\\${c}`)}%`, limit) as (MeetingRow & {
+    job_name: string
+    t_start: number
+    snippet: string
+  })[]
+  return rows.map((r) => ({
+    meeting: toMeeting(r),
+    jobName: r.job_name,
+    tStartMs: r.t_start,
+    snippet: r.snippet
+  }))
 }
 
 export function deleteMeeting(meetingId: number): void {

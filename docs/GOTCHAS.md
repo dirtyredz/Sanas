@@ -30,6 +30,11 @@
 - **Global hotkeys collide.** `globalShortcut` registration fails silently if another
   app owns the combo — check the return value and surface a settings warning.
 
+- **`SqliteError: disk I/O error` on dev-watch restart is noise.** electron-vite
+  `--watch` kills the old instance while its WAL connection is mid-write as the new
+  instance opens the same DB. Only happens at "restart electron app..." moments in dev;
+  packaged builds are single-instance and unaffected. Don't chase it.
+
 ## APIs
 - **Deepgram WS idle timeout:** the socket closes after ~10 s without audio. Send
   keepalive messages (or continuous silence frames) during pauses, and implement

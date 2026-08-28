@@ -75,7 +75,15 @@ const api = {
     segments: (meetingId: number): Promise<Segment[]> =>
       ipcRenderer.invoke(IPC.SegmentsList, meetingId),
     suggestions: (meetingId: number): Promise<Suggestion[]> =>
-      ipcRenderer.invoke(IPC.SuggestionsList, meetingId)
+      ipcRenderer.invoke(IPC.SuggestionsList, meetingId),
+    rename: (meetingId: number, title: string): Promise<void> =>
+      ipcRenderer.invoke(IPC.MeetingsRename, meetingId, title),
+    export: (meetingId: number): Promise<string | null> =>
+      ipcRenderer.invoke(IPC.MeetingsExport, meetingId),
+    search: (
+      query: string
+    ): Promise<{ meeting: Meeting; jobName: string; tStartMs: number; snippet: string }[]> =>
+      ipcRenderer.invoke(IPC.SegmentsSearch, query)
   },
   db: {
     ping: (): Promise<{ ok: boolean; jobs: number }> => ipcRenderer.invoke(IPC.DbPing)

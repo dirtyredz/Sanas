@@ -84,6 +84,8 @@ export interface Settings {
   audioDeviceId: string
   /** Save raw meeting audio to a local WAV file. */
   recordAudio: boolean
+  /** Overlay window opacity, 0.4–1. */
+  overlayOpacity: number
   /** Remembered overlay window bounds; null until first moved/resized. */
   overlayBounds: { x: number; y: number; width: number; height: number } | null
 }

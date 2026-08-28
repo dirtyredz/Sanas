@@ -2,7 +2,7 @@ import { ipcMain } from 'electron'
 import { IPC } from '@shared/ipc'
 import type { Settings } from '@shared/types'
 import { loadSettings, saveSettings, toView } from '../config/settings'
-import { setClickThrough, toggleOverlay } from '../windows/overlay-window'
+import { applyOverlayOpacity, setClickThrough, toggleOverlay } from '../windows/overlay-window'
 import { getDb } from '../db'
 import {
   startMeeting,
@@ -21,7 +21,14 @@ import {
   addGlossaryTerm,
   removeGlossaryTerm
 } from '../db/repos/jobs'
-import { listMeetings, listSegments, deleteMeeting } from '../db/repos/meetings'
+import {
+  listMeetings,
+  listSegments,
+  deleteMeeting,
+  renameMeeting,
+  searchSegments
+} from '../db/repos/meetings'
+import { exportMeetingMarkdown } from '../services/meetings/export'
 import { listSuggestions } from '../db/repos/suggestions'
 
 // Thin handlers only — validate and delegate (see STRUCTURE.md).
@@ -29,7 +36,11 @@ import { listSuggestions } from '../db/repos/suggestions'
 export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.SettingsGet, () => toView(loadSettings()))
 
-  ipcMain.handle(IPC.SettingsSet, (_e, patch: Partial<Settings>) => toView(saveSettings(patch)))
+  ipcMain.handle(IPC.SettingsSet, (_e, patch: Partial<Settings>) => {
+    const next = saveSettings(patch)
+    if (patch.overlayOpacity !== undefined) applyOverlayOpacity(next.overlayOpacity)
+    return toView(next)
+  })
 
   ipcMain.handle(IPC.OverlayToggle, () => toggleOverlay())
 
@@ -61,8 +72,13 @@ export function registerIpcHandlers(): void {
   // meeting history
   ipcMain.handle(IPC.MeetingsList, (_e, jobId: number) => listMeetings(jobId))
   ipcMain.handle(IPC.MeetingsDelete, (_e, id: number) => deleteMeeting(id))
+  ipcMain.handle(IPC.MeetingsRename, (_e, id: number, title: string) => renameMeeting(id, title))
+  ipcMain.handle(IPC.MeetingsExport, (_e, id: number) => exportMeetingMarkdown(id))
   ipcMain.handle(IPC.SegmentsList, (_e, meetingId: number) => listSegments(meetingId))
   ipcMain.handle(IPC.SuggestionsList, (_e, meetingId: number) => listSuggestions(meetingId))
+  ipcMain.handle(IPC.SegmentsSearch, (_e, query: string) =>
+    query.trim().length >= 2 ? searchSegments(query.trim()) : []
+  )
   ipcMain.handle(IPC.OverlayClickThrough, (_e, on: boolean) => setClickThrough(on))
 
   // Phase 0 smoke-test: proves SQLite is open and migrated.

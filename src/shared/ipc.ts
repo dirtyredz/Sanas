@@ -30,8 +30,11 @@ export const IPC = {
   // meeting history
   MeetingsList: 'meetings:list',
   MeetingsDelete: 'meetings:delete',
+  MeetingsRename: 'meetings:rename',
+  MeetingsExport: 'meetings:export',
   SegmentsList: 'segments:list',
   SuggestionsList: 'suggestions:list',
+  SegmentsSearch: 'segments:search',
   // overlay ghost mode (clicks pass through; overlay hotkey restores)
   OverlayClickThrough: 'overlay:click-through',
   OverlayGhostState: 'overlay:ghost-state',

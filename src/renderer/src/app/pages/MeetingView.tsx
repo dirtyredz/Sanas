@@ -11,6 +11,8 @@ export function MeetingView({
   const [segments, setSegments] = useState<Segment[]>([])
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [tab, setTab] = useState<'transcript' | 'suggestions'>('transcript')
+  const [title, setTitle] = useState(meeting.title)
+  const [exported, setExported] = useState('')
 
   useEffect(() => {
     window.sanas.meetings.segments(meeting.id).then(setSegments)
@@ -28,7 +30,23 @@ export function MeetingView({
         <button className="back" onClick={onBack}>
           ← Back
         </button>
-        <h2>{meeting.title}</h2>
+        <input
+          className="job-title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          onBlur={() => title.trim() && window.sanas.meetings.rename(meeting.id, title.trim())}
+        />
+        <button
+          onClick={async () => {
+            const path = await window.sanas.meetings.export(meeting.id)
+            if (path) {
+              setExported(path)
+              setTimeout(() => setExported(''), 4000)
+            }
+          }}
+        >
+          Export
+        </button>
         <button
           className="danger"
           onClick={async () => {
@@ -39,6 +57,7 @@ export function MeetingView({
           Delete
         </button>
       </div>
+      {exported && <p className="ok">Saved to {exported}</p>}
       <p className="muted">
         {meeting.startedAt}
         {meeting.endedAt ? ` → ${meeting.endedAt}` : ' (never ended)'}
