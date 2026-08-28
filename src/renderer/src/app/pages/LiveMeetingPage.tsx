@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Job } from '@shared/types'
-import { startMic, type MicSession } from '../../audio/mic'
+import { startCapture, type CaptureSession } from '../../audio/mic'
 import { useTranscript } from '../../lib/useTranscript'
 
 export function LiveMeetingPage(): React.JSX.Element {
   const { lines, state } = useTranscript()
-  const micRef = useRef<MicSession | null>(null)
+  const micRef = useRef<CaptureSession | null>(null)
+  const [sysAudio, setSysAudio] = useState(false)
   const [busy, setBusy] = useState(false)
   const [micError, setMicError] = useState('')
   const [userSpeakers, setUserSpeakers] = useState<Set<number>>(new Set())
@@ -43,10 +44,18 @@ export function LiveMeetingPage(): React.JSX.Element {
     try {
       const settings = await window.sanas.settings.get()
       if (jobId !== '') localStorage.setItem('sanas.lastJobId', String(jobId))
-      const st = await window.sanas.meeting.start(jobId === '' ? undefined : jobId)
+      // capture first — the meeting needs to know mono vs stereo (loopback)
+      const capture = await startCapture(settings.audioDeviceId, settings.captureSystemAudio)
+      const st = await window.sanas.meeting.start(
+        jobId === '' ? undefined : jobId,
+        capture.channels
+      )
       if (st.status === 'live') {
-        micRef.current = await startMic(settings.audioDeviceId)
+        micRef.current = capture
+        setSysAudio(capture.channels === 2)
         setUserSpeakers(new Set())
+      } else {
+        await capture.stop()
       }
     } catch (e) {
       setMicError(e instanceof Error ? e.message : String(e))
@@ -102,7 +111,11 @@ export function LiveMeetingPage(): React.JSX.Element {
             ■ Stop
           </button>
         )}
-        {live && <span className="ok pulse">listening…</span>}
+        {live && (
+          <span className="ok pulse">
+            listening{sysAudio ? ' (mic + system audio)' : ' (mic only)'}…
+          </span>
+        )}
       </div>
 
       {(state.error || micError) && <p className="warn">{state.error || micError}</p>}

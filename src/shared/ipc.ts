@@ -35,6 +35,10 @@ export const IPC = {
   SegmentsList: 'segments:list',
   SuggestionsList: 'suggestions:list',
   SegmentsSearch: 'segments:search',
+  // speaker naming/merging (per meeting)
+  SpeakersList: 'speakers:list',
+  SpeakersRename: 'speakers:rename',
+  SpeakersMerge: 'speakers:merge',
   // overlay ghost mode (clicks pass through; overlay hotkey restores)
   OverlayClickThrough: 'overlay:click-through',
   OverlayGhostState: 'overlay:ghost-state'

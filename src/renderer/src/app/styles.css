@@ -464,6 +464,37 @@ body {
   border-radius: 2px;
 }
 
+.speaker-editor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.speaker-row {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.speaker-row input {
+  width: 110px;
+  background: var(--panel);
+  border: 1px solid #2e333d;
+  border-radius: 6px;
+  color: var(--text);
+  padding: 5px 8px;
+  font-size: 0.85rem;
+}
+
+.speaker-row select {
+  background: var(--panel);
+  border: 1px solid #2e333d;
+  border-radius: 6px;
+  color: var(--muted);
+  padding: 5px 6px;
+  font-size: 0.8rem;
+}
+
 .tab-bar {
   display: flex;
   gap: 4px;

@@ -12,6 +12,7 @@ import {
   updateMeetingSummary
 } from '../../db/repos/meetings'
 import { startRecording, stopRecording, writeAudio } from '../audio-store'
+import { rediarizeMeeting } from './rediarize'
 import { insertSegment, setSpeakerIsUser } from '../../db/repos/segments'
 import { insertSuggestion } from '../../db/repos/suggestions'
 import { claudeProvider } from '../assistant/claude'
@@ -29,6 +30,7 @@ import { resetTriggers, shouldTrigger } from '../assistant/triggers'
 let session: SttSession | null = null
 let meetingId: number | null = null
 let meetingJobId: number | null = null
+let meetingChannels = 1
 let meetingStartedAt = 0
 const userSpeakers = new Set<number>() // diarized indices pinned as "me"
 const transcriptWindow: TranscriptLine[] = [] // rolling finals for prompt assembly
@@ -46,8 +48,9 @@ function setState(state: MeetingState): void {
   broadcast(IPC.MeetingState, state)
 }
 
-export async function startMeeting(jobId?: number): Promise<MeetingState> {
+export async function startMeeting(jobId?: number, channels = 1): Promise<MeetingState> {
   if (session) return { meetingId, status: 'live' } // already running
+  const stereo = channels === 2 // mic + loopback: channel tells us who's who
 
   const settings = loadSettings()
   if (!settings.deepgramApiKey) {
@@ -64,25 +67,31 @@ export async function startMeeting(jobId?: number): Promise<MeetingState> {
   const id = createMeeting(job, `Meeting ${new Date().toLocaleString()}`)
   meetingId = id
   meetingJobId = job
+  meetingChannels = channels
   meetingStartedAt = Date.now()
   userSpeakers.clear()
   transcriptWindow.length = 0
   resetTriggers()
   systemPrompt = buildSystemPrompt(getJob(job), listGlossary(job))
   if (settings.recordAudio) {
-    updateMeetingAudioPath(id, startRecording(id))
+    updateMeetingAudioPath(id, startRecording(id, channels))
   }
 
   try {
     session = await deepgramProvider.start({
       apiKey: settings.deepgramApiKey,
+      channels,
       keyterms: getGlossaryTerms(job),
       onTranscript: (t) => {
+        // stereo: the channel IS the identity — ch 0 mic = user, ch 1 loopback = others
+        // (loopback speakers still get diarized apart from each other).
+        // mono: fall back to manual "that's me" pinning.
+        const isUser = stereo ? t.channel === 0 : userSpeakers.has(t.speaker)
         const ev: TranscriptEvent = {
           meetingId: id,
           isFinal: t.isFinal,
-          speaker: t.speaker,
-          isUser: userSpeakers.has(t.speaker),
+          speaker: stereo && t.channel === 0 ? -1 : t.speaker,
+          isUser,
           tStartMs: t.tStartMs,
           tEndMs: t.tEndMs,
           text: t.text
@@ -93,11 +102,11 @@ export async function startMeeting(jobId?: number): Promise<MeetingState> {
             meetingId: id,
             tStartMs: t.tStartMs,
             tEndMs: t.tEndMs,
-            speaker: t.speaker,
+            speaker: ev.speaker,
             isUser: ev.isUser,
             text: t.text
           })
-          transcriptWindow.push({ speaker: t.speaker, isUser: ev.isUser, text: t.text })
+          transcriptWindow.push({ speaker: ev.speaker, isUser: ev.isUser, text: t.text })
           if (transcriptWindow.length > 200) transcriptWindow.shift()
           if (shouldTrigger({ isUser: ev.isUser, text: t.text })) {
             void runSuggestion('ambient')
@@ -134,8 +143,9 @@ export async function stopMeeting(): Promise<MeetingState> {
   await stopRecording() // no-op when recording wasn't on
   if (meetingId !== null) {
     endMeeting(meetingId)
-    // fire-and-forget: summarize what was captured; UI reads it from the DB later
+    // fire-and-forget: summarize + re-diarize; UI reads results from the DB later
     void summarizeMeeting(meetingId, [...transcriptWindow])
+    void rediarizeMeeting(meetingId, meetingChannels)
     meetingId = null
     meetingJobId = null
   }

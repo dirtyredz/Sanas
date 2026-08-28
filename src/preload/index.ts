@@ -31,7 +31,8 @@ const api = {
     }
   },
   meeting: {
-    start: (jobId?: number): Promise<MeetingState> => ipcRenderer.invoke(IPC.MeetingStart, jobId),
+    start: (jobId?: number, channels?: number): Promise<MeetingState> =>
+      ipcRenderer.invoke(IPC.MeetingStart, jobId, channels),
     stop: (): Promise<MeetingState> => ipcRenderer.invoke(IPC.MeetingStop),
     pinSpeaker: (speaker: number, isUser: boolean): Promise<void> =>
       ipcRenderer.invoke(IPC.MeetingPinSpeaker, speaker, isUser),
@@ -83,7 +84,13 @@ const api = {
     search: (
       query: string
     ): Promise<{ meeting: Meeting; jobName: string; tStartMs: number; snippet: string }[]> =>
-      ipcRenderer.invoke(IPC.SegmentsSearch, query)
+      ipcRenderer.invoke(IPC.SegmentsSearch, query),
+    speakerNames: (meetingId: number): Promise<{ speaker: number; name: string }[]> =>
+      ipcRenderer.invoke(IPC.SpeakersList, meetingId),
+    renameSpeaker: (meetingId: number, speaker: number, name: string): Promise<void> =>
+      ipcRenderer.invoke(IPC.SpeakersRename, meetingId, speaker, name),
+    mergeSpeakers: (meetingId: number, from: number, to: number): Promise<void> =>
+      ipcRenderer.invoke(IPC.SpeakersMerge, meetingId, from, to)
   }
 }
 

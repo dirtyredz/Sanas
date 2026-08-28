@@ -1,4 +1,11 @@
-import type { SttProvider, SttSession, SttSessionOptions } from './types'
+import { readFileSync } from 'fs'
+import type {
+  SttBatchOptions,
+  SttProvider,
+  SttSession,
+  SttSessionOptions,
+  SttTranscript
+} from './types'
 
 // Deepgram streaming over Node's built-in WebSocket.
 // Auth rides the Sec-WebSocket-Protocol header (['token', key]) since the
@@ -34,12 +41,14 @@ function splitBySpeaker(words: DeepgramWord[]): DeepgramWord[][] {
   return runs
 }
 
-function buildUrl(keyterms: string[]): string {
+function buildUrl(keyterms: string[], channels: number): string {
   const params = new URLSearchParams({
     model: 'nova-3',
     encoding: 'linear16',
     sample_rate: '16000',
-    channels: '1',
+    channels: String(channels),
+    // stereo mode: transcribe each channel independently (mic vs loopback)
+    multichannel: channels > 1 ? 'true' : 'false',
     diarize: 'true',
     interim_results: 'true',
     smart_format: 'true'
@@ -58,7 +67,10 @@ class DeepgramSession implements SttSession {
   constructor(private opts: SttSessionOptions) {}
 
   async connect(): Promise<void> {
-    const ws = new WebSocket(buildUrl(this.opts.keyterms), ['token', this.opts.apiKey])
+    const ws = new WebSocket(buildUrl(this.opts.keyterms, this.opts.channels), [
+      'token',
+      this.opts.apiKey
+    ])
     await new Promise<void>((resolve, reject) => {
       ws.addEventListener('open', () => resolve(), { once: true })
       ws.addEventListener(
@@ -85,6 +97,7 @@ class DeepgramSession implements SttSession {
     let msg: {
       type?: string
       is_final?: boolean
+      channel_index?: number[]
       channel?: { alternatives?: { transcript?: string; words?: DeepgramWord[] }[] }
     }
     try {
@@ -98,12 +111,14 @@ class DeepgramSession implements SttSession {
     if (!text) return
     const words = alt?.words ?? []
     const isFinal = msg.is_final === true
+    const channel = msg.channel_index?.[0] ?? 0
     const t = (sec: number): number => Math.round(sec * 1000) + this.offsetMs
 
     if (!isFinal || words.length === 0) {
       // interims are ephemeral — one line with the first word's speaker is fine
       this.opts.onTranscript({
         isFinal,
+        channel,
         speaker: words[0]?.speaker ?? -1,
         tStartMs: t(words[0]?.start ?? 0),
         tEndMs: t(words[words.length - 1]?.end ?? 0),
@@ -118,6 +133,7 @@ class DeepgramSession implements SttSession {
       this.lastEndMs = Math.max(this.lastEndMs, tEndMs)
       this.opts.onTranscript({
         isFinal: true,
+        channel,
         speaker: run[0].speaker ?? -1,
         tStartMs: t(run[0].start),
         tEndMs,
@@ -166,5 +182,42 @@ export const deepgramProvider: SttProvider = {
     const session = new DeepgramSession(opts)
     await session.connect()
     return session
+  },
+
+  async transcribeFile(wavPath: string, opts: SttBatchOptions): Promise<SttTranscript[]> {
+    const params = new URLSearchParams({
+      model: 'nova-3',
+      diarize: 'true',
+      smart_format: 'true',
+      multichannel: opts.channels > 1 ? 'true' : 'false'
+    })
+    for (const term of opts.keyterms) params.append('keyterm', term)
+
+    const res = await fetch(`https://api.deepgram.com/v1/listen?${params}`, {
+      method: 'POST',
+      headers: { Authorization: `Token ${opts.apiKey}`, 'Content-Type': 'audio/wav' },
+      body: new Uint8Array(readFileSync(wavPath))
+    })
+    if (!res.ok) throw new Error(`Deepgram batch transcription failed (${res.status})`)
+    const json = (await res.json()) as {
+      results?: { channels?: { alternatives?: { words?: DeepgramWord[] }[] }[] }
+    }
+
+    const out: SttTranscript[] = []
+    const chans = json.results?.channels ?? []
+    for (let channel = 0; channel < chans.length; channel++) {
+      const words = chans[channel]?.alternatives?.[0]?.words ?? []
+      for (const run of splitBySpeaker(words)) {
+        out.push({
+          isFinal: true,
+          channel,
+          speaker: run[0].speaker ?? -1,
+          tStartMs: Math.round(run[0].start * 1000),
+          tEndMs: Math.round(run[run.length - 1].end * 1000),
+          text: run.map((w) => w.punctuated_word ?? w.word).join(' ')
+        })
+      }
+    }
+    return out.sort((a, b) => a.tStartMs - b.tStartMs)
   }
 }

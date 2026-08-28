@@ -49,6 +49,15 @@ const migrations: string[] = [
     prompt_window TEXT NOT NULL DEFAULT '',
     text          TEXT NOT NULL
   );
+  `,
+  // v2 — user-assigned speaker names per meeting
+  `
+  CREATE TABLE speakers (
+    meeting_id INTEGER NOT NULL REFERENCES meetings(id) ON DELETE CASCADE,
+    speaker    INTEGER NOT NULL,
+    name       TEXT NOT NULL,
+    PRIMARY KEY (meeting_id, speaker)
+  );
   `
 ]
 

@@ -65,6 +65,10 @@ export function insertSegment(seg: {
   return Number(res.lastInsertRowid)
 }
 
+export function deleteSegmentsForMeeting(meetingId: number): void {
+  getDb().prepare(`DELETE FROM segments WHERE meeting_id = ?`).run(meetingId)
+}
+
 /** Re-label a speaker's past segments when the user pins "that's me". */
 export function setSpeakerIsUser(meetingId: number, speaker: number, isUser: boolean): void {
   getDb()

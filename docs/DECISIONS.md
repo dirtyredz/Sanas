@@ -2,6 +2,28 @@
 
 *Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected.*
 
+## 2026-08-28 — Post-meeting batch re-diarization + speaker rename/merge
+Streaming diarization drifts badly on real meetings (a speaker labeled S2 shifts to S7
+mid-standup) — it labels voices incrementally with no lookahead, on conference-processed
+audio. Two-part fix: (1) on meeting end, re-transcribe the recorded WAV through
+Deepgram's batch API (whole-file lookahead → stable labels) and replace the live
+segments; (2) per-meeting speaker rename ("Sarah") and merge (fold S7 into S2) in the
+meeting view. Live view stays jittery by nature; the record heals. Requires
+`recordAudio` (now default ON). AI assist was never affected — me/them comes from the
+channel split.
+
+## 2026-08-28 — System-audio loopback capture (supersedes "microphone only")
+Real-world finding: for meetings on the SAME PC, driver-level echo cancellation
+subtracts speaker output from the mic signal — exactly erasing the other participants
+while keeping the user. Speakers-at-full-volume doesn't help.
+Fix: Electron `setDisplayMediaRequestHandler` with `audio: 'loopback'` (Windows) taps
+the signal headed to the output device digitally — no AEC in the path, works with
+headphones. Runs alongside the mic as a second channel; Deepgram `multichannel=true`
+transcribes each independently, so **channel 0 = user, channel 1 = others by
+construction** — me/them no longer depends on diarization. Mic-only mono remains the
+fallback (setting off, loopback unavailable, or meeting on another device).
+Rejected: mixing loopback+mic into one mono stream (loses the free identity split).
+
 ## 2026-08-27 — Name: Sanas
 Scottish Gaelic for "whisper / hint" **and** "glossary" — matches the two core mechanics
 (whispered suggestions + per-job term glossary). Rejected: cueline, meeting-copilot, cagar, guth.

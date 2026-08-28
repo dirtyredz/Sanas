@@ -84,6 +84,8 @@ export interface Settings {
   audioDeviceId: string
   /** Save raw meeting audio to a local WAV file. */
   recordAudio: boolean
+  /** Also capture system audio (loopback) — for meetings running on this PC. */
+  captureSystemAudio: boolean
   /** Overlay window opacity, 0.4–1. */
   overlayOpacity: number
   /** Remembered overlay window bounds; null until first moved/resized. */

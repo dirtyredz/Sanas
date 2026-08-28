@@ -35,6 +35,17 @@
   instance opens the same DB. Only happens at "restart electron app..." moments in dev;
   packaged builds are single-instance and unaffected. Don't chase it.
 
+- **Same-PC meetings: the mic CANNOT hear the other side reliably.** Driver-level AEC
+  (Realtek/Windows "enhancements") subtracts what the PC plays from what the mic hears —
+  which IS the other participants. Volume doesn't help. Use system-audio loopback
+  (capture setting, on by default); it taps the output signal digitally, pre-speaker.
+- **Streaming diarization drifts; batch doesn't.** Live speaker indices are unstable
+  (S2 can become S7 mid-meeting) — incremental labeling, no lookahead, conference-
+  compressed audio. Don't try to fix it live: the post-meeting batch re-diarization
+  pass replaces segments with stable labels. Live view jitter is expected and cosmetic.
+- **Re-diarization clears per-meeting speaker names** — batch indices don't match the
+  live ones, so stale names would mislabel. Name speakers AFTER the meeting ends.
+
 ## APIs
 - **Deepgram WS idle timeout:** the socket closes after ~10 s without audio. Send
   keepalive messages (or continuous silence frames) during pauses, and implement

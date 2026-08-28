@@ -24,6 +24,7 @@ import { listMeetings, deleteMeeting, renameMeeting } from '../db/repos/meetings
 import { listSegments, searchSegments } from '../db/repos/segments'
 import { exportMeetingMarkdown } from '../services/meetings/export'
 import { listSuggestions } from '../db/repos/suggestions'
+import { listSpeakerNames, setSpeakerName, mergeSpeakers } from '../db/repos/speakers'
 
 // Thin handlers only — validate and delegate (see STRUCTURE.md).
 
@@ -38,7 +39,9 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(IPC.OverlayToggle, () => toggleOverlay())
 
-  ipcMain.handle(IPC.MeetingStart, (_e, jobId?: number) => startMeeting(jobId))
+  ipcMain.handle(IPC.MeetingStart, (_e, jobId?: number, channels?: number) =>
+    startMeeting(jobId, channels)
+  )
   ipcMain.handle(IPC.MeetingStop, () => stopMeeting())
   ipcMain.handle(IPC.MeetingPinSpeaker, (_e, speaker: number, isUser: boolean) =>
     pinSpeaker(speaker, isUser)
@@ -70,6 +73,13 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.MeetingsExport, (_e, id: number) => exportMeetingMarkdown(id))
   ipcMain.handle(IPC.SegmentsList, (_e, meetingId: number) => listSegments(meetingId))
   ipcMain.handle(IPC.SuggestionsList, (_e, meetingId: number) => listSuggestions(meetingId))
+  ipcMain.handle(IPC.SpeakersList, (_e, meetingId: number) => listSpeakerNames(meetingId))
+  ipcMain.handle(IPC.SpeakersRename, (_e, meetingId: number, speaker: number, name: string) =>
+    setSpeakerName(meetingId, speaker, name)
+  )
+  ipcMain.handle(IPC.SpeakersMerge, (_e, meetingId: number, from: number, to: number) =>
+    mergeSpeakers(meetingId, from, to)
+  )
   ipcMain.handle(IPC.SegmentsSearch, (_e, query: string) =>
     query.trim().length >= 2 ? searchSegments(query.trim()) : []
   )

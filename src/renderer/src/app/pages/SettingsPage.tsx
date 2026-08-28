@@ -24,6 +24,7 @@ export function SettingsPage(): React.JSX.Element {
       assistHotkey: view.assistHotkey,
       audioDeviceId: view.audioDeviceId,
       recordAudio: view.recordAudio,
+      captureSystemAudio: view.captureSystemAudio,
       overlayOpacity: view.overlayOpacity
     }
     // Only send keys the user actually typed — empty means "keep existing".
@@ -94,6 +95,15 @@ export function SettingsPage(): React.JSX.Element {
             </option>
           ))}
         </select>
+      </label>
+
+      <label className="check">
+        <input
+          type="checkbox"
+          checked={view.captureSystemAudio}
+          onChange={(e) => setView({ ...view, captureSystemAudio: e.target.checked })}
+        />
+        Capture system audio (meetings on this PC — hears the other side digitally)
       </label>
 
       <label className="check">

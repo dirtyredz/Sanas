@@ -12,7 +12,8 @@ const DEFAULTS: Settings = {
   overlayHotkey: 'CommandOrControl+Shift+Space',
   assistHotkey: 'CommandOrControl+Shift+Enter',
   audioDeviceId: '',
-  recordAudio: false,
+  recordAudio: true, // needed for post-meeting re-diarization
+  captureSystemAudio: true,
   overlayOpacity: 1,
   overlayBounds: null
 }

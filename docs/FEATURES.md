@@ -14,6 +14,9 @@
 | On-demand full answer (global hotkey) | ✅ | Ctrl+Shift+Enter or "Answer now" button |
 | Always-on-top overlay window | ✅ | frameless, screen-saver level, hotkey toggle, position memory |
 | Deepgram auto-reconnect | ✅ | backoff, monotonic timestamps across reconnects |
+| System-audio loopback capture | ✅ | same-PC meetings; ch0=me ch1=them via multichannel |
+| Post-meeting batch re-diarization | ✅ | stable speaker labels; needs recordAudio (default on) |
+| Speaker rename + merge | ✅ | per meeting, in transcript view; export uses names |
 
 ## Organization
 | Feature | Status | Notes |

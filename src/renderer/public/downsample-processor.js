@@ -1,39 +1,57 @@
-// AudioWorklet: resample native rate → 16 kHz mono Int16, emit 100 ms chunks.
+// AudioWorklet: resample native rate → 16 kHz Int16, emit 100 ms chunks.
+// Supports 1 channel (mic only) or 2 (mic + system-audio loopback), producing
+// interleaved frames — channel 0 = mic/user, channel 1 = loopback/others.
 // Static file (not a blob URL) so the renderer CSP can stay at script-src 'self'.
 
 const TARGET_RATE = 16000
-const CHUNK_SAMPLES = 1600 // 100 ms at 16 kHz
+const CHUNK_FRAMES = 1600 // 100 ms at 16 kHz
 
 class DownsampleProcessor extends AudioWorkletProcessor {
-  constructor() {
+  constructor(options) {
     super()
+    this.channels = (options && options.processorOptions && options.processorOptions.channels) || 1
     this.ratio = sampleRate / TARGET_RATE
     this.readPos = 0
-    this.input = [] // queued Float32 samples at native rate
-    this.out = new Int16Array(CHUNK_SAMPLES)
-    this.outPos = 0
+    this.queues = Array.from({ length: this.channels }, () => []) // Float32 at native rate
+    this.out = new Int16Array(CHUNK_FRAMES * this.channels)
+    this.outFrame = 0
   }
 
   process(inputs) {
-    const ch = inputs[0][0]
-    if (!ch) return true
-    for (let i = 0; i < ch.length; i++) this.input.push(ch[i])
+    const input = inputs[0]
+    if (!input || !input[0]) return true
+    const frames = input[0].length
+
+    // queue each channel; a missing channel pads silence to stay frame-aligned
+    for (let c = 0; c < this.channels; c++) {
+      const src = input[c]
+      const q = this.queues[c]
+      if (src) for (let i = 0; i < frames; i++) q.push(src[i])
+      else for (let i = 0; i < frames; i++) q.push(0)
+    }
 
     // consume whole strides, keeping fractional position for continuity
-    while (this.readPos + this.ratio < this.input.length) {
+    while (this.readPos + this.ratio < this.queues[0].length) {
       const idx = Math.floor(this.readPos)
       const frac = this.readPos - idx
-      const s = this.input[idx] * (1 - frac) + this.input[idx + 1] * frac
-      this.out[this.outPos++] = Math.max(-32768, Math.min(32767, s * 32768))
+      for (let c = 0; c < this.channels; c++) {
+        const q = this.queues[c]
+        const s = q[idx] * (1 - frac) + q[idx + 1] * frac
+        this.out[this.outFrame * this.channels + c] = Math.max(
+          -32768,
+          Math.min(32767, s * 32768)
+        )
+      }
       this.readPos += this.ratio
-      if (this.outPos === CHUNK_SAMPLES) {
+      this.outFrame++
+      if (this.outFrame === CHUNK_FRAMES) {
         this.port.postMessage(this.out.buffer.slice(0))
-        this.outPos = 0
+        this.outFrame = 0
       }
     }
     // drop consumed samples, keep the fraction
     const consumed = Math.floor(this.readPos)
-    this.input = this.input.slice(consumed)
+    for (let c = 0; c < this.channels; c++) this.queues[c] = this.queues[c].slice(consumed)
     this.readPos -= consumed
     return true
   }

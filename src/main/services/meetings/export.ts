@@ -5,6 +5,7 @@ import { listSegments } from '../../db/repos/segments'
 import { listSuggestions } from '../../db/repos/suggestions'
 import { getJob } from '../../db/repos/jobs'
 import { speakerLabel } from '../transcript-format'
+import { listSpeakerNames } from '../../db/repos/speakers'
 
 function fmt(ms: number): string {
   const s = Math.floor(ms / 1000)
@@ -19,6 +20,7 @@ export async function exportMeetingMarkdown(meetingId: number): Promise<string |
   const job = getJob(meeting.jobId)
   const segments = listSegments(meetingId)
   const suggestions = listSuggestions(meetingId)
+  const names = new Map(listSpeakerNames(meetingId).map((r) => [r.speaker, r.name]))
 
   const lines: string[] = [
     `# ${meeting.title}`,
@@ -36,7 +38,8 @@ export async function exportMeetingMarkdown(meetingId: number): Promise<string |
   lines.push('## Transcript', '')
   if (segments.length === 0) lines.push('_No transcript captured._', '')
   for (const s of segments) {
-    lines.push(`- \`${fmt(s.tStartMs)}\` **${speakerLabel(s)}:** ${s.text}`)
+    const who = !s.isUser && names.has(s.speaker) ? names.get(s.speaker)! : speakerLabel(s)
+    lines.push(`- \`${fmt(s.tStartMs)}\` **${who}:** ${s.text}`)
   }
   lines.push('')
 
