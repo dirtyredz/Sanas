@@ -23,14 +23,14 @@ function toJob(r: JobRow): Job {
     talkingPoints: r.talking_points,
     persona: r.persona,
     createdAt: r.created_at,
-    archived: r.archived === 1
+    archived: r.archived === 1,
   }
 }
 
 export function listJobs(includeArchived = false): Job[] {
   const rows = getDb()
     .prepare(
-      `SELECT * FROM jobs ${includeArchived ? '' : 'WHERE archived = 0'} ORDER BY name COLLATE NOCASE`
+      `SELECT * FROM jobs ${includeArchived ? '' : 'WHERE archived = 0'} ORDER BY name COLLATE NOCASE`,
     )
     .all() as JobRow[]
   return rows.map(toJob)
@@ -50,7 +50,7 @@ export function updateJob(job: Omit<Job, 'createdAt' | 'archived'>): Job {
   getDb()
     .prepare(
       `UPDATE jobs SET name = ?, company_info = ?, project_scope = ?, notes = ?,
-       talking_points = ?, persona = ? WHERE id = ?`
+       talking_points = ?, persona = ? WHERE id = ?`,
     )
     .run(
       job.name,
@@ -59,21 +59,22 @@ export function updateJob(job: Omit<Job, 'createdAt' | 'archived'>): Job {
       job.notes,
       job.talkingPoints,
       job.persona,
-      job.id
+      job.id,
     )
   return getJob(job.id)!
 }
 
 export function setJobArchived(id: number, archived: boolean): void {
-  getDb().prepare(`UPDATE jobs SET archived = ? WHERE id = ?`).run(archived ? 1 : 0, id)
+  getDb()
+    .prepare(`UPDATE jobs SET archived = ? WHERE id = ?`)
+    .run(archived ? 1 : 0, id)
 }
 
 /** Meetings need a job; used when starting a meeting with none selected. */
 export function ensureDefaultJob(): number {
   const db = getDb()
   const existing = db.prepare(`SELECT id FROM jobs WHERE name = 'Unsorted'`).get() as
-    | { id: number }
-    | undefined
+    { id: number } | undefined
   if (existing) return existing.id
   const res = db.prepare(`INSERT INTO jobs (name) VALUES ('Unsorted')`).run()
   return Number(res.lastInsertRowid)
@@ -83,7 +84,9 @@ export function ensureDefaultJob(): number {
 
 export function listGlossary(jobId: number): GlossaryTerm[] {
   return getDb()
-    .prepare(`SELECT id, job_id AS jobId, term, note FROM glossary WHERE job_id = ? ORDER BY term COLLATE NOCASE`)
+    .prepare(
+      `SELECT id, job_id AS jobId, term, note FROM glossary WHERE job_id = ? ORDER BY term COLLATE NOCASE`,
+    )
     .all(jobId) as GlossaryTerm[]
 }
 

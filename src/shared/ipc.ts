@@ -43,7 +43,7 @@ export const IPC = {
   SpeakersMerge: 'speakers:merge',
   // overlay ghost mode (clicks pass through; overlay hotkey restores)
   OverlayClickThrough: 'overlay:click-through',
-  OverlayGhostState: 'overlay:ghost-state'
+  OverlayGhostState: 'overlay:ghost-state',
 } as const
 
 export type IpcChannel = (typeof IPC)[keyof typeof IPC]

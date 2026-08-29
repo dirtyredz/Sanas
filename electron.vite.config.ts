@@ -7,28 +7,28 @@ export default defineConfig({
     plugins: [externalizeDepsPlugin()],
     resolve: {
       alias: {
-        '@shared': resolve(__dirname, 'src/shared')
-      }
-    }
+        '@shared': resolve(__dirname, 'src/shared'),
+      },
+    },
   },
   preload: {
-    plugins: [externalizeDepsPlugin()]
+    plugins: [externalizeDepsPlugin()],
   },
   renderer: {
     plugins: [react()],
     resolve: {
       alias: {
-        '@shared': resolve(__dirname, 'src/shared')
-      }
+        '@shared': resolve(__dirname, 'src/shared'),
+      },
     },
     build: {
       rollupOptions: {
         input: {
           // library UI (main window) and the always-on-top overlay are separate pages
           index: resolve(__dirname, 'src/renderer/index.html'),
-          overlay: resolve(__dirname, 'src/renderer/overlay.html')
-        }
-      }
-    }
-  }
+          overlay: resolve(__dirname, 'src/renderer/overlay.html'),
+        },
+      },
+    },
+  },
 })

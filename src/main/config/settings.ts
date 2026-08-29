@@ -15,7 +15,7 @@ const DEFAULTS: Settings = {
   recordAudio: true, // needed for post-meeting re-diarization
   captureSystemAudio: true,
   overlayOpacity: 1,
-  overlayBounds: null
+  overlayBounds: null,
 }
 
 function settingsPath(): string {
@@ -42,6 +42,6 @@ export function toView(s: Settings): SettingsView {
   return {
     ...rest,
     deepgramKeySet: deepgramApiKey.length > 0,
-    anthropicKeySet: anthropicApiKey.length > 0
+    anthropicKeySet: anthropicApiKey.length > 0,
   }
 }

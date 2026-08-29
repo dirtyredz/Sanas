@@ -10,7 +10,7 @@ import type {
   SettingsView,
   Suggestion,
   SuggestionEvent,
-  TranscriptEvent
+  TranscriptEvent,
 } from '../shared/types'
 
 // The whole renderer-facing API surface. Keep it explicit — no generic invoke passthrough.
@@ -18,7 +18,7 @@ const api = {
   settings: {
     get: (): Promise<SettingsView> => ipcRenderer.invoke(IPC.SettingsGet),
     set: (patch: Partial<Settings>): Promise<SettingsView> =>
-      ipcRenderer.invoke(IPC.SettingsSet, patch)
+      ipcRenderer.invoke(IPC.SettingsSet, patch),
   },
   overlay: {
     toggle: (): Promise<void> => ipcRenderer.invoke(IPC.OverlayToggle),
@@ -28,7 +28,7 @@ const api = {
       const listener = (_e: unknown, on: boolean): void => cb(on)
       ipcRenderer.on(IPC.OverlayGhostState, listener)
       return () => ipcRenderer.removeListener(IPC.OverlayGhostState, listener)
-    }
+    },
   },
   meeting: {
     start: (jobId?: number, channels?: number): Promise<MeetingState> =>
@@ -46,7 +46,7 @@ const api = {
       const listener = (_e: unknown, s: MeetingState): void => cb(s)
       ipcRenderer.on(IPC.MeetingState, listener)
       return () => ipcRenderer.removeListener(IPC.MeetingState, listener)
-    }
+    },
   },
   assist: {
     now: (): Promise<void> => ipcRenderer.invoke(IPC.AssistNow),
@@ -54,7 +54,7 @@ const api = {
       const listener = (_e: unknown, ev: SuggestionEvent): void => cb(ev)
       ipcRenderer.on(IPC.SuggestionEvent, listener)
       return () => ipcRenderer.removeListener(IPC.SuggestionEvent, listener)
-    }
+    },
   },
   jobs: {
     list: (): Promise<Job[]> => ipcRenderer.invoke(IPC.JobsList),
@@ -62,13 +62,13 @@ const api = {
     update: (job: Omit<Job, 'createdAt' | 'archived'>): Promise<Job> =>
       ipcRenderer.invoke(IPC.JobsUpdate, job),
     archive: (id: number, archived: boolean): Promise<void> =>
-      ipcRenderer.invoke(IPC.JobsArchive, id, archived)
+      ipcRenderer.invoke(IPC.JobsArchive, id, archived),
   },
   glossary: {
     list: (jobId: number): Promise<GlossaryTerm[]> => ipcRenderer.invoke(IPC.GlossaryList, jobId),
     add: (jobId: number, term: string, note: string): Promise<GlossaryTerm> =>
       ipcRenderer.invoke(IPC.GlossaryAdd, jobId, term, note),
-    remove: (id: number): Promise<void> => ipcRenderer.invoke(IPC.GlossaryRemove, id)
+    remove: (id: number): Promise<void> => ipcRenderer.invoke(IPC.GlossaryRemove, id),
   },
   meetings: {
     list: (jobId: number): Promise<Meeting[]> => ipcRenderer.invoke(IPC.MeetingsList, jobId),
@@ -82,7 +82,7 @@ const api = {
     export: (meetingId: number): Promise<string | null> =>
       ipcRenderer.invoke(IPC.MeetingsExport, meetingId),
     search: (
-      query: string
+      query: string,
     ): Promise<{ meeting: Meeting; jobName: string; tStartMs: number; snippet: string }[]> =>
       ipcRenderer.invoke(IPC.SegmentsSearch, query),
     speakerNames: (meetingId: number): Promise<{ speaker: number; name: string }[]> =>
@@ -95,8 +95,8 @@ const api = {
       const listener = (_e: unknown, meetingId: number): void => cb(meetingId)
       ipcRenderer.on(IPC.MeetingUpdated, listener)
       return () => ipcRenderer.removeListener(IPC.MeetingUpdated, listener)
-    }
-  }
+    },
+  },
 }
 
 export type SanasApi = typeof api

@@ -21,7 +21,7 @@ export function toMeeting(r: MeetingRow): Meeting {
     endedAt: r.ended_at,
     audioPath: r.audio_path,
     summary: r.summary,
-    actionItems: r.action_items
+    actionItems: r.action_items,
   }
 }
 
@@ -33,15 +33,12 @@ export function createMeeting(jobId: number, title: string): number {
 }
 
 export function endMeeting(meetingId: number): void {
-  getDb()
-    .prepare(`UPDATE meetings SET ended_at = datetime('now') WHERE id = ?`)
-    .run(meetingId)
+  getDb().prepare(`UPDATE meetings SET ended_at = datetime('now') WHERE id = ?`).run(meetingId)
 }
 
 export function getMeeting(meetingId: number): Meeting | null {
   const row = getDb().prepare(`SELECT * FROM meetings WHERE id = ?`).get(meetingId) as
-    | MeetingRow
-    | undefined
+    MeetingRow | undefined
   return row ? toMeeting(row) : null
 }
 
@@ -56,7 +53,7 @@ export function updateMeetingAudioPath(meetingId: number, audioPath: string): vo
 export function updateMeetingSummary(
   meetingId: number,
   summary: string,
-  actionItems: string
+  actionItems: string,
 ): void {
   getDb()
     .prepare(`UPDATE meetings SET summary = ?, action_items = ? WHERE id = ?`)

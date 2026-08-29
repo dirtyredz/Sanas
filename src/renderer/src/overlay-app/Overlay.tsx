@@ -23,7 +23,9 @@ export function Overlay(): React.JSX.Element {
       <header className="overlay-header">
         <span className={`dot ${live ? 'live' : ''}`} />
         <span className="title">Sanas</span>
-        <span className="hint">{ghost ? 'ghost — hotkey restores' : live ? 'listening' : state.status}</span>
+        <span className="hint">
+          {ghost ? 'ghost — hotkey restores' : live ? 'listening' : state.status}
+        </span>
         <button
           className="ghost-btn"
           title="Ghost mode: clicks pass through. Press the overlay hotkey to restore."
@@ -48,11 +50,7 @@ export function Overlay(): React.JSX.Element {
       <section className="overlay-suggestion">
         <div className="suggestion-bar">
           <span className="label">
-            {suggestion
-              ? suggestion.trigger === 'hotkey'
-                ? 'Answer'
-                : 'Whisper'
-              : 'Sanas'}
+            {suggestion ? (suggestion.trigger === 'hotkey' ? 'Answer' : 'Whisper') : 'Sanas'}
             {suggestion?.streaming && <span className="cursor">▍</span>}
           </span>
           <button
@@ -64,9 +62,7 @@ export function Overlay(): React.JSX.Element {
           </button>
         </div>
         {suggestion?.error && <p className="warn">{suggestion.error}</p>}
-        {suggestion && !suggestion.error && (
-          <p className="suggestion-text">{suggestion.text}</p>
-        )}
+        {suggestion && !suggestion.error && <p className="suggestion-text">{suggestion.text}</p>}
         {!suggestion && (
           <p className="muted">
             {live

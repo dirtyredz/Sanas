@@ -24,8 +24,8 @@ function createOverlay(): BrowserWindow {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false
-    }
+      sandbox: false,
+    },
   })
 
   // 'screen-saver' level floats above most fullscreen apps on Windows (see GOTCHAS.md).

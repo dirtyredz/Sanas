@@ -19,7 +19,7 @@ export function setSpeakerName(meetingId: number, speaker: number, name: string)
   }
   db.prepare(
     `INSERT INTO speakers (meeting_id, speaker, name) VALUES (?, ?, ?)
-     ON CONFLICT(meeting_id, speaker) DO UPDATE SET name = excluded.name`
+     ON CONFLICT(meeting_id, speaker) DO UPDATE SET name = excluded.name`,
   ).run(meetingId, speaker, name.trim())
 }
 
@@ -30,7 +30,7 @@ export function mergeSpeakers(meetingId: number, from: number, to: number): void
     db.prepare(`UPDATE segments SET speaker = ? WHERE meeting_id = ? AND speaker = ?`).run(
       to,
       meetingId,
-      from
+      from,
     )
     db.prepare(`DELETE FROM speakers WHERE meeting_id = ? AND speaker = ?`).run(meetingId, from)
   })()

@@ -1,6 +1,6 @@
 # Sanas — Architecture
 
-*How the system works. For code shape, see [../STRUCTURE.md](../STRUCTURE.md).*
+_How the system works. For code shape, see [../STRUCTURE.md](../STRUCTURE.md)._
 
 ## Overview
 
@@ -44,7 +44,7 @@ Mic (getUserMedia, renderer)
   `interim_results=true`, `smart_format=true`; `multichannel=true` in stereo mode so
   mic and loopback transcribe independently.
 - The active job's **glossary terms are sent as keyterm boosts** — the same data that
-  feeds the AI also improves STT accuracy on jargon. (This is the *sanas* double meaning.)
+  feeds the AI also improves STT accuracy on jargon. (This is the _sanas_ double meaning.)
 - Interim results update the overlay live; only finals are persisted.
 - Speaker labels: heuristic mapping of "which diarized speaker is the user" (the user can
   tap "that's me" on a line to pin it; persisted per meeting).
@@ -91,9 +91,9 @@ speakers    (meeting_id, speaker, name)         -- user-assigned names (v2)
 
 ### External interfaces
 
-| Service | Purpose | Data sent |
-|---|---|---|
-| Deepgram WS | streaming STT | live audio, glossary terms |
+| Service       | Purpose                | Data sent                             |
+| ------------- | ---------------------- | ------------------------------------- |
+| Deepgram WS   | streaming STT          | live audio, glossary terms            |
 | Anthropic API | suggestions, summaries | transcript excerpts, job context pack |
 
 Both keys stored locally in the app config. Nothing else leaves the machine.
@@ -101,6 +101,7 @@ Both keys stored locally in the app config. Nothing else leaves the machine.
 ## Post-meeting
 
 On meeting end, two fire-and-forget passes:
+
 1. **Summary** — one Claude call generates summary + action items; stored on the meeting row.
 2. **Re-diarization** — the recorded WAV goes through Deepgram's batch API
    (`SttProvider.transcribeFile`); batch diarization sees the whole file, so speaker

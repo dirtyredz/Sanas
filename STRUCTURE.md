@@ -1,11 +1,12 @@
 # Sanas — Structure
 
-*Code-shape map: components, responsibilities, dependencies, structural debt.*
-*System design lives in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).*
+_Code-shape map: components, responsibilities, dependencies, structural debt._
+_System design lives in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)._
 
 Last full review: 2026-08-27
 
 ## Status
+
 Phases 0–3 built + most of Phase 4 (summaries, recording, reconnect, packaging).
 Layout below reflects what exists.
 

@@ -7,7 +7,7 @@ export function listSegments(meetingId: number): Segment[] {
     .prepare(
       `SELECT id, meeting_id AS meetingId, t_start_ms AS tStartMs, t_end_ms AS tEndMs,
               speaker, is_user AS isUser, text
-       FROM segments WHERE meeting_id = ? ORDER BY t_start_ms`
+       FROM segments WHERE meeting_id = ? ORDER BY t_start_ms`,
     )
     .all(meetingId)
     .map((r) => {
@@ -33,7 +33,7 @@ export function searchSegments(query: string, limit = 50): SegmentMatch[] {
        JOIN jobs j ON j.id = m.job_id
        WHERE s.text LIKE ? ESCAPE '\\'
        ORDER BY m.started_at DESC, s.t_start_ms
-       LIMIT ?`
+       LIMIT ?`,
     )
     .all(`%${query.replace(/[\\%_]/g, (c) => `\\${c}`)}%`, limit) as (MeetingRow & {
     job_name: string
@@ -44,7 +44,7 @@ export function searchSegments(query: string, limit = 50): SegmentMatch[] {
     meeting: toMeeting(r),
     jobName: r.job_name,
     tStartMs: r.t_start,
-    snippet: r.snippet
+    snippet: r.snippet,
   }))
 }
 
@@ -59,7 +59,7 @@ export function insertSegment(seg: {
   const res = getDb()
     .prepare(
       `INSERT INTO segments (meeting_id, t_start_ms, t_end_ms, speaker, is_user, text)
-       VALUES (?, ?, ?, ?, ?, ?)`
+       VALUES (?, ?, ?, ?, ?, ?)`,
     )
     .run(seg.meetingId, seg.tStartMs, seg.tEndMs, seg.speaker, seg.isUser ? 1 : 0, seg.text)
   return Number(res.lastInsertRowid)

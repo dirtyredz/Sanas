@@ -1,11 +1,12 @@
 # Sanas — Gotchas
 
-*Non-obvious traps. Read before touching the related area.*
+_Non-obvious traps. Read before touching the related area._
 
 ## Audio
+
 - **Windows mic exclusivity/quality:** some conferencing apps grab the mic with
   echo-cancellation/AGC processing. Sanas usually runs while the meeting is on a
-  *different* device, but if a meeting ever runs on the same laptop, expect the mic to
+  _different_ device, but if a meeting ever runs on the same laptop, expect the mic to
   be shared — capture still works, but disable Chromium's `echoCancellation`/
   `noiseSuppression` constraints deliberately or Deepgram gets over-processed audio.
 - **AudioWorklet, not ScriptProcessor:** ScriptProcessorNode is deprecated and janky;
@@ -20,6 +21,7 @@
   level/timbre cues separation relies on.
 
 ## Electron
+
 - **`better-sqlite3` is a native module** — must be rebuilt for Electron's ABI
   (`electron-rebuild` / electron-builder handles it). Version bumps of Electron require
   a rebuild; CI/packaging must not skip it.
@@ -47,6 +49,7 @@
   live ones, so stale names would mislabel. Name speakers AFTER the meeting ends.
 
 ## APIs
+
 - **Deepgram WS idle timeout:** the socket closes after ~10 s without audio. Send
   keepalive messages (or continuous silence frames) during pauses, and implement
   auto-reconnect with transcript continuity.
@@ -57,6 +60,7 @@
   never send the whole thing per suggestion.
 
 ## Product/legal
+
 - **Recording consent:** some jurisdictions are two-party consent for recording.
   Transcription-without-audio-retention is lighter but not automatically exempt.
   Sanas records/transcribes only on explicit start; audio saving is opt-in per meeting.

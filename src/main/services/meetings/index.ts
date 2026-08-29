@@ -9,7 +9,7 @@ import {
   createMeeting,
   endMeeting,
   updateMeetingAudioPath,
-  updateMeetingSummary
+  updateMeetingSummary,
 } from '../../db/repos/meetings'
 import { startRecording, stopRecording, writeAudio } from '../audio-store'
 import { rediarizeMeeting } from './rediarize'
@@ -21,7 +21,7 @@ import {
   buildSummaryPrompt,
   buildSystemPrompt,
   buildUserContent,
-  type TranscriptLine
+  type TranscriptLine,
 } from '../assistant/prompts'
 import { resetTriggers, shouldTrigger } from '../assistant/triggers'
 
@@ -49,7 +49,10 @@ function setState(state: MeetingState): void {
   broadcast(IPC.MeetingState, state)
 }
 
-export async function startMeeting(jobId?: number, channels: ChannelCount = 1): Promise<MeetingState> {
+export async function startMeeting(
+  jobId?: number,
+  channels: ChannelCount = 1,
+): Promise<MeetingState> {
   if (session) return { meetingId, status: 'live' } // already running
   const stereo = channels === 2 // mic + loopback: channel tells us who's who
 
@@ -58,7 +61,7 @@ export async function startMeeting(jobId?: number, channels: ChannelCount = 1): 
     const state: MeetingState = {
       meetingId: null,
       status: 'error',
-      error: 'No Deepgram API key set — add it in Settings.'
+      error: 'No Deepgram API key set — add it in Settings.',
     }
     setState(state)
     return state
@@ -93,7 +96,7 @@ export async function startMeeting(jobId?: number, channels: ChannelCount = 1): 
           isUser: who.isUser,
           tStartMs: t.tStartMs,
           tEndMs: t.tEndMs,
-          text: t.text
+          text: t.text,
         }
         // only persist finals — interims mutate (GOTCHAS.md)
         if (t.isFinal) {
@@ -103,7 +106,7 @@ export async function startMeeting(jobId?: number, channels: ChannelCount = 1): 
             tEndMs: t.tEndMs,
             speaker: ev.speaker,
             isUser: ev.isUser,
-            text: t.text
+            text: t.text,
           })
           transcriptWindow.push({ speaker: ev.speaker, isUser: ev.isUser, text: t.text })
           if (transcriptWindow.length > 200) transcriptWindow.shift()
@@ -115,7 +118,7 @@ export async function startMeeting(jobId?: number, channels: ChannelCount = 1): 
       },
       onError: (message) => {
         setState({ meetingId: id, status: 'error', error: message })
-      }
+      },
     })
   } catch (e) {
     session = null
@@ -123,7 +126,7 @@ export async function startMeeting(jobId?: number, channels: ChannelCount = 1): 
     const state: MeetingState = {
       meetingId: null,
       status: 'error',
-      error: e instanceof Error ? e.message : String(e)
+      error: e instanceof Error ? e.message : String(e),
     }
     setState(state)
     return state
@@ -167,7 +170,7 @@ async function summarizeMeeting(id: number, window: TranscriptLine[]): Promise<v
       system: systemPrompt,
       userContent: buildSummaryPrompt(window),
       maxTokens: 1500,
-      effort: 'medium'
+      effort: 'medium',
       // no onDelta — one-shot; persisted when done
     })
     const idx = text.indexOf('ACTION ITEMS')
@@ -194,7 +197,7 @@ export async function runSuggestion(trigger: 'ambient' | 'hotkey'): Promise<void
       meetingId: id,
       trigger,
       kind,
-      text
+      text,
     } satisfies SuggestionEvent)
 
   if (!anthropicApiKey) {
@@ -212,14 +215,14 @@ export async function runSuggestion(trigger: 'ambient' | 'hotkey'): Promise<void
       // nudges stay terse and fast; hotkey answers get more room and depth
       maxTokens: trigger === 'ambient' ? 300 : 1000,
       effort: trigger === 'ambient' ? 'low' : 'medium',
-      onDelta: (delta) => emit('delta', delta)
+      onDelta: (delta) => emit('delta', delta),
     })
     insertSuggestion({
       meetingId: id,
       tMs: Date.now() - meetingStartedAt,
       trigger,
       promptWindow: userContent,
-      text
+      text,
     })
     emit('done', text)
   } catch (e) {

@@ -8,7 +8,7 @@ import {
   stopMeeting,
   sendAudioChunk,
   pinSpeaker,
-  runSuggestion
+  runSuggestion,
 } from '../services/meetings'
 import type { Job } from '@shared/types'
 import {
@@ -18,7 +18,7 @@ import {
   setJobArchived,
   listGlossary,
   addGlossaryTerm,
-  removeGlossaryTerm
+  removeGlossaryTerm,
 } from '../db/repos/jobs'
 import { listMeetings, deleteMeeting, renameMeeting } from '../db/repos/meetings'
 import { listSegments, searchSegments } from '../db/repos/segments'
@@ -41,11 +41,11 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(IPC.MeetingStart, (_e, jobId?: number, channels?: number) =>
     // validate at ingress: only 1 or 2 are meaningful capture topologies
-    startMeeting(jobId, channels === 2 ? 2 : 1)
+    startMeeting(jobId, channels === 2 ? 2 : 1),
   )
   ipcMain.handle(IPC.MeetingStop, () => stopMeeting())
   ipcMain.handle(IPC.MeetingPinSpeaker, (_e, speaker: number, isUser: boolean) =>
-    pinSpeaker(speaker, isUser)
+    pinSpeaker(speaker, isUser),
   )
   ipcMain.handle(IPC.AssistNow, () => runSuggestion('hotkey'))
 
@@ -59,11 +59,11 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.JobsCreate, (_e, name: string) => createJob(name))
   ipcMain.handle(IPC.JobsUpdate, (_e, job: Omit<Job, 'createdAt' | 'archived'>) => updateJob(job))
   ipcMain.handle(IPC.JobsArchive, (_e, id: number, archived: boolean) =>
-    setJobArchived(id, archived)
+    setJobArchived(id, archived),
   )
   ipcMain.handle(IPC.GlossaryList, (_e, jobId: number) => listGlossary(jobId))
   ipcMain.handle(IPC.GlossaryAdd, (_e, jobId: number, term: string, note: string) =>
-    addGlossaryTerm(jobId, term, note)
+    addGlossaryTerm(jobId, term, note),
   )
   ipcMain.handle(IPC.GlossaryRemove, (_e, id: number) => removeGlossaryTerm(id))
 
@@ -76,13 +76,13 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.SuggestionsList, (_e, meetingId: number) => listSuggestions(meetingId))
   ipcMain.handle(IPC.SpeakersList, (_e, meetingId: number) => listSpeakerNames(meetingId))
   ipcMain.handle(IPC.SpeakersRename, (_e, meetingId: number, speaker: number, name: string) =>
-    setSpeakerName(meetingId, speaker, name)
+    setSpeakerName(meetingId, speaker, name),
   )
   ipcMain.handle(IPC.SpeakersMerge, (_e, meetingId: number, from: number, to: number) =>
-    mergeSpeakers(meetingId, from, to)
+    mergeSpeakers(meetingId, from, to),
   )
   ipcMain.handle(IPC.SegmentsSearch, (_e, query: string) =>
-    query.trim().length >= 2 ? searchSegments(query.trim()) : []
+    query.trim().length >= 2 ? searchSegments(query.trim()) : [],
   )
   ipcMain.handle(IPC.OverlayClickThrough, (_e, on: boolean) => setClickThrough(on))
 }

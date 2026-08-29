@@ -24,7 +24,7 @@ export async function rediarizeMeeting(meetingId: number, channels: number): Pro
     const transcripts = await sttProvider.transcribeFile(meeting.audioPath, {
       apiKey: deepgramApiKey,
       channels,
-      keyterms: getGlossaryTerms(meeting.jobId)
+      keyterms: getGlossaryTerms(meeting.jobId),
     })
     if (transcripts.length === 0) return false // don't wipe real segments for an empty result
 
@@ -40,7 +40,7 @@ export async function rediarizeMeeting(meetingId: number, channels: number): Pro
           tEndMs: t.tEndMs,
           speaker: who.speaker,
           isUser: who.isUser,
-          text: t.text
+          text: t.text,
         })
       }
     })()

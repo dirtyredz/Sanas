@@ -58,7 +58,7 @@ const migrations: string[] = [
     name       TEXT NOT NULL,
     PRIMARY KEY (meeting_id, speaker)
   );
-  `
+  `,
 ]
 
 export function runMigrations(db: Database): void {

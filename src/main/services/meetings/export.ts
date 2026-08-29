@@ -27,7 +27,7 @@ export async function exportMeetingMarkdown(meetingId: number): Promise<string |
     '',
     `- **Job:** ${job?.name ?? 'Unsorted'}`,
     `- **Started:** ${meeting.startedAt}${meeting.endedAt ? `  \n- **Ended:** ${meeting.endedAt}` : ''}`,
-    ''
+    '',
   ]
 
   if (meeting.summary) {
@@ -50,7 +50,7 @@ export async function exportMeetingMarkdown(meetingId: number): Promise<string |
         `### ${fmt(s.tMs)} — ${s.trigger === 'hotkey' ? 'Answer' : 'Whisper'}`,
         '',
         s.text,
-        ''
+        '',
       )
     }
   }
@@ -59,7 +59,7 @@ export async function exportMeetingMarkdown(meetingId: number): Promise<string |
   const { canceled, filePath } = await dialog.showSaveDialog({
     title: 'Export meeting',
     defaultPath: `${safeTitle}.md`,
-    filters: [{ name: 'Markdown', extensions: ['md'] }]
+    filters: [{ name: 'Markdown', extensions: ['md'] }],
   })
   if (canceled || !filePath) return null
   writeFileSync(filePath, lines.join('\n'), 'utf-8')

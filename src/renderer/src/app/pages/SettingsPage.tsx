@@ -25,7 +25,7 @@ export function SettingsPage(): React.JSX.Element {
       audioDeviceId: view.audioDeviceId,
       recordAudio: view.recordAudio,
       captureSystemAudio: view.captureSystemAudio,
-      overlayOpacity: view.overlayOpacity
+      overlayOpacity: view.overlayOpacity,
     }
     // Only send keys the user actually typed — empty means "keep existing".
     if (deepgramKey) patch.deepgramApiKey = deepgramKey
@@ -43,7 +43,12 @@ export function SettingsPage(): React.JSX.Element {
       <h2>Settings</h2>
 
       <label>
-        Deepgram API key {view.deepgramKeySet ? <span className="ok">✓ set</span> : <span className="warn">not set</span>}
+        Deepgram API key{' '}
+        {view.deepgramKeySet ? (
+          <span className="ok">✓ set</span>
+        ) : (
+          <span className="warn">not set</span>
+        )}
         <input
           type="password"
           placeholder={view.deepgramKeySet ? '•••••••• (leave blank to keep)' : 'dg_…'}
@@ -53,7 +58,12 @@ export function SettingsPage(): React.JSX.Element {
       </label>
 
       <label>
-        Anthropic API key {view.anthropicKeySet ? <span className="ok">✓ set</span> : <span className="warn">not set</span>}
+        Anthropic API key{' '}
+        {view.anthropicKeySet ? (
+          <span className="ok">✓ set</span>
+        ) : (
+          <span className="warn">not set</span>
+        )}
         <input
           type="password"
           placeholder={view.anthropicKeySet ? '•••••••• (leave blank to keep)' : 'sk-ant-…'}
@@ -69,7 +79,9 @@ export function SettingsPage(): React.JSX.Element {
           value={view.overlayHotkey}
           onChange={(e) => setView({ ...view, overlayHotkey: e.target.value })}
         />
-        <small>Electron accelerator format, e.g. CommandOrControl+Shift+Space. Takes effect on restart.</small>
+        <small>
+          Electron accelerator format, e.g. CommandOrControl+Shift+Space. Takes effect on restart.
+        </small>
       </label>
 
       <label>

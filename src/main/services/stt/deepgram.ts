@@ -4,7 +4,7 @@ import type {
   SttBatchTranscript,
   SttProvider,
   SttSession,
-  SttSessionOptions
+  SttSessionOptions,
 } from './types'
 
 // Deepgram streaming over Node's built-in WebSocket.
@@ -51,7 +51,7 @@ function buildUrl(keyterms: string[], channels: number): string {
     multichannel: channels > 1 ? 'true' : 'false',
     diarize: 'true',
     interim_results: 'true',
-    smart_format: 'true'
+    smart_format: 'true',
   })
   for (const term of keyterms) params.append('keyterm', term) // repeatable
   return `${WS_BASE}?${params}`
@@ -69,14 +69,14 @@ class DeepgramSession implements SttSession {
   async connect(): Promise<void> {
     const ws = new WebSocket(buildUrl(this.opts.keyterms, this.opts.channels), [
       'token',
-      this.opts.apiKey
+      this.opts.apiKey,
     ])
     await new Promise<void>((resolve, reject) => {
       ws.addEventListener('open', () => resolve(), { once: true })
       ws.addEventListener(
         'error',
         () => reject(new Error('Deepgram connection failed — check API key/network')),
-        { once: true }
+        { once: true },
       )
     })
     this.ws = ws
@@ -122,7 +122,7 @@ class DeepgramSession implements SttSession {
         speaker: words[0]?.speaker ?? -1,
         tStartMs: t(words[0]?.start ?? 0),
         tEndMs: t(words[words.length - 1]?.end ?? 0),
-        text
+        text,
       })
       return
     }
@@ -137,7 +137,7 @@ class DeepgramSession implements SttSession {
         speaker: run[0].speaker ?? -1,
         tStartMs: t(run[0].start),
         tEndMs,
-        text: run.map((w) => w.punctuated_word ?? w.word).join(' ')
+        text: run.map((w) => w.punctuated_word ?? w.word).join(' '),
       })
     }
   }
@@ -189,14 +189,14 @@ export const deepgramProvider: SttProvider = {
       model: 'nova-3',
       diarize: 'true',
       smart_format: 'true',
-      multichannel: opts.channels > 1 ? 'true' : 'false'
+      multichannel: opts.channels > 1 ? 'true' : 'false',
     })
     for (const term of opts.keyterms) params.append('keyterm', term)
 
     const res = await fetch(`https://api.deepgram.com/v1/listen?${params}`, {
       method: 'POST',
       headers: { Authorization: `Token ${opts.apiKey}`, 'Content-Type': 'audio/wav' },
-      body: new Uint8Array(readFileSync(wavPath))
+      body: new Uint8Array(readFileSync(wavPath)),
     })
     if (!res.ok) throw new Error(`Deepgram batch transcription failed (${res.status})`)
     const json = (await res.json()) as {
@@ -213,10 +213,10 @@ export const deepgramProvider: SttProvider = {
           speaker: run[0].speaker ?? -1,
           tStartMs: Math.round(run[0].start * 1000),
           tEndMs: Math.round(run[run.length - 1].end * 1000),
-          text: run.map((w) => w.punctuated_word ?? w.word).join(' ')
+          text: run.map((w) => w.punctuated_word ?? w.word).join(' '),
         })
       }
     }
     return out.sort((a, b) => a.tStartMs - b.tStartMs)
-  }
+  },
 }

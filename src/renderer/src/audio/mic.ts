@@ -17,7 +17,7 @@ export interface CaptureSession {
 
 export async function startCapture(
   deviceId: string,
-  captureSystemAudio: boolean
+  captureSystemAudio: boolean,
 ): Promise<CaptureSession> {
   const micStream = await navigator.mediaDevices.getUserMedia({
     audio: {
@@ -27,8 +27,8 @@ export async function startCapture(
       // AGC off too — gain pumping erases the level/timbre cues diarization needs
       echoCancellation: false,
       noiseSuppression: false,
-      autoGainControl: false
-    }
+      autoGainControl: false,
+    },
   })
 
   // System loopback rides getDisplayMedia; main's setDisplayMediaRequestHandler
@@ -54,7 +54,7 @@ export async function startCapture(
     channelCount: channels,
     channelCountMode: 'explicit',
     channelInterpretation: 'discrete', // never downmix — ch 0 stays mic, ch 1 loopback
-    processorOptions: { channels }
+    processorOptions: { channels },
   })
   node.port.onmessage = (ev: MessageEvent<ArrayBuffer>) => {
     window.sanas.meeting.sendAudio(ev.data)
@@ -79,6 +79,6 @@ export async function startCapture(
       micStream.getTracks().forEach((t) => t.stop())
       loopbackStream?.getTracks().forEach((t) => t.stop())
       await ctx.close()
-    }
+    },
   }
 }

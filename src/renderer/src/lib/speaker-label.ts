@@ -4,7 +4,7 @@
 export function speakerDisplay(
   speaker: number,
   isUser: boolean,
-  names?: Map<number, string>
+  names?: Map<number, string>,
 ): string {
   if (isUser) return 'Me'
   return names?.get(speaker) ?? (speaker >= 0 ? `S${speaker + 1}` : '?')

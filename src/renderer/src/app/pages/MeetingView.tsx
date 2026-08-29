@@ -4,7 +4,7 @@ import { speakerDisplay } from '../../lib/speaker-label'
 
 export function MeetingView({
   meeting,
-  onBack
+  onBack,
 }: {
   meeting: Meeting
   onBack: () => void
@@ -33,9 +33,9 @@ export function MeetingView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [meeting.id])
 
-  const speakers = [...new Set(segments.filter((s) => !s.isUser && s.speaker >= 0).map((s) => s.speaker))].sort(
-    (a, b) => a - b
-  )
+  const speakers = [
+    ...new Set(segments.filter((s) => !s.isUser && s.speaker >= 0).map((s) => s.speaker)),
+  ].sort((a, b) => a - b)
   const label = (s: Pick<Segment, 'speaker' | 'isUser'>): string =>
     speakerDisplay(s.speaker, s.isUser, names)
 
@@ -97,7 +97,10 @@ export function MeetingView({
       )}
 
       <div className="tab-bar">
-        <button className={tab === 'transcript' ? 'active' : ''} onClick={() => setTab('transcript')}>
+        <button
+          className={tab === 'transcript' ? 'active' : ''}
+          onClick={() => setTab('transcript')}
+        >
           Transcript
         </button>
         <button

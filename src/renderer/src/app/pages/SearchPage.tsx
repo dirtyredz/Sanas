@@ -54,9 +54,7 @@ export function SearchPage(): React.JSX.Element {
       </div>
 
       <div className="search-results">
-        {query.trim().length >= 2 && matches.length === 0 && (
-          <p className="muted">No matches.</p>
-        )}
+        {query.trim().length >= 2 && matches.length === 0 && <p className="muted">No matches.</p>}
         {matches.map((m, i) => (
           <button key={i} className="search-hit" onClick={() => setOpenMeeting(m.meeting)}>
             <span className="hit-meta">

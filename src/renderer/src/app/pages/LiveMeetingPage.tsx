@@ -49,7 +49,7 @@ export function LiveMeetingPage(): React.JSX.Element {
       const capture = await startCapture(settings.audioDeviceId, settings.captureSystemAudio)
       const st = await window.sanas.meeting.start(
         jobId === '' ? undefined : jobId,
-        capture.channels
+        capture.channels,
       )
       if (st.status === 'live') {
         micRef.current = capture

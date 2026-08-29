@@ -25,9 +25,7 @@ export function useSuggestion(): SuggestionView | null {
         setView({ trigger: ev.trigger, text: '', streaming: true, error: null })
       }
       if (ev.kind === 'delta') {
-        setView((prev) =>
-          prev ? { ...prev, text: prev.text + ev.text, streaming: true } : prev
-        )
+        setView((prev) => (prev ? { ...prev, text: prev.text + ev.text, streaming: true } : prev))
       } else if (ev.kind === 'done') {
         setView({ trigger: ev.trigger, text: ev.text, streaming: false, error: null })
       }

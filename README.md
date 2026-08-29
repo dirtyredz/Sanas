@@ -1,6 +1,6 @@
 # Sanas
 
-> *Sanas* (Scottish Gaelic): a whisper, a hint — and a glossary.
+> _Sanas_ (Scottish Gaelic): a whisper, a hint — and a glossary.
 
 A private, local-first **live meeting copilot**. Sanas listens to the room through your
 laptop mic, transcribes the conversation in real time, and quietly suggests what to say
@@ -14,8 +14,8 @@ each with its own projects, jargon, and talking points.
 - 🎙 **Listens** — mic capture of room audio (you + everyone else, acoustically)
 - 📝 **Transcribes** — Deepgram streaming STT with speaker separation, boosted by your per-job glossary
 - 🤖 **Assists** — Claude-powered suggestions in a small always-on-top overlay:
-  - *ambient*: short nudges when a question lands or a key moment hits
-  - *on-demand*: global hotkey → full "here's what to say" answer
+  - _ambient_: short nudges when a question lands or a key moment hits
+  - _on-demand_: global hotkey → full "here's what to say" answer
 - 🗂 **Organizes** — Jobs → Meetings → transcripts, suggestions, summaries; all in local SQLite
 
 ## Stack

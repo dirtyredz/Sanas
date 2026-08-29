@@ -7,12 +7,12 @@ const PACK_FIELDS = [
   { key: 'projectScope', label: 'Project scope', hint: 'What you are building/doing for them' },
   { key: 'notes', label: 'Notes', hint: 'Anything else the assistant should know' },
   { key: 'talkingPoints', label: 'Talking points', hint: 'Things to steer toward (or avoid)' },
-  { key: 'persona', label: 'Persona / tone', hint: 'How you want to come across' }
+  { key: 'persona', label: 'Persona / tone', hint: 'How you want to come across' },
 ] as const
 
 export function JobDetail({
   jobId,
-  onBack
+  onBack,
 }: {
   jobId: number
   onBack: () => void
@@ -43,7 +43,7 @@ export function JobDetail({
       projectScope: job.projectScope,
       notes: job.notes,
       talkingPoints: job.talkingPoints,
-      persona: job.persona
+      persona: job.persona,
     })
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)

@@ -37,10 +37,7 @@ class DownsampleProcessor extends AudioWorkletProcessor {
       for (let c = 0; c < this.channels; c++) {
         const q = this.queues[c]
         const s = q[idx] * (1 - frac) + q[idx + 1] * frac
-        this.out[this.outFrame * this.channels + c] = Math.max(
-          -32768,
-          Math.min(32767, s * 32768)
-        )
+        this.out[this.outFrame * this.channels + c] = Math.max(-32768, Math.min(32767, s * 32768))
       }
       this.readPos += this.ratio
       this.outFrame++

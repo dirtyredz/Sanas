@@ -18,7 +18,7 @@ are the user; S1/S2/… are other participants; labels may be imperfect).
 Your job: help the user decide what to say next. Be immediately usable — the user is
 reading you mid-conversation. Lead with the substance (a suggested reply, phrasing, or
 key point), not with analysis. Never mention that you are an AI or that a transcript
-exists. Transcription may contain errors; infer intent charitably.`
+exists. Transcription may contain errors; infer intent charitably.`,
   ]
 
   if (job) {
@@ -27,7 +27,7 @@ exists. Transcription may contain errors; infer intent charitably.`
       ['Project scope', job.projectScope],
       ['Notes', job.notes],
       ['Talking points (steer toward these when natural)', job.talkingPoints],
-      ['Persona — how the user wants to come across', job.persona]
+      ['Persona — how the user wants to come across', job.persona],
     ]
     const pack = sections
       .filter(([, v]) => v.trim())
@@ -38,17 +38,14 @@ exists. Transcription may contain errors; infer intent charitably.`
 
   if (glossary.length > 0) {
     parts.push(
-      `# Glossary\n${glossary.map((g) => `- ${g.term}${g.note ? `: ${g.note}` : ''}`).join('\n')}`
+      `# Glossary\n${glossary.map((g) => `- ${g.term}${g.note ? `: ${g.note}` : ''}`).join('\n')}`,
     )
   }
 
   return parts.join('\n\n')
 }
 
-export function buildUserContent(
-  window: TranscriptLine[],
-  trigger: 'ambient' | 'hotkey'
-): string {
+export function buildUserContent(window: TranscriptLine[], trigger: 'ambient' | 'hotkey'): string {
   const transcript = renderTranscriptWindow(window, WINDOW_CHARS)
 
   const ask =

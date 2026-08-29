@@ -15,7 +15,7 @@ export const claudeProvider: AssistantProvider = {
       output_config: { effort: req.effort },
       // job context pack is stable for the whole meeting — cache it
       system: [{ type: 'text', text: req.system, cache_control: { type: 'ephemeral' } }],
-      messages: [{ role: 'user', content: req.userContent }]
+      messages: [{ role: 'user', content: req.userContent }],
     })
     if (req.onDelta) stream.on('text', req.onDelta)
     const final = await stream.finalMessage()
@@ -23,5 +23,5 @@ export const claudeProvider: AssistantProvider = {
       .filter((b): b is Anthropic.TextBlock => b.type === 'text')
       .map((b) => b.text)
       .join('')
-  }
+  },
 }
