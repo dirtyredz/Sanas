@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { SettingsPage } from './pages/SettingsPage'
 import { LiveMeetingPage } from './pages/LiveMeetingPage'
 import { JobsPage } from './pages/JobsPage'

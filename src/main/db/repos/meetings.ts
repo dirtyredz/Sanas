@@ -1,5 +1,5 @@
 import { getDb } from '../index'
-import type { Meeting, Segment } from '@shared/types'
+import type { Meeting } from '@shared/types'
 
 export interface MeetingRow {
   id: number

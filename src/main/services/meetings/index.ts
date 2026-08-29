@@ -30,7 +30,6 @@ import { resetTriggers, shouldTrigger } from '../assistant/triggers'
 
 let session: SttSession | null = null
 let meetingId: number | null = null
-let meetingJobId: number | null = null
 let meetingChannels: ChannelCount = 1
 let meetingStartedAt = 0
 const userSpeakers = new Set<number>() // diarized indices pinned as "me"
@@ -70,7 +69,6 @@ export async function startMeeting(
   const job = jobId ?? ensureDefaultJob()
   const id = createMeeting(job, `Meeting ${new Date().toLocaleString()}`)
   meetingId = id
-  meetingJobId = job
   meetingChannels = channels
   meetingStartedAt = Date.now()
   userSpeakers.clear()
@@ -152,7 +150,6 @@ export async function stopMeeting(): Promise<MeetingState> {
       if (changed) broadcast(IPC.MeetingUpdated, endedId) // open views reload
     })
     meetingId = null
-    meetingJobId = null
   }
   const state: MeetingState = { meetingId: null, status: 'idle' }
   setState(state)
