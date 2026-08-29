@@ -1,0 +1,5 @@
+# Revisions to skip in `git blame` — mechanical reformatting, no authorship meaning.
+# Enable with: git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# style: format the codebase with prettier
+1730607cfb4593645f075ccd221ffadaf55ee50d
