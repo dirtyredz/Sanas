@@ -1,0 +1,14 @@
+# Build output and generated artifacts — never formatted.
+out/
+dist/
+build/
+node_modules/
+*.tsbuildinfo
+
+# Binary/asset trees.
+assets/
+resources/
+screenshots/
+
+# Lockfiles are the package manager's, not ours.
+package-lock.json
