@@ -24,7 +24,17 @@ export function SearchPage(): React.JSX.Element {
   }, [query])
 
   if (openMeeting) {
-    return <MeetingView meeting={openMeeting} onBack={() => setOpenMeeting(null)} />
+    return (
+      <MeetingView
+        meeting={openMeeting}
+        onBack={() => {
+          setOpenMeeting(null)
+          // Same reason JobDetail refetches here: the meeting may have been renamed, moved to
+          // another job, or deleted while open, and these results carry its old job name.
+          if (query.trim().length >= 2) window.sanas.meetings.search(query).then(setMatches)
+        }}
+      />
+    )
   }
 
   const highlight = (text: string): React.JSX.Element => {
