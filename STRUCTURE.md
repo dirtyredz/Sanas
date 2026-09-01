@@ -32,14 +32,41 @@ sanas/
 │   │   └── config/              # settings + API key storage
 │   ├── preload/                 # contextBridge API surface (typed)
 │   ├── renderer/                # vite root: index.html (library) + overlay.html
+│   │   ├── public/              # AudioWorklet processor served as a static asset (not bundled)
 │   │   └── src/
 │   │       ├── app/             # library UI (React): App, pages/, styles
 │   │       ├── overlay-app/     # overlay UI (React, separate tiny bundle)
-│   │       └── audio/           # (Phase 1) mic capture + AudioWorklet downsample
+│   │       ├── audio/           # (Phase 1) mic capture + AudioWorklet downsample
+│   │       └── lib/             # renderer-side hooks + pure helpers shared across pages
 │   └── shared/                  # IPC channel types, domain types (Job, Meeting, Segment…)
+├── scripts/                     # repo tooling (git-hook install, pre-commit)
+├── .github/workflows/           # CI
 ├── docs/                        # living docs (this set)
 └── STRUCTURE.md
 ```
+
+**Enforced homes:**
+
+- `src/main/windows/` — BrowserWindow builders (library window, overlay window)
+- `src/main/ipc/` — typed IPC channel handlers; validate + delegate, no business logic
+- `src/main/services/` — main-process services and provider seams: `stt/`, `assistant/`,
+  `meetings/`, `audio-store/`, plus main-side transcript formatting
+- `src/main/db/` — better-sqlite3 connection + schema migrations
+- `src/main/db/repos/` — per-entity repositories; the only place SQL strings live
+- `src/main/config/` — settings persistence + API key storage
+- `src/preload/` — contextBridge API surface exposed to the renderers, and its type declaration
+- `src/renderer/src/app/` — library UI React app: root component, entry point, global styles
+- `src/renderer/src/app/pages/` — one React component per library UI route/page
+- `src/renderer/src/overlay-app/` — overlay UI React app (separate, deliberately tiny bundle)
+- `src/renderer/src/audio/` — renderer-side mic capture + AudioWorklet downsampling
+- `src/renderer/src/lib/` — renderer hooks and pure helpers shared across pages
+- `src/renderer/public/` — AudioWorklet processors and other assets served unbundled
+- `src/shared/` — types shared by main, preload and renderer (IPC channels, domain models)
+- `scripts/` — repo tooling scripts (git-hook installation, pre-commit)
+
+Deliberately _not_ homes: the repo root (config + docs only), `src/main/` itself and
+`src/renderer/src/` itself. New main-process code belongs in a responsibility folder above,
+not beside `index.ts` / `system-audio.ts`.
 
 ## Responsibility boundaries (the seams that matter)
 
