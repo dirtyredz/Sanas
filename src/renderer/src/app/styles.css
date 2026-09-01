@@ -464,6 +464,27 @@ body {
   border-radius: 2px;
 }
 
+.meeting-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.job-move {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.job-move select {
+  background: var(--panel);
+  border: 1px solid #2e333d;
+  border-radius: 6px;
+  color: var(--text);
+  padding: 4px 8px;
+  font-size: 0.85rem;
+}
+
 .speaker-editor {
   display: flex;
   flex-wrap: wrap;

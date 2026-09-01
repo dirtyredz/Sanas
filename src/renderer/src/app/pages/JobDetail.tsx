@@ -31,7 +31,16 @@ export function JobDetail({
   }, [jobId])
 
   if (openMeeting) {
-    return <MeetingView meeting={openMeeting} onBack={() => setOpenMeeting(null)} />
+    return (
+      <MeetingView
+        meeting={openMeeting}
+        onBack={() => {
+          setOpenMeeting(null)
+          // meeting may have been renamed/moved/deleted while open
+          window.sanas.meetings.list(jobId).then(setMeetings)
+        }}
+      />
+    )
   }
   if (!job) return <p className="muted">Loading…</p>
 

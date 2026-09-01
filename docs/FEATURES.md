@@ -21,13 +21,13 @@ _Capability inventory. Status: ✅ done · 🔨 in progress · 📋 planned · �
 
 ## Organization
 
-| Feature                                                                            | Status | Notes                                          |
-| ---------------------------------------------------------------------------------- | ------ | ---------------------------------------------- |
-| Jobs (create/edit/archive)                                                         | ✅     | archive UI pending, repo supports it           |
-| Job context pack: company info, project scope, notes, talking points, persona/tone | ✅     | feeds AI in Phase 3                            |
-| Per-job glossary (terms + notes)                                                   | ✅     | feeds STT now, AI in Phase 3                   |
-| Meetings under a job; transcript view                                              | ✅     | job picker on Live, history per job, rename    |
-| Post-meeting summary + action items                                                | ✅     | fire-and-forget on stop; shown in meeting view |
+| Feature                                                                            | Status | Notes                                                            |
+| ---------------------------------------------------------------------------------- | ------ | ---------------------------------------------------------------- |
+| Jobs (create/edit/archive)                                                         | ✅     | archive UI pending, repo supports it                             |
+| Job context pack: company info, project scope, notes, talking points, persona/tone | ✅     | feeds AI in Phase 3                                              |
+| Per-job glossary (terms + notes)                                                   | ✅     | feeds STT now, AI in Phase 3                                     |
+| Meetings under a job; transcript view                                              | ✅     | job picker on Live, history per job, rename, move to another job |
+| Post-meeting summary + action items                                                | ✅     | fire-and-forget on stop; shown in meeting view                   |
 
 ## App
 

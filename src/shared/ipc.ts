@@ -33,6 +33,7 @@ export const IPC = {
   MeetingsList: 'meetings:list',
   MeetingsDelete: 'meetings:delete',
   MeetingsRename: 'meetings:rename',
+  MeetingsMove: 'meetings:move',
   MeetingsExport: 'meetings:export',
   SegmentsList: 'segments:list',
   SuggestionsList: 'suggestions:list',

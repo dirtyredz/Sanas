@@ -42,6 +42,10 @@ export function getMeeting(meetingId: number): Meeting | null {
   return row ? toMeeting(row) : null
 }
 
+export function moveMeetingToJob(meetingId: number, jobId: number): void {
+  getDb().prepare(`UPDATE meetings SET job_id = ? WHERE id = ?`).run(jobId, meetingId)
+}
+
 export function renameMeeting(meetingId: number, title: string): void {
   getDb().prepare(`UPDATE meetings SET title = ? WHERE id = ?`).run(title, meetingId)
 }

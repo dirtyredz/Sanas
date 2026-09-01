@@ -79,6 +79,8 @@ const api = {
       ipcRenderer.invoke(IPC.SuggestionsList, meetingId),
     rename: (meetingId: number, title: string): Promise<void> =>
       ipcRenderer.invoke(IPC.MeetingsRename, meetingId, title),
+    move: (meetingId: number, jobId: number): Promise<void> =>
+      ipcRenderer.invoke(IPC.MeetingsMove, meetingId, jobId),
     export: (meetingId: number): Promise<string | null> =>
       ipcRenderer.invoke(IPC.MeetingsExport, meetingId),
     search: (

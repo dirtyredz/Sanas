@@ -20,7 +20,7 @@ import {
   addGlossaryTerm,
   removeGlossaryTerm,
 } from '../db/repos/jobs'
-import { listMeetings, deleteMeeting, renameMeeting } from '../db/repos/meetings'
+import { listMeetings, deleteMeeting, renameMeeting, moveMeetingToJob } from '../db/repos/meetings'
 import { listSegments, searchSegments } from '../db/repos/segments'
 import { exportMeetingMarkdown } from '../services/meetings/export'
 import { listSuggestions } from '../db/repos/suggestions'
@@ -71,6 +71,7 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.MeetingsList, (_e, jobId: number) => listMeetings(jobId))
   ipcMain.handle(IPC.MeetingsDelete, (_e, id: number) => deleteMeeting(id))
   ipcMain.handle(IPC.MeetingsRename, (_e, id: number, title: string) => renameMeeting(id, title))
+  ipcMain.handle(IPC.MeetingsMove, (_e, id: number, jobId: number) => moveMeetingToJob(id, jobId))
   ipcMain.handle(IPC.MeetingsExport, (_e, id: number) => exportMeetingMarkdown(id))
   ipcMain.handle(IPC.SegmentsList, (_e, meetingId: number) => listSegments(meetingId))
   ipcMain.handle(IPC.SuggestionsList, (_e, meetingId: number) => listSuggestions(meetingId))

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { Meeting, Segment, Suggestion } from '@shared/types'
+import type { Job, Meeting, Segment, Suggestion } from '@shared/types'
 import { speakerDisplay } from '../../lib/speaker-label'
 
 export function MeetingView({
@@ -15,6 +15,8 @@ export function MeetingView({
   const [tab, setTab] = useState<'transcript' | 'suggestions'>('transcript')
   const [title, setTitle] = useState(meeting.title)
   const [exported, setExported] = useState('')
+  const [jobs, setJobs] = useState<Job[]>([])
+  const [jobId, setJobId] = useState(meeting.jobId)
 
   const reload = (): void => {
     window.sanas.meetings.segments(meeting.id).then(setSegments)
@@ -26,6 +28,7 @@ export function MeetingView({
   useEffect(() => {
     reload()
     window.sanas.meetings.suggestions(meeting.id).then(setSuggestions)
+    window.sanas.jobs.list().then(setJobs)
     // re-diarization rewrote this meeting's record — refresh so edits target real indices
     return window.sanas.meetings.onUpdated((id) => {
       if (id === meeting.id) reload()
@@ -78,9 +81,26 @@ export function MeetingView({
         </button>
       </div>
       {exported && <p className="ok">Saved to {exported}</p>}
-      <p className="muted">
+      <p className="muted meeting-meta">
         {meeting.startedAt}
         {meeting.endedAt ? ` → ${meeting.endedAt}` : ' (never ended)'}
+        <span className="job-move">
+          Job:
+          <select
+            value={jobId}
+            onChange={(e) => {
+              const target = Number(e.target.value)
+              setJobId(target)
+              window.sanas.meetings.move(meeting.id, target)
+            }}
+          >
+            {jobs.map((j) => (
+              <option key={j.id} value={j.id}>
+                {j.name}
+              </option>
+            ))}
+          </select>
+        </span>
       </p>
 
       {meeting.summary && (
