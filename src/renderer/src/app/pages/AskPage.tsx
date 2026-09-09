@@ -14,6 +14,9 @@ interface Exchange {
   error: string | null
 }
 
+let placeholderSeq = 0 // placeholder ids: unique even for two asks in one millisecond
+const EARLY_LIMIT = 8 // asks whose events may wait for their id; older ones are dropped
+
 function apply(x: Exchange, ev: HistoryEvent): Exchange {
   if (ev.kind === 'delta') return { ...x, answer: x.answer + ev.text }
   if (ev.kind === 'done') return { ...x, answer: ev.text, streaming: false }
@@ -41,6 +44,10 @@ export function AskPage(): React.JSX.Element {
       window.sanas.history.onEvent((ev) => {
         if (!known.current.has(ev.askId)) {
           early.current.set(ev.askId, [...(early.current.get(ev.askId) ?? []), ev])
+          // an ask whose invoke never resolves would otherwise pin its events forever
+          while (early.current.size > EARLY_LIMIT) {
+            early.current.delete(early.current.keys().next().value as number)
+          }
           return
         }
         setExchanges((prev) => prev.map((x) => (x.askId === ev.askId ? apply(x, ev) : x)))
@@ -58,7 +65,7 @@ export function AskPage(): React.JSX.Element {
     const q = question.trim()
     if (!q || busy) return
     setQuestion('')
-    const temp = -Date.now()
+    const temp = -++placeholderSeq
     setExchanges((prev) => [
       ...prev,
       { askId: temp, question: q, answer: '', sources: [], streaming: true, error: null },

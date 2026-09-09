@@ -3,8 +3,8 @@
 // and anything showing a snippet as plain text strips them. Control characters cannot
 // occur in transcribed speech, so they never collide with content.
 
-export const MATCH_OPEN = ''
-export const MATCH_CLOSE = ''
+export const MATCH_OPEN = '\u0001'
+export const MATCH_CLOSE = '\u0002'
 
 /** Plain text: markers removed. */
 export function stripMatchMarkers(s: string): string {

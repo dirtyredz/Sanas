@@ -41,6 +41,11 @@ function requireText(v: unknown, what: string, max: number): string {
   return v.trim()
 }
 
+/** Optional free text: a string capped at `max`; anything else becomes empty ("clear"). */
+function optionalText(v: unknown, max: number): string {
+  return typeof v === 'string' ? v.slice(0, max) : ''
+}
+
 /** Ingress check for row ids: preload's TypeScript types do not survive the IPC hop. */
 function requireId(v: unknown, what: string): number {
   if (typeof v !== 'number' || !Number.isSafeInteger(v) || v <= 0) {
@@ -77,14 +82,20 @@ export function registerIpcHandlers(): void {
 
   // jobs + context packs
   ipcMain.handle(IPC.JobsList, () => listJobs())
-  ipcMain.handle(IPC.JobsCreate, (_e, name: string) => createJob(name))
+  ipcMain.handle(IPC.JobsCreate, (_e, name: unknown) =>
+    createJob(requireText(name, 'job name', 120)),
+  )
   ipcMain.handle(IPC.JobsUpdate, (_e, job: Omit<Job, 'createdAt' | 'archived'>) => updateJob(job))
   ipcMain.handle(IPC.JobsArchive, (_e, id: unknown, archived: boolean) =>
     setJobArchived(requireId(id, 'job id'), archived),
   )
   ipcMain.handle(IPC.GlossaryList, (_e, jobId: unknown) => listGlossary(requireId(jobId, 'job id')))
-  ipcMain.handle(IPC.GlossaryAdd, (_e, jobId: unknown, term: string, note: string) =>
-    addGlossaryTerm(requireId(jobId, 'job id'), term, note),
+  ipcMain.handle(IPC.GlossaryAdd, (_e, jobId: unknown, term: unknown, note: unknown) =>
+    addGlossaryTerm(
+      requireId(jobId, 'job id'),
+      requireText(term, 'term', 100),
+      optionalText(note, 500),
+    ),
   )
   ipcMain.handle(IPC.GlossaryRemove, (_e, id: unknown) =>
     removeGlossaryTerm(requireId(id, 'glossary id')),
@@ -97,8 +108,8 @@ export function registerIpcHandlers(): void {
       throw new Error('The recording is still in use by another program — try again in a moment.')
     }
   })
-  ipcMain.handle(IPC.MeetingsRename, (_e, id: unknown, title: string) =>
-    renameMeeting(requireId(id, 'meeting id'), title),
+  ipcMain.handle(IPC.MeetingsRename, (_e, id: unknown, title: unknown) =>
+    renameMeeting(requireId(id, 'meeting id'), requireText(title, 'title', 200)),
   )
   ipcMain.handle(IPC.MeetingsMove, (_e, id: unknown, jobId: unknown) =>
     moveMeetingToJob(requireId(id, 'meeting id'), requireId(jobId, 'job id')),
@@ -122,8 +133,8 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.SpeakersList, (_e, meetingId: unknown) =>
     listSpeakerNames(requireId(meetingId, 'meeting id')),
   )
-  ipcMain.handle(IPC.SpeakersRename, (_e, meetingId: unknown, speaker: number, name: string) =>
-    setSpeakerName(requireId(meetingId, 'meeting id'), speaker, name),
+  ipcMain.handle(IPC.SpeakersRename, (_e, meetingId: unknown, speaker: number, name: unknown) =>
+    setSpeakerName(requireId(meetingId, 'meeting id'), speaker, optionalText(name, 100)),
   )
   ipcMain.handle(IPC.SpeakersMerge, (_e, meetingId: unknown, from: number, to: number) =>
     mergeSpeakers(requireId(meetingId, 'meeting id'), from, to),

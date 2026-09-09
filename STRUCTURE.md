@@ -134,9 +134,10 @@ not beside `index.ts` / `system-audio.ts`.
   chosen design. A second builder of that config (none planned) is the point to extract
   `smtpConfigFromSettings()`, not before.
 - `ipc/` runtime-validates row ids at ingress (`requireId`, 2026-09-09) but still trusts
-  preload's TypeScript types for object payloads (job update, glossary add, settings patch);
-  free-text inputs (search, ask, rename) are checked. Shape-checking the objects is
-  docs/BACKLOG.md P2.
+  preload's TypeScript types for object payloads (job update, settings patch); free text is
+  checked at ingress (`requireText` / `optionalText`: ask, rename, job name, glossary term and
+  note, speaker name; search is length-checked inline and returns nothing for under two
+  characters). Shape-checking the objects is docs/BACKLOG.md P2.
 
 (2026-08-27 review: transcript formatting/windowing extracted to
 `services/transcript-format.ts`; summary prompt moved into `assistant/prompts.ts`.

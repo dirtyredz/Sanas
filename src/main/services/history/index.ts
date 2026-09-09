@@ -15,8 +15,8 @@ import { formatClockMs, speakerLabel } from '../transcript-format'
 // every segment, optionally one job; each hit is shown to the model with its neighbours
 // so a one-line match carries its context. The answer streams to the windows as
 // HistoryEvents; the sources go back synchronously so the UI can show where the answer
-// will come from while it is being written — and only the meetings that actually fit
-// into the prompt are reported as sources.
+// will come from while it is being written — and only the meetings whose matched lines
+// actually made it into the prompt are reported as sources.
 
 const HITS = 24 // ranked segments to consider
 const RADIUS = 2 // neighbouring segments on each side of a hit
@@ -32,6 +32,8 @@ export function searchTranscripts(query: string): SearchMatch[] {
 
 interface Excerpt {
   hit: HistoryHit
+  /** ids of the segments that matched (the rest of `lines` is their context) */
+  hitIds: Set<number>
   lines: Segment[]
 }
 
@@ -46,6 +48,7 @@ export function retrieveHistory(question: string, jobId?: number): Excerpt[] {
       const seen = new Set(ex.lines.map((s) => s.id))
       ex.lines.push(...around.filter((s) => !seen.has(s.id)))
       ex.lines.sort((a, b) => a.tStartMs - b.tStartMs)
+      ex.hitIds.add(h.segmentId)
     } else {
       byMeeting.set(h.meeting.id, {
         hit: {
@@ -56,6 +59,7 @@ export function retrieveHistory(question: string, jobId?: number): Excerpt[] {
           tStartMs: h.tStartMs,
           snippet: stripMatchMarkers(h.snippet),
         },
+        hitIds: new Set([h.segmentId]),
         lines: around,
       })
     }
@@ -63,9 +67,11 @@ export function retrieveHistory(question: string, jobId?: number): Excerpt[] {
   return [...byMeeting.values()].slice(0, MAX_SOURCES)
 }
 
-/** Excerpts → the text the model reads (one block per meeting, labelled lines) and the
- *  meetings that made it in. The budget is applied line by line, so the first meeting
- *  always contributes something and a source is never reported that the model never saw. */
+/** Excerpts → the text the model reads (one block per meeting, labelled lines in time
+ *  order) and the meetings that made it in. The budget is applied line by line with the
+ *  matched lines claimed first, so a meeting is only reported as a source when at least
+ *  one of its matched lines is in the prompt; the very first matched line is always
+ *  included, so a real hit can never be reported as "nothing found". */
 export function renderExcerpts(excerpts: Excerpt[]): { text: string; included: HistoryHit[] } {
   const blocks: string[] = []
   const included: HistoryHit[] = []
@@ -73,16 +79,23 @@ export function renderExcerpts(excerpts: Excerpt[]): { text: string; included: H
   for (const ex of excerpts) {
     const names = speakerNameMap(ex.hit.meetingId)
     const header = `## ${ex.hit.title} — ${ex.hit.startedAt.slice(0, 10)} (${ex.hit.jobName})`
-    const lines: string[] = []
+    const render = (s: Segment): string =>
+      `[${formatClockMs(s.tStartMs)}] ${speakerLabel(s, names)}: ${s.text}`
+    const matched = ex.lines.filter((s) => ex.hitIds.has(s.id))
+    const context = ex.lines.filter((s) => !ex.hitIds.has(s.id))
+    const chosen = new Map<number, string>()
     let size = header.length
-    for (const s of ex.lines) {
-      const line = `[${formatClockMs(s.tStartMs)}] ${speakerLabel(s, names)}: ${s.text}`
-      if (used + size + line.length + 1 > MAX_CHARS) break
-      lines.push(line)
+    for (const s of [...matched, ...context]) {
+      const line = render(s)
+      const fits = used + size + line.length + 1 <= MAX_CHARS
+      const mustHave = included.length === 0 && chosen.size === 0 // first line of the first source
+      if (!fits && !mustHave) continue
+      chosen.set(s.id, line)
       size += line.length + 1
     }
-    if (lines.length === 0) continue // nothing of this meeting fits any more
-    blocks.push([header, ...lines].join('\n'))
+    if (!matched.some((s) => chosen.has(s.id))) continue // no matched line fit: not a source
+    const body = ex.lines.filter((s) => chosen.has(s.id)).map((s) => chosen.get(s.id)!)
+    blocks.push([header, ...body].join('\n'))
     included.push(ex.hit)
     used += size + 2
   }
