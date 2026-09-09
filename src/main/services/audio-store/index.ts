@@ -79,7 +79,14 @@ export async function startRecording(
   })
   s.on('error', (e: Error) => {
     if (stream === s) discardRecording()
-    onError(e)
+    // an exception thrown here escapes the EventEmitter and kills main — and the most
+    // likely caller failure is the same one that broke the stream (a full disk failing
+    // the SQLite write that clears the meeting's audio_path)
+    try {
+      onError(e)
+    } catch (callbackError) {
+      console.warn('[sanas] recording error handler failed:', callbackError)
+    }
   })
   stream = s
   currentPath = path

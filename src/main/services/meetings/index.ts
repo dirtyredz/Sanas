@@ -56,6 +56,7 @@ let meetingChannels: ChannelCount = 1
 let paused = false
 let audioMsReceived = 0 // the meeting's clock: audio actually captured, in ms
 const userSpeakers = new Set<number>() // diarized indices pinned as "me"
+const lostRecordings = new Set<number>() // meetings whose WAV died while they were running
 const transcriptWindow: TranscriptLine[] = [] // rolling finals for prompt assembly
 let systemPrompt = '' // stable per meeting (cached by the provider)
 let suggestionBusy = false
@@ -88,7 +89,14 @@ function recordingFailure(e: unknown): string {
  *  audio by re-diarization or export. Retention sweeps the file as an orphan. */
 function onRecordingLost(id: number, e: Error): void {
   console.warn('[sanas] recording stopped mid-meeting:', e)
-  clearMeetingAudioPath(id)
+  // in memory first: the disk that broke the recording can just as easily fail the write
+  // below, and re-diarization must not read a truncated WAV either way
+  lostRecordings.add(id)
+  try {
+    clearMeetingAudioPath(id)
+  } catch (dbError) {
+    console.warn('[sanas] could not clear the audio path for meeting', id, dbError)
+  }
   if (meetingId !== id) return
   setState({
     ...currentState(),
@@ -184,15 +192,15 @@ export function startMeeting(jobId?: number, channels: ChannelCount = 1): Promis
     resetTriggers()
     systemPrompt = buildSystemPrompt(getJob(job), listGlossary(job))
 
+    // held back until the recording is open too: sendAudioChunk accepts nothing until the
+    // session is published, so the provider, the WAV and the clock all begin on the same
+    // chunk rather than the file starting after the transcript
+    let opened: SttSession
     try {
-      // connect BEFORE recording or counting: sendAudioChunk ignores audio until a
-      // session exists, so the WAV, the meeting clock and the provider's own clock all
-      // start at the same instant rather than the provider's starting late
-      session = await openSession(settings.deepgramApiKey, 0)
+      opened = await openSession(settings.deepgramApiKey, 0)
     } catch (e) {
       // never leave a meeting row open with no way back to it
       endMeeting(id)
-      session = null
       meetingId = null
       return setState({
         meetingId: null,
@@ -221,6 +229,7 @@ export function startMeeting(jobId?: number, channels: ChannelCount = 1): Promis
         console.warn('[sanas] could not start recording:', e)
       }
     }
+    session = opened // from here, audio is accepted
     return setState({
       meetingId: id,
       status: 'live',
@@ -292,6 +301,9 @@ export function stopMeeting(): Promise<MeetingState> {
       const window = [...transcriptWindow]
       const prompt = systemPrompt
       const channels = meetingChannels
+      // a WAV that died mid-meeting is truncated: re-diarizing from it would replace the
+      // whole transcript with the part that made it to disk
+      const recordingLost = lostRecordings.delete(endedId)
       // fire-and-forget: summarize (+ optional auto-email) and re-diarize; open views
       // reload. Both rewrite the meeting, so it is off-limits to merge until they finish.
       markPostProcessing(endedId)
@@ -303,9 +315,11 @@ export function stopMeeting(): Promise<MeetingState> {
             return autoEmailSummary(endedId)
           })
           .catch((e) => console.warn('[sanas] meeting summary failed:', e)),
-        rediarizeMeeting(endedId, channels).then((changed) => {
-          if (changed) broadcast(IPC.MeetingUpdated, endedId) // open views reload
-        }),
+        recordingLost
+          ? Promise.resolve()
+          : rediarizeMeeting(endedId, channels).then((changed) => {
+              if (changed) broadcast(IPC.MeetingUpdated, endedId) // open views reload
+            }),
       ]).then(() => clearPostProcessing(endedId))
       meetingId = null
     }

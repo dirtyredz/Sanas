@@ -161,10 +161,16 @@ _Non-obvious traps. Read before touching the related area._
   is closed, so those chunks reach the WAV but never the provider — a gap in the live
   transcript that post-meeting re-diarization recovers (it reads the WAV) only when
   recording is on. Buffering that audio for replay is docs/BACKLOG.md P2.
-- **No audio is accepted before the STT session is open.** `startMeeting` connects first and
-  only then starts recording, because a chunk taken in between would land in the WAV and the
-  clock without ever reaching the provider — the first seconds of the meeting would read as
-  transcript the provider never produced.
+- **No audio is accepted before BOTH the STT session and the recording are ready.** The
+  session is opened, the WAV is opened, and only then is the session published to
+  `sendAudioChunk` — so the provider, the file and the clock all begin on the same chunk.
+  Publishing the session first would transcribe and count the audio that arrived while the
+  file was still opening, leaving the WAV short of the opening words and a later
+  re-diarization free to drop them from the transcript.
+- **A recording lost mid-meeting is not re-diarized from.** `lostRecordings` remembers it in
+  memory, because the disk that killed the WAV can also fail the write that clears
+  `audio_path` — and re-diarization replaces the WHOLE transcript, so a truncated file
+  would silently cut the meeting down to the part that reached disk.
 - **A recording that will not open does not take the meeting down.** It is opt-in and not
   what the meeting is for, so `startMeeting` stays live and returns the reason in
   `MeetingState.error` — silence there would leave the user believing a WAV exists to
