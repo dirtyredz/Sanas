@@ -57,6 +57,8 @@ _Prioritized task trough. P0 = next up, P1 = soon, P2 = someday._
 ## P2 — Post-v1 ideas
 
 - [x] Merge meetings into one — job page selection, wall-clock offsets, speaker blocks (2026-09-09)
+- [ ] Buffer PCM through the provider's reconnect backoff and replay it, so a brief network
+      blip does not leave an untranscribed gap (today those chunks reach the WAV only)
 - [ ] Global hotkey for pause/resume, so an interruption can be handled without the window
 - [ ] Main-process log to a file: `electron-vite dev` does not forward the Electron child's
       stdout, so `console.log` from main is invisible outside DevTools

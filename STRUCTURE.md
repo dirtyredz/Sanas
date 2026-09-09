@@ -28,7 +28,8 @@ sanas/
 │   │   │   │                    #   (compose + send), channel-identity (ch0=user, one place),
 │   │   │   │                    #   speaker-carryover (pins + names across re-diarization),
 │   │   │   │                    #   remove (audio file + row — the one delete path),
-│   │   │   │                    #   merge + merge-plan (fold split recordings into one meeting)
+│   │   │   │                    #   merge + merge-plan (fold split recordings into one meeting),
+│   │   │   │                    #   post-processing (what is still being rewritten after stop)
 │   │   │   ├── email/           # EmailProvider seam + smtp.ts (nodemailer transport)
 │   │   │   ├── retention/       # age-based clean-up of recordings / whole meetings (timer + on demand)
 │   │   │   ├── history/         # ask-your-history: FTS5 retrieval + grounded, streamed answer

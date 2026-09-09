@@ -2,6 +2,19 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-09-09 — A meeting's clock is the audio it captured
+
+Pause forced the question of what a meeting's timeline actually measures. Three candidates:
+wall time (wrong — a 20-minute pause would push every later timestamp out of step with the
+recording), the provider's last transcript time (wrong in a subtler way — it only advances
+on a final result, so pausing mid-silence rewinds the clock and the resumed session
+overwrites stored segments), and the audio actually captured. The last is the only one that
+matches every consumer: the WAV holds exactly that audio, so live timestamps, suggestion
+timestamps and post-meeting re-diarization all agree, and pausing simply stops the count.
+The orchestrator owns it (`audioMsReceived`, counted in `sendAudioChunk`) rather than the
+STT provider, which cannot see audio the socket dropped; the seam only takes a
+`startOffsetMs` telling a new connection where its clock begins.
+
 ## 2026-09-09 — Pause keeps one meeting; a lost connection pauses rather than errors
 
 Reported from a real call: the internet dropped mid-meeting, and the only way forward was

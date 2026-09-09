@@ -1,18 +1,24 @@
 import type { Meeting } from '@shared/types'
 import { getDb } from '../../db'
-import { deleteMeeting, getMeeting, updateMeetingSpan } from '../../db/repos/meetings'
+import { applyMerge, deleteMeeting, getMeeting } from '../../db/repos/meetings'
 import { maxSpeaker, reassignSegments } from '../../db/repos/segments'
 import { reassignSuggestions } from '../../db/repos/suggestions'
 import { reassignSpeakerNames } from '../../db/repos/speakers'
+import { isPostProcessing } from './post-processing'
+import { removeAudioFile } from './remove'
 import { planMerge, type MergePart } from './merge-plan'
 
 // Folds several meeting rows into one — the repair for a conversation that a dropped
 // connection split into pieces before Pause existed, and for any stop/start done by hand.
 // The rules live in merge-plan.ts; this is the database half.
+//
+// Every part's recording is deleted, including the kept one's. A merged meeting spans
+// audio that no single WAV holds, so the survivor would misrepresent it — and worse,
+// post-meeting re-diarization reads that WAV and replaces the WHOLE transcript, which
+// would silently reduce a merged meeting back to one part. Dropping the audio is the
+// honest trade: the transcript is what the merge is for.
 
-function toPart(id: number): MergePart {
-  const m = getMeeting(id)
-  if (!m) throw new Error(`Meeting ${id} no longer exists.`)
+function toPart(m: Meeting): MergePart {
   return {
     id: m.id,
     jobId: m.jobId,
@@ -25,9 +31,18 @@ function toPart(id: number): MergePart {
 }
 
 /** Merges the given meetings into their earliest one and returns the result.
- *  Irreversible: the other rows are deleted once their contents have moved. */
+ *  Irreversible: the other rows and every part's recording are deleted. */
 export function mergeMeetings(ids: number[]): Meeting {
-  const plan = planMerge(ids.map(toPart))
+  const parts = ids.map((id) => {
+    const m = getMeeting(id)
+    if (!m) throw new Error(`Meeting ${id} no longer exists.`)
+    if (isPostProcessing(id)) {
+      throw new Error(`"${m.title}" is still being summarised — try again in a moment.`)
+    }
+    return m
+  })
+  const plan = planMerge(parts.map(toPart))
+
   getDb().transaction(() => {
     for (const step of plan.steps) {
       reassignSegments(step.from, plan.keepId, step.timeOffsetMs, step.speakerOffset)
@@ -35,8 +50,13 @@ export function mergeMeetings(ids: number[]): Meeting {
       reassignSpeakerNames(step.from, plan.keepId, step.speakerOffset)
       deleteMeeting(step.from) // its rows have moved, so nothing is left to cascade
     }
-    updateMeetingSpan(plan.keepId, plan.endedAt, plan.summary, plan.actionItems)
+    applyMerge(plan.keepId, plan.endedAt, plan.summary, plan.actionItems)
   })()
+
+  // files only after the row is committed: an orphaned file is recoverable, a row
+  // pointing at a file that is no longer there is not
+  for (const m of parts) removeAudioFile(m.audioPath)
+
   console.log(
     `[sanas] merged ${plan.steps.length + 1} meetings into ${plan.keepId}:`,
     plan.steps

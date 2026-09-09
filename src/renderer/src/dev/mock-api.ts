@@ -371,7 +371,7 @@ const api: SanasApi = {
       setState({ meetingId: state.meetingId, status: 'paused' })
       return state
     },
-    resume: async () => {
+    resume: async (_channels) => {
       const id = state.meetingId ?? 99
       setState({ meetingId: id, status: 'live' })
       setTimeout(() => runScript(id, scriptAt, scriptTimeMs), 600)

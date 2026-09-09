@@ -77,13 +77,14 @@ export function LiveMeetingPage(): React.JSX.Element {
     }
   }, [live])
 
-  // stop the mic if the meeting ends or dies; pause/resume manage it themselves
+  // the mic stops whenever we are not live — including a pause forced by main after a
+  // lost connection, which the Pause button never ran
   useEffect(() => {
-    if (!active && micRef.current) {
+    if (!live && micRef.current) {
       micRef.current.stop()
       micRef.current = null
     }
-  }, [active])
+  }, [live])
   useEffect(() => () => void micRef.current?.stop(), [])
 
   /** Opens the mic (and loopback in This PC mode) for the chosen source. */
@@ -138,8 +139,12 @@ export function LiveMeetingPage(): React.JSX.Element {
     setBusy(true)
     setMicError('')
     try {
+      await micRef.current?.stop() // never leave one behind
+      micRef.current = null
       const mic = await capture()
-      const st = await window.sanas.meeting.resume()
+      // main refuses a topology this meeting did not start with (loopback can fail
+      // independently on any attempt), so tell it what we actually got
+      const st = await window.sanas.meeting.resume(mic.channels)
       if (st.status === 'live') {
         micRef.current = mic
         setSysAudio(mic.channels === 2)

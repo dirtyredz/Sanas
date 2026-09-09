@@ -64,7 +64,10 @@ export function registerIpcHandlers(): void {
     ),
   )
   ipcMain.handle(IPC.MeetingPause, () => pauseMeeting())
-  ipcMain.handle(IPC.MeetingResume, () => resumeMeeting())
+  ipcMain.handle(IPC.MeetingResume, (_e, channels: unknown) =>
+    // only 1 or 2 are meaningful; main refuses a topology the meeting did not start with
+    resumeMeeting(channels === 2 ? 2 : 1),
+  )
   ipcMain.handle(IPC.MeetingStop, () => stopMeeting())
   ipcMain.handle(IPC.MeetingPinSpeaker, (_e, speaker: unknown, isUser: unknown) =>
     pinSpeaker(requireSpeaker(speaker, 'speaker'), requireBool(isUser, 'pin')),

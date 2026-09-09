@@ -70,10 +70,6 @@ class DeepgramSession implements SttSession {
     this.lastEndMs = this.offsetMs
   }
 
-  elapsedMs(): number {
-    return this.lastEndMs
-  }
-
   async connect(): Promise<void> {
     const ws = new WebSocket(buildUrl(this.opts.keyterms, this.opts.channels), [
       'token',

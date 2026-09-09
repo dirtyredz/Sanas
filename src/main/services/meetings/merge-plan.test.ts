@@ -50,10 +50,15 @@ describe('planMerge', () => {
   })
 
   it('treats a meeting with no diarized speakers as taking no block', () => {
-    const silent = part({ id: 20, startedAt: '2026-09-09 20:46:00', maxSpeaker: -1 })
+    const silent = part({
+      id: 20,
+      startedAt: '2026-09-09 20:50:45',
+      endedAt: '2026-09-09 20:50:50',
+      maxSpeaker: -1,
+    })
     const plan = planMerge([a, silent, c])
     expect(plan.steps).toEqual([
-      { from: 20, timeOffsetMs: 3_000, speakerOffset: 5 },
+      { from: 20, timeOffsetMs: 288_000, speakerOffset: 5 },
       { from: 15, timeOffsetMs: 352_000, speakerOffset: 5 },
     ])
   })
@@ -75,5 +80,21 @@ describe('planMerge', () => {
     expect(() => planMerge([a, a])).toThrow('listed twice')
     expect(() => planMerge([a, { ...c, jobId: 2 }])).toThrow('different jobs')
     expect(() => planMerge([a, { ...c, endedAt: null }])).toThrow('never ended')
+  })
+
+  it('refuses meetings that overlap in time — they were never one conversation', () => {
+    const during = part({
+      id: 30,
+      startedAt: '2026-09-09 20:47:00', // inside a, which runs to 20:50:39
+      endedAt: '2026-09-09 20:49:00',
+    })
+    expect(() => planMerge([a, during])).toThrow('overlap')
+    // touching end-to-start is not an overlap
+    const abutting = part({
+      id: 31,
+      startedAt: '2026-09-09 20:50:39',
+      endedAt: '2026-09-09 20:52:00',
+    })
+    expect(() => planMerge([a, abutting])).not.toThrow()
   })
 })

@@ -107,14 +107,22 @@ _Non-obvious traps. Read before touching the related area._
 
 ## Meetings
 
-- **Pause is audio time, not wall time.** A paused meeting's clock stops: resume continues
-  from the audio time already transcribed, so a 20-minute pause adds nothing to the
-  timeline. This is what keeps live timestamps aligned with the recorded WAV (`sendAudioChunk`
-  drops chunks while paused, so no silence is written) and therefore with batch
-  re-diarization, which reads that WAV.
+- **The meeting clock is audio received, not wall time and not transcript time.**
+  `sendAudioChunk` counts the PCM it accepts (`audioMsReceived`); that is exactly what the
+  WAV holds, so live timestamps, the recording, suggestion timestamps and batch
+  re-diarization all agree, and a pause simply does not advance it. Do NOT use the
+  provider's last transcript time as the cursor: it only moves on a final result, so
+  pausing during silence would rewind the clock and the resumed session would overlap
+  what was already stored.
 - **A lost connection pauses, it does not error.** The Deepgram session retries with backoff
   on its own; only when those are exhausted does it report, and the orchestrator turns that
   into a pause so the meeting row survives. The UI shows the reason and a Resume button.
+- **Merging deletes every part's recording**, the kept one included, and clears the
+  meeting's `audio_path`. No single WAV covers a merged span, and re-diarization reads that
+  WAV and replaces the WHOLE transcript — so keeping one would let a later pass silently
+  reduce a merged meeting back to a single part. Merge also refuses a meeting that is still
+  being summarised or re-diarized (`services/meetings/post-processing.ts`), since those
+  rewrite the row underneath it.
 - **Merging renumbers speakers into blocks, on purpose.** Diarized numbers are assigned per
   connection, so part one’s S1 and part two’s S1 are not knowably the same person. Merge gives
   each part its own block and leaves the judgement to the listener, who collapses them with
@@ -123,6 +131,17 @@ _Non-obvious traps. Read before touching the related area._
 - **Resume opens a NEW STT connection**, so diarized speaker indices can be renumbered across
   the pause exactly as they can across an internal reconnect. Post-meeting re-diarization is
   what makes labels stable — and it only runs when `recordAudio` is on, since it needs the WAV.
+- **Resume must use the same capture topology.** The WAV header and the provider's channel
+  mapping were both fixed when the meeting started, so main refuses a resume whose channel
+  count differs (loopback can fail on any attempt, turning This-PC stereo into mono).
+- **Meeting lifecycle calls are serialized and sessions are generation-stamped.** Start,
+  pause, resume and stop all mutate module state across awaits; without the queue two
+  resumes open two sessions, and without the generation a dying session's late transcript
+  lands on its successor.
+- **Audio captured during the provider's reconnect backoff is not transcribed.** The socket
+  is closed, so those chunks reach the WAV but never the provider — a gap in the live
+  transcript that post-meeting re-diarization recovers (it reads the WAV) only when
+  recording is on. Buffering that audio for replay is docs/BACKLOG.md P2.
 
 ## APIs
 

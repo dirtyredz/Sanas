@@ -64,15 +64,20 @@ export function updateMeetingSummary(
     .run(summary, actionItems, meetingId)
 }
 
-/** Sets what a merge changed about the kept meeting: its end and its joined text. */
-export function updateMeetingSpan(
+/** What a merge changes about the kept meeting: its end, its joined text, and its
+ *  recording pointer — cleared, because no single WAV holds the merged span and
+ *  re-diarizing from one would replace the whole transcript with that part. */
+export function applyMerge(
   meetingId: number,
   endedAt: string | null,
   summary: string | null,
   actionItems: string | null,
 ): void {
   getDb()
-    .prepare(`UPDATE meetings SET ended_at = ?, summary = ?, action_items = ? WHERE id = ?`)
+    .prepare(
+      `UPDATE meetings SET ended_at = ?, summary = ?, action_items = ?, audio_path = NULL
+       WHERE id = ?`,
+    )
     .run(endedAt, summary, actionItems, meetingId)
 }
 

@@ -55,6 +55,12 @@ export function planMerge(parts: MergePart[]): MergePlan {
   }
 
   const ordered = [...parts].sort((a, b) => parseUtc(a.startedAt) - parseUtc(b.startedAt))
+  for (let i = 1; i < ordered.length; i++) {
+    const prev = ordered[i - 1]
+    if (prev.endedAt && parseUtc(ordered[i].startedAt) < parseUtc(prev.endedAt)) {
+      throw new Error('Those meetings overlap in time — they were not one conversation.')
+    }
+  }
   const [keep, ...rest] = ordered
   const base = parseUtc(keep.startedAt)
 

@@ -40,7 +40,9 @@ const api = {
       ipcRenderer.invoke(IPC.MeetingStart, jobId, channels),
     /** Stop listening but keep the meeting open; resume continues its clock. */
     pause: (): Promise<MeetingState> => ipcRenderer.invoke(IPC.MeetingPause),
-    resume: (): Promise<MeetingState> => ipcRenderer.invoke(IPC.MeetingResume),
+    /** Resume with the capture topology now in hand; main refuses if it changed. */
+    resume: (channels: number): Promise<MeetingState> =>
+      ipcRenderer.invoke(IPC.MeetingResume, channels),
     stop: (): Promise<MeetingState> => ipcRenderer.invoke(IPC.MeetingStop),
     pinSpeaker: (speaker: number, isUser: boolean): Promise<void> =>
       ipcRenderer.invoke(IPC.MeetingPinSpeaker, speaker, isUser),
