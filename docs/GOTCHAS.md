@@ -83,8 +83,8 @@ _Non-obvious traps. Read before touching the related area._
   cannot save. Overlay bounds saved by the main process itself bypass the schema (trusted path).
   A value the schema drops (out of range, wrong type) is not an error: Save succeeds and the
   field visibly reverts to the stored value, because the page applies the returned view. The
-  Settings inputs are constrained (selects, a range slider, min/max on the port) so this
-  should only ever happen to a hand-crafted payload.
+  Settings inputs are constrained (selects, a range slider, the port clamped to 1–65535 as
+  you type) so this only happens to a hand-crafted payload.
 
 ## Storage
 
