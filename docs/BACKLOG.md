@@ -60,8 +60,8 @@ _Prioritized task trough. P0 = next up, P1 = soon, P2 = someday._
 - [ ] Visual QA in the real Electron window — the browser preview cannot show the frameless
       overlay at 380×460, transparency, or the Windows title bar
 
-- [ ] `ipc/`: shape-check object payloads at ingress (job update, settings patch) — row ids
-      (`requireId`) and free text (`requireText` / `optionalText`) are validated since 2026-09-09
+- [x] `ipc/`: every renderer argument is checked at ingress — ids, free text, and the job and
+      settings payloads (`ipc/validate.ts`, 2026-09-09)
 - [ ] Neutralize the `EmailProvider` seam (SMTP-shaped `SmtpConfig`) — only if a second
       transport ever arrives (see STRUCTURE.md structural debt)
 - [x] Meeting search across jobs (Search page, snippet highlight)

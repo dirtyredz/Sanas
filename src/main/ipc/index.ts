@@ -1,6 +1,5 @@
 import { ipcMain } from 'electron'
 import { IPC } from '@shared/ipc'
-import type { Settings } from '@shared/types'
 import { loadSettings, saveSettings, toView } from '../config/settings'
 import { applyOverlayOpacity, setClickThrough, toggleOverlay } from '../windows/overlay-window'
 import {
@@ -10,7 +9,7 @@ import {
   pinSpeaker,
   runSuggestion,
 } from '../services/meetings'
-import type { Job } from '@shared/types'
+import { requireId, requireJob, requireSettingsPatch, requireText, optionalText } from './validate'
 import {
   listJobs,
   createJob,
@@ -31,33 +30,13 @@ import { emailMeetingSummary } from '../services/meetings/summary-email'
 import { listSuggestions } from '../db/repos/suggestions'
 import { listSpeakerNames, setSpeakerName, mergeSpeakers } from '../db/repos/speakers'
 
-// Thin handlers only — validate and delegate (see STRUCTURE.md).
-
-/** Ingress check for free text: a non-empty string, capped so a stray payload cannot be huge. */
-function requireText(v: unknown, what: string, max: number): string {
-  if (typeof v !== 'string' || v.trim().length === 0 || v.length > max) {
-    throw new Error(`Invalid ${what}`)
-  }
-  return v.trim()
-}
-
-/** Optional free text: a string capped at `max`; anything else becomes empty ("clear"). */
-function optionalText(v: unknown, max: number): string {
-  return typeof v === 'string' ? v.slice(0, max) : ''
-}
-
-/** Ingress check for row ids: preload's TypeScript types do not survive the IPC hop. */
-function requireId(v: unknown, what: string): number {
-  if (typeof v !== 'number' || !Number.isSafeInteger(v) || v <= 0) {
-    throw new Error(`Invalid ${what}: ${String(v)}`)
-  }
-  return v
-}
+// Thin handlers only — validate (./validate.ts) and delegate (see STRUCTURE.md).
 
 export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.SettingsGet, () => toView(loadSettings()))
 
-  ipcMain.handle(IPC.SettingsSet, (_e, patch: Partial<Settings>) => {
+  ipcMain.handle(IPC.SettingsSet, (_e, raw: unknown) => {
+    const patch = requireSettingsPatch(raw)
     const next = saveSettings(patch)
     if (patch.overlayOpacity !== undefined) applyOverlayOpacity(next.overlayOpacity)
     return toView(next)
@@ -88,7 +67,7 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.JobsCreate, (_e, name: unknown) =>
     createJob(requireText(name, 'job name', 120)),
   )
-  ipcMain.handle(IPC.JobsUpdate, (_e, job: Omit<Job, 'createdAt' | 'archived'>) => updateJob(job))
+  ipcMain.handle(IPC.JobsUpdate, (_e, job: unknown) => updateJob(requireJob(job)))
   ipcMain.handle(IPC.JobsArchive, (_e, id: unknown, archived: boolean) =>
     setJobArchived(requireId(id, 'job id'), archived),
   )

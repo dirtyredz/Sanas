@@ -68,6 +68,13 @@ _Non-obvious traps. Read before touching the related area._
   hears becomes "Me", with no diarization index to pin. The meeting source is therefore a
   per-meeting choice on the Live page (default Elsewhere), never a global setting.
 
+## IPC
+
+- **Preload's types do not survive the hop.** Every `ipcMain.handle` argument is `unknown` at
+  runtime; `ipc/validate.ts` is the only way in — ids (`requireId`), free text (`requireText`
+  / `optionalText`), and the job and settings payloads (unknown keys are dropped, out-of-range
+  numbers ignored rather than written to settings.json). A new channel gets a validator first.
+
 ## Storage
 
 - **Deleting a meeting is two deletes.** The row (segments, suggestions, names cascade) and

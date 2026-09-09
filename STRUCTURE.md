@@ -18,7 +18,7 @@ sanas/
 │   ├── main/                    # Electron main process
 │   │   ├── index.ts             # app lifecycle, hotkeys, userData pinning
 │   │   ├── windows/             # main-window + overlay-window builders, broadcast (main → all windows)
-│   │   ├── ipc/                 # typed IPC channel handlers (thin — delegate to services)
+│   │   ├── ipc/                 # typed IPC channel handlers (thin — delegate) + validate.ts (ingress checks)
 │   │   ├── system-audio.ts      # display-media loopback handler (same-PC meeting audio)
 │   │   ├── services/
 │   │   │   ├── stt/             # SttProvider seam + DeepgramSession (reconnect, splits, batch)
@@ -60,7 +60,8 @@ sanas/
 
 - `src/main/windows/` — BrowserWindow builders (library window, overlay window) and the
   main → all-windows broadcast
-- `src/main/ipc/` — typed IPC channel handlers; validate + delegate, no business logic
+- `src/main/ipc/` — typed IPC channel handlers; validate (`validate.ts`: ids, free text, the
+  job and settings payloads) + delegate, no business logic
 - `src/main/services/` — main-process services and provider seams: `stt/`, `assistant/`,
   `email/`, `meetings/`, `audio-store/`, `retention/`, `history/`, plus main-side transcript
   formatting
@@ -133,11 +134,6 @@ not beside `index.ts` / `system-audio.ts`.
   signature and its one caller, not just add an implementation. Deliberate while SMTP is the
   chosen design. A second builder of that config (none planned) is the point to extract
   `smtpConfigFromSettings()`, not before.
-- `ipc/` runtime-validates row ids at ingress (`requireId`, 2026-09-09) but still trusts
-  preload's TypeScript types for object payloads (job update, settings patch); free text is
-  checked at ingress (`requireText` / `optionalText`: ask, rename, job name, glossary term and
-  note, speaker name; search is length-checked inline and returns nothing for under two
-  characters). Shape-checking the objects is docs/BACKLOG.md P2.
 
 (2026-08-27 review: transcript formatting/windowing extracted to
 `services/transcript-format.ts`; summary prompt moved into `assistant/prompts.ts`.
