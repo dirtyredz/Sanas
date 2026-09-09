@@ -159,6 +159,18 @@ export interface RetentionPreview {
  *  (recording locked by another process — kept for the next run). */
 export interface RetentionResult extends RetentionPreview {
   failed: number
+  /** Recordings deleted because no meeting refers to them any more (e.g. left behind by
+   *  a merge that could not delete a locked file). */
+  orphanFiles: number
+}
+
+/** The outcome of folding meetings together: the survivor, plus how many of the parts'
+ *  recordings could not be deleted because another program had them open. Those are
+ *  swept by the next retention run — but the merge says so rather than claiming they
+ *  are gone. */
+export interface MergeResult {
+  meeting: Meeting
+  recordingsLeftBehind: number
 }
 
 /** Settings with secrets masked for display (renderer never needs raw keys). */

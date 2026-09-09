@@ -1,13 +1,23 @@
 import { statSync } from 'fs'
 import type { Meeting, RetentionPreview, RetentionResult } from '@shared/types'
 import { loadSettings } from '../../config/settings'
-import { clearMeetingAudioPath, listMeetingsEndedBefore } from '../../db/repos/meetings'
+import {
+  clearMeetingAudioPath,
+  listMeetingIds,
+  listMeetingsEndedBefore,
+} from '../../db/repos/meetings'
+import { listRecordings } from '../audio-store'
 import { removeAudioFile, removeMeeting } from '../meetings/remove'
 
 // Age-based clean-up of what a meeting leaves behind. Audio files are the bulky part
 // (~115 MB per mono hour); transcripts and summaries are small — so the two have
 // separate limits, each in days, 0 = keep forever. Live meetings (no ended_at) are
 // never touched. Runs on a timer in main and on demand from Settings.
+//
+// It also sweeps ORPHANS — recordings on disk that no meeting refers to. Deleting a
+// meeting keeps its row until the file is gone, so orphans come from merges (which must
+// delete rows first) and from files a program held open at the wrong moment. Nothing
+// else would ever find them: without a row there is no age and no pointer.
 
 const RUN_EVERY_MS = 6 * 60 * 60 * 1000
 const FIRST_RUN_DELAY_MS = 30 * 1000
@@ -51,11 +61,26 @@ export function previewRetention(): RetentionPreview {
   }
 }
 
+/** Recordings on disk whose meeting no longer exists — age does not apply, since
+ *  nothing records when they stopped being needed. */
+function orphans(): string[] {
+  const live = new Set(listMeetingIds())
+  return listRecordings()
+    .filter((r) => !live.has(r.meetingId))
+    .map((r) => r.path)
+}
+
 /** Removes everything past its limit and reports what actually went — a locked file
  *  counts as failed, keeps its pointer, and is retried next run. */
 export function runRetention(): RetentionResult {
   const { meetings, audio } = due()
-  const result: RetentionResult = { meetings: 0, audioFiles: 0, audioBytes: 0, failed: 0 }
+  const result: RetentionResult = {
+    meetings: 0,
+    audioFiles: 0,
+    audioBytes: 0,
+    failed: 0,
+    orphanFiles: 0,
+  }
   for (const m of audio) {
     const bytes = fileSize(m.audioPath)
     if (removeAudioFile(m.audioPath)) {
@@ -82,9 +107,20 @@ export function runRetention(): RetentionResult {
         break // gone since the snapshot (deleted by hand) — nothing to count
     }
   }
-  if (result.meetings > 0 || result.audioFiles > 0 || result.failed > 0) {
+  // last, so a meeting deleted above has already given up its file
+  for (const path of orphans()) {
+    const bytes = fileSize(path)
+    if (removeAudioFile(path)) {
+      result.orphanFiles++
+      result.audioBytes += bytes
+    } else {
+      result.failed++
+    }
+  }
+  if (result.meetings > 0 || result.audioFiles > 0 || result.failed > 0 || result.orphanFiles > 0) {
     console.log(
       `[sanas] retention: removed ${result.meetings} meeting(s), ${result.audioFiles} audio file(s)` +
+        (result.orphanFiles > 0 ? `, ${result.orphanFiles} orphaned recording(s)` : '') +
         (result.failed > 0 ? `, ${result.failed} still in use (retry next run)` : ''),
     )
   }

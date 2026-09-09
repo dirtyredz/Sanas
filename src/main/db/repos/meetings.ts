@@ -90,6 +90,11 @@ export function listMeetings(jobId: number): Meeting[] {
 
 /** Row-only delete (segments, suggestions, speaker names cascade). The audio file is
  *  the caller's job — use services/meetings/remove.ts, not this, from outside repos. */
+/** Every meeting id that still exists — retention checks recordings against it. */
+export function listMeetingIds(): number[] {
+  return (getDb().prepare(`SELECT id FROM meetings`).all() as { id: number }[]).map((r) => r.id)
+}
+
 export function deleteMeeting(meetingId: number): void {
   getDb().prepare(`DELETE FROM meetings WHERE id = ?`).run(meetingId)
 }

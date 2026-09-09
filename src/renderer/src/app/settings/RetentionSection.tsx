@@ -88,6 +88,9 @@ export function RetentionSection({
         {result && (
           <span className={result.failed > 0 ? 'warn' : 'ok'}>
             {`Removed ${result.audioFiles} recording(s) and ${result.meetings} meeting(s)` +
+              (result.orphanFiles > 0
+                ? `, plus ${result.orphanFiles} recording(s) no meeting was using`
+                : '') +
               (result.audioBytes > 0 ? `, freeing ${size(result.audioBytes)}` : '') +
               (result.failed > 0
                 ? `. ${result.failed} still in use by another program — will retry later.`

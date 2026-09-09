@@ -31,6 +31,7 @@ export function JobDetail({
   const [picked, setPicked] = useState<Set<number>>(new Set())
   const [confirmMerge, setConfirmMerge] = useState(false)
   const [mergeError, setMergeError] = useState('')
+  const [mergeNotice, setMergeNotice] = useState('')
 
   useEffect(() => {
     window.sanas.jobs.list().then((all) => setJob(all.find((j) => j.id === jobId) ?? null))
@@ -86,6 +87,7 @@ export function JobDetail({
   const togglePick = (id: number): void => {
     setConfirmMerge(false)
     setMergeError('')
+    setMergeNotice('')
     setPicked((prev) => {
       const next = new Set(prev)
       if (!next.delete(id)) next.add(id)
@@ -95,12 +97,21 @@ export function JobDetail({
 
   const merge = async (): Promise<void> => {
     setMergeError('')
+    setMergeNotice('')
     try {
-      const merged = await window.sanas.meetings.merge([...picked])
+      const { meeting, recordingsLeftBehind } = await window.sanas.meetings.merge([...picked])
       setPicked(new Set())
       setConfirmMerge(false)
       setMeetings(await window.sanas.meetings.list(jobId))
-      setOpenMeeting(merged) // show the result straight away
+      if (recordingsLeftBehind > 0) {
+        // stay on the list so the warning is actually read; the merged meeting is one click away
+        setMergeNotice(
+          `Merged into "${meeting.title}". ${recordingsLeftBehind} recording(s) are still in use ` +
+            'by another program — clean-up will remove them later.',
+        )
+      } else {
+        setOpenMeeting(meeting) // show the result straight away
+      }
     } catch (e) {
       setConfirmMerge(false)
       setMergeError(errorText(e))
@@ -257,6 +268,7 @@ export function JobDetail({
               </div>
             )}
             {mergeError && <p className="notice warn">{mergeError}</p>}
+            {mergeNotice && <p className="notice warn">{mergeNotice}</p>}
           </section>
         </aside>
       </div>

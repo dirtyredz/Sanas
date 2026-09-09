@@ -9,11 +9,18 @@ wall time (wrong — a 20-minute pause would push every later timestamp out of s
 recording), the provider's last transcript time (wrong in a subtler way — it only advances
 on a final result, so pausing mid-silence rewinds the clock and the resumed session
 overwrites stored segments), and the audio actually captured. The last is the only one that
-matches every consumer: the WAV holds exactly that audio, so live timestamps, suggestion
-timestamps and post-meeting re-diarization all agree, and pausing simply stops the count.
-The orchestrator owns it (`audioMsReceived`, counted in `sendAudioChunk`) rather than the
-STT provider, which cannot see audio the socket dropped; the seam only takes a
-`startOffsetMs` telling a new connection where its clock begins.
+matches the recording: the WAV holds exactly that audio, so the clock, the recording and
+every timestamp main stamps itself agree, and pausing simply stops the count. The
+orchestrator owns it (`audioMsReceived`, counted in `sendAudioChunk`) rather than the STT
+provider, which cannot see audio the socket dropped; the seam only takes a `startOffsetMs`
+telling a new connection where its clock begins, and `sendAudioChunk` accepts nothing until
+that connection exists, so the count never runs ahead of what was actually transcribed.
+
+The agreement is exact for pause and resume, and for everything main timestamps. It is NOT
+exact across the provider's own internal reconnect: that resumes from the last final word,
+so speech after a network wobble is stamped earlier than its position in the WAV by the
+length of the dropped audio. Buffering and replaying that audio is backlogged; until then,
+re-diarization is what restores true times, and only when recording is on.
 
 ## 2026-09-09 — Pause keeps one meeting; a lost connection pauses rather than errors
 
@@ -21,11 +28,11 @@ Reported from a real call: the internet dropped mid-meeting, and the only way fo
 Stop then Start, which left two meeting rows for one conversation (plus a stray 14-second
 one). Pause holds the meeting open — the row, the rolling transcript window, the pinned
 speakers and the system prompt all stay — while the STT connection closes and audio stops
-flowing. Resume opens a new connection whose clock continues where the last one stopped
-(`SttSession.elapsedMs()` into the next session's `startOffsetMs`), so the transcript reads
-as one continuous recording with the paused stretch simply absent. That is deliberate:
-timestamps are **audio time, not wall-clock time**, which keeps them aligned with the WAV
-(paused audio is never written) and therefore with batch re-diarization.
+flowing. Resume opens a new connection whose clock continues where the last one stopped (the
+orchestrator's own `audioMsReceived` into the next session's `startOffsetMs`), so the
+transcript reads as one continuous recording with the paused stretch simply absent. That is
+deliberate: timestamps are **audio time, not wall-clock time**, which keeps them aligned
+with the WAV (paused audio is never written) and therefore with batch re-diarization.
 
 The same mechanism handles the failure that prompted it: when the provider exhausts its
 reconnect backoff it now pauses the meeting instead of setting an error state, so the user

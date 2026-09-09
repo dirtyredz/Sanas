@@ -1,4 +1,4 @@
-import type { Meeting } from '@shared/types'
+import type { Meeting, MergeResult } from '@shared/types'
 import { getDb } from '../../db'
 import { applyMerge, deleteMeeting, getMeeting } from '../../db/repos/meetings'
 import { maxSpeaker, reassignSegments } from '../../db/repos/segments'
@@ -32,7 +32,7 @@ function toPart(m: Meeting): MergePart {
 
 /** Merges the given meetings into their earliest one and returns the result.
  *  Irreversible: the other rows and every part's recording are deleted. */
-export function mergeMeetings(ids: number[]): Meeting {
+export function mergeMeetings(ids: number[]): MergeResult {
   const parts = ids.map((id) => {
     const m = getMeeting(id)
     if (!m) throw new Error(`Meeting ${id} no longer exists.`)
@@ -54,8 +54,12 @@ export function mergeMeetings(ids: number[]): Meeting {
   })()
 
   // files only after the row is committed: an orphaned file is recoverable, a row
-  // pointing at a file that is no longer there is not
-  for (const m of parts) removeAudioFile(m.audioPath)
+  // pointing at a file that is no longer there is not. One that is locked right now is
+  // reported to the caller and swept by retention later — never silently left behind.
+  const stuck = parts.filter((m) => !removeAudioFile(m.audioPath)).map((m) => m.audioPath)
+  if (stuck.length > 0) {
+    console.warn('[sanas] merge could not delete recordings (retention will sweep them):', stuck)
+  }
 
   console.log(
     `[sanas] merged ${plan.steps.length + 1} meetings into ${plan.keepId}:`,
@@ -63,5 +67,5 @@ export function mergeMeetings(ids: number[]): Meeting {
       .map((s) => `${s.from} (+${s.timeOffsetMs}ms, speakers +${s.speakerOffset})`)
       .join(', '),
   )
-  return getMeeting(plan.keepId)!
+  return { meeting: getMeeting(plan.keepId)!, recordingsLeftBehind: stuck.length }
 }

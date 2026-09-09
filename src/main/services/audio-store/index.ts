@@ -1,4 +1,4 @@
-import { createWriteStream, mkdirSync, type WriteStream } from 'fs'
+import { createWriteStream, existsSync, mkdirSync, readdirSync, type WriteStream } from 'fs'
 import { join } from 'path'
 import { app } from 'electron'
 
@@ -30,8 +30,23 @@ function wavHeader(dataBytes: number, channels: number): Buffer {
   return h
 }
 
+function audioDir(): string {
+  return join(app.getPath('userData'), 'audio')
+}
+
+/** Every recording on disk, by the meeting it was written for. Retention uses this to
+ *  find files whose meeting is gone — a merge deletes rows, and a locked file survives. */
+export function listRecordings(): { meetingId: number; path: string }[] {
+  const dir = audioDir()
+  if (!existsSync(dir)) return []
+  return readdirSync(dir)
+    .map((name) => ({ name, m: /^meeting-(\d+)\.wav$/.exec(name) }))
+    .filter((x) => x.m !== null)
+    .map((x) => ({ meetingId: Number(x.m![1]), path: join(dir, x.name) }))
+}
+
 export function startRecording(meetingId: number, channels = 1): string {
-  const dir = join(app.getPath('userData'), 'audio')
+  const dir = audioDir()
   mkdirSync(dir, { recursive: true })
   currentPath = join(dir, `meeting-${meetingId}.wav`)
   currentChannels = channels

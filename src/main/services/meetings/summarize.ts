@@ -4,6 +4,7 @@ import { getMeeting, updateMeetingSummary } from '../../db/repos/meetings'
 import { listSegments } from '../../db/repos/segments'
 import { getJob, listGlossary } from '../../db/repos/jobs'
 import { speakerNameMap } from '../../db/repos/speakers'
+import { whilePostProcessing } from './post-processing'
 import { claudeProvider } from '../assistant/claude'
 import { buildSummaryPrompt, buildSystemPrompt, type TranscriptLine } from '../assistant/prompts'
 
@@ -61,6 +62,7 @@ export async function summarizeStoredMeeting(meetingId: number): Promise<Meeting
   if (!loadSettings().anthropicApiKey) throw new Error('Anthropic API key is not set.')
   // same job context the live meeting would have had, rebuilt from the DB
   const systemPrompt = buildSystemPrompt(getJob(meeting.jobId), listGlossary(meeting.jobId))
-  await summarizeLines(meetingId, lines, systemPrompt)
+  // marked while it runs: merge must not fold a meeting whose summary is still coming
+  await whilePostProcessing(meetingId, () => summarizeLines(meetingId, lines, systemPrompt))
   return getMeeting(meetingId) ?? meeting
 }

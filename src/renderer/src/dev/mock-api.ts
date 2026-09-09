@@ -479,6 +479,7 @@ const api: SanasApi = {
         audioFiles: dueRecordings,
         audioBytes: dueRecordings * 115_700_000,
         failed: 0,
+        orphanFiles: 0,
       }
       dueRecordings = 0
       return removed
@@ -518,7 +519,7 @@ const api: SanasApi = {
         for (const seg of segments) if (seg.meetingId === r.id) seg.meetingId = keep.id
         meetings.splice(meetings.indexOf(r), 1)
       }
-      return keep
+      return { meeting: keep, recordingsLeftBehind: 0 }
     },
     summarize: async (meetingId) => {
       const m = meetings.find((x) => x.id === meetingId)

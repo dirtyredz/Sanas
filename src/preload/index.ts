@@ -7,6 +7,7 @@ import type {
   Job,
   Meeting,
   MeetingState,
+  MergeResult,
   RetentionPreview,
   RetentionResult,
   SearchMatch,
@@ -114,7 +115,7 @@ const api = {
       ipcRenderer.invoke(IPC.MeetingsGet, meetingId),
     /** Folds the given meetings into their earliest one. Irreversible; rejects with a
      *  readable message when they cannot be merged (different jobs, one still running). */
-    merge: (meetingIds: number[]): Promise<Meeting> =>
+    merge: (meetingIds: number[]): Promise<MergeResult> =>
       ipcRenderer.invoke(IPC.MeetingsMerge, meetingIds),
     /** Rejects with a readable message when the summary can't run. */
     summarize: (meetingId: number): Promise<Meeting> =>

@@ -159,15 +159,14 @@ export function startMeeting(jobId?: number, channels: ChannelCount = 1): Promis
     transcriptWindow.length = 0
     resetTriggers()
     systemPrompt = buildSystemPrompt(getJob(job), listGlossary(job))
-    if (settings.recordAudio) {
-      updateMeetingAudioPath(id, startRecording(id, channels))
-    }
 
     try {
+      // connect BEFORE recording or counting: sendAudioChunk ignores audio until a
+      // session exists, so the WAV, the meeting clock and the provider's own clock all
+      // start at the same instant rather than the provider's starting late
       session = await openSession(settings.deepgramApiKey, 0)
     } catch (e) {
       // never leave a meeting row open with no way back to it
-      await stopRecording()
       endMeeting(id)
       session = null
       meetingId = null
@@ -178,6 +177,9 @@ export function startMeeting(jobId?: number, channels: ChannelCount = 1): Promis
       })
     }
 
+    if (settings.recordAudio) {
+      updateMeetingAudioPath(id, startRecording(id, channels))
+    }
     return setState({ meetingId: id, status: 'live' })
   })
 }
@@ -313,9 +315,11 @@ export async function runSuggestion(trigger: 'ambient' | 'hotkey'): Promise<void
 }
 
 export function sendAudioChunk(chunk: Buffer): void {
-  if (paused || meetingId === null) return // a paused meeting captures nothing
+  // no session means paused, ended, or still connecting: dropping the chunk keeps the
+  // recording, the clock and the provider's timeline describing the same audio
+  if (session === null) return
   audioMsReceived += (chunk.length / (BYTES_PER_SAMPLE * meetingChannels) / SAMPLE_RATE) * 1000
-  session?.sendAudio(chunk)
+  session.sendAudio(chunk)
   writeAudio(chunk) // no-op when recording wasn't started
 }
 

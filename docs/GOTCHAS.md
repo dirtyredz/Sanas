@@ -108,15 +108,28 @@ _Non-obvious traps. Read before touching the related area._
 ## Meetings
 
 - **The meeting clock is audio received, not wall time and not transcript time.**
-  `sendAudioChunk` counts the PCM it accepts (`audioMsReceived`); that is exactly what the
-  WAV holds, so live timestamps, the recording, suggestion timestamps and batch
-  re-diarization all agree, and a pause simply does not advance it. Do NOT use the
-  provider's last transcript time as the cursor: it only moves on a final result, so
-  pausing during silence would rewind the clock and the resumed session would overlap
-  what was already stored.
+  `sendAudioChunk` counts the PCM it accepts (`audioMsReceived`), and it accepts a chunk
+  only while a session exists. That count is exactly what the WAV holds, so the clock, the
+  recording and every timestamp main stamps itself (suggestions, a resumed session's
+  `startOffsetMs`) describe the same position in the audio, and a pause does not advance it.
+  Do NOT use the provider's last transcript time as the cursor: it only moves on a final
+  result, so pausing during silence would rewind the clock and the resumed session would
+  overlap what was already stored.
+- **Segment timestamps come from the provider, so they are NOT guaranteed to match the WAV.**
+  They agree with it in the normal case, but an internal reconnect resumes counting from the
+  last final word (`stt/deepgram.ts`), and the audio lost during the backoff is never sent —
+  so everything spoken after such a reconnect is stamped EARLIER than its true position in
+  the recording, by roughly the length of the gap. Explicit pause/resume does not have this
+  problem (main supplies the offset from its own count). Treat live segment times as
+  approximate after a network wobble; re-diarization, which reads the WAV, is what restores
+  true times, and only when `recordAudio` is on.
 - **A lost connection pauses, it does not error.** The Deepgram session retries with backoff
   on its own; only when those are exhausted does it report, and the orchestrator turns that
   into a pause so the meeting row survives. The UI shows the reason and a Resume button.
+- **A recording merge could not delete is reported, not swallowed.** `mergeMeetings`
+  returns `recordingsLeftBehind` and the job view says so; the row is already gone by then,
+  so retention's orphan sweep (recordings whose meeting id no longer exists) is what
+  actually collects the file on a later run.
 - **Merging deletes every part's recording**, the kept one included, and clears the
   meeting's `audio_path`. No single WAV covers a merged span, and re-diarization reads that
   WAV and replaces the WHOLE transcript — so keeping one would let a later pass silently
@@ -142,6 +155,15 @@ _Non-obvious traps. Read before touching the related area._
   is closed, so those chunks reach the WAV but never the provider — a gap in the live
   transcript that post-meeting re-diarization recovers (it reads the WAV) only when
   recording is on. Buffering that audio for replay is docs/BACKLOG.md P2.
+- **No audio is accepted before the STT session is open.** `startMeeting` connects first and
+  only then starts recording, because a chunk taken in between would land in the WAV and the
+  clock without ever reaching the provider — the first seconds of the meeting would read as
+  transcript the provider never produced.
+- **Anything that rewrites a meeting in the background must mark it**
+  (`services/meetings/post-processing.ts`, a COUNT so concurrent rewrites don't clear each
+  other). Summarising on stop, summarising on demand from the meeting view, and
+  re-diarization all outlive the call that started them; merge refuses a marked meeting,
+  because otherwise a late write lands on a row that merge has folded away or rewritten.
 
 ## APIs
 
