@@ -9,6 +9,8 @@ export const IPC = {
   OverlayToggle: 'overlay:toggle',
   // meetings (renderer → main)
   MeetingStart: 'meeting:start',
+  MeetingPause: 'meeting:pause',
+  MeetingResume: 'meeting:resume',
   MeetingStop: 'meeting:stop',
   MeetingPinSpeaker: 'meeting:pin-speaker',
   // audio stream (renderer → main, fire-and-forget)
@@ -35,6 +37,8 @@ export const IPC = {
   MeetingsRename: 'meetings:rename',
   MeetingsMove: 'meetings:move',
   MeetingsExport: 'meetings:export',
+  /** Fold several meetings into their earliest one; resolves with the merged meeting. */
+  MeetingsMerge: 'meetings:merge',
   MeetingsGet: 'meetings:get',
   /** Re-run the summary from the stored transcript; resolves with the updated meeting. */
   MeetingsSummarize: 'meetings:summarize',

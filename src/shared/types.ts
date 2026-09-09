@@ -110,7 +110,9 @@ export interface SuggestionEvent {
 
 export interface MeetingState {
   meetingId: number | null
-  status: 'idle' | 'live' | 'error'
+  /** 'paused' keeps the meeting open with nothing being captured. */
+  status: 'idle' | 'live' | 'paused' | 'error'
+  /** Why, when the status is 'error', or when a lost connection forced the pause. */
   error?: string
 }
 

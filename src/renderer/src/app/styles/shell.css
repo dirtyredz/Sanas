@@ -152,3 +152,7 @@
     animation: none;
   }
 }
+
+.dot.paused {
+  background: var(--warn);
+}

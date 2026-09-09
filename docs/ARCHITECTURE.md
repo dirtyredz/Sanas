@@ -128,6 +128,14 @@ to the address set on the meeting's job; nothing else leaves the machine.
   excerpts" when the answer is missing. Sources return to the renderer at once; the answer
   streams as `HistoryEvent`s over the same broadcast path the live suggestions use.
 
+## Meeting lifecycle
+
+`idle → live → (paused ⇄ live)* → idle`. Start creates the row, opens the STT connection and
+begins recording; pause closes the connection and stops audio while keeping everything else;
+resume reopens with the meeting's clock carried over; stop ends the row and kicks off the
+post-meeting passes below. Only one meeting is live at a time (`services/meetings/index.ts`
+holds it in module state).
+
 ## Post-meeting
 
 On meeting end, two fire-and-forget passes:

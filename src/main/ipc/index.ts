@@ -4,6 +4,8 @@ import { loadSettings, saveSettings, toView } from '../config/settings'
 import { applyOverlayOpacity, setClickThrough, toggleOverlay } from '../windows/overlay-window'
 import {
   startMeeting,
+  pauseMeeting,
+  resumeMeeting,
   stopMeeting,
   sendAudioChunk,
   pinSpeaker,
@@ -13,6 +15,7 @@ import {
   optionalText,
   requireBool,
   requireId,
+  requireIdList,
   requireJob,
   requireSettingsPatch,
   requireSpeaker,
@@ -29,6 +32,7 @@ import {
 } from '../db/repos/jobs'
 import { listMeetings, getMeeting, renameMeeting, moveMeetingToJob } from '../db/repos/meetings'
 import { removeMeeting } from '../services/meetings/remove'
+import { mergeMeetings } from '../services/meetings/merge'
 import { previewRetention, runRetention } from '../services/retention'
 import { listSegments } from '../db/repos/segments'
 import { askHistory, searchTranscripts } from '../services/history'
@@ -59,6 +63,8 @@ export function registerIpcHandlers(): void {
       channels === 2 ? 2 : 1,
     ),
   )
+  ipcMain.handle(IPC.MeetingPause, () => pauseMeeting())
+  ipcMain.handle(IPC.MeetingResume, () => resumeMeeting())
   ipcMain.handle(IPC.MeetingStop, () => stopMeeting())
   ipcMain.handle(IPC.MeetingPinSpeaker, (_e, speaker: unknown, isUser: unknown) =>
     pinSpeaker(requireSpeaker(speaker, 'speaker'), requireBool(isUser, 'pin')),
@@ -108,6 +114,9 @@ export function registerIpcHandlers(): void {
     exportMeetingMarkdown(requireId(id, 'meeting id')),
   )
   ipcMain.handle(IPC.MeetingsGet, (_e, id: unknown) => getMeeting(requireId(id, 'meeting id')))
+  ipcMain.handle(IPC.MeetingsMerge, (_e, ids: unknown) =>
+    mergeMeetings(requireIdList(ids, 'meeting ids', 2)),
+  )
   ipcMain.handle(IPC.MeetingsSummarize, (_e, id: unknown) =>
     summarizeStoredMeeting(requireId(id, 'meeting id')),
   )

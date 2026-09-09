@@ -2,6 +2,28 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-09-09 — Pause keeps one meeting; a lost connection pauses rather than errors
+
+Reported from a real call: the internet dropped mid-meeting, and the only way forward was
+Stop then Start, which left two meeting rows for one conversation (plus a stray 14-second
+one). Pause holds the meeting open — the row, the rolling transcript window, the pinned
+speakers and the system prompt all stay — while the STT connection closes and audio stops
+flowing. Resume opens a new connection whose clock continues where the last one stopped
+(`SttSession.elapsedMs()` into the next session's `startOffsetMs`), so the transcript reads
+as one continuous recording with the paused stretch simply absent. That is deliberate:
+timestamps are **audio time, not wall-clock time**, which keeps them aligned with the WAV
+(paused audio is never written) and therefore with batch re-diarization.
+
+The same mechanism handles the failure that prompted it: when the provider exhausts its
+reconnect backoff it now pauses the meeting instead of setting an error state, so the user
+resumes when the network returns rather than losing the record. A start that fails outright
+now ends its meeting row instead of leaving one open forever.
+Rejected: keeping the socket open through the outage (there is nothing to keep open once
+the network is gone, and Deepgram closes idle sockets in ~10s anyway); silence-padding the
+paused stretch so timestamps track wall clock (it would inflate the recording, cost STT
+minutes, and desync nothing useful); merging two meetings after the fact (worth having, but
+it fixes the symptom rather than the cause — see docs/BACKLOG.md).
+
 ## 2026-09-09 — Ask-your-history on FTS5 + grounded prompting, not embeddings
 
 "What did we decide about X?" needs retrieval over every transcript. Chosen: SQLite FTS5

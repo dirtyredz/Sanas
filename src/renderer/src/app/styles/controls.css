@@ -296,3 +296,14 @@ button.chip:hover {
   color: var(--accent);
   border-bottom-color: var(--accent);
 }
+
+.btn-pause {
+  background: var(--panel-2);
+  border-color: var(--warn);
+  color: var(--warn);
+}
+
+.btn-pause:hover:not(:disabled) {
+  background: rgba(217, 164, 74, 0.14);
+  border-color: var(--warn);
+}

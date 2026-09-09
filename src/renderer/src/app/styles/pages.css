@@ -487,3 +487,19 @@
 .sources .eyebrow {
   margin-right: 4px;
 }
+
+.meeting-pick {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.meeting-pick .meeting-row {
+  flex: 1;
+  min-width: 0;
+}
+
+.merge-bar {
+  font-size: 13px;
+  margin-top: 4px;
+}

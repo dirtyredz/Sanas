@@ -46,6 +46,14 @@ export function optionalText(v: unknown, max: number): string {
   return typeof v === 'string' ? v.slice(0, max) : ''
 }
 
+/** A list of row ids: at least `min`, each valid, no duplicates. */
+export function requireIdList(v: unknown, what: string, min: number): number[] {
+  if (!Array.isArray(v) || v.length < min) throw new Error(`Invalid ${what}`)
+  const ids = v.map((x) => requireId(x, what))
+  if (new Set(ids).size !== ids.length) throw new Error(`Invalid ${what}: repeated`)
+  return ids
+}
+
 const PACK_MAX = 20_000 // a context-pack field; the whole pack is sent on every suggestion
 
 /** The editable job fields for a full-row update: every field must be present as a

@@ -103,6 +103,31 @@ export function deleteSegmentsForMeeting(meetingId: number): void {
   getDb().prepare(`DELETE FROM segments WHERE meeting_id = ?`).run(meetingId)
 }
 
+/** Highest diarized speaker index in a meeting; -1 when it has none. */
+export function maxSpeaker(meetingId: number): number {
+  const row = getDb()
+    .prepare(`SELECT COALESCE(MAX(speaker), -1) AS m FROM segments WHERE meeting_id = ?`)
+    .get(meetingId) as { m: number }
+  return row.m
+}
+
+/** Moves one meeting's segments onto another, shifting their times and speaker numbers
+ *  (merge). Speaker -1 is the user in stereo capture and is never renumbered. */
+export function reassignSegments(
+  fromMeetingId: number,
+  toMeetingId: number,
+  timeOffsetMs: number,
+  speakerOffset: number,
+): void {
+  getDb()
+    .prepare(
+      `UPDATE segments SET meeting_id = ?, t_start_ms = t_start_ms + ?, t_end_ms = t_end_ms + ?,
+              speaker = CASE WHEN speaker >= 0 THEN speaker + ? ELSE speaker END
+       WHERE meeting_id = ?`,
+    )
+    .run(toMeetingId, timeOffsetMs, timeOffsetMs, speakerOffset, fromMeetingId)
+}
+
 /** Re-label a speaker's past segments when the user pins "that's me". */
 export function setSpeakerIsUser(meetingId: number, speaker: number, isUser: boolean): void {
   getDb()

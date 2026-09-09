@@ -17,6 +17,9 @@ export interface SttSessionOptions {
   channels: number
   /** Glossary terms boosted for recognition (the sanas double-duty). */
   keyterms: string[]
+  /** Audio time this session starts at, so a resumed meeting keeps one clock.
+   *  Provider clocks restart at zero per connection; this is added to them. */
+  startOffsetMs?: number
   onTranscript: (t: SttTranscript) => void
   onError: (message: string) => void
 }
@@ -24,6 +27,9 @@ export interface SttSessionOptions {
 export interface SttSession {
   /** 16 kHz linear16 PCM, interleaved when channels > 1. */
   sendAudio(chunk: Buffer): void
+  /** Audio time reached so far, including `startOffsetMs`. Hand it to the next
+   *  session's `startOffsetMs` to continue a paused meeting's clock. */
+  elapsedMs(): number
   stop(): Promise<void>
 }
 

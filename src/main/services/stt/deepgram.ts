@@ -61,10 +61,18 @@ class DeepgramSession implements SttSession {
   private ws: WebSocket | null = null
   private keepalive: ReturnType<typeof setInterval> | null = null
   private stopped = false
-  private offsetMs = 0 // carried across reconnects to keep timestamps monotonic
-  private lastEndMs = 0
+  private offsetMs: number // added to this connection's clock, which starts at 0
+  private lastEndMs: number // audio time reached, absolute within the meeting
 
-  constructor(private opts: SttSessionOptions) {}
+  constructor(private opts: SttSessionOptions) {
+    // a resumed meeting continues where its last session stopped
+    this.offsetMs = opts.startOffsetMs ?? 0
+    this.lastEndMs = this.offsetMs
+  }
+
+  elapsedMs(): number {
+    return this.lastEndMs
+  }
 
   async connect(): Promise<void> {
     const ws = new WebSocket(buildUrl(this.opts.keyterms, this.opts.channels), [
@@ -143,7 +151,9 @@ class DeepgramSession implements SttSession {
   }
 
   private async reconnect(closeCode: number): Promise<void> {
-    this.offsetMs = this.lastEndMs // next connection's clock restarts at 0
+    // the next connection's clock restarts at 0; lastEndMs is absolute (and never
+    // below the offset we started with, so a silent connection cannot rewind it)
+    this.offsetMs = this.lastEndMs
     for (const delay of RECONNECT_DELAYS_MS) {
       if (this.stopped) return
       await new Promise((r) => setTimeout(r, delay))

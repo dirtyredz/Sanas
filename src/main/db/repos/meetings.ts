@@ -64,6 +64,18 @@ export function updateMeetingSummary(
     .run(summary, actionItems, meetingId)
 }
 
+/** Sets what a merge changed about the kept meeting: its end and its joined text. */
+export function updateMeetingSpan(
+  meetingId: number,
+  endedAt: string | null,
+  summary: string | null,
+  actionItems: string | null,
+): void {
+  getDb()
+    .prepare(`UPDATE meetings SET ended_at = ?, summary = ?, action_items = ? WHERE id = ?`)
+    .run(endedAt, summary, actionItems, meetingId)
+}
+
 export function listMeetings(jobId: number): Meeting[] {
   const rows = getDb()
     .prepare(`SELECT * FROM meetings WHERE job_id = ? ORDER BY started_at DESC`)

@@ -105,6 +105,25 @@ _Non-obvious traps. Read before touching the related area._
   `YYYY-MM-DD HH:MM:SS`); the cutoff is built in the same shape so a plain `<` works. A
   meeting with no `ended_at` (still running, or the app died mid-meeting) is never purged.
 
+## Meetings
+
+- **Pause is audio time, not wall time.** A paused meeting's clock stops: resume continues
+  from the audio time already transcribed, so a 20-minute pause adds nothing to the
+  timeline. This is what keeps live timestamps aligned with the recorded WAV (`sendAudioChunk`
+  drops chunks while paused, so no silence is written) and therefore with batch
+  re-diarization, which reads that WAV.
+- **A lost connection pauses, it does not error.** The Deepgram session retries with backoff
+  on its own; only when those are exhausted does it report, and the orchestrator turns that
+  into a pause so the meeting row survives. The UI shows the reason and a Resume button.
+- **Merging renumbers speakers into blocks, on purpose.** Diarized numbers are assigned per
+  connection, so part one’s S1 and part two’s S1 are not knowably the same person. Merge gives
+  each part its own block and leaves the judgement to the listener, who collapses them with
+  “merge into…” in the meeting view. Merging is irreversible — the other rows are deleted once
+  their segments, suggestions and names have moved.
+- **Resume opens a NEW STT connection**, so diarized speaker indices can be renumbered across
+  the pause exactly as they can across an internal reconnect. Post-meeting re-diarization is
+  what makes labels stable — and it only runs when `recordAudio` is on, since it needs the WAV.
+
 ## APIs
 
 - **Deepgram WS idle timeout:** the socket closes after ~10 s without audio. Send

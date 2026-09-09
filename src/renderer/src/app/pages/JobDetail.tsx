@@ -26,6 +26,11 @@ export function JobDetail({
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [openMeeting, setOpenMeeting] = useState<Meeting | null>(null)
+  // merging folds split recordings back into one meeting; it cannot be undone, so the
+  // button asks once before it runs
+  const [picked, setPicked] = useState<Set<number>>(new Set())
+  const [confirmMerge, setConfirmMerge] = useState(false)
+  const [mergeError, setMergeError] = useState('')
 
   useEffect(() => {
     window.sanas.jobs.list().then((all) => setJob(all.find((j) => j.id === jobId) ?? null))
@@ -76,6 +81,30 @@ export function JobDetail({
     const t = await window.sanas.glossary.add(jobId, term, '')
     setTerms((prev) => [...prev, t].sort((a, b) => a.term.localeCompare(b.term)))
     setNewTerm('')
+  }
+
+  const togglePick = (id: number): void => {
+    setConfirmMerge(false)
+    setMergeError('')
+    setPicked((prev) => {
+      const next = new Set(prev)
+      if (!next.delete(id)) next.add(id)
+      return next
+    })
+  }
+
+  const merge = async (): Promise<void> => {
+    setMergeError('')
+    try {
+      const merged = await window.sanas.meetings.merge([...picked])
+      setPicked(new Set())
+      setConfirmMerge(false)
+      setMeetings(await window.sanas.meetings.list(jobId))
+      setOpenMeeting(merged) // show the result straight away
+    } catch (e) {
+      setConfirmMerge(false)
+      setMergeError(errorText(e))
+    }
   }
 
   return (
@@ -176,14 +205,58 @@ export function JobDetail({
           <section>
             <span className="eyebrow">Meetings</span>
             {meetings.length === 0 && <p className="hint">None yet.</p>}
+            {meetings.length > 1 && (
+              <p className="hint">Tick two or more to fold a split recording back into one.</p>
+            )}
             <div className="meeting-list">
               {meetings.map((m) => (
-                <button key={m.id} className="meeting-row" onClick={() => setOpenMeeting(m)}>
-                  <span>{m.title}</span>
-                  <span className="when">{formatWhen(m.startedAt)}</span>
-                </button>
+                <div key={m.id} className="meeting-pick">
+                  {meetings.length > 1 && (
+                    <input
+                      type="checkbox"
+                      checked={picked.has(m.id)}
+                      aria-label={`Select ${m.title} for merging`}
+                      onChange={() => togglePick(m.id)}
+                    />
+                  )}
+                  <button className="meeting-row" onClick={() => setOpenMeeting(m)}>
+                    <span>{m.title}</span>
+                    <span className="when">{formatWhen(m.startedAt)}</span>
+                  </button>
+                </div>
               ))}
             </div>
+            {picked.size >= 2 && (
+              <div className="row merge-bar">
+                {confirmMerge ? (
+                  <>
+                    <span className="warn">
+                      Fold {picked.size} into the earliest? This cannot be undone.
+                    </span>
+                    <button className="btn btn-sm btn-stop" onClick={merge}>
+                      Merge
+                    </button>
+                    <button className="btn btn-sm btn-ghost" onClick={() => setConfirmMerge(false)}>
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button className="btn btn-sm" onClick={() => setConfirmMerge(true)}>
+                      Merge {picked.size} meetings
+                    </button>
+                    <button
+                      className="btn btn-sm btn-ghost"
+                      onClick={() => setPicked(new Set())}
+                      title="Clear the selection"
+                    >
+                      Clear
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+            {mergeError && <p className="notice warn">{mergeError}</p>}
           </section>
         </aside>
       </div>

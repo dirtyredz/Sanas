@@ -10,6 +10,17 @@ export function listSuggestions(meetingId: number): Suggestion[] {
     .all(meetingId) as Suggestion[]
 }
 
+/** Moves one meeting's suggestions onto another, shifting their time (merge). */
+export function reassignSuggestions(
+  fromMeetingId: number,
+  toMeetingId: number,
+  timeOffsetMs: number,
+): void {
+  getDb()
+    .prepare(`UPDATE suggestions SET meeting_id = ?, t_ms = t_ms + ? WHERE meeting_id = ?`)
+    .run(toMeetingId, timeOffsetMs, fromMeetingId)
+}
+
 export function insertSuggestion(s: {
   meetingId: number
   tMs: number

@@ -23,6 +23,7 @@ export function App(): React.JSX.Element {
   const [overlayHotkey, setOverlayHotkey] = useState('')
   const state = useMeetingState()
   const live = state.status === 'live'
+  const paused = state.status === 'paused'
 
   useEffect(() => {
     window.sanas.settings.get().then((s) => setOverlayHotkey(hotkeyLabel(s.overlayHotkey)))
@@ -46,9 +47,15 @@ export function App(): React.JSX.Element {
           </button>
         ))}
         <div className="spacer" />
-        <div className={`status ${live ? 'live' : ''}`}>
-          <span className={`dot ${live ? 'live' : ''}`} />
-          {live ? 'Listening' : state.status === 'error' ? 'Error — see Live' : 'Idle'}
+        <div className={`status ${live || paused ? 'live' : ''}`}>
+          <span className={`dot ${live ? 'live' : paused ? 'paused' : ''}`} />
+          {live
+            ? 'Listening'
+            : paused
+              ? 'Paused'
+              : state.status === 'error'
+                ? 'Error — see Live'
+                : 'Idle'}
         </div>
         <button className="nav-item" onClick={() => window.sanas.overlay.toggle()}>
           Overlay

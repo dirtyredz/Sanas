@@ -56,6 +56,11 @@ _Prioritized task trough. P0 = next up, P1 = soon, P2 = someday._
 
 ## P2 — Post-v1 ideas
 
+- [x] Merge meetings into one — job page selection, wall-clock offsets, speaker blocks (2026-09-09)
+- [ ] Global hotkey for pause/resume, so an interruption can be handled without the window
+- [ ] Main-process log to a file: `electron-vite dev` does not forward the Electron child's
+      stdout, so `console.log` from main is invisible outside DevTools
+
 - [ ] Light theme — only if a daytime user appears (the token set makes it a second `:root` block)
 - [ ] Visual QA in the real Electron window — the browser preview cannot show the frameless
       overlay at 380×460, transparency, or the Windows title bar

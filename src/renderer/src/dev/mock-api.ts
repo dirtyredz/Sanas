@@ -239,6 +239,8 @@ let liveTimer: ReturnType<typeof setTimeout> | null = null
 let liveChannels = 1
 const pinned = new Set<number>()
 let suggestionSeq = 0
+let scriptAt = 0 // where the scripted meeting got to, so resume continues it
+let scriptTimeMs = 0
 let dueRecordings = 2 // retention preview: cleaned up by run()
 
 const SCRIPT: { speaker: number; user: boolean; text: string }[] = [
@@ -278,6 +280,8 @@ function emit(ev: TranscriptEvent): void {
 
 function runScript(meetingId: number, i: number, t: number): void {
   if (state.status !== 'live') return
+  scriptAt = i
+  scriptTimeMs = t
   const line = SCRIPT[i % SCRIPT.length]
   // stereo: the user is channel 0 → speaker -1, isUser; mono: a diarized index, pinned or not
   const speaker = liveChannels === 2 && line.user ? -1 : line.speaker
@@ -357,7 +361,20 @@ const api: SanasApi = {
       liveChannels = channels ?? 1
       pinned.clear()
       setState({ meetingId: 99, status: 'live' })
+      scriptAt = 0
+      scriptTimeMs = 0
       setTimeout(() => runScript(99, 0, 0), 800)
+      return state
+    },
+    pause: async () => {
+      if (liveTimer) clearTimeout(liveTimer)
+      setState({ meetingId: state.meetingId, status: 'paused' })
+      return state
+    },
+    resume: async () => {
+      const id = state.meetingId ?? 99
+      setState({ meetingId: id, status: 'live' })
+      setTimeout(() => runScript(id, scriptAt, scriptTimeMs), 600)
       return state
     },
     stop: async () => {
@@ -485,6 +502,24 @@ const api: SanasApi = {
     },
     export: async () => 'C:\\Users\\you\\Documents\\Northwind weekly sync.md',
     get: async (meetingId) => meetings.find((m) => m.id === meetingId) ?? null,
+    merge: async (ids) => {
+      const parts = meetings
+        .filter((m) => ids.includes(m.id))
+        .sort((a, b) => a.startedAt.localeCompare(b.startedAt))
+      if (parts.length < 2) throw new Error('Pick at least two meetings to merge.')
+      if (new Set(parts.map((m) => m.jobId)).size > 1) {
+        throw new Error('Those meetings belong to different jobs — move them together first.')
+      }
+      const [keep, ...rest] = parts
+      keep.endedAt = parts[parts.length - 1].endedAt
+      const summaries = parts.map((m) => m.summary).filter(Boolean)
+      keep.summary = summaries.length > 0 ? summaries.join('\n\n') : null
+      for (const r of rest) {
+        for (const seg of segments) if (seg.meetingId === r.id) seg.meetingId = keep.id
+        meetings.splice(meetings.indexOf(r), 1)
+      }
+      return keep
+    },
     summarize: async (meetingId) => {
       const m = meetings.find((x) => x.id === meetingId)
       if (!m) throw new Error('Meeting not found.')

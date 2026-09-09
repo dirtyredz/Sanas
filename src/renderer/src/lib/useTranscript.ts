@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { MeetingState, TranscriptEvent } from '@shared/types'
 
 export interface TranscriptLine {
@@ -18,6 +18,7 @@ export function useTranscript(): {
 } {
   const [lines, setLines] = useState<TranscriptLine[]>([])
   const [state, setState] = useState<MeetingState>({ meetingId: null, status: 'idle' })
+  const shownMeetingId = useRef<number | null>(null)
 
   useEffect(() => {
     const offT = window.sanas.meeting.onTranscript((ev: TranscriptEvent) => {
@@ -35,7 +36,9 @@ export function useTranscript(): {
     })
     const offS = window.sanas.meeting.onState((s: MeetingState) => {
       setState(s)
-      if (s.status === 'live') setLines([])
+      // clear for a NEW meeting only — resuming a paused one keeps what is on screen
+      if (s.status === 'live' && s.meetingId !== shownMeetingId.current) setLines([])
+      if (s.meetingId !== null) shownMeetingId.current = s.meetingId
     })
     return () => {
       offT()

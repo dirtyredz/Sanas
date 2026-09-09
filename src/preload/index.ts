@@ -38,6 +38,9 @@ const api = {
   meeting: {
     start: (jobId?: number, channels?: number): Promise<MeetingState> =>
       ipcRenderer.invoke(IPC.MeetingStart, jobId, channels),
+    /** Stop listening but keep the meeting open; resume continues its clock. */
+    pause: (): Promise<MeetingState> => ipcRenderer.invoke(IPC.MeetingPause),
+    resume: (): Promise<MeetingState> => ipcRenderer.invoke(IPC.MeetingResume),
     stop: (): Promise<MeetingState> => ipcRenderer.invoke(IPC.MeetingStop),
     pinSpeaker: (speaker: number, isUser: boolean): Promise<void> =>
       ipcRenderer.invoke(IPC.MeetingPinSpeaker, speaker, isUser),
@@ -107,6 +110,10 @@ const api = {
       ipcRenderer.invoke(IPC.MeetingsExport, meetingId),
     get: (meetingId: number): Promise<Meeting | null> =>
       ipcRenderer.invoke(IPC.MeetingsGet, meetingId),
+    /** Folds the given meetings into their earliest one. Irreversible; rejects with a
+     *  readable message when they cannot be merged (different jobs, one still running). */
+    merge: (meetingIds: number[]): Promise<Meeting> =>
+      ipcRenderer.invoke(IPC.MeetingsMerge, meetingIds),
     /** Rejects with a readable message when the summary can't run. */
     summarize: (meetingId: number): Promise<Meeting> =>
       ipcRenderer.invoke(IPC.MeetingsSummarize, meetingId),

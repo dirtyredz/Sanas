@@ -198,3 +198,7 @@ body.overlay-body {
     animation: none;
   }
 }
+
+.dot.paused {
+  background: var(--warn);
+}

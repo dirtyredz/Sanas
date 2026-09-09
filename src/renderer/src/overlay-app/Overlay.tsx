@@ -16,15 +16,22 @@ export function Overlay(): React.JSX.Element {
   }, [lines])
 
   const live = state.status === 'live'
+  const paused = state.status === 'paused'
   const tail = lines.slice(-12)
 
   return (
     <div className="overlay-panel">
       <header className="overlay-header">
-        <span className={`dot ${live ? 'live' : ''}`} />
+        <span className={`dot ${live ? 'live' : paused ? 'paused' : ''}`} />
         <span className="title">SANAS</span>
         <span className="hint">
-          {ghost ? 'ghost — hotkey restores' : live ? 'listening' : state.status}
+          {ghost
+            ? 'ghost — hotkey restores'
+            : live
+              ? 'listening'
+              : paused
+                ? 'paused'
+                : state.status}
         </span>
         <button
           className="ghost-btn"
@@ -36,7 +43,9 @@ export function Overlay(): React.JSX.Element {
       </header>
       <section className="overlay-transcript" ref={scrollRef}>
         {tail.length === 0 && (
-          <p className="muted">{live ? 'Listening…' : 'Start a meeting in the Sanas window.'}</p>
+          <p className="muted">
+            {live ? 'Listening…' : paused ? 'Paused.' : 'Start a meeting in the Sanas window.'}
+          </p>
         )}
         {tail.map((l, i) => (
           <p key={i} className={`line ${l.interim ? 'interim' : ''}`}>

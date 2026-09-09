@@ -41,6 +41,17 @@ export function mergeSpeakers(meetingId: number, from: number, to: number): void
   })()
 }
 
+/** Moves one meeting's speaker names onto another, into its speaker block (merge). */
+export function reassignSpeakerNames(
+  fromMeetingId: number,
+  toMeetingId: number,
+  speakerOffset: number,
+): void {
+  getDb()
+    .prepare(`UPDATE speakers SET meeting_id = ?, speaker = speaker + ? WHERE meeting_id = ?`)
+    .run(toMeetingId, speakerOffset, fromMeetingId)
+}
+
 export function clearSpeakerNames(meetingId: number): void {
   getDb().prepare(`DELETE FROM speakers WHERE meeting_id = ?`).run(meetingId)
 }
