@@ -1,5 +1,5 @@
 import { getDb } from '../index'
-import type { Meeting, Segment } from '@shared/types'
+import type { Meeting, Segment, SearchMatch } from '@shared/types'
 import { toMeeting, type MeetingRow } from './meetings'
 
 export function listSegments(meetingId: number): Segment[] {
@@ -16,33 +16,56 @@ export function listSegments(meetingId: number): Segment[] {
     })
 }
 
-export interface SegmentMatch {
-  meeting: Meeting
-  jobName: string
-  tStartMs: number
-  snippet: string
+/** The segments just before and after one (ids are sequential within a meeting), for
+ *  showing a hit in context. Includes the segment itself. */
+export function listSegmentsAround(
+  meetingId: number,
+  segmentId: number,
+  radius: number,
+): Segment[] {
+  return getDb()
+    .prepare(
+      `SELECT id, meeting_id AS meetingId, t_start_ms AS tStartMs, t_end_ms AS tEndMs,
+              speaker, is_user AS isUser, text
+       FROM segments WHERE meeting_id = ? AND id BETWEEN ? AND ? ORDER BY t_start_ms`,
+    )
+    .all(meetingId, segmentId - radius, segmentId + radius)
+    .map((r) => {
+      const row = r as Omit<Segment, 'isUser'> & { isUser: number }
+      return { ...row, isUser: row.isUser === 1 }
+    })
 }
 
-/** Case-insensitive substring search over all transcripts, newest meetings first. */
-export function searchSegments(query: string, limit = 50): SegmentMatch[] {
+/** Ranked full-text search over every transcript (FTS5, bm25). `match` must already be
+ *  an FTS5 expression from db/fts-query.ts — never raw user text. snippet() wraps each
+ *  matched term in U+0001 … U+0002 (see SearchMatch); the renderer turns those into <mark>. */
+export function searchSegments(
+  match: string,
+  opts: { jobId?: number; limit?: number } = {},
+): SearchMatch[] {
+  if (!match) return []
   const rows = getDb()
     .prepare(
-      `SELECT m.*, j.name AS job_name, s.t_start_ms AS t_start, s.text AS snippet
-       FROM segments s
+      `SELECT m.*, j.name AS job_name, s.id AS segment_id, s.t_start_ms AS t_start,
+              snippet(segments_fts, 0, char(1), char(2), '…', 14) AS snippet
+       FROM segments_fts f
+       JOIN segments s ON s.id = f.rowid
        JOIN meetings m ON m.id = s.meeting_id
        JOIN jobs j ON j.id = m.job_id
-       WHERE s.text LIKE ? ESCAPE '\\'
-       ORDER BY m.started_at DESC, s.t_start_ms
+       WHERE segments_fts MATCH ? AND (? IS NULL OR m.job_id = ?)
+       ORDER BY bm25(segments_fts), m.started_at DESC
        LIMIT ?`,
     )
-    .all(`%${query.replace(/[\\%_]/g, (c) => `\\${c}`)}%`, limit) as (MeetingRow & {
+    .all(match, opts.jobId ?? null, opts.jobId ?? null, opts.limit ?? 50) as (MeetingRow & {
     job_name: string
+    segment_id: number
     t_start: number
     snippet: string
   })[]
   return rows.map((r) => ({
-    meeting: toMeeting(r),
+    meeting: toMeeting(r) as Meeting,
     jobName: r.job_name,
+    segmentId: r.segment_id,
     tStartMs: r.t_start,
     snippet: r.snippet,
   }))
@@ -65,6 +88,8 @@ export function insertSegment(seg: {
   return Number(res.lastInsertRowid)
 }
 
+/** Row-by-row delete so the FTS triggers see every segment (a cascade from the
+ *  meetings row would not maintain segments_fts). */
 export function deleteSegmentsForMeeting(meetingId: number): void {
   getDb().prepare(`DELETE FROM segments WHERE meeting_id = ?`).run(meetingId)
 }

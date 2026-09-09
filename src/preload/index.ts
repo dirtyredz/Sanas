@@ -2,11 +2,14 @@ import { contextBridge, ipcRenderer } from 'electron'
 import { IPC } from '../shared/ipc'
 import type {
   GlossaryTerm,
+  HistoryEvent,
+  HistoryHit,
   Job,
   Meeting,
   MeetingState,
   RetentionPreview,
   RetentionResult,
+  SearchMatch,
   Segment,
   Settings,
   SettingsView,
@@ -58,6 +61,17 @@ const api = {
       return () => ipcRenderer.removeListener(IPC.SuggestionEvent, listener)
     },
   },
+  history: {
+    /** Resolves with the sources at once; the answer then streams via onEvent. Rejects
+     *  with a readable message when it cannot run (no API key). */
+    ask: (question: string, jobId?: number): Promise<{ askId: number; sources: HistoryHit[] }> =>
+      ipcRenderer.invoke(IPC.HistoryAsk, question, jobId),
+    onEvent: (cb: (ev: HistoryEvent) => void): (() => void) => {
+      const listener = (_e: unknown, ev: HistoryEvent): void => cb(ev)
+      ipcRenderer.on(IPC.HistoryEvent, listener)
+      return () => ipcRenderer.removeListener(IPC.HistoryEvent, listener)
+    },
+  },
   retention: {
     /** What a clean-up would remove right now, under the saved limits. */
     preview: (): Promise<RetentionPreview> => ipcRenderer.invoke(IPC.RetentionPreview),
@@ -99,9 +113,7 @@ const api = {
     /** Resolves with the recipient; rejects with a readable message on failure. */
     emailSummary: (meetingId: number): Promise<string> =>
       ipcRenderer.invoke(IPC.MeetingsEmailSummary, meetingId),
-    search: (
-      query: string,
-    ): Promise<{ meeting: Meeting; jobName: string; tStartMs: number; snippet: string }[]> =>
+    search: (query: string): Promise<SearchMatch[]> =>
       ipcRenderer.invoke(IPC.SegmentsSearch, query),
     speakerNames: (meetingId: number): Promise<{ speaker: number; name: string }[]> =>
       ipcRenderer.invoke(IPC.SpeakersList, meetingId),

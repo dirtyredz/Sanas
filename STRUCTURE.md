@@ -17,7 +17,7 @@ sanas/
 ├── src/
 │   ├── main/                    # Electron main process
 │   │   ├── index.ts             # app lifecycle, hotkeys, userData pinning
-│   │   ├── windows/             # main-window + overlay-window builders
+│   │   ├── windows/             # main-window + overlay-window builders, broadcast (main → all windows)
 │   │   ├── ipc/                 # typed IPC channel handlers (thin — delegate to services)
 │   │   ├── system-audio.ts      # display-media loopback handler (same-PC meeting audio)
 │   │   ├── services/
@@ -30,9 +30,10 @@ sanas/
 │   │   │   │                    #   remove (audio file + row — the one delete path)
 │   │   │   ├── email/           # EmailProvider seam + smtp.ts (nodemailer transport)
 │   │   │   ├── retention/       # age-based clean-up of recordings / whole meetings (timer + on demand)
+│   │   │   ├── history/         # ask-your-history: FTS5 retrieval + grounded, streamed answer
 │   │   │   ├── transcript-format.ts # canonical main-side line formatting/windowing
 │   │   │   └── audio-store/     # WAV recording of the capture stream (default on)
-│   │   ├── db/                  # better-sqlite3 open + migrations
+│   │   ├── db/                  # better-sqlite3 open + migrations, fts-query (text → safe FTS5 MATCH)
 │   │   │   └── repos/           # jobs+glossary, meetings+segments, suggestions (SQL lives here only)
 │   │   └── config/              # settings + API key storage
 │   ├── preload/                 # contextBridge API surface (typed)
@@ -60,7 +61,8 @@ sanas/
 - `src/main/windows/` — BrowserWindow builders (library window, overlay window)
 - `src/main/ipc/` — typed IPC channel handlers; validate + delegate, no business logic
 - `src/main/services/` — main-process services and provider seams: `stt/`, `assistant/`,
-  `email/`, `meetings/`, `audio-store/`, `retention/`, plus main-side transcript formatting
+  `email/`, `meetings/`, `audio-store/`, `retention/`, `history/`, plus main-side transcript
+  formatting
 - `src/main/db/` — better-sqlite3 connection + schema migrations
 - `src/main/db/repos/` — per-entity repositories; the only place SQL strings live
 - `src/main/config/` — settings persistence + API key storage
@@ -96,7 +98,8 @@ not beside `index.ts` / `system-audio.ts`.
   in IPC glue. Renderer never talks to APIs or the DB directly.
 - **Trigger engine is its own module** inside `assistant/` — ambient-detection heuristics
   will grow and churn; keep them out of the Claude client.
-- **Repos own SQL** — no SQL strings outside `db/repos/`.
+- **Repos own SQL** — no SQL strings outside `db/repos/`. FTS5 MATCH expressions are built
+  only by `db/fts-query.ts` from user text (every token quoted), never concatenated elsewhere.
 - **Overlay is a separate bundle** from the main renderer — it must stay tiny and fast.
 - **Settings sections are components** — `app/settings/` holds one file per section;
   `SettingsPage` owns the draft and the save, nothing else.

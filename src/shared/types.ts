@@ -50,6 +50,33 @@ export interface Suggestion {
   text: string
 }
 
+/** One full-text hit. `snippet` wraps matched terms in \u0001…\u0002 for the renderer to mark. */
+export interface SearchMatch {
+  meeting: Meeting
+  jobName: string
+  segmentId: number
+  tStartMs: number
+  snippet: string
+}
+
+/** A meeting an Ask answer drew on, with where the best hit was. */
+export interface HistoryHit {
+  meetingId: number
+  title: string
+  jobName: string
+  startedAt: string
+  tStartMs: number
+  snippet: string
+}
+
+/** Streaming answer to an Ask question (main → windows). */
+export interface HistoryEvent {
+  askId: number
+  /** 'delta' appends text; 'done' carries the full answer; 'error' a message. */
+  kind: 'delta' | 'done' | 'error'
+  text: string
+}
+
 /** Capture topology: 1 = mic only, 2 = mic + system loopback. */
 export type ChannelCount = 1 | 2
 

@@ -3,16 +3,18 @@ import { SettingsPage } from './pages/SettingsPage'
 import { LiveMeetingPage } from './pages/LiveMeetingPage'
 import { JobsPage } from './pages/JobsPage'
 import { SearchPage } from './pages/SearchPage'
+import { AskPage } from './pages/AskPage'
 import { useMeetingState } from '../lib/useMeetingState'
 import { hotkeyLabel } from '../lib/hotkey-label'
-import { IconJobs, IconLive, IconSearch, IconSettings } from '../lib/icons'
+import { IconAsk, IconJobs, IconLive, IconSearch, IconSettings } from '../lib/icons'
 
-type Page = 'live' | 'jobs' | 'search' | 'settings'
+type Page = 'live' | 'jobs' | 'search' | 'ask' | 'settings'
 
 const NAV: { page: Page; label: string; icon: () => React.JSX.Element }[] = [
   { page: 'live', label: 'Live', icon: IconLive },
   { page: 'jobs', label: 'Jobs', icon: IconJobs },
   { page: 'search', label: 'Search', icon: IconSearch },
+  { page: 'ask', label: 'Ask', icon: IconAsk },
   { page: 'settings', label: 'Settings', icon: IconSettings },
 ]
 
@@ -57,6 +59,7 @@ export function App(): React.JSX.Element {
         {page === 'live' && <LiveMeetingPage />}
         {page === 'jobs' && <JobsPage />}
         {page === 'search' && <SearchPage />}
+        {page === 'ask' && <AskPage />}
         {page === 'settings' && <SettingsPage />}
       </main>
     </div>

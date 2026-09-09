@@ -1,9 +1,12 @@
 import type {
   GlossaryTerm,
+  HistoryEvent,
+  HistoryHit,
   Job,
   Meeting,
   MeetingState,
   RetentionPreview,
+  SearchMatch,
   Segment,
   Settings,
   SettingsView,
@@ -228,6 +231,8 @@ const transcriptListeners = new Set<Listener<TranscriptEvent>>()
 const stateListeners = new Set<Listener<MeetingState>>()
 const suggestionListeners = new Set<Listener<SuggestionEvent>>()
 const ghostListeners = new Set<Listener<boolean>>()
+const historyListeners = new Set<Listener<HistoryEvent>>()
+let askSeq = 0
 let state: MeetingState = { meetingId: null, status: 'idle' }
 let liveTimer: ReturnType<typeof setTimeout> | null = null
 let liveChannels = 1
@@ -400,6 +405,50 @@ const api: SanasApi = {
       if (i >= 0) glossary.splice(i, 1)
     },
   },
+  history: {
+    ask: async (question, jobId) => {
+      const askId = ++askSeq
+      const hit = segments.find((s) => s.text.toLowerCase().includes('november')) ?? segments[0]
+      const meeting = meetings.find((m) => m.id === hit.meetingId)!
+      const sources: HistoryHit[] =
+        jobId === 2
+          ? []
+          : [
+              {
+                meetingId: meeting.id,
+                title: meeting.title,
+                jobName: jobs.find((j) => j.id === meeting.jobId)?.name ?? 'Unsorted',
+                startedAt: meeting.startedAt,
+                tStartMs: hit.tStartMs,
+                snippet: hit.text,
+              },
+            ]
+      const answer =
+        sources.length === 0
+          ? 'Nothing in your meetings mentions that.'
+          : 'Dana confirmed the November deadline for the real-time map and asked for a phase 2 estimate covering the driver app [Northwind weekly sync, 2026-09-08]. Marcus flagged ETA drift on the east routes; the geofence prototype is the planned fix. Finance needs the Azure credits review booked before the credits expire at the end of November. Your question was: ' +
+            question
+      const words = answer.split(' ')
+      let i = 0
+      const tick = (): void => {
+        const done = i >= words.length
+        historyListeners.forEach((l) =>
+          l({
+            askId,
+            kind: done ? 'done' : 'delta',
+            text: done ? answer : (i === 0 ? '' : ' ') + words[i],
+          }),
+        )
+        if (!done) {
+          i++
+          setTimeout(tick, 40)
+        }
+      }
+      setTimeout(tick, 300)
+      return { askId, sources }
+    },
+    onEvent: on(historyListeners),
+  },
   retention: {
     preview: async (): Promise<RetentionPreview> => ({
       meetings: 0,
@@ -452,17 +501,19 @@ const api: SanasApi = {
         throw new Error(`No summary email set for job "${job?.name}" — add one on the job.`)
       return job.summaryEmail
     },
-    search: async (query) => {
-      const q = query.toLowerCase()
+    search: async (query): Promise<SearchMatch[]> => {
+      const q = query.trim()
+      const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'i')
       return segments
-        .filter((s) => s.text.toLowerCase().includes(q))
+        .filter((s) => re.test(s.text))
         .map((s) => {
           const meeting = meetings.find((m) => m.id === s.meetingId)!
           return {
             meeting,
             jobName: jobs.find((j) => j.id === meeting.jobId)?.name ?? 'Unsorted',
+            segmentId: s.id,
             tStartMs: s.tStartMs,
-            snippet: s.text,
+            snippet: s.text.replace(re, '\u0001$1\u0002'),
           }
         })
     },

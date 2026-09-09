@@ -24,6 +24,8 @@ import { listMeetings, getMeeting, renameMeeting, moveMeetingToJob } from '../db
 import { removeMeeting } from '../services/meetings/remove'
 import { previewRetention, runRetention } from '../services/retention'
 import { listSegments, searchSegments } from '../db/repos/segments'
+import { ftsAllOf } from '../db/fts-query'
+import { askHistory } from '../services/history'
 import { exportMeetingMarkdown } from '../services/meetings/export'
 import { summarizeStoredMeeting } from '../services/meetings/summarize'
 import { emailMeetingSummary } from '../services/meetings/summary-email'
@@ -31,6 +33,14 @@ import { listSuggestions } from '../db/repos/suggestions'
 import { listSpeakerNames, setSpeakerName, mergeSpeakers } from '../db/repos/speakers'
 
 // Thin handlers only — validate and delegate (see STRUCTURE.md).
+
+/** Ingress check for free text: a non-empty string, capped so a stray payload cannot be huge. */
+function requireText(v: unknown, what: string, max: number): string {
+  if (typeof v !== 'string' || v.trim().length === 0 || v.length > max) {
+    throw new Error(`Invalid ${what}`)
+  }
+  return v.trim()
+}
 
 /** Ingress check for row ids: preload's TypeScript types do not survive the IPC hop. */
 function requireId(v: unknown, what: string): number {
@@ -119,8 +129,16 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.SpeakersMerge, (_e, meetingId: unknown, from: number, to: number) =>
     mergeSpeakers(requireId(meetingId, 'meeting id'), from, to),
   )
-  ipcMain.handle(IPC.SegmentsSearch, (_e, query: string) =>
-    query.trim().length >= 2 ? searchSegments(query.trim()) : [],
+  ipcMain.handle(IPC.SegmentsSearch, (_e, query: unknown) =>
+    typeof query === 'string' && query.trim().length >= 2
+      ? searchSegments(ftsAllOf(query), { limit: 50 })
+      : [],
+  )
+  ipcMain.handle(IPC.HistoryAsk, (_e, question: unknown, jobId: unknown) =>
+    askHistory(
+      requireText(question, 'question', 500),
+      jobId === undefined || jobId === null ? undefined : requireId(jobId, 'job id'),
+    ),
   )
   ipcMain.handle(IPC.RetentionPreview, () => previewRetention())
   ipcMain.handle(IPC.RetentionRun, () => runRetention())

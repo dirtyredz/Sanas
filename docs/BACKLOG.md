@@ -66,4 +66,4 @@ _Prioritized task trough. P0 = next up, P1 = soon, P2 = someday._
       transport ever arrives (see STRUCTURE.md structural debt)
 - [x] Meeting search across jobs (Search page, snippet highlight)
 - [x] Markdown export (meeting → .md via save dialog)
-- [ ] Ask-your-history chat (RAG over segments)
+- [x] Ask-your-history (FTS5 retrieval + grounded Claude answer with citations, 2026-09-09)

@@ -2,6 +2,18 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-09-09 — Ask-your-history on FTS5 + grounded prompting, not embeddings
+
+"What did we decide about X?" needs retrieval over every transcript. Chosen: SQLite FTS5
+(compiled into better-sqlite3) as an external-content index over `segments.text` with
+porter stemming, kept current by triggers; bm25 ranks; the top hits go to Claude with their
+neighbouring lines and a system prompt that forbids answering beyond the excerpts and demands
+[title, date] citations. The same index makes Search ranked and stemmed. Rejected: a vector
+index (an embeddings vendor or a local model, plus a store, for a few hundred meetings that
+keyword + stemming already covers); sending whole transcripts (cost, and the 30k-char window
+already exists for a reason); LIKE search (unranked, no stemming). Revisit embeddings only if
+questions start missing paraphrases that share no words with the transcript.
+
 ## 2026-09-09 — Visual identity: dark by design, teal for the room, sand for your voice
 
 Sanas lives beside a call, so the library window commits to a single dark theme rather

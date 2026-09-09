@@ -412,3 +412,78 @@
 .retention-status {
   font-size: 13px;
 }
+
+/* ---------- ask ---------- */
+
+.ask-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 14px;
+}
+
+.ask-box {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.ask-box select {
+  min-width: 150px;
+}
+
+.ask-box input {
+  flex: 1;
+  max-width: 640px;
+  font-size: 15px;
+  padding: 10px 12px;
+}
+
+.exchanges {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 760px;
+}
+
+.exchange {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.exchange .question {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--me);
+}
+
+.exchange .answer {
+  white-space: pre-wrap;
+  line-height: 1.55;
+  max-width: 70ch;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 12px 16px;
+}
+
+.exchange .cursor {
+  animation: pulse 1s ease-in-out infinite;
+  color: var(--accent);
+}
+
+.sources {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.sources .eyebrow {
+  margin-right: 4px;
+}

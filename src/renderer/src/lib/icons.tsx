@@ -47,6 +47,16 @@ export function IconSettings(): React.JSX.Element {
   )
 }
 
+export function IconAsk(): React.JSX.Element {
+  return (
+    <svg {...base}>
+      <path d="M2.5 3.5h11v7.5H7l-3 2.5v-2.5H2.5z" />
+      <path d="M6.6 6.2a1.5 1.5 0 1 1 2.1 1.4c-.5.2-.7.5-.7 1" />
+      <path d="M8 9.9v.1" />
+    </svg>
+  )
+}
+
 export function IconLaptop(): React.JSX.Element {
   return (
     <svg {...base}>

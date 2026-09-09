@@ -47,6 +47,9 @@ export const IPC = {
   SpeakersList: 'speakers:list',
   SpeakersRename: 'speakers:rename',
   SpeakersMerge: 'speakers:merge',
+  // ask your history (question → sources at once, answer streamed as HistoryEvent)
+  HistoryAsk: 'history:ask',
+  HistoryEvent: 'history:event',
   // retention (age-based clean-up of recordings / meetings)
   RetentionPreview: 'retention:preview',
   RetentionRun: 'retention:run',

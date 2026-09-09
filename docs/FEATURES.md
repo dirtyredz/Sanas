@@ -36,18 +36,18 @@ _Capability inventory. Status: ✅ done · 🔨 in progress · 📋 planned · �
 
 ## App
 
-| Feature                                                         | Status | Notes                                                                  |
-| --------------------------------------------------------------- | ------ | ---------------------------------------------------------------------- |
-| Settings: API keys, hotkey, audio device, SMTP                  | ✅     | secrets main-process only, masked view to renderer                     |
-| SQLite storage + v1 schema + migrations                         | ✅     | %APPDATA%/sanas/sanas.db, WAL                                          |
-| Retention controls                                              | ✅     | audio after N days / whole meetings after N days; timer + Clean up now |
-| Overlay ghost mode (click-through)                              | ✅     | 👻 button; overlay hotkey restores                                     |
-| Per-meeting suggestion log                                      | ✅     | Transcript / Suggestions tabs                                          |
-| Audio recording (local WAV)                                     | ✅     | on by default (feeds re-diarization); Settings toggle                  |
-| Windows installer                                               | ✅     | `npm run dist` → release/Sanas Setup.exe                               |
-| Meeting search (across jobs)                                    | ✅     | Search page, snippet highlight                                         |
-| Export (markdown transcript/summary)                            | ✅     | Export button in meeting view                                          |
-| Overlay opacity slider                                          | ✅     | Settings, live-applied                                                 |
-| Ask-your-history chat ("what did we decide about X?")           | 💤     | post-v1, RAG over segments                                             |
-| Visual identity (tokens, control vocabulary, transcript gutter) | ✅     | dark by design; teal = room/app, sand = your voice (2026-09-09)        |
-| Browser preview with a typed mock bridge (`npm run dev:web`)    | ✅     | dev only; scripted live meeting, `overlay.html?demo=live`              |
+| Feature                                                         | Status | Notes                                                                     |
+| --------------------------------------------------------------- | ------ | ------------------------------------------------------------------------- |
+| Settings: API keys, hotkey, audio device, SMTP                  | ✅     | secrets main-process only, masked view to renderer                        |
+| SQLite storage + v1 schema + migrations                         | ✅     | %APPDATA%/sanas/sanas.db, WAL                                             |
+| Retention controls                                              | ✅     | audio after N days / whole meetings after N days; timer + Clean up now    |
+| Overlay ghost mode (click-through)                              | ✅     | 👻 button; overlay hotkey restores                                        |
+| Per-meeting suggestion log                                      | ✅     | Transcript / Suggestions tabs                                             |
+| Audio recording (local WAV)                                     | ✅     | on by default (feeds re-diarization); Settings toggle                     |
+| Windows installer                                               | ✅     | `npm run dist` → release/Sanas Setup.exe                                  |
+| Meeting search (across jobs)                                    | ✅     | FTS5 ranked + stemmed, matched terms marked (2026-09-09)                  |
+| Export (markdown transcript/summary)                            | ✅     | Export button in meeting view                                             |
+| Overlay opacity slider                                          | ✅     | Settings, live-applied                                                    |
+| Ask-your-history ("what did we decide about X?")                | ✅     | Ask page: FTS5 retrieval + cited, streamed answer; job scope (2026-09-09) |
+| Visual identity (tokens, control vocabulary, transcript gutter) | ✅     | dark by design; teal = room/app, sand = your voice (2026-09-09)           |
+| Browser preview with a typed mock bridge (`npm run dev:web`)    | ✅     | dev only; scripted live meeting, `overlay.html?demo=live`                 |

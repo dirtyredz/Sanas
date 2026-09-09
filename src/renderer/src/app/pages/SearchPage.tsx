@@ -1,18 +1,24 @@
 import { useEffect, useState } from 'react'
-import type { Meeting } from '@shared/types'
+import type { Meeting, SearchMatch } from '@shared/types'
 import { MeetingView } from './MeetingView'
 import { formatClock } from '../../lib/format-time'
 
-interface Match {
-  meeting: Meeting
-  jobName: string
-  tStartMs: number
-  snippet: string
+/** snippet() marks matched terms with U+0001 … U+0002; render those as <mark>. */
+function highlighted(snippet: string): React.JSX.Element {
+  // eslint-disable-next-line no-control-regex -- the markers are control characters on purpose
+  const parts = snippet.split(/(\u0001[^\u0002]*\u0002)/)
+  return (
+    <>
+      {parts.map((p, i) =>
+        p.startsWith('\u0001') ? <mark key={i}>{p.slice(1, -1)}</mark> : <span key={i}>{p}</span>,
+      )}
+    </>
+  )
 }
 
 export function SearchPage(): React.JSX.Element {
   const [query, setQuery] = useState('')
-  const [matches, setMatches] = useState<Match[]>([])
+  const [matches, setMatches] = useState<SearchMatch[]>([])
   const [openMeeting, setOpenMeeting] = useState<Meeting | null>(null)
 
   // debounce keystrokes → search
@@ -38,26 +44,13 @@ export function SearchPage(): React.JSX.Element {
     )
   }
 
-  const highlight = (text: string): React.JSX.Element => {
-    const i = text.toLowerCase().indexOf(query.trim().toLowerCase())
-    if (i < 0) return <>{text}</>
-    const q = query.trim()
-    return (
-      <>
-        {text.slice(0, i)}
-        <mark>{text.slice(i, i + q.length)}</mark>
-        {text.slice(i + q.length)}
-      </>
-    )
-  }
-
   const searching = query.trim().length >= 2
 
   return (
     <div className="search-page">
       <div className="page-head">
         <h2>Search</h2>
-        <p>Anything said in any meeting, across all jobs.</p>
+        <p>Anything said in any meeting, across all jobs. Word forms match too.</p>
       </div>
       <div className="search-box">
         <input
@@ -70,13 +63,17 @@ export function SearchPage(): React.JSX.Element {
 
       <div className="search-results">
         {searching && matches.length === 0 && <p className="empty">No matches.</p>}
-        {matches.map((m, i) => (
-          <button key={i} className="search-hit" onClick={() => setOpenMeeting(m.meeting)}>
+        {matches.map((m) => (
+          <button
+            key={m.segmentId}
+            className="search-hit"
+            onClick={() => setOpenMeeting(m.meeting)}
+          >
             <span className="hit-meta">
               {m.jobName} · {m.meeting.title} ·{' '}
               <span className="when">{formatClock(m.tStartMs)}</span>
             </span>
-            <span className="hit-snippet">{highlight(m.snippet)}</span>
+            <span className="hit-snippet">{highlighted(m.snippet)}</span>
           </button>
         ))}
       </div>

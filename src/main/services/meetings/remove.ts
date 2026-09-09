@@ -1,5 +1,6 @@
 import { existsSync, unlinkSync } from 'fs'
 import { deleteMeeting, getMeeting } from '../../db/repos/meetings'
+import { deleteSegmentsForMeeting } from '../../db/repos/segments'
 
 // Deleting a meeting has two halves — the audio file on disk and the row (segments,
 // suggestions and speaker names cascade from it). This is the one place both happen;
@@ -14,6 +15,7 @@ export function removeMeeting(meetingId: number): RemoveOutcome {
   const meeting = getMeeting(meetingId)
   if (!meeting) return 'missing'
   if (!removeAudioFile(meeting.audioPath)) return 'audio-locked'
+  deleteSegmentsForMeeting(meetingId) // row by row, so segments_fts stays in sync
   deleteMeeting(meetingId)
   return 'removed'
 }

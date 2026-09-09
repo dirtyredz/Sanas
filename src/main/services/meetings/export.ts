@@ -4,13 +4,8 @@ import { getMeeting } from '../../db/repos/meetings'
 import { listSegments } from '../../db/repos/segments'
 import { listSuggestions } from '../../db/repos/suggestions'
 import { getJob } from '../../db/repos/jobs'
-import { speakerLabel } from '../transcript-format'
+import { formatClockMs as fmt, speakerLabel } from '../transcript-format'
 import { speakerNameMap } from '../../db/repos/speakers'
-
-function fmt(ms: number): string {
-  const s = Math.floor(ms / 1000)
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
-}
 
 /** Builds a markdown export and prompts the user where to save it.
  *  Returns the saved path, or null if the user cancelled. */

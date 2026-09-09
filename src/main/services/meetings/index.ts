@@ -1,4 +1,3 @@
-import { BrowserWindow } from 'electron'
 import { IPC } from '@shared/ipc'
 import type { ChannelCount, MeetingState, SuggestionEvent, TranscriptEvent } from '@shared/types'
 import { loadSettings } from '../../config/settings'
@@ -17,6 +16,7 @@ import { speakerNameMap } from '../../db/repos/speakers'
 import { claudeProvider } from '../assistant/claude'
 import { buildSystemPrompt, buildUserContent, type TranscriptLine } from '../assistant/prompts'
 import { resetTriggers, shouldTrigger } from '../assistant/triggers'
+import { broadcast } from '../../windows/broadcast'
 
 // Orchestrates one live meeting at a time: STT session, persistence, event fan-out,
 // and the assist loop (ambient triggers + on-demand suggestions).
@@ -30,12 +30,6 @@ const transcriptWindow: TranscriptLine[] = [] // rolling finals for prompt assem
 let systemPrompt = '' // stable per meeting (cached by the provider)
 let suggestionBusy = false
 let suggestionSeq = 0
-
-function broadcast(channel: string, payload: unknown): void {
-  for (const win of BrowserWindow.getAllWindows()) {
-    if (!win.isDestroyed()) win.webContents.send(channel, payload)
-  }
-}
 
 function setState(state: MeetingState): void {
   broadcast(IPC.MeetingState, state)

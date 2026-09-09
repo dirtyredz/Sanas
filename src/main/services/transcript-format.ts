@@ -21,6 +21,12 @@ export function speakerLabel(
   return names?.get(l.speaker) ?? (l.speaker >= 0 ? `S${l.speaker + 1}` : '?')
 }
 
+/** Meeting-relative milliseconds → "m:ss" (main-side; the renderer has its own). */
+export function formatClockMs(ms: number): string {
+  const s = Math.max(0, Math.floor(ms / 1000))
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+}
+
 /** Render lines as "<label>: <text>" rows, keeping only the most recent capChars
  *  (whole lines — a partial first line is dropped). */
 export function renderTranscriptWindow(

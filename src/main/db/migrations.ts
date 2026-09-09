@@ -61,6 +61,24 @@ const migrations: string[] = [
   `,
   // v3 — per-job recipient for summary emails
   `ALTER TABLE jobs ADD COLUMN summary_email TEXT NOT NULL DEFAULT '';`,
+  // v4 — full-text index over transcript segments (Search ranking, Ask retrieval).
+  // External-content table: text stays in segments; triggers keep the index current.
+  `
+  CREATE VIRTUAL TABLE segments_fts USING fts5(
+    text, content='segments', content_rowid='id', tokenize='porter unicode61'
+  );
+  INSERT INTO segments_fts(rowid, text) SELECT id, text FROM segments;
+  CREATE TRIGGER segments_fts_ai AFTER INSERT ON segments BEGIN
+    INSERT INTO segments_fts(rowid, text) VALUES (new.id, new.text);
+  END;
+  CREATE TRIGGER segments_fts_ad AFTER DELETE ON segments BEGIN
+    INSERT INTO segments_fts(segments_fts, rowid, text) VALUES ('delete', old.id, old.text);
+  END;
+  CREATE TRIGGER segments_fts_au AFTER UPDATE OF text ON segments BEGIN
+    INSERT INTO segments_fts(segments_fts, rowid, text) VALUES ('delete', old.id, old.text);
+    INSERT INTO segments_fts(rowid, text) VALUES (new.id, new.text);
+  END;
+  `,
 ]
 
 export function runMigrations(db: Database): void {

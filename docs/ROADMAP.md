@@ -39,6 +39,6 @@ Post-meeting summary + action items; audio recording (on by default, Settings to
 
 ## Post-v1 (deferred)
 
-Ask-your-history chat (RAG) · cloud sync if a second device
+Cloud sync if a second device
 ever appears · alternative STT/LLM providers behind the existing interfaces.
-(Meeting search and Markdown export, originally deferred here, shipped in Phase 4.)
+(Meeting search, Markdown export and ask-your-history, originally deferred here, shipped.)

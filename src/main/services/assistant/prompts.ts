@@ -68,6 +68,17 @@ them the essence of what to say. Telegraphic, glanceable — no preamble.`
   return `Rolling transcript (most recent last):\n\n${transcript}\n\n---\n${ask}`
 }
 
+/** Ask-your-history: answers come from excerpts only, with citations. */
+export const HISTORY_SYSTEM = `You answer questions about the user's past work meetings from transcript
+excerpts. Use only the excerpts. If they do not contain the answer, say what is missing rather
+than guessing. Be specific — who said what, and when. Cite each claim with the meeting title and
+date in square brackets, e.g. [Northwind weekly sync, 2026-09-08]. Excerpts are speech-to-text and
+may contain errors; "Me" is the user. Answer in a few short paragraphs or a list, no preamble.`
+
+export function buildHistoryPrompt(question: string, excerpts: string): string {
+  return `Question: ${question}\n\nExcerpts (most relevant meeting first; [m:ss] is time into the meeting):\n\n${excerpts}`
+}
+
 /** Post-meeting summary prompt — all prompt text lives here, not in the orchestrator. */
 export function buildSummaryPrompt(window: TranscriptLine[], names?: SpeakerNames): string {
   const transcript = renderTranscriptWindow(window, SUMMARY_CHARS, names)

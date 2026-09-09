@@ -93,6 +93,8 @@ segments    (id, meeting_id, t_start_ms, t_end_ms, speaker,
 suggestions (id, meeting_id, t_ms, trigger,     -- 'ambient' | 'hotkey'
              prompt_window, text)
 speakers    (meeting_id, speaker, name)         -- user-assigned names (v2)
+segments_fts  FTS5 over segments.text (v4)      -- external-content index, porter stemming;
+                                                   -- insert/delete/update triggers keep it current
 ```
 
 ### Process/IPC boundaries
@@ -104,14 +106,27 @@ speakers    (meeting_id, speaker, name)         -- user-assigned names (v2)
 
 ### External interfaces
 
-| Service       | Purpose                | Data sent                              |
-| ------------- | ---------------------- | -------------------------------------- |
-| Deepgram WS   | streaming STT          | live audio, glossary terms             |
-| Anthropic API | suggestions, summaries | transcript excerpts, job context pack  |
-| SMTP (user's) | summary email          | summary + action items (no transcript) |
+| Service       | Purpose                | Data sent                                                  |
+| ------------- | ---------------------- | ---------------------------------------------------------- |
+| Deepgram WS   | streaming STT          | live audio, glossary terms                                 |
+| Anthropic API | suggestions, summaries | transcript excerpts, job context pack                      |
+| SMTP (user's) | summary email          | summary + action items (no transcript)                     |
+| Anthropic API | ask-your-history       | the question + retrieved transcript excerpts (≤ 12k chars) |
 
 Keys and the SMTP password stored locally in the app config. The summary email goes only
 to the address set on the meeting's job; nothing else leaves the machine.
+
+## Search and Ask
+
+- **Search** (Search page): `ftsAllOf(query)` — every word quoted, the last as a prefix —
+  against `segments_fts`, ranked by bm25, snippets with the matched terms marked. Stemmed,
+  so "deciding" finds "decided".
+- **Ask** (`services/history/`): the question becomes `ftsAnyOf` (stopwords dropped, terms
+  OR-ed, bm25 ranks by how many match); the top hits are expanded to their ±2 neighbouring
+  segments, grouped per meeting (≤ 8 meetings, ≤ 12k chars) and sent to Claude with a
+  grounding system prompt that demands citations as [title, date] and an explicit "not in the
+  excerpts" when the answer is missing. Sources return to the renderer at once; the answer
+  streams as `HistoryEvent`s over the same broadcast path the live suggestions use.
 
 ## Post-meeting
 
