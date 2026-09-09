@@ -79,7 +79,7 @@ Mic (getUserMedia, renderer)
   after launch and every 6 h; Settings shows what is past its limit and can run it now.
   Live meetings are never touched. Deleting a meeting by hand goes through the same
   `removeMeeting` (file + row).
-- Schema (current: v1 base, v2 `speakers`, v3 `jobs.summary_email`):
+- Schema (current: v1 base, v2 `speakers`, v3 `jobs.summary_email`, v4 `segments_fts`):
 
 ```
 jobs        (id, name, company_info, project_scope, notes,

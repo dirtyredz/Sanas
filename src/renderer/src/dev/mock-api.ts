@@ -1,3 +1,4 @@
+import { MATCH_CLOSE, MATCH_OPEN } from '@shared/search-markers'
 import type {
   GlossaryTerm,
   HistoryEvent,
@@ -513,7 +514,7 @@ const api: SanasApi = {
             jobName: jobs.find((j) => j.id === meeting.jobId)?.name ?? 'Unsorted',
             segmentId: s.id,
             tStartMs: s.tStartMs,
-            snippet: s.text.replace(re, '\u0001$1\u0002'),
+            snippet: s.text.replace(re, MATCH_OPEN + '$1' + MATCH_CLOSE),
           }
         })
     },

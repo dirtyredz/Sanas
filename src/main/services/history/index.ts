@@ -1,7 +1,8 @@
 import { IPC } from '@shared/ipc'
-import type { HistoryEvent, HistoryHit, Segment } from '@shared/types'
+import type { HistoryEvent, HistoryHit, SearchMatch, Segment } from '@shared/types'
+import { stripMatchMarkers } from '@shared/search-markers'
 import { loadSettings } from '../../config/settings'
-import { ftsAnyOf } from '../../db/fts-query'
+import { ftsAllOf, ftsAnyOf } from '../../db/fts-query'
 import { listSegmentsAround, searchSegments } from '../../db/repos/segments'
 import { speakerNameMap } from '../../db/repos/speakers'
 import { broadcast } from '../../windows/broadcast'
@@ -9,16 +10,25 @@ import { claudeProvider } from '../assistant/claude'
 import { HISTORY_SYSTEM, buildHistoryPrompt } from '../assistant/prompts'
 import { formatClockMs, speakerLabel } from '../transcript-format'
 
-// "What did we decide about X?" — answered from the transcripts, not from memory.
-// Retrieval is FTS5 (bm25) over every segment, optionally one job; each hit is shown to
-// the model with its neighbours so a one-line match carries its context. The answer
-// streams to the windows as HistoryEvents; the sources go back synchronously so the UI
-// can show where the answer will come from while it is being written.
+// Your history: ranked search over every transcript, and "what did we decide about X?"
+// answered from the transcripts rather than from memory. Retrieval is FTS5 (bm25) over
+// every segment, optionally one job; each hit is shown to the model with its neighbours
+// so a one-line match carries its context. The answer streams to the windows as
+// HistoryEvents; the sources go back synchronously so the UI can show where the answer
+// will come from while it is being written — and only the meetings that actually fit
+// into the prompt are reported as sources.
 
 const HITS = 24 // ranked segments to consider
 const RADIUS = 2 // neighbouring segments on each side of a hit
 const MAX_SOURCES = 8 // distinct meetings surfaced to the user
 const MAX_CHARS = 12_000 // excerpt budget in the prompt
+
+const SEARCH_LIMIT = 50
+
+/** Search page: every word must match, the last as a prefix, ranked. */
+export function searchTranscripts(query: string): SearchMatch[] {
+  return searchSegments(ftsAllOf(query), { limit: SEARCH_LIMIT })
+}
 
 interface Excerpt {
   hit: HistoryHit
@@ -44,7 +54,7 @@ export function retrieveHistory(question: string, jobId?: number): Excerpt[] {
           jobName: h.jobName,
           startedAt: h.meeting.startedAt,
           tStartMs: h.tStartMs,
-          snippet: h.snippet.replaceAll('\u0001', '').replaceAll('\u0002', ''),
+          snippet: stripMatchMarkers(h.snippet),
         },
         lines: around,
       })
@@ -53,21 +63,30 @@ export function retrieveHistory(question: string, jobId?: number): Excerpt[] {
   return [...byMeeting.values()].slice(0, MAX_SOURCES)
 }
 
-/** Excerpts → the text the model reads: one block per meeting, labelled lines. */
-export function renderExcerpts(excerpts: Excerpt[]): string {
+/** Excerpts → the text the model reads (one block per meeting, labelled lines) and the
+ *  meetings that made it in. The budget is applied line by line, so the first meeting
+ *  always contributes something and a source is never reported that the model never saw. */
+export function renderExcerpts(excerpts: Excerpt[]): { text: string; included: HistoryHit[] } {
   const blocks: string[] = []
+  const included: HistoryHit[] = []
   let used = 0
   for (const ex of excerpts) {
     const names = speakerNameMap(ex.hit.meetingId)
-    const block = [
-      `## ${ex.hit.title} — ${ex.hit.startedAt.slice(0, 10)} (${ex.hit.jobName})`,
-      ...ex.lines.map((s) => `[${formatClockMs(s.tStartMs)}] ${speakerLabel(s, names)}: ${s.text}`),
-    ].join('\n')
-    if (used + block.length > MAX_CHARS) break
-    blocks.push(block)
-    used += block.length
+    const header = `## ${ex.hit.title} — ${ex.hit.startedAt.slice(0, 10)} (${ex.hit.jobName})`
+    const lines: string[] = []
+    let size = header.length
+    for (const s of ex.lines) {
+      const line = `[${formatClockMs(s.tStartMs)}] ${speakerLabel(s, names)}: ${s.text}`
+      if (used + size + line.length + 1 > MAX_CHARS) break
+      lines.push(line)
+      size += line.length + 1
+    }
+    if (lines.length === 0) continue // nothing of this meeting fits any more
+    blocks.push([header, ...lines].join('\n'))
+    included.push(ex.hit)
+    used += size + 2
   }
-  return blocks.join('\n\n')
+  return { text: blocks.join('\n\n'), included }
 }
 
 let askSeq = 0
@@ -80,12 +99,12 @@ export function askHistory(
 ): { askId: number; sources: HistoryHit[] } {
   const { anthropicApiKey, anthropicWorkspaceId } = loadSettings()
   if (!anthropicApiKey) throw new Error('Anthropic API key is not set — add it in Settings.')
-  const excerpts = retrieveHistory(question, jobId)
+  const { text, included } = renderExcerpts(retrieveHistory(question, jobId))
   const askId = ++askSeq
   const emit = (kind: HistoryEvent['kind'], text: string): void =>
     broadcast(IPC.HistoryEvent, { askId, kind, text } satisfies HistoryEvent)
 
-  if (excerpts.length === 0) {
+  if (included.length === 0) {
     setTimeout(() => emit('done', 'Nothing in your meetings mentions that.'), 0)
     return { askId, sources: [] }
   }
@@ -95,13 +114,13 @@ export function askHistory(
       apiKey: anthropicApiKey,
       workspaceId: anthropicWorkspaceId || undefined,
       system: HISTORY_SYSTEM,
-      userContent: buildHistoryPrompt(question, renderExcerpts(excerpts)),
+      userContent: buildHistoryPrompt(question, text),
       maxTokens: 1200,
       effort: 'medium',
       onDelta: (t) => emit('delta', t),
     })
-    .then((text) => emit('done', text))
+    .then((answer) => emit('done', answer))
     .catch((e) => emit('error', e instanceof Error ? e.message : String(e)))
 
-  return { askId, sources: excerpts.map((ex) => ex.hit) }
+  return { askId, sources: included }
 }

@@ -19,8 +19,12 @@ describe('ftsAnyOf', () => {
       '"decide" OR "azure" OR "credits"',
     )
   })
-  it('keeps numbers and non-Latin letters', () => {
-    expect(ftsAnyOf('phase 2 für München')).toBe('"phase" OR "für" OR "münchen"')
+  it('keeps numbers of any length and non-Latin letters', () => {
+    expect(ftsAnyOf('phase 2 für München')).toBe('"phase" OR "2" OR "für" OR "münchen"')
+    expect(ftsAnyOf('what about 2?')).toBe('"2"')
+  })
+  it('drops one-letter words', () => {
+    expect(ftsAnyOf('plan b for q')).toBe('"plan"')
   })
   it('is empty when only stopwords remain', () => {
     expect(ftsAnyOf('what is it')).toBe('')

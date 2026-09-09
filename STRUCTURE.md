@@ -58,12 +58,14 @@ sanas/
 
 **Enforced homes:**
 
-- `src/main/windows/` — BrowserWindow builders (library window, overlay window)
+- `src/main/windows/` — BrowserWindow builders (library window, overlay window) and the
+  main → all-windows broadcast
 - `src/main/ipc/` — typed IPC channel handlers; validate + delegate, no business logic
 - `src/main/services/` — main-process services and provider seams: `stt/`, `assistant/`,
   `email/`, `meetings/`, `audio-store/`, `retention/`, `history/`, plus main-side transcript
   formatting
-- `src/main/db/` — better-sqlite3 connection + schema migrations
+- `src/main/db/` — better-sqlite3 connection, schema migrations, and the text → FTS5 MATCH
+  builder (`fts-query.ts`, the only source of `FtsMatch`)
 - `src/main/db/repos/` — per-entity repositories; the only place SQL strings live
 - `src/main/config/` — settings persistence + API key storage
 - `src/preload/` — contextBridge API surface exposed to the renderers, and its type declaration
@@ -84,7 +86,9 @@ sanas/
 - `scripts/` — repo tooling scripts (git-hook installation, pre-commit)
 
 Tests are colocated `*.test.ts` files (vitest, `npm test`) beside the pure module they cover —
-today `services/meetings/speaker-carryover.test.ts`; DB/Electron-bound code has none yet.
+today `services/meetings/speaker-carryover.test.ts`, `db/fts-query.test.ts` and
+`shared/search-markers.test.ts`; DB/Electron-bound code (repos, migrations, services that
+read settings) has none — better-sqlite3 is built for Electron's ABI, so vitest cannot load it.
 
 Deliberately _not_ homes: the repo root (config + docs only), `src/main/` itself and
 `src/renderer/src/` itself. New main-process code belongs in a responsibility folder above,
@@ -119,7 +123,8 @@ not beside `index.ts` / `system-audio.ts`.
   concept at all.
 - `services/meetings/index.ts` imports `deepgramProvider`/`claudeProvider` concretely
   (no DI/composition root) — deliberate while there is exactly one of each; the swap
-  point is one import line (`services/email/index.ts` follows the same pattern).
+  point is one import line (`services/email/index.ts` and `services/history/index.ts`
+  follow the same pattern).
   Revisit only when a second provider actually exists.
 - SMTP password sits in plain `settings.json` next to the API keys — same trust model,
   same debt; `safeStorage` encryption for all three is one change if it ever matters.
@@ -129,8 +134,9 @@ not beside `index.ts` / `system-audio.ts`.
   chosen design. A second builder of that config (none planned) is the point to extract
   `smtpConfigFromSettings()`, not before.
 - `ipc/` runtime-validates row ids at ingress (`requireId`, 2026-09-09) but still trusts
-  preload's TypeScript types for string/object payloads (job update, glossary add, rename,
-  settings patch, search). Shape-checking those is docs/BACKLOG.md P2.
+  preload's TypeScript types for object payloads (job update, glossary add, settings patch);
+  free-text inputs (search, ask, rename) are checked. Shape-checking the objects is
+  docs/BACKLOG.md P2.
 
 (2026-08-27 review: transcript formatting/windowing extracted to
 `services/transcript-format.ts`; summary prompt moved into `assistant/prompts.ts`.

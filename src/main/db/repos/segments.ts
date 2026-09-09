@@ -1,5 +1,7 @@
 import { getDb } from '../index'
 import type { Meeting, Segment, SearchMatch } from '@shared/types'
+import { MATCH_CLOSE, MATCH_OPEN } from '@shared/search-markers'
+import type { FtsMatch } from '../fts-query'
 import { toMeeting, type MeetingRow } from './meetings'
 
 export function listSegments(meetingId: number): Segment[] {
@@ -36,18 +38,18 @@ export function listSegmentsAround(
     })
 }
 
-/** Ranked full-text search over every transcript (FTS5, bm25). `match` must already be
- *  an FTS5 expression from db/fts-query.ts — never raw user text. snippet() wraps each
- *  matched term in U+0001 … U+0002 (see SearchMatch); the renderer turns those into <mark>. */
+/** Ranked full-text search over every transcript (FTS5, bm25). Only an FtsMatch built by
+ *  db/fts-query.ts is accepted, so raw user text can never reach the MATCH grammar. snippet()
+ *  wraps each matched term in the shared markers; the renderer turns those into <mark>. */
 export function searchSegments(
-  match: string,
+  match: FtsMatch,
   opts: { jobId?: number; limit?: number } = {},
 ): SearchMatch[] {
   if (!match) return []
   const rows = getDb()
     .prepare(
       `SELECT m.*, j.name AS job_name, s.id AS segment_id, s.t_start_ms AS t_start,
-              snippet(segments_fts, 0, char(1), char(2), '…', 14) AS snippet
+              snippet(segments_fts, 0, ?, ?, '…', 14) AS snippet
        FROM segments_fts f
        JOIN segments s ON s.id = f.rowid
        JOIN meetings m ON m.id = s.meeting_id
@@ -56,7 +58,14 @@ export function searchSegments(
        ORDER BY bm25(segments_fts), m.started_at DESC
        LIMIT ?`,
     )
-    .all(match, opts.jobId ?? null, opts.jobId ?? null, opts.limit ?? 50) as (MeetingRow & {
+    .all(
+      MATCH_OPEN,
+      MATCH_CLOSE,
+      match,
+      opts.jobId ?? null,
+      opts.jobId ?? null,
+      opts.limit ?? 50,
+    ) as (MeetingRow & {
     job_name: string
     segment_id: number
     t_start: number
@@ -88,8 +97,8 @@ export function insertSegment(seg: {
   return Number(res.lastInsertRowid)
 }
 
-/** Row-by-row delete so the FTS triggers see every segment (a cascade from the
- *  meetings row would not maintain segments_fts). */
+/** Explicit delete for callers that replace a transcript in place (re-diarization). A
+ *  cascade from the meetings row runs the same FTS triggers, so removeMeeting needs none. */
 export function deleteSegmentsForMeeting(meetingId: number): void {
   getDb().prepare(`DELETE FROM segments WHERE meeting_id = ?`).run(meetingId)
 }

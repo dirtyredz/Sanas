@@ -21,10 +21,15 @@ export function speakerLabel(
   return names?.get(l.speaker) ?? (l.speaker >= 0 ? `S${l.speaker + 1}` : '?')
 }
 
-/** Meeting-relative milliseconds → "m:ss" (main-side; the renderer has its own). */
+/** Meeting-relative milliseconds → "m:ss", or "h:mm:ss" past an hour — the same shape the
+ *  renderer's formatClock produces, so a citation label matches what the UI shows. */
 export function formatClockMs(ms: number): string {
-  const s = Math.max(0, Math.floor(ms / 1000))
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+  const total = Math.max(0, Math.floor(ms / 1000))
+  const h = Math.floor(total / 3600)
+  const m = Math.floor((total % 3600) / 60)
+  const s = total % 60
+  const mmss = `${h > 0 ? String(m).padStart(2, '0') : m}:${String(s).padStart(2, '0')}`
+  return h > 0 ? `${h}:${mmss}` : mmss
 }
 
 /** Render lines as "<label>: <text>" rows, keeping only the most recent capChars

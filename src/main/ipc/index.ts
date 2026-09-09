@@ -23,9 +23,8 @@ import {
 import { listMeetings, getMeeting, renameMeeting, moveMeetingToJob } from '../db/repos/meetings'
 import { removeMeeting } from '../services/meetings/remove'
 import { previewRetention, runRetention } from '../services/retention'
-import { listSegments, searchSegments } from '../db/repos/segments'
-import { ftsAllOf } from '../db/fts-query'
-import { askHistory } from '../services/history'
+import { listSegments } from '../db/repos/segments'
+import { askHistory, searchTranscripts } from '../services/history'
 import { exportMeetingMarkdown } from '../services/meetings/export'
 import { summarizeStoredMeeting } from '../services/meetings/summarize'
 import { emailMeetingSummary } from '../services/meetings/summary-email'
@@ -130,9 +129,7 @@ export function registerIpcHandlers(): void {
     mergeSpeakers(requireId(meetingId, 'meeting id'), from, to),
   )
   ipcMain.handle(IPC.SegmentsSearch, (_e, query: unknown) =>
-    typeof query === 'string' && query.trim().length >= 2
-      ? searchSegments(ftsAllOf(query), { limit: 50 })
-      : [],
+    typeof query === 'string' && query.trim().length >= 2 ? searchTranscripts(query) : [],
   )
   ipcMain.handle(IPC.HistoryAsk, (_e, question: unknown, jobId: unknown) =>
     askHistory(

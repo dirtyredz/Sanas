@@ -2,12 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Job, Meeting, Segment, Suggestion } from '@shared/types'
 import { speakerDisplay } from '../../lib/speaker-label'
 import { formatClock, formatWhen } from '../../lib/format-time'
-
-/** IPC rejections arrive as "Error invoking remote method 'x': Error: <msg>" — keep <msg>. */
-function errorText(e: unknown): string {
-  const raw = e instanceof Error ? e.message : String(e)
-  return raw.replace(/^Error invoking remote method '[^']*': (Error: )?/, '')
-}
+import { errorText } from '../../lib/ipc-error'
 
 /** The model writes action items as "- item" lines; render them as a list when it did. */
 function actionItemList(text: string): string[] | null {

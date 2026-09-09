@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import type { HistoryHit, Job, Meeting } from '@shared/types'
+import type { HistoryEvent, HistoryHit, Job, Meeting } from '@shared/types'
 import { MeetingView } from './MeetingView'
 import { formatClock, formatWhen } from '../../lib/format-time'
+import { errorText } from '../../lib/ipc-error'
 
 interface Exchange {
+  /** Negative while the ask is in flight (placeholder), then main's askId. */
   askId: number
   question: string
   answer: string
@@ -12,10 +14,10 @@ interface Exchange {
   error: string | null
 }
 
-/** IPC rejections arrive as "Error invoking remote method 'x': Error: <msg>" — keep <msg>. */
-function errorText(e: unknown): string {
-  const raw = e instanceof Error ? e.message : String(e)
-  return raw.replace(/^Error invoking remote method '[^']*': (Error: )?/, '')
+function apply(x: Exchange, ev: HistoryEvent): Exchange {
+  if (ev.kind === 'delta') return { ...x, answer: x.answer + ev.text }
+  if (ev.kind === 'done') return { ...x, answer: ev.text, streaming: false }
+  return { ...x, streaming: false, error: ev.text }
 }
 
 export function AskPage(): React.JSX.Element {
@@ -25,23 +27,23 @@ export function AskPage(): React.JSX.Element {
   const [exchanges, setExchanges] = useState<Exchange[]>([])
   const [openMeeting, setOpenMeeting] = useState<Meeting | null>(null)
   const endRef = useRef<HTMLDivElement>(null)
+  // Main may stream before the invoke that returns askId has resolved; events for an
+  // askId we do not know yet wait here and replay once the exchange has its id.
+  const known = useRef(new Set<number>())
+  const early = useRef(new Map<number, HistoryEvent[]>())
 
   useEffect(() => {
     window.sanas.jobs.list().then(setJobs)
   }, [])
 
-  // answers stream in by askId; a page can hold several exchanges
   useEffect(
     () =>
       window.sanas.history.onEvent((ev) => {
-        setExchanges((prev) =>
-          prev.map((x) => {
-            if (x.askId !== ev.askId) return x
-            if (ev.kind === 'delta') return { ...x, answer: x.answer + ev.text }
-            if (ev.kind === 'done') return { ...x, answer: ev.text, streaming: false }
-            return { ...x, streaming: false, error: ev.text }
-          }),
-        )
+        if (!known.current.has(ev.askId)) {
+          early.current.set(ev.askId, [...(early.current.get(ev.askId) ?? []), ev])
+          return
+        }
+        setExchanges((prev) => prev.map((x) => (x.askId === ev.askId ? apply(x, ev) : x)))
       }),
     [],
   )
@@ -56,24 +58,23 @@ export function AskPage(): React.JSX.Element {
     const q = question.trim()
     if (!q || busy) return
     setQuestion('')
+    const temp = -Date.now()
+    setExchanges((prev) => [
+      ...prev,
+      { askId: temp, question: q, answer: '', sources: [], streaming: true, error: null },
+    ])
     try {
       const { askId, sources } = await window.sanas.history.ask(q, jobId === '' ? undefined : jobId)
-      setExchanges((prev) => [
-        ...prev,
-        { askId, question: q, answer: '', sources, streaming: true, error: null },
-      ])
+      known.current.add(askId)
+      const buffered = early.current.get(askId) ?? []
+      early.current.delete(askId)
+      setExchanges((prev) =>
+        prev.map((x) => (x.askId === temp ? buffered.reduce(apply, { ...x, askId, sources }) : x)),
+      )
     } catch (e) {
-      setExchanges((prev) => [
-        ...prev,
-        {
-          askId: -Date.now(),
-          question: q,
-          answer: '',
-          sources: [],
-          streaming: false,
-          error: errorText(e),
-        },
-      ])
+      setExchanges((prev) =>
+        prev.map((x) => (x.askId === temp ? { ...x, streaming: false, error: errorText(e) } : x)),
+      )
     }
   }
 

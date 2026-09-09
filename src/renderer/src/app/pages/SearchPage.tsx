@@ -2,15 +2,14 @@ import { useEffect, useState } from 'react'
 import type { Meeting, SearchMatch } from '@shared/types'
 import { MeetingView } from './MeetingView'
 import { formatClock } from '../../lib/format-time'
+import { splitMatchMarkers } from '@shared/search-markers'
 
-/** snippet() marks matched terms with U+0001 … U+0002; render those as <mark>. */
+/** Matched terms come wrapped in the shared markers; render those as <mark>. */
 function highlighted(snippet: string): React.JSX.Element {
-  // eslint-disable-next-line no-control-regex -- the markers are control characters on purpose
-  const parts = snippet.split(/(\u0001[^\u0002]*\u0002)/)
   return (
     <>
-      {parts.map((p, i) =>
-        p.startsWith('\u0001') ? <mark key={i}>{p.slice(1, -1)}</mark> : <span key={i}>{p}</span>,
+      {splitMatchMarkers(snippet).map((p, i) =>
+        p.marked ? <mark key={i}>{p.text}</mark> : <span key={i}>{p.text}</span>,
       )}
     </>
   )

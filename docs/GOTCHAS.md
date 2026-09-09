@@ -77,8 +77,8 @@ _Non-obvious traps. Read before touching the related area._
   program the row is kept too (a file without a row is an orphan): Delete shows "still in use —
   try again", retention counts it as failed and retries next run.
 - **`segments_fts` is external-content: never write to it by hand.** Rows are added and
-  removed by the triggers on `segments`. A cascade delete from `meetings` does NOT run those
-  triggers reliably, so `removeMeeting` deletes the segments row by row first. Rebuilding is
+  removed by the triggers on `segments`, and a cascade delete from `meetings` runs them too
+  (foreign_keys is ON), so deleting the meeting row is enough. Rebuilding is
   `INSERT INTO segments_fts(segments_fts) VALUES ('rebuild')` if the index ever drifts.
 - **User text never touches the FTS5 grammar.** `db/fts-query.ts` quotes every token; a raw
   `MATCH ?` with user input would throw on an unbalanced quote or a stray `NEAR`. Search
