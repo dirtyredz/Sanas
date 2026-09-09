@@ -25,8 +25,9 @@ Design work needs eyes on the UI, and the Electron app cannot render in a browse
 `src/renderer/src/dev/mock-api.ts` stands in for `window.sanas` with sample jobs,
 meetings and a scripted live meeting (`overlay.html?demo=live` starts it). The mock is
 typed as `Window['sanas']`, so it fails typecheck the moment the real API drifts; main.tsx
-installs it only under `import.meta.env.DEV` when no bridge exists, so production builds
-carry none of it. Rejected: `electron-vite dev --rendererOnly` (it skips the main build
+installs it only when the build-time `__SANAS_WEB_PREVIEW__` is true (defined by
+`vite.renderer.config.ts`; the Electron build defines it false), so neither production nor
+Electron dev carries it — a broken preload in Electron still fails loudly. Rejected: `electron-vite dev --rendererOnly` (it skips the main build
 but still launches Electron); Storybook (a second build system for six pages).
 
 ## 2026-09-09 — Retention: two limits, recordings default to 90 days, meetings kept

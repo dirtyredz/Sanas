@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { RetentionPreview, SettingsView } from '@shared/types'
+import type { RetentionPreview, RetentionResult, SettingsView } from '@shared/types'
 import { SettingsSection } from './SettingsSection'
 
 const CHOICES: { days: number; label: string }[] = [
@@ -26,21 +26,14 @@ export function RetentionSection({
   onChange: (patch: Partial<SettingsView>) => void
 }): React.JSX.Element {
   const [preview, setPreview] = useState<RetentionPreview | null>(null)
-  const [result, setResult] = useState('')
+  const [result, setResult] = useState<RetentionResult | null>(null)
 
   useEffect(() => {
     window.sanas.retention.preview().then(setPreview)
   }, [savedAt])
 
   const cleanUp = async (): Promise<void> => {
-    const removed = await window.sanas.retention.run()
-    setResult(
-      `Removed ${removed.audioFiles} recording(s) and ${removed.meetings} meeting(s)` +
-        (removed.audioBytes > 0 ? `, freeing ${size(removed.audioBytes)}` : '') +
-        (removed.failed > 0
-          ? `. ${removed.failed} still in use by another program — will retry later.`
-          : ''),
-    )
+    setResult(await window.sanas.retention.run())
     setPreview(await window.sanas.retention.preview())
   }
 
@@ -92,7 +85,15 @@ export function RetentionSection({
         <button type="button" className="btn btn-sm" onClick={cleanUp} disabled={nothingDue}>
           Clean up now
         </button>
-        {result && <span className="ok">{result}</span>}
+        {result && (
+          <span className={result.failed > 0 ? 'warn' : 'ok'}>
+            {`Removed ${result.audioFiles} recording(s) and ${result.meetings} meeting(s)` +
+              (result.audioBytes > 0 ? `, freeing ${size(result.audioBytes)}` : '') +
+              (result.failed > 0
+                ? `. ${result.failed} still in use by another program — will retry later.`
+                : '')}
+          </span>
+        )}
       </div>
     </SettingsSection>
   )

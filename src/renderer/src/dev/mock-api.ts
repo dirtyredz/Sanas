@@ -12,8 +12,8 @@ import type {
   TranscriptEvent,
 } from '@shared/types'
 
-// Browser preview of the renderer WITHOUT Electron: `electron-vite dev --rendererOnly`
-// serves index.html / overlay.html, and this stands in for the preload bridge with
+// Browser preview of the renderer WITHOUT Electron: `npm run dev:web` (plain Vite) serves
+// index.html / overlay.html, and this stands in for the preload bridge with
 // sample data and a scripted live meeting. Only the web-preview build defines
 // __SANAS_WEB_PREVIEW__ as true (vite.renderer.config.ts); the Electron build defines it
 // false, so a broken preload in Electron dev still fails loudly instead of being masked.

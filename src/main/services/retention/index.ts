@@ -70,11 +70,16 @@ export function runRetention(): RetentionResult {
   }
   for (const m of meetings) {
     const bytes = fileSize(m.audioPath)
-    if (removeMeeting(m.id) === 'audio-locked') {
-      result.failed++
-    } else {
-      result.meetings++
-      result.audioBytes += bytes
+    switch (removeMeeting(m.id)) {
+      case 'removed':
+        result.meetings++
+        result.audioBytes += bytes
+        break
+      case 'audio-locked':
+        result.failed++
+        break
+      case 'missing':
+        break // gone since the snapshot (deleted by hand) — nothing to count
     }
   }
   if (result.meetings > 0 || result.audioFiles > 0 || result.failed > 0) {

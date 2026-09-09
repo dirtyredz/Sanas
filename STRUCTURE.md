@@ -74,7 +74,8 @@ sanas/
 - `src/renderer/src/audio/` — renderer-side mic capture + AudioWorklet downsampling
 - `src/renderer/src/lib/` — renderer hooks and pure helpers shared across pages
 - `src/renderer/src/dev/` — the browser-preview mock of `window.sanas` (typed as
-  `Window['sanas']`; installed by main.tsx only under `import.meta.env.DEV` with no Electron).
+  `Window['sanas']`; installed by both renderer entry points only when the build-time
+  `__SANAS_WEB_PREVIEW__` is true — set by `vite.renderer.config.ts`, false in the Electron build).
   `src/renderer/src/env.d.ts` is the one file beside these folders: Vite client types.
 - `src/renderer/public/` — AudioWorklet processors and other assets served unbundled
 - `src/shared/` — types shared by main, preload and renderer (IPC channels, domain models)
