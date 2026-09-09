@@ -45,8 +45,15 @@ _Non-obvious traps. Read before touching the related area._
   (S2 can become S7 mid-meeting) — incremental labeling, no lookahead, conference-
   compressed audio. Don't try to fix it live: the post-meeting batch re-diarization
   pass replaces segments with stable labels. Live view jitter is expected and cosmetic.
-- **Re-diarization clears per-meeting speaker names** — batch indices don't match the
-  live ones, so stale names would mislabel. Name speakers AFTER the meeting ends.
+- **Re-diarization re-numbers the voices.** Batch indices don't match the live ones, so
+  "that's me" pins and speaker names are carried over by time overlap (a voice that keeps
+  > 50% of its speaking time on one new index keeps its name/identity). A voice batch
+  > splits differently may need re-naming; check the transcript after the meeting ends.
+- **"Everyone showed up as Me."** In This-PC (stereo) mode the mic channel is stamped as
+  the user by construction — the other side is supposed to arrive on the loopback channel.
+  Run that mode for a call held on another laptop or in the room and every voice the mic
+  hears becomes "Me", with no diarization index to pin. The meeting source is therefore a
+  per-meeting choice on the Live page (default Elsewhere), never a global setting.
 
 ## APIs
 

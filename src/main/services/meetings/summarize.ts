@@ -3,6 +3,7 @@ import { loadSettings } from '../../config/settings'
 import { getMeeting, updateMeetingSummary } from '../../db/repos/meetings'
 import { listSegments } from '../../db/repos/segments'
 import { getJob, listGlossary } from '../../db/repos/jobs'
+import { speakerNameMap } from '../../db/repos/speakers'
 import { claudeProvider } from '../assistant/claude'
 import { buildSummaryPrompt, buildSystemPrompt, type TranscriptLine } from '../assistant/prompts'
 
@@ -34,7 +35,7 @@ export async function summarizeLines(
     apiKey: anthropicApiKey,
     workspaceId: anthropicWorkspaceId || undefined,
     system: systemPrompt,
-    userContent: buildSummaryPrompt(lines),
+    userContent: buildSummaryPrompt(lines, speakerNameMap(meetingId)),
     maxTokens: 1500,
     effort: 'medium',
     // no onDelta — one-shot; persisted when done

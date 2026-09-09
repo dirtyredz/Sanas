@@ -26,7 +26,6 @@ export function SettingsPage(): React.JSX.Element {
       anthropicWorkspaceId: view.anthropicWorkspaceId.trim(),
       audioDeviceId: view.audioDeviceId,
       recordAudio: view.recordAudio,
-      captureSystemAudio: view.captureSystemAudio,
       overlayOpacity: view.overlayOpacity,
       summaryEmailAuto: view.summaryEmailAuto,
       smtpHost: view.smtpHost.trim(),
@@ -129,15 +128,6 @@ export function SettingsPage(): React.JSX.Element {
             </option>
           ))}
         </select>
-      </label>
-
-      <label className="check">
-        <input
-          type="checkbox"
-          checked={view.captureSystemAudio}
-          onChange={(e) => setView({ ...view, captureSystemAudio: e.target.checked })}
-        />
-        Capture system audio (meetings on this PC — hears the other side digitally)
       </label>
 
       <label className="check">

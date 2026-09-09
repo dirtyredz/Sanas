@@ -14,7 +14,9 @@ const DEFAULTS: Settings = {
   assistHotkey: 'CommandOrControl+Shift+Enter',
   audioDeviceId: '',
   recordAudio: true, // needed for post-meeting re-diarization
-  captureSystemAudio: true,
+  // 'elsewhere' is the safe default: mono + diarization works anywhere, whereas
+  // 'this-pc' silently stamps every voice the mic hears as the user (GOTCHAS.md)
+  meetingSource: 'elsewhere',
   overlayOpacity: 1,
   overlayBounds: null,
   summaryEmailAuto: false,
@@ -31,7 +33,10 @@ function settingsPath(): string {
 export function loadSettings(): Settings {
   if (!existsSync(settingsPath())) return { ...DEFAULTS }
   try {
-    return { ...DEFAULTS, ...JSON.parse(readFileSync(settingsPath(), 'utf-8')) }
+    const stored = JSON.parse(readFileSync(settingsPath(), 'utf-8')) as Record<string, unknown>
+    // known keys only, so a retired setting (the old captureSystemAudio flag) drops out
+    const known = Object.fromEntries(Object.entries(stored).filter(([k]) => k in DEFAULTS))
+    return { ...DEFAULTS, ...(known as Partial<Settings>) }
   } catch {
     return { ...DEFAULTS }
   }

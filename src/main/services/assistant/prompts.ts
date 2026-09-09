@@ -1,5 +1,9 @@
 import type { GlossaryTerm, Job } from '@shared/types'
-import { renderTranscriptWindow, type FormattableLine } from '../transcript-format'
+import {
+  renderTranscriptWindow,
+  type FormattableLine,
+  type SpeakerNames,
+} from '../transcript-format'
 
 // Prompt assembly: stable system prompt (cacheable, per meeting) + volatile
 // transcript window in the user turn. Never send the whole meeting (GOTCHAS.md).
@@ -13,7 +17,8 @@ export function buildSystemPrompt(job: Job | null, glossary: GlossaryTerm[]): st
   const parts: string[] = [
     `You are Sanas, a discreet real-time meeting copilot. The user is in a live work
 meeting; you see a rolling transcript captured by their laptop microphone ("Me" lines
-are the user; S1/S2/… are other participants; labels may be imperfect).
+are the user; other participants appear by name when known, otherwise as S1/S2/…;
+labels may be imperfect).
 
 Your job: help the user decide what to say next. Be immediately usable — the user is
 reading you mid-conversation. Lead with the substance (a suggested reply, phrasing, or
@@ -45,8 +50,12 @@ exists. Transcription may contain errors; infer intent charitably.`,
   return parts.join('\n\n')
 }
 
-export function buildUserContent(window: TranscriptLine[], trigger: 'ambient' | 'hotkey'): string {
-  const transcript = renderTranscriptWindow(window, WINDOW_CHARS)
+export function buildUserContent(
+  window: TranscriptLine[],
+  trigger: 'ambient' | 'hotkey',
+  names?: SpeakerNames,
+): string {
+  const transcript = renderTranscriptWindow(window, WINDOW_CHARS, names)
 
   const ask =
     trigger === 'hotkey'
@@ -60,9 +69,10 @@ them the essence of what to say. Telegraphic, glanceable — no preamble.`
 }
 
 /** Post-meeting summary prompt — all prompt text lives here, not in the orchestrator. */
-export function buildSummaryPrompt(window: TranscriptLine[]): string {
-  const transcript = renderTranscriptWindow(window, SUMMARY_CHARS)
-  return `The meeting just ended. Here is the transcript ("Me" = the user):
+export function buildSummaryPrompt(window: TranscriptLine[], names?: SpeakerNames): string {
+  const transcript = renderTranscriptWindow(window, SUMMARY_CHARS, names)
+  return `The meeting just ended. Here is the transcript ("Me" = the user; other speakers are
+named when known, otherwise S1/S2/…). Refer to people by name where the transcript does:
 
 ${transcript}
 

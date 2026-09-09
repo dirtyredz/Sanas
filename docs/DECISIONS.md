@@ -2,6 +2,24 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-09-09 — Meeting source is a per-meeting choice, not a global capture setting
+
+Field report: a call held on another laptop, with the default "capture system audio" on,
+labelled every participant as **Me**. Loopback is always available on Windows, so capture
+went stereo and the stereo rule (mic channel = user) stamped the whole room as the user —
+with no diarization index left to pin. The fact that decides identity ("does the other
+side arrive through this PC's output, or through the mic?") is a property of the meeting,
+so it is now asked on the Live page per meeting — **This PC** (stereo, channel = identity)
+or **Elsewhere** (mono, diarized, "that's me" pinning) — and remembered as the default
+for the next one. Default is Elsewhere: the failure mode of a wrong Elsewhere is jittery
+labels, the failure mode of a wrong This PC is a silently useless transcript.
+Alongside: batch re-diarization re-numbers voices, which used to discard pins and names;
+they are now carried over by time overlap (`speaker-carryover.ts`), so mono meetings keep
+their "Me" after the record heals.
+Rejected: auto-detecting from "loopback channel is silent" (only knowable after the fact,
+and a muted call looks the same); keeping the global toggle as a default (the user would
+still have to remember it before each meeting).
+
 ## 2026-09-08 — Summary email via SMTP (nodemailer), summary-only body, recipient per job
 
 The user wants a meeting summary delivered to a predefined address without touching a

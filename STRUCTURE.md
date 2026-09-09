@@ -25,7 +25,8 @@ sanas/
 │   │   │   ├── assistant/       # AssistantProvider seam + claude.ts, prompts.ts, triggers.ts
 │   │   │   ├── meetings/        # index (live orchestration) + rediarize, export,
 │   │   │   │                    #   summarize (post-stop + on-demand), summary-email
-│   │   │   │                    #   (compose + send), channel-identity (ch0=user, one place)
+│   │   │   │                    #   (compose + send), channel-identity (ch0=user, one place),
+│   │   │   │                    #   speaker-carryover (pins + names across re-diarization)
 │   │   │   ├── email/           # EmailProvider seam + smtp.ts (nodemailer transport)
 │   │   │   ├── transcript-format.ts # canonical main-side line formatting/windowing
 │   │   │   └── audio-store/     # WAV recording of the capture stream (default on)
@@ -99,8 +100,8 @@ not beside `index.ts` / `system-audio.ts`.
 - `EmailProvider.send(config, mail)` takes an SMTP-shaped `SmtpConfig` (host/port/user/pass),
   so a REST transport (Resend/SendGrid — rejected in DECISIONS.md) would change the seam's
   signature and its one caller, not just add an implementation. Deliberate while SMTP is the
-  chosen design. The "Send test email" backlog item will be the second builder of that
-  config — extract `smtpConfigFromSettings()` then, not before.
+  chosen design. A second builder of that config (none planned) is the point to extract
+  `smtpConfigFromSettings()`, not before.
 - `ipc/` runtime-validates row ids at ingress (`requireId`, 2026-09-09) but still trusts
   preload's TypeScript types for string/object payloads (job update, glossary add, rename,
   settings patch, search). Shape-checking those is docs/BACKLOG.md P2.

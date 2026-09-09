@@ -8,15 +8,27 @@ export interface FormattableLine {
   text: string
 }
 
-/** "Me" | "S1" | "?" — the canonical speaker label. */
-export function speakerLabel(l: Pick<FormattableLine, 'speaker' | 'isUser'>): string {
-  return l.isUser ? 'Me' : l.speaker >= 0 ? `S${l.speaker + 1}` : '?'
+/** Per-meeting user-assigned names, keyed by diarized speaker index. */
+export type SpeakerNames = ReadonlyMap<number, string>
+
+/** "Me" | "Sarah" | "S1" | "?" — the canonical speaker label. Names win over
+ *  indices; the user is always "Me". */
+export function speakerLabel(
+  l: Pick<FormattableLine, 'speaker' | 'isUser'>,
+  names?: SpeakerNames,
+): string {
+  if (l.isUser) return 'Me'
+  return names?.get(l.speaker) ?? (l.speaker >= 0 ? `S${l.speaker + 1}` : '?')
 }
 
 /** Render lines as "<label>: <text>" rows, keeping only the most recent capChars
  *  (whole lines — a partial first line is dropped). */
-export function renderTranscriptWindow(lines: FormattableLine[], capChars: number): string {
-  let transcript = lines.map((l) => `${speakerLabel(l)}: ${l.text}`).join('\n')
+export function renderTranscriptWindow(
+  lines: FormattableLine[],
+  capChars: number,
+  names?: SpeakerNames,
+): string {
+  let transcript = lines.map((l) => `${speakerLabel(l, names)}: ${l.text}`).join('\n')
   if (transcript.length > capChars) {
     transcript = transcript.slice(-capChars)
     transcript = transcript.slice(transcript.indexOf('\n') + 1)

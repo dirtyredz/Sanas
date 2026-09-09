@@ -13,6 +13,7 @@ import { autoEmailSummary } from './summary-email'
 import { resolveSpeakerIdentity } from './channel-identity'
 import { insertSegment, setSpeakerIsUser } from '../../db/repos/segments'
 import { insertSuggestion } from '../../db/repos/suggestions'
+import { speakerNameMap } from '../../db/repos/speakers'
 import { claudeProvider } from '../assistant/claude'
 import { buildSystemPrompt, buildUserContent, type TranscriptLine } from '../assistant/prompts'
 import { resetTriggers, shouldTrigger } from '../assistant/triggers'
@@ -178,7 +179,7 @@ export async function runSuggestion(trigger: 'ambient' | 'hotkey'): Promise<void
   }
 
   suggestionBusy = true
-  const userContent = buildUserContent(transcriptWindow, trigger)
+  const userContent = buildUserContent(transcriptWindow, trigger, speakerNameMap(id))
   try {
     const text = await claudeProvider.complete({
       apiKey: anthropicApiKey,

@@ -53,6 +53,12 @@ export interface Suggestion {
 /** Capture topology: 1 = mic only, 2 = mic + system loopback. */
 export type ChannelCount = 1 | 2
 
+/** Where the other voices come from. 'this-pc': the call plays through this PC, its output
+ *  is tapped digitally and the mic is only the user (stereo, channel = identity).
+ *  'elsewhere': another device or the room — everyone arrives through the mic, so voices
+ *  are diarized and the user marks their own (mono + "that's me" pinning). */
+export type MeetingSource = 'this-pc' | 'elsewhere'
+
 /** Live transcript event pushed from main to windows. */
 export interface TranscriptEvent {
   meetingId: number
@@ -91,8 +97,8 @@ export interface Settings {
   audioDeviceId: string
   /** Save raw meeting audio to a local WAV file. */
   recordAudio: boolean
-  /** Also capture system audio (loopback) — for meetings running on this PC. */
-  captureSystemAudio: boolean
+  /** Last-used meeting source; the Live page remembers the choice per meeting. */
+  meetingSource: MeetingSource
   /** Overlay window opacity, 0.4–1. */
   overlayOpacity: number
   /** Remembered overlay window bounds; null until first moved/resized. */

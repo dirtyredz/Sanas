@@ -48,9 +48,9 @@ _Prioritized task trough. P0 = next up, P1 = soon, P2 = someday._
 - [x] Meeting rename (inline title edit in MeetingView)
 - [x] On-demand Summarize/Regenerate from stored transcript (2026-09-08)
 - [x] Email summary to the job's address via SMTP; optional auto-send on stop (2026-09-08)
-- [ ] "Send test email" button in Settings (today the first real send is the test) — second
-      builder of `SmtpConfig` from Settings; extract `smtpConfigFromSettings()` then
-- [ ] Summary prompt could use speaker names (rename/merge) instead of S1/S2 labels
+- [x] Summary + assist prompts use speaker names instead of S1/S2 labels (2026-09-09)
+- [x] Meeting source per meeting (This PC / Elsewhere) — fixes "everyone showed up as Me"
+      when the call was on another laptop; pins + names now survive re-diarization (2026-09-09)
 - [ ] Retention/auto-purge controls (per-meeting delete exists)
 
 ## P2 — Post-v1 ideas

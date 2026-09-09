@@ -27,13 +27,18 @@ Mic (getUserMedia, renderer)
 
 ### Audio capture
 
-- **Mic + system-audio loopback (default).** For meetings on THIS PC, driver echo-
-  cancellation erases the other side from the mic — so Sanas also taps the signal
-  headed to the output device via Electron's display-media loopback
-  (`src/main/system-audio.ts`). Channels: **0 = mic (user), 1 = loopback (others)** —
-  identity is structural, resolved in one place (`services/meetings/channel-identity.ts`).
-- **Mic-only mono fallback** when the capture setting is off, loopback is unavailable,
-  or the meeting runs on another device (room audio through the mic, "that's me" pinning).
+- **Where the meeting is, chosen per meeting on the Live page** (remembered as
+  `settings.meetingSource`):
+  - **This PC** — the call plays through this machine, where driver echo-cancellation
+    erases the other side from the mic, so Sanas also taps the signal headed to the
+    output device via Electron's display-media loopback (`src/main/system-audio.ts`).
+    Channels: **0 = mic (user), 1 = loopback (others)** — identity is structural,
+    resolved in one place (`services/meetings/channel-identity.ts`).
+  - **Elsewhere** (another device, or in the room; the default) — mic-only mono: everyone
+    arrives through the mic, voices are diarized, and the user marks their own with
+    "that's me". Picking This PC for a meeting held elsewhere stamps every voice as the
+    user (GOTCHAS.md) — that is why the choice is per meeting, not a global setting.
+  - Loopback unavailable in This-PC mode → mono with a notice on the Live page.
 - Renderer captures via `getUserMedia` (+ `getDisplayMedia` for loopback); an
   `AudioWorklet` downsamples to 16 kHz linear16, interleaved when stereo.
 - Raw audio saved to a per-meeting WAV by default (feeds re-diarization; can be disabled).
@@ -114,4 +119,6 @@ On meeting end, two fire-and-forget passes:
 2. **Re-diarization** — the recorded WAV goes through Deepgram's batch API
    (`SttProvider.transcribeFile`); batch diarization sees the whole file, so speaker
    labels are stable. Live segments are replaced wholesale (streaming labels drift).
-   Speaker names/merges are then user-editable per meeting in the transcript view.
+   Batch re-numbers the voices, so "that's me" pins (mono) and speaker names are carried
+   over by time overlap (`meetings/speaker-carryover.ts`); names/merges stay user-editable
+   per meeting in the transcript view.

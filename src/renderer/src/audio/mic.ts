@@ -17,7 +17,7 @@ export interface CaptureSession {
 
 export async function startCapture(
   deviceId: string,
-  captureSystemAudio: boolean,
+  withSystemAudio: boolean,
 ): Promise<CaptureSession> {
   const micStream = await navigator.mediaDevices.getUserMedia({
     audio: {
@@ -34,7 +34,7 @@ export async function startCapture(
   // System loopback rides getDisplayMedia; main's setDisplayMediaRequestHandler
   // answers with audio:'loopback'. Video is mandatory in the request — drop it.
   let loopbackStream: MediaStream | null = null
-  if (captureSystemAudio) {
+  if (withSystemAudio) {
     try {
       loopbackStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
       loopbackStream.getVideoTracks().forEach((t) => t.stop())

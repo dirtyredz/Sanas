@@ -11,6 +11,11 @@ export function listSpeakerNames(meetingId: number): SpeakerName[] {
     .all(meetingId) as SpeakerName[]
 }
 
+/** Names keyed by diarized index — the shape prompts, export and re-diarization consume. */
+export function speakerNameMap(meetingId: number): Map<number, string> {
+  return new Map(listSpeakerNames(meetingId).map((r) => [r.speaker, r.name]))
+}
+
 export function setSpeakerName(meetingId: number, speaker: number, name: string): void {
   const db = getDb()
   if (name.trim() === '') {
