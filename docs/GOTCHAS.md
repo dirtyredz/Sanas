@@ -40,7 +40,7 @@ _Non-obvious traps. Read before touching the related area._
 - **Same-PC meetings: the mic CANNOT hear the other side reliably.** Driver-level AEC
   (Realtek/Windows "enhancements") subtracts what the PC plays from what the mic hears —
   which IS the other participants. Volume doesn't help. Use system-audio loopback
-  (capture setting, on by default); it taps the output signal digitally, pre-speaker.
+  (pick **This PC** on the Live page); it taps the output signal digitally, pre-speaker.
 - **Streaming diarization drifts; batch doesn't.** Live speaker indices are unstable
   (S2 can become S7 mid-meeting) — incremental labeling, no lookahead, conference-
   compressed audio. Don't try to fix it live: the post-meeting batch re-diarization

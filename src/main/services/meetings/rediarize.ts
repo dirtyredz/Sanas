@@ -37,13 +37,22 @@ export async function rediarizeMeeting(meetingId: number, channels: number): Pro
       return { tStartMs: t.tStartMs, tEndMs: t.tEndMs, text: t.text, ...who }
     })
     const prev = listSegments(meetingId)
-    const names = carrySpeakerNames(prev, next, speakerNameMap(meetingId))
+    // mono: batch gives every segment isUser=false (no pins are passed to
+    // resolveSpeakerIdentity here), so the pinned voices are re-found by overlap;
+    // stereo: the channel already decided, nothing to carry
     const userSpeakers = stereo
-      ? new Set<number>() // channel already decided isUser above
+      ? new Set<number>()
       : carryUserIdentity(
           prev.filter((s) => s.isUser),
-          next.filter((s) => !s.isUser),
+          next,
         )
+    // names belong to the other voices only — the user's own speech (channel 0 in
+    // stereo, carried pins in mono) is never a naming candidate on either side
+    const names = carrySpeakerNames(
+      prev.filter((s) => !s.isUser),
+      next.filter((s) => !s.isUser && !userSpeakers.has(s.speaker)),
+      speakerNameMap(meetingId),
+    )
 
     getDb().transaction(() => {
       deleteSegmentsForMeeting(meetingId)

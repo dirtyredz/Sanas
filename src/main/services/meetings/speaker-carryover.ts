@@ -50,7 +50,9 @@ export function carryUserIdentity(prevUserSpeech: TimedSpeech[], next: TimedSpee
 }
 
 /** Re-keys previous speaker names onto the new indices their voices moved to.
- *  A new index takes at most one name — the strongest overlap wins. */
+ *  A new index takes at most one name — the strongest overlap wins. Negative indices
+ *  (the user, -1) are never candidates on either side; callers also drop the user's
+ *  own segments so crosstalk cannot hand a participant's name to the user. */
 export function carrySpeakerNames(
   prev: TimedSpeech[],
   next: TimedSpeech[],
@@ -60,11 +62,13 @@ export function carrySpeakerNames(
   const nextIv = intervalsBySpeaker(next)
   const claims: { speaker: number; name: string; share: number }[] = []
   for (const [oldSpeaker, name] of names) {
+    if (oldSpeaker < 0) continue
     const iv = prevIv.get(oldSpeaker)
     const dur = iv ? durationMs(iv) : 0
     if (!iv || dur === 0) continue
     let best: { speaker: number; share: number } | null = null
     for (const [newSpeaker, niv] of nextIv) {
+      if (newSpeaker < 0) continue
       const share = overlapMs(iv, niv) / dur
       if (share > MIN_SHARE && (!best || share > best.share)) best = { speaker: newSpeaker, share }
     }

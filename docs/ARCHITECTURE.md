@@ -51,8 +51,9 @@ Mic (getUserMedia, renderer)
 - The active job's **glossary terms are sent as keyterm boosts** — the same data that
   feeds the AI also improves STT accuracy on jargon. (This is the _sanas_ double meaning.)
 - Interim results update the overlay live; only finals are persisted.
-- Speaker labels: heuristic mapping of "which diarized speaker is the user" (the user can
-  tap "that's me" on a line to pin it; persisted per meeting).
+- Speaker labels: in This-PC (stereo) mode the user is structural (channel 0); in Elsewhere
+  (mono) mode the user pins their own diarized voice ("that's me"), persisted per meeting and
+  carried through re-diarization by time overlap.
 
 ### Assistance (Claude)
 

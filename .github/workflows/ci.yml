@@ -19,5 +19,6 @@ jobs:
       # job neither needs nor can do cheaply on a clean Linux runner.
       - run: npm ci --ignore-scripts
       - run: npm run typecheck
+      - run: npm test
       - run: npm run lint
       - run: npm run format:check

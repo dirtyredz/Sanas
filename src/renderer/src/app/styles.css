@@ -170,7 +170,10 @@ body {
 
 .speaker-bar {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
+  font-size: 0.85rem;
 }
 
 .chip {
@@ -639,10 +642,4 @@ body {
 .source-hint {
   font-size: 0.85rem;
   margin-top: -4px;
-}
-
-.speaker-bar {
-  align-items: center;
-  flex-wrap: wrap;
-  font-size: 0.85rem;
 }

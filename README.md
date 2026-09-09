@@ -11,7 +11,10 @@ each with its own projects, jargon, and talking points.
 
 ## What it does
 
-- 🎙 **Listens** — mic capture of room audio (you + everyone else, acoustically)
+- 🎙 **Listens** — per meeting you say where the call is: **This PC** (mic + a digital tap of
+  the system audio, so the other side is separated from you by construction) or
+  **Elsewhere** (another laptop / the room: everyone through the mic, diarized, you mark
+  your own voice)
 - 📝 **Transcribes** — Deepgram streaming STT with speaker separation, boosted by your per-job glossary
 - 🤖 **Assists** — Claude-powered suggestions in a small always-on-top overlay:
   - _ambient_: short nudges when a question lands or a key moment hits
@@ -24,8 +27,20 @@ Electron (Windows) · Deepgram streaming WS · Claude API (streaming) · better-
 
 ## Status
 
-Pre-code. See [docs/ROADMAP.md](docs/ROADMAP.md) for the build plan and
-[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the system design.
+Daily-drivable: live transcription, overlay suggestions, jobs + context packs, post-meeting
+summaries (emailed per job if you want), search, export. See
+[docs/FEATURES.md](docs/FEATURES.md) for the inventory, [docs/ROADMAP.md](docs/ROADMAP.md)
+for what is next and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the system design.
+
+## Develop
+
+```
+npm install        # rebuilds better-sqlite3 for Electron
+npm run dev        # electron-vite dev with hot reload
+npm test           # vitest — pure modules (speaker carry-over)
+npm run typecheck && npm run lint && npm run format:check
+npm run dist       # Windows installer → release/
+```
 
 ## Privacy note
 

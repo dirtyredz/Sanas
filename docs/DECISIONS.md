@@ -43,7 +43,7 @@ Deepgram's batch API (whole-file lookahead → stable labels) and replace the li
 segments; (2) per-meeting speaker rename ("Sarah") and merge (fold S7 into S2) in the
 meeting view. Live view stays jittery by nature; the record heals. Requires
 `recordAudio` (now default ON). AI assist was never affected — me/them comes from the
-channel split.
+channel split in This-PC (stereo) mode; mono meetings rely on pinning (see 2026-09-09).
 
 ## 2026-08-28 — System-audio loopback capture (supersedes "microphone only")
 
@@ -55,7 +55,8 @@ the signal headed to the output device digitally — no AEC in the path, works w
 headphones. Runs alongside the mic as a second channel; Deepgram `multichannel=true`
 transcribes each independently, so **channel 0 = user, channel 1 = others by
 construction** — me/them no longer depends on diarization. Mic-only mono remains the
-fallback (setting off, loopback unavailable, or meeting on another device).
+fallback (loopback unavailable, or meeting on another device — since 2026-09-09 an
+explicit per-meeting choice rather than a global setting).
 Rejected: mixing loopback+mic into one mono stream (loses the free identity split).
 
 ## 2026-08-27 — Name: Sanas

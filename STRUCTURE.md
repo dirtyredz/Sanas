@@ -67,6 +67,9 @@ sanas/
 - `src/shared/` — types shared by main, preload and renderer (IPC channels, domain models)
 - `scripts/` — repo tooling scripts (git-hook installation, pre-commit)
 
+Tests are colocated `*.test.ts` files (vitest, `npm test`) beside the pure module they cover —
+today `services/meetings/speaker-carryover.test.ts`; DB/Electron-bound code has none yet.
+
 Deliberately _not_ homes: the repo root (config + docs only), `src/main/` itself and
 `src/renderer/src/` itself. New main-process code belongs in a responsibility folder above,
 not beside `index.ts` / `system-audio.ts`.
