@@ -29,10 +29,12 @@ import { broadcast } from '../../windows/broadcast'
 // meeting instead of erroring, so the user resumes rather than starting over.
 //
 // The meeting's clock is AUDIO time, counted from the PCM actually received
-// (`audioMsReceived`). That is the same audio the WAV holds, so live timestamps, the
-// recording and the post-meeting re-diarization all agree — and a pause simply does not
-// advance it. Provider transcript times are never used as the cursor: they only advance
-// on a final result, so pausing during silence would rewind the clock.
+// (`audioMsReceived`), and no PCM is accepted before the session exists. That is the same
+// audio the WAV holds, so the clock, the recording and everything this module timestamps
+// agree — and a pause simply does not advance it. Provider transcript times are never used
+// as the cursor: they only advance on a final result, so pausing during silence would
+// rewind the clock. (Segment times come from the provider and can drift earlier across its
+// own internal reconnect — see docs/GOTCHAS.md.)
 //
 // Every lifecycle call is serialized and each session carries a generation, because
 // start/pause/resume/stop all mutate this module's state across awaits: without that, two
@@ -177,10 +179,25 @@ export function startMeeting(jobId?: number, channels: ChannelCount = 1): Promis
       })
     }
 
+    // recording is opt-in and is not what the meeting is for, so a file that will not
+    // open leaves the meeting running — but the user is told, because otherwise they
+    // believe there is a WAV to re-diarize and export from
+    let recordingError = ''
     if (settings.recordAudio) {
-      updateMeetingAudioPath(id, startRecording(id, channels))
+      try {
+        updateMeetingAudioPath(id, startRecording(id, channels))
+      } catch (e) {
+        recordingError = `Recording could not start (${
+          e instanceof Error ? e.message : String(e)
+        }) — the meeting is live but nothing is being saved to disk.`
+        console.warn('[sanas] could not start recording:', e)
+      }
     }
-    return setState({ meetingId: id, status: 'live' })
+    return setState({
+      meetingId: id,
+      status: 'live',
+      ...(recordingError ? { error: recordingError } : {}),
+    })
   })
 }
 
@@ -293,6 +310,10 @@ export async function runSuggestion(trigger: 'ambient' | 'hotkey'): Promise<void
   }
 
   suggestionBusy = true
+  // the answer outlives the meeting — Claude is still streaming when Stop returns — and it
+  // ends in an insert against this meeting, so it must hold the meeting like any other
+  // background write
+  markPostProcessing(id)
   const userContent = buildUserContent(transcriptWindow, trigger, speakerNameMap(id))
   try {
     const text = await claudeProvider.complete({
@@ -310,6 +331,7 @@ export async function runSuggestion(trigger: 'ambient' | 'hotkey'): Promise<void
   } catch (e) {
     emit('error', e instanceof Error ? e.message : String(e))
   } finally {
+    clearPostProcessing(id)
     suggestionBusy = false
   }
 }

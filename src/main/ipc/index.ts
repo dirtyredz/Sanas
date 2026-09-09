@@ -103,8 +103,11 @@ export function registerIpcHandlers(): void {
   // meeting history
   ipcMain.handle(IPC.MeetingsList, (_e, jobId: unknown) => listMeetings(requireId(jobId, 'job id')))
   ipcMain.handle(IPC.MeetingsDelete, (_e, id: unknown) => {
-    if (removeMeeting(requireId(id, 'meeting id')) === 'audio-locked') {
-      throw new Error('The recording is still in use by another program — try again in a moment.')
+    switch (removeMeeting(requireId(id, 'meeting id'))) {
+      case 'audio-locked':
+        throw new Error('The recording is still in use by another program — try again in a moment.')
+      case 'busy':
+        throw new Error('This meeting is still being written to — try again in a moment.')
     }
   })
   ipcMain.handle(IPC.MeetingsRename, (_e, id: unknown, title: unknown) =>

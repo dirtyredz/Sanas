@@ -471,15 +471,16 @@ const api: SanasApi = {
     preview: async (): Promise<RetentionPreview> => ({
       meetings: 0,
       audioFiles: dueRecordings,
+      orphanFiles: 0,
       audioBytes: dueRecordings * 115_700_000,
     }),
     run: async () => {
       const removed = {
         meetings: 0,
         audioFiles: dueRecordings,
+        orphanFiles: 0,
         audioBytes: dueRecordings * 115_700_000,
         failed: 0,
-        orphanFiles: 0,
       }
       dueRecordings = 0
       return removed

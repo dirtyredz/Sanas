@@ -1,9 +1,10 @@
 import { statSync } from 'fs'
+import { resolve } from 'path'
 import type { Meeting, RetentionPreview, RetentionResult } from '@shared/types'
 import { loadSettings } from '../../config/settings'
 import {
   clearMeetingAudioPath,
-  listMeetingIds,
+  listAudioPaths,
   listMeetingsEndedBefore,
 } from '../../db/repos/meetings'
 import { listRecordings } from '../audio-store'
@@ -14,10 +15,11 @@ import { removeAudioFile, removeMeeting } from '../meetings/remove'
 // separate limits, each in days, 0 = keep forever. Live meetings (no ended_at) are
 // never touched. Runs on a timer in main and on demand from Settings.
 //
-// It also sweeps ORPHANS — recordings on disk that no meeting refers to. Deleting a
-// meeting keeps its row until the file is gone, so orphans come from merges (which must
-// delete rows first) and from files a program held open at the wrong moment. Nothing
-// else would ever find them: without a row there is no age and no pointer.
+// It also sweeps ORPHANS — recordings on disk that no meeting POINTS AT. Deleting a
+// meeting keeps its row until the file is gone, so orphans come from merges: those clear
+// the survivor's audio_path and delete the other rows outright, so a file the merge could
+// not unlink is left with nothing referring to it. Age cannot find them (there is no row
+// to be old) and neither can a pointer, so the sweep works from the folder inwards.
 
 const RUN_EVERY_MS = 6 * 60 * 60 * 1000
 const FIRST_RUN_DELAY_MS = 30 * 1000
@@ -54,20 +56,29 @@ function due(): { meetings: Meeting[]; audio: Meeting[] } {
 /** What a run would remove right now. */
 export function previewRetention(): RetentionPreview {
   const { meetings, audio } = due()
+  const loose = orphans()
   return {
     meetings: meetings.length,
     audioFiles: audio.filter((m) => fileSize(m.audioPath) > 0).length,
-    audioBytes: [...audio, ...meetings].reduce((t, m) => t + fileSize(m.audioPath), 0),
+    orphanFiles: loose.length,
+    audioBytes:
+      [...audio, ...meetings].reduce((t, m) => t + fileSize(m.audioPath), 0) +
+      loose.reduce((t, p) => t + fileSize(p), 0),
   }
 }
 
-/** Recordings on disk whose meeting no longer exists — age does not apply, since
- *  nothing records when they stopped being needed. */
+/** Windows compares paths case-insensitively and the DB stores whatever `join` produced,
+ *  so both sides are normalised before they are matched. */
+function samePath(path: string): string {
+  return resolve(path).toLowerCase()
+}
+
+/** Recordings on disk that no meeting points at. */
 function orphans(): string[] {
-  const live = new Set(listMeetingIds())
+  const referenced = new Set(listAudioPaths().map(samePath))
   return listRecordings()
-    .filter((r) => !live.has(r.meetingId))
     .map((r) => r.path)
+    .filter((p) => !referenced.has(samePath(p)))
 }
 
 /** Removes everything past its limit and reports what actually went — a locked file
@@ -78,8 +89,8 @@ export function runRetention(): RetentionResult {
     meetings: 0,
     audioFiles: 0,
     audioBytes: 0,
-    failed: 0,
     orphanFiles: 0,
+    failed: 0,
   }
   for (const m of audio) {
     const bytes = fileSize(m.audioPath)
@@ -101,6 +112,7 @@ export function runRetention(): RetentionResult {
         result.audioBytes += bytes
         break
       case 'audio-locked':
+      case 'busy': // summarising or re-diarizing — its rows are still being written
         result.failed++
         break
       case 'missing':

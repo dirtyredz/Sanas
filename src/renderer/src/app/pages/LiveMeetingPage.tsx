@@ -99,10 +99,14 @@ export function LiveMeetingPage(): React.JSX.Element {
     setNotice('')
     banked.current = 0
     setElapsedMs(0)
+    // held here, not in micRef, until main confirms the meeting: whatever is still in
+    // this variable at the end was never adopted and has to be released, or the mic stays
+    // open with nothing holding a reference to it
+    let mic: CaptureSession | null = null
     try {
       if (jobId !== '') localStorage.setItem('sanas.lastJobId', String(jobId))
       // capture first — the meeting needs to know mono vs stereo (loopback)
-      const mic = await capture()
+      mic = await capture()
       const st = await window.sanas.meeting.start(jobId === '' ? undefined : jobId, mic.channels)
       if (st.status === 'live') {
         micRef.current = mic
@@ -113,13 +117,13 @@ export function LiveMeetingPage(): React.JSX.Element {
             'System audio is unavailable, so this is mic-only: every voice is diarized. Mark your own voice below.',
           )
         }
-      } else {
-        await mic.stop()
+        mic = null // adopted
       }
     } catch (e) {
       setMicError(errorText(e))
       await window.sanas.meeting.stop()
     } finally {
+      await mic?.stop()
       setBusy(false)
     }
   }

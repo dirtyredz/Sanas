@@ -37,7 +37,8 @@ export function RetentionSection({
     setPreview(await window.sanas.retention.preview())
   }
 
-  const nothingDue = !preview || (preview.meetings === 0 && preview.audioFiles === 0)
+  const nothingDue =
+    !preview || (preview.meetings === 0 && preview.audioFiles === 0 && preview.orphanFiles === 0)
 
   return (
     <SettingsSection
@@ -79,7 +80,17 @@ export function RetentionSection({
           ? 'Checking…'
           : nothingDue
             ? 'Nothing is past its limit. Clean-up runs on its own every few hours.'
-            : `Past the limit right now: ${preview.audioFiles} recording(s) (${size(preview.audioBytes)}) and ${preview.meetings} whole meeting(s).`}
+            : [
+                preview.audioFiles > 0 || preview.meetings > 0
+                  ? `Past the limit right now: ${preview.audioFiles} recording(s) and ${preview.meetings} whole meeting(s).`
+                  : '',
+                preview.orphanFiles > 0
+                  ? `${preview.orphanFiles} recording(s) that no meeting is using.`
+                  : '',
+                preview.audioBytes > 0 ? `${size(preview.audioBytes)} to free.` : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
       </p>
       <div className="row">
         <button type="button" className="btn btn-sm" onClick={cleanUp} disabled={nothingDue}>

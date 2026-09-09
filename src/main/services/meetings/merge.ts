@@ -37,7 +37,7 @@ export function mergeMeetings(ids: number[]): MergeResult {
     const m = getMeeting(id)
     if (!m) throw new Error(`Meeting ${id} no longer exists.`)
     if (isPostProcessing(id)) {
-      throw new Error(`"${m.title}" is still being summarised — try again in a moment.`)
+      throw new Error(`"${m.title}" is still being written to — try again in a moment.`)
     }
     return m
   })

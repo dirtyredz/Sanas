@@ -127,9 +127,15 @@ _Non-obvious traps. Read before touching the related area._
   on its own; only when those are exhausted does it report, and the orchestrator turns that
   into a pause so the meeting row survives. The UI shows the reason and a Resume button.
 - **A recording merge could not delete is reported, not swallowed.** `mergeMeetings`
-  returns `recordingsLeftBehind` and the job view says so; the row is already gone by then,
-  so retention's orphan sweep (recordings whose meeting id no longer exists) is what
-  actually collects the file on a later run.
+  returns `recordingsLeftBehind` and the job view says so instead of opening the merged
+  meeting. Retention collects the file later.
+- **An orphan is a recording no meeting POINTS AT — not one whose row is gone.** Merge
+  clears the survivor's `audio_path` and deletes the other rows, so a WAV it could not
+  unlink is left referenced by nothing while its row may still exist. Matching on row
+  existence would miss exactly that case, so `retention.orphans()` diffs the audio folder
+  against `meetings.audio_path` (normalised — Windows paths compare case-insensitively).
+  Orphans have no age, so they are always due, and `previewRetention` counts them or the
+  Clean-up button would sit disabled with files to collect.
 - **Merging deletes every part's recording**, the kept one included, and clears the
   meeting's `audio_path`. No single WAV covers a merged span, and re-diarization reads that
   WAV and replaces the WHOLE transcript — so keeping one would let a later pass silently
@@ -159,11 +165,20 @@ _Non-obvious traps. Read before touching the related area._
   only then starts recording, because a chunk taken in between would land in the WAV and the
   clock without ever reaching the provider — the first seconds of the meeting would read as
   transcript the provider never produced.
-- **Anything that rewrites a meeting in the background must mark it**
-  (`services/meetings/post-processing.ts`, a COUNT so concurrent rewrites don't clear each
-  other). Summarising on stop, summarising on demand from the meeting view, and
-  re-diarization all outlive the call that started them; merge refuses a marked meeting,
-  because otherwise a late write lands on a row that merge has folded away or rewritten.
+- **A recording that will not open does not take the meeting down.** It is opt-in and not
+  what the meeting is for, so `startMeeting` stays live and returns the reason in
+  `MeetingState.error` — silence there would leave the user believing a WAV exists to
+  re-diarize and export from.
+- **The renderer holds the capture in a local until main confirms the meeting.** If
+  `meeting.start` rejects after `startCapture` succeeded, nothing else references the
+  mic/worklet — `LiveMeetingPage.start` stops whatever it has not handed to `micRef`.
+- **Anything that writes to a meeting in the background must mark it**
+  (`services/meetings/post-processing.ts`, a COUNT so concurrent writes don't clear each
+  other). Four things outlive the call that started them: summarising on stop, summarising
+  on demand from the meeting view, re-diarization, and an unfinished suggestion — Claude is
+  still streaming when Stop returns, and the answer ends in an insert against that meeting.
+  **Merge and delete both refuse a marked meeting**, because otherwise the late write lands
+  on a row that has been folded away or deleted (a foreign-key failure, and the work lost).
 
 ## APIs
 

@@ -152,16 +152,17 @@ export interface Settings {
 export interface RetentionPreview {
   meetings: number
   audioFiles: number
+  /** Recordings on disk that no meeting points at — left behind by a merge that could
+   *  not delete a locked file. They have no age, so they are always due. */
+  orphanFiles: number
   audioBytes: number
 }
 
 /** What a retention run actually removed, plus how many items it could not
- *  (recording locked by another process — kept for the next run). */
+ *  (recording locked by another process, or a meeting still being written — both kept
+ *  for the next run). */
 export interface RetentionResult extends RetentionPreview {
   failed: number
-  /** Recordings deleted because no meeting refers to them any more (e.g. left behind by
-   *  a merge that could not delete a locked file). */
-  orphanFiles: number
 }
 
 /** The outcome of folding meetings together: the survivor, plus how many of the parts'
