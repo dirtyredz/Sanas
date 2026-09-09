@@ -71,9 +71,16 @@ _Non-obvious traps. Read before touching the related area._
 ## IPC
 
 - **Preload's types do not survive the hop.** Every `ipcMain.handle` argument is `unknown` at
-  runtime; `ipc/validate.ts` is the only way in — ids (`requireId`), free text (`requireText`
-  / `optionalText`), and the job and settings payloads (unknown keys are dropped, out-of-range
-  numbers ignored rather than written to settings.json). A new channel gets a validator first.
+  runtime and goes through `ipc/validate.ts` — ids (`requireId`), speaker indices
+  (`requireSpeaker`), booleans (`requireBool`), free text (`requireText` / `boundedText` /
+  `optionalText`), the job row (`requireJob`: every field must be a string, so a malformed
+  payload can never blank stored context) and the settings patch (`requireSettingsPatch`:
+  unknown keys dropped, out-of-range values ignored rather than written). The audio stream
+  drops anything that is not an ArrayBuffer. A new channel gets a validator first.
+- **A new Settings key must get a checker.** `config/settings-schema.ts` is typed
+  `{ [K in keyof Settings]: Check<Settings[K]> }`, so adding a key to `Settings` fails to
+  compile until the schema has an entry — a setting can never be one the renderer silently
+  cannot save. Overlay bounds saved by the main process itself bypass the schema (trusted path).
 
 ## Storage
 

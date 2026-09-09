@@ -35,7 +35,7 @@ sanas/
 │   │   │   └── audio-store/     # WAV recording of the capture stream (default on)
 │   │   ├── db/                  # better-sqlite3 open + migrations, fts-query (text → safe FTS5 MATCH)
 │   │   │   └── repos/           # jobs+glossary, meetings+segments, suggestions (SQL lives here only)
-│   │   └── config/              # settings + API key storage
+│   │   └── config/              # settings + API key storage, settings-schema (one check per key)
 │   ├── preload/                 # contextBridge API surface (typed)
 │   ├── renderer/                # vite root: index.html (library) + overlay.html
 │   │   ├── public/              # AudioWorklet processor served as a static asset (not bundled)
@@ -68,7 +68,8 @@ sanas/
 - `src/main/db/` — better-sqlite3 connection, schema migrations, and the text → FTS5 MATCH
   builder (`fts-query.ts`, the only source of `FtsMatch`)
 - `src/main/db/repos/` — per-entity repositories; the only place SQL strings live
-- `src/main/config/` — settings persistence + API key storage
+- `src/main/config/` — settings persistence + API key storage, and the exhaustive per-key
+  settings schema (`settings-schema.ts`) that IPC validation consumes
 - `src/preload/` — contextBridge API surface exposed to the renderers, and its type declaration
 - `src/renderer/src/app/` — library UI React app: root component and entry point
 - `src/renderer/src/app/pages/` — one React component per library UI route/page

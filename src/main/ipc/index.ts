@@ -9,7 +9,15 @@ import {
   pinSpeaker,
   runSuggestion,
 } from '../services/meetings'
-import { requireId, requireJob, requireSettingsPatch, requireText, optionalText } from './validate'
+import {
+  optionalText,
+  requireBool,
+  requireId,
+  requireJob,
+  requireSettingsPatch,
+  requireSpeaker,
+  requireText,
+} from './validate'
 import {
   listJobs,
   createJob,
@@ -52,14 +60,14 @@ export function registerIpcHandlers(): void {
     ),
   )
   ipcMain.handle(IPC.MeetingStop, () => stopMeeting())
-  ipcMain.handle(IPC.MeetingPinSpeaker, (_e, speaker: number, isUser: boolean) =>
-    pinSpeaker(speaker, isUser),
+  ipcMain.handle(IPC.MeetingPinSpeaker, (_e, speaker: unknown, isUser: unknown) =>
+    pinSpeaker(requireSpeaker(speaker, 'speaker'), requireBool(isUser, 'pin')),
   )
   ipcMain.handle(IPC.AssistNow, () => runSuggestion('hotkey'))
 
   // fire-and-forget audio stream — .on, not .handle (no reply per chunk)
-  ipcMain.on(IPC.AudioChunk, (_e, chunk: ArrayBuffer) => {
-    sendAudioChunk(Buffer.from(chunk))
+  ipcMain.on(IPC.AudioChunk, (_e, chunk: unknown) => {
+    if (chunk instanceof ArrayBuffer) sendAudioChunk(Buffer.from(chunk)) // anything else is dropped
   })
 
   // jobs + context packs
@@ -68,8 +76,8 @@ export function registerIpcHandlers(): void {
     createJob(requireText(name, 'job name', 120)),
   )
   ipcMain.handle(IPC.JobsUpdate, (_e, job: unknown) => updateJob(requireJob(job)))
-  ipcMain.handle(IPC.JobsArchive, (_e, id: unknown, archived: boolean) =>
-    setJobArchived(requireId(id, 'job id'), archived),
+  ipcMain.handle(IPC.JobsArchive, (_e, id: unknown, archived: unknown) =>
+    setJobArchived(requireId(id, 'job id'), requireBool(archived, 'archived')),
   )
   ipcMain.handle(IPC.GlossaryList, (_e, jobId: unknown) => listGlossary(requireId(jobId, 'job id')))
   ipcMain.handle(IPC.GlossaryAdd, (_e, jobId: unknown, term: unknown, note: unknown) =>
@@ -115,11 +123,19 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.SpeakersList, (_e, meetingId: unknown) =>
     listSpeakerNames(requireId(meetingId, 'meeting id')),
   )
-  ipcMain.handle(IPC.SpeakersRename, (_e, meetingId: unknown, speaker: number, name: unknown) =>
-    setSpeakerName(requireId(meetingId, 'meeting id'), speaker, optionalText(name, 100)),
+  ipcMain.handle(IPC.SpeakersRename, (_e, meetingId: unknown, speaker: unknown, name: unknown) =>
+    setSpeakerName(
+      requireId(meetingId, 'meeting id'),
+      requireSpeaker(speaker, 'speaker'),
+      optionalText(name, 100),
+    ),
   )
-  ipcMain.handle(IPC.SpeakersMerge, (_e, meetingId: unknown, from: number, to: number) =>
-    mergeSpeakers(requireId(meetingId, 'meeting id'), from, to),
+  ipcMain.handle(IPC.SpeakersMerge, (_e, meetingId: unknown, from: unknown, to: unknown) =>
+    mergeSpeakers(
+      requireId(meetingId, 'meeting id'),
+      requireSpeaker(from, 'speaker'),
+      requireSpeaker(to, 'speaker'),
+    ),
   )
   ipcMain.handle(IPC.SegmentsSearch, (_e, query: unknown) =>
     typeof query === 'string' && query.trim().length >= 2 ? searchTranscripts(query) : [],
@@ -132,5 +148,7 @@ export function registerIpcHandlers(): void {
   )
   ipcMain.handle(IPC.RetentionPreview, () => previewRetention())
   ipcMain.handle(IPC.RetentionRun, () => runRetention())
-  ipcMain.handle(IPC.OverlayClickThrough, (_e, on: boolean) => setClickThrough(on))
+  ipcMain.handle(IPC.OverlayClickThrough, (_e, on: unknown) =>
+    setClickThrough(requireBool(on, 'flag')),
+  )
 }

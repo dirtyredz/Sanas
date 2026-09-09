@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { GlossaryTerm, Job, Meeting } from '@shared/types'
 import { MeetingView } from './MeetingView'
 import { formatWhen } from '../../lib/format-time'
+import { errorText } from '../../lib/ipc-error'
 
 const PACK_FIELDS = [
   { key: 'companyInfo', label: 'Company info', hint: 'Who they are, org quirks, key people' },
@@ -23,6 +24,7 @@ export function JobDetail({
   const [meetings, setMeetings] = useState<Meeting[]>([])
   const [newTerm, setNewTerm] = useState('')
   const [saved, setSaved] = useState(false)
+  const [saveError, setSaveError] = useState('')
   const [openMeeting, setOpenMeeting] = useState<Meeting | null>(null)
 
   useEffect(() => {
@@ -46,18 +48,26 @@ export function JobDetail({
   if (!job) return <p className="muted">Loading…</p>
 
   const save = async (): Promise<void> => {
-    await window.sanas.jobs.update({
-      id: job.id,
-      name: job.name,
-      companyInfo: job.companyInfo,
-      projectScope: job.projectScope,
-      notes: job.notes,
-      talkingPoints: job.talkingPoints,
-      persona: job.persona,
-      summaryEmail: job.summaryEmail,
-    })
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+    setSaveError('')
+    try {
+      // the reply is the stored row (trimmed name), so the form shows what was kept
+      setJob(
+        await window.sanas.jobs.update({
+          id: job.id,
+          name: job.name,
+          companyInfo: job.companyInfo,
+          projectScope: job.projectScope,
+          notes: job.notes,
+          talkingPoints: job.talkingPoints,
+          persona: job.persona,
+          summaryEmail: job.summaryEmail,
+        }),
+      )
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch (e) {
+      setSaveError(errorText(e))
+    }
   }
 
   const addTerm = async (): Promise<void> => {
@@ -77,12 +87,19 @@ export function JobDetail({
         <input
           className="title-input"
           value={job.name}
+          maxLength={120}
           aria-label="Job name"
           onChange={(e) => setJob({ ...job, name: e.target.value })}
         />
         <div className="actions">
+          {saveError && <span className="warn">{saveError}</span>}
           {saved && <span className="ok">Saved ✓</span>}
-          <button className="btn btn-primary" onClick={save}>
+          <button
+            className="btn btn-primary"
+            onClick={save}
+            disabled={!job.name.trim()}
+            title={job.name.trim() ? undefined : 'A job needs a name'}
+          >
             Save
           </button>
         </div>
