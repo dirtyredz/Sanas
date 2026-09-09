@@ -51,7 +51,8 @@ Mic (getUserMedia, renderer)
 
 ### Assistance (Claude)
 
-- Model: current Claude Sonnet-tier via Anthropic API, streaming.
+- Model: `claude-opus-5` (the `MODEL` constant in `services/assistant/claude.ts`) via the
+  Anthropic API, streaming.
 - **Prompt assembly:** system prompt = persona/tone + job context pack (company info,
   project scope, notes, talking points, glossary); user turn = recent transcript window
   (last ~N seconds/tokens) + the trigger reason.
@@ -67,7 +68,7 @@ Mic (getUserMedia, renderer)
 
 - **SQLite** via `better-sqlite3` in the main process (`%APPDATA%/sanas/sanas.db`).
 - Audio files under `%APPDATA%/sanas/audio/<meetingId>/`.
-- Schema (v1):
+- Schema (current: v1 base, v2 `speakers`, v3 `jobs.summary_email`):
 
 ```
 jobs        (id, name, company_info, project_scope, notes,
@@ -107,8 +108,9 @@ On meeting end, two fire-and-forget passes:
 
 1. **Summary** — one Claude call generates summary + action items; stored on the meeting row.
    Then `MeetingUpdated` is broadcast and, if auto-email is on, the summary is emailed.
-   The meeting view can also re-run it on demand from the full stored transcript
-   (`summarizeStoredMeeting`), rebuilding the job context prompt from the DB.
+   The meeting view can also re-run it on demand from the stored transcript — capped at
+   ~30k characters by `SUMMARY_CHARS` in `assistant/prompts.ts` (`summarizeStoredMeeting`),
+   rebuilding the job context prompt from the DB.
 2. **Re-diarization** — the recorded WAV goes through Deepgram's batch API
    (`SttProvider.transcribeFile`); batch diarization sees the whole file, so speaker
    labels are stable. Live segments are replaced wholesale (streaming labels drift).

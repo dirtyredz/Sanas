@@ -8,7 +8,7 @@ import { buildSummaryPrompt, buildSystemPrompt, type TranscriptLine } from '../a
 
 // Post-meeting summary + action items. Two entry points share one Claude call:
 // the fire-and-forget pass on stop (live transcript window, no DB round-trip)
-// and the on-demand pass from the meeting view (full stored transcript).
+// and the on-demand pass from the meeting view (stored transcript, capped by SUMMARY_CHARS).
 
 const MIN_LINES = 5 // fewer than this isn't worth a call
 

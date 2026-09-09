@@ -86,14 +86,24 @@ not beside `index.ts` / `system-audio.ts`.
 - `windows/main-window.ts` + `overlay-window.ts` share webPreferences/load-URL
   boilerplate — extract a `createAppWindow(opts)` helper if a third window appears
   (deliberately not abstracted at two call sites).
-- `AssistRequest.effort` on the provider seam maps 1:1 to an Anthropic-specific knob;
-  a second provider would need its own interpretation of low/medium/high.
+- `AssistRequest.effort` and `AssistRequest.workspaceId` on the provider seam map 1:1 to
+  Anthropic-specific knobs (output effort; the `anthropic-workspace-id` header). A second
+  provider would need its own interpretation of low/medium/high and likely no workspace
+  concept at all.
 - `services/meetings/index.ts` imports `deepgramProvider`/`claudeProvider` concretely
   (no DI/composition root) — deliberate while there is exactly one of each; the swap
   point is one import line (`services/email/index.ts` follows the same pattern).
   Revisit only when a second provider actually exists.
 - SMTP password sits in plain `settings.json` next to the API keys — same trust model,
   same debt; `safeStorage` encryption for all three is one change if it ever matters.
+- `EmailProvider.send(config, mail)` takes an SMTP-shaped `SmtpConfig` (host/port/user/pass),
+  so a REST transport (Resend/SendGrid — rejected in DECISIONS.md) would change the seam's
+  signature and its one caller, not just add an implementation. Deliberate while SMTP is the
+  chosen design. The "Send test email" backlog item will be the second builder of that
+  config — extract `smtpConfigFromSettings()` then, not before.
+- `ipc/` runtime-validates row ids at ingress (`requireId`, 2026-09-09) but still trusts
+  preload's TypeScript types for string/object payloads (job update, glossary add, rename,
+  settings patch, search). Shape-checking those is docs/BACKLOG.md P2.
 
 (2026-08-27 review: transcript formatting/windowing extracted to
 `services/transcript-format.ts`; summary prompt moved into `assistant/prompts.ts`.

@@ -76,4 +76,4 @@ _Non-obvious traps. Read before touching the related area._
 
 - **Recording consent:** some jurisdictions are two-party consent for recording.
   Transcription-without-audio-retention is lighter but not automatically exempt.
-  Sanas records/transcribes only on explicit start; audio saving is opt-in per meeting.
+  Sanas records/transcribes only on explicit start; audio saving is a global Settings toggle (on by default).

@@ -32,12 +32,13 @@ what to say — grounded in that job's context.
 
 ## Phase 4 — Wrap-up & polish
 
-Post-meeting summary + action items; opt-in audio recording; overlay UX polish
+Post-meeting summary + action items; audio recording (on by default, Settings toggle); overlay UX polish
 (opacity, position memory, click-through mode); retention setting; packaging
 (electron-builder, Windows installer).
 **Done when:** daily-drivable across all your jobs.
 
 ## Post-v1 (deferred)
 
-Meeting search · exports · ask-your-history chat (RAG) · cloud sync if a second device
+Ask-your-history chat (RAG) · cloud sync if a second device
 ever appears · alternative STT/LLM providers behind the existing interfaces.
+(Meeting search and Markdown export, originally deferred here, shipped in Phase 4.)

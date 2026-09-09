@@ -19,7 +19,7 @@ _Prioritized task trough. P0 = next up, P1 = soon, P2 = someday._
 - [x] Transcript event fan-out: interims → UI, finals → SQLite `segments`
 - [x] Live transcript in main window + overlay tail
 - [x] "That's me" speaker pinning
-- [ ] Deepgram auto-reconnect with transcript continuity (deferred — P1)
+- [x] Deepgram auto-reconnect with transcript continuity (landed in Phase 4)
 - [ ] Validate diarization quality in a real meeting (short-fragment tests are worst-case)
 
 ## ✅ Phase 2: Jobs & context (done 2026-08-27)
@@ -42,18 +42,23 @@ _Prioritized task trough. P0 = next up, P1 = soon, P2 = someday._
 - [x] Overlay position/size memory
 - [x] Deepgram auto-reconnect with backoff + timestamp continuity
 - [x] electron-builder packaging (Windows NSIS)
-- [x] Opt-in audio recording to disk (WAV, Settings checkbox)
+- [x] Audio recording to disk (WAV; on by default, Settings checkbox)
 - [x] Overlay ghost mode (👻 → clicks pass through; overlay hotkey restores)
 - [x] Overlay opacity slider (Settings, live-applied)
 - [x] Meeting rename (inline title edit in MeetingView)
 - [x] On-demand Summarize/Regenerate from stored transcript (2026-09-08)
 - [x] Email summary to the job's address via SMTP; optional auto-send on stop (2026-09-08)
-- [ ] "Send test email" button in Settings (today the first real send is the test)
+- [ ] "Send test email" button in Settings (today the first real send is the test) — second
+      builder of `SmtpConfig` from Settings; extract `smtpConfigFromSettings()` then
 - [ ] Summary prompt could use speaker names (rename/merge) instead of S1/S2 labels
 - [ ] Retention/auto-purge controls (per-meeting delete exists)
 
 ## P2 — Post-v1 ideas
 
+- [ ] `ipc/`: shape-check string/object payloads at ingress (job update, glossary add, rename,
+      settings patch, search) — row ids are validated by `requireId` since 2026-09-09
+- [ ] Neutralize the `EmailProvider` seam (SMTP-shaped `SmtpConfig`) — only if a second
+      transport ever arrives (see STRUCTURE.md structural debt)
 - [x] Meeting search across jobs (Search page, snippet highlight)
 - [x] Markdown export (meeting → .md via save dialog)
 - [ ] Ask-your-history chat (RAG over segments)

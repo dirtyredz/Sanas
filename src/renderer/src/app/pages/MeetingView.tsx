@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Job, Meeting, Segment, Suggestion } from '@shared/types'
 import { speakerDisplay } from '../../lib/speaker-label'
 
@@ -20,17 +20,20 @@ export function MeetingView({
   const [names, setNames] = useState<Map<number, string>>(new Map())
   const [tab, setTab] = useState<'transcript' | 'suggestions'>('transcript')
   const [title, setTitle] = useState(meeting.title)
-  const [exported, setExported] = useState('')
   const [jobs, setJobs] = useState<Job[]>([])
   const [jobId, setJobId] = useState(meeting.jobId)
   // summary/action items can change after open (post-stop pass, regenerate)
   const [current, setCurrent] = useState<Meeting>(meeting)
   const [busy, setBusy] = useState<'summarize' | 'email' | null>(null)
   const [notice, setNotice] = useState<{ kind: 'ok' | 'warn'; text: string } | null>(null)
+  const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // One toast at a time: a newer message replaces the old one and restarts the clock,
+  // so an earlier timer can never clear a later notice early.
   const flash = (kind: 'ok' | 'warn', text: string): void => {
+    if (noticeTimer.current) clearTimeout(noticeTimer.current)
     setNotice({ kind, text })
-    setTimeout(() => setNotice(null), 5000)
+    noticeTimer.current = setTimeout(() => setNotice(null), 5000)
   }
 
   const reload = (): void => {
@@ -101,10 +104,7 @@ export function MeetingView({
         <button
           onClick={async () => {
             const path = await window.sanas.meetings.export(meeting.id)
-            if (path) {
-              setExported(path)
-              setTimeout(() => setExported(''), 4000)
-            }
+            if (path) flash('ok', `Saved to ${path}`)
           }}
         >
           Export
@@ -129,7 +129,6 @@ export function MeetingView({
           Delete
         </button>
       </div>
-      {exported && <p className="ok">Saved to {exported}</p>}
       {notice && <p className={notice.kind}>{notice.text}</p>}
       <p className="muted meeting-meta">
         {meeting.startedAt}
