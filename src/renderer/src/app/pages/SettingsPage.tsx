@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Settings, SettingsView } from '@shared/types'
+import { RetentionSection } from '../settings/RetentionSection'
 
 export function SettingsPage(): React.JSX.Element {
   const [view, setView] = useState<SettingsView | null>(null)
@@ -8,6 +9,7 @@ export function SettingsPage(): React.JSX.Element {
   const [smtpPass, setSmtpPass] = useState('')
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
   const [saved, setSaved] = useState(false)
+  const [savedAt, setSavedAt] = useState(0)
 
   useEffect(() => {
     window.sanas.settings.get().then(setView)
@@ -31,6 +33,8 @@ export function SettingsPage(): React.JSX.Element {
       smtpHost: view.smtpHost.trim(),
       smtpPort: view.smtpPort,
       smtpUser: view.smtpUser.trim(),
+      audioRetentionDays: view.audioRetentionDays,
+      meetingRetentionDays: view.meetingRetentionDays,
     }
     // Only send secrets the user actually typed — empty means "keep existing".
     if (deepgramKey) patch.deepgramApiKey = deepgramKey
@@ -42,6 +46,7 @@ export function SettingsPage(): React.JSX.Element {
     setAnthropicKey('')
     setSmtpPass('')
     setSaved(true)
+    setSavedAt(Date.now())
     setTimeout(() => setSaved(false), 2000)
   }
 
@@ -212,6 +217,12 @@ export function SettingsPage(): React.JSX.Element {
         />
         <small>For Gmail, use an App Password (needs 2-step verification), not your login.</small>
       </label>
+
+      <RetentionSection
+        view={view}
+        savedAt={savedAt}
+        onChange={(p) => setView({ ...view, ...p })}
+      />
 
       <button onClick={save}>Save</button>
       {saved && <span className="ok"> Saved ✓</span>}

@@ -51,7 +51,8 @@ _Prioritized task trough. P0 = next up, P1 = soon, P2 = someday._
 - [x] Summary + assist prompts use speaker names instead of S1/S2 labels (2026-09-09)
 - [x] Meeting source per meeting (This PC / Elsewhere) — fixes "everyone showed up as Me"
       when the call was on another laptop; pins + names now survive re-diarization (2026-09-09)
-- [ ] Retention/auto-purge controls (per-meeting delete exists)
+- [x] Retention/auto-purge controls — separate limits for recordings and whole meetings, timer
+      in main + "Clean up now" with preview in Settings; deleting a meeting now removes its WAV (2026-09-09)
 
 ## P2 — Post-v1 ideas
 

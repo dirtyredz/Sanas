@@ -24,6 +24,8 @@ const DEFAULTS: Settings = {
   smtpPort: 465,
   smtpUser: '',
   smtpPass: '',
+  audioRetentionDays: 90, // recordings only feed the re-diarization pass at stop
+  meetingRetentionDays: 0, // the record is the product — keep unless told otherwise
 }
 
 function settingsPath(): string {

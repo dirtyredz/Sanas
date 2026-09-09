@@ -643,3 +643,25 @@ body {
   font-size: 0.85rem;
   margin-top: -4px;
 }
+
+.settings .row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings button.secondary {
+  background: var(--panel);
+  border: 1px solid #2e333d;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.settings button.secondary:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+.retention-status {
+  font-size: 0.85rem;
+}

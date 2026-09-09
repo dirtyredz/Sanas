@@ -71,6 +71,21 @@ export function listMeetings(jobId: number): Meeting[] {
   return rows.map(toMeeting)
 }
 
+/** Row-only delete (segments, suggestions, speaker names cascade). The audio file is
+ *  the caller's job — use services/meetings/remove.ts, not this, from outside repos. */
 export function deleteMeeting(meetingId: number): void {
-  getDb().prepare(`DELETE FROM meetings WHERE id = ?`).run(meetingId) // segments cascade
+  getDb().prepare(`DELETE FROM meetings WHERE id = ?`).run(meetingId)
+}
+
+/** Ended meetings whose end is older than `cutoff` (SQLite datetime text, UTC);
+ *  a meeting still running has no ended_at and is never returned. */
+export function listMeetingsEndedBefore(cutoff: string): Meeting[] {
+  const rows = getDb()
+    .prepare(`SELECT * FROM meetings WHERE ended_at IS NOT NULL AND ended_at < ? ORDER BY ended_at`)
+    .all(cutoff) as MeetingRow[]
+  return rows.map(toMeeting)
+}
+
+export function clearMeetingAudioPath(meetingId: number): void {
+  getDb().prepare(`UPDATE meetings SET audio_path = NULL WHERE id = ?`).run(meetingId)
 }

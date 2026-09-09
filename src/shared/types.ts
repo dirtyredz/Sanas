@@ -112,6 +112,18 @@ export interface Settings {
   smtpUser: string
   /** SMTP password / app password. Main-process only, like the API keys. */
   smtpPass: string
+  /** Delete a meeting's recording this many days after it ends; 0 = keep forever. */
+  audioRetentionDays: number
+  /** Delete whole meetings (transcript, summary, suggestions, recording) this many days
+   *  after they end; 0 = keep forever. */
+  meetingRetentionDays: number
+}
+
+/** What a retention run would remove (or did remove). */
+export interface RetentionPreview {
+  meetings: number
+  audioFiles: number
+  audioBytes: number
 }
 
 /** Settings with secrets masked for display (renderer never needs raw keys). */

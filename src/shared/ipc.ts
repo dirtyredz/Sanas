@@ -47,6 +47,9 @@ export const IPC = {
   SpeakersList: 'speakers:list',
   SpeakersRename: 'speakers:rename',
   SpeakersMerge: 'speakers:merge',
+  // retention (age-based clean-up of recordings / meetings)
+  RetentionPreview: 'retention:preview',
+  RetentionRun: 'retention:run',
   // overlay ghost mode (clicks pass through; overlay hotkey restores)
   OverlayClickThrough: 'overlay:click-through',
   OverlayGhostState: 'overlay:ghost-state',

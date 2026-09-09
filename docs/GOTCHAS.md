@@ -55,6 +55,16 @@ _Non-obvious traps. Read before touching the related area._
   hears becomes "Me", with no diarization index to pin. The meeting source is therefore a
   per-meeting choice on the Live page (default Elsewhere), never a global setting.
 
+## Storage
+
+- **Deleting a meeting is two deletes.** The row (segments, suggestions, names cascade) and
+  the WAV on disk. `db/repos/meetings.deleteMeeting` is row-only by design — go through
+  `services/meetings/remove.ts` (`removeMeeting`) from anywhere outside repos, or the file
+  stays behind. Retention and the Delete button both use it.
+- **Retention compares SQLite datetime text.** `ended_at` is `datetime('now')` (UTC,
+  `YYYY-MM-DD HH:MM:SS`); the cutoff is built in the same shape so a plain `<` works. A
+  meeting with no `ended_at` (still running, or the app died mid-meeting) is never purged.
+
 ## APIs
 
 - **Deepgram WS idle timeout:** the socket closes after ~10 s without audio. Send

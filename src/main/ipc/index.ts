@@ -20,13 +20,9 @@ import {
   addGlossaryTerm,
   removeGlossaryTerm,
 } from '../db/repos/jobs'
-import {
-  listMeetings,
-  getMeeting,
-  deleteMeeting,
-  renameMeeting,
-  moveMeetingToJob,
-} from '../db/repos/meetings'
+import { listMeetings, getMeeting, renameMeeting, moveMeetingToJob } from '../db/repos/meetings'
+import { removeMeeting } from '../services/meetings/remove'
+import { previewRetention, runRetention } from '../services/retention'
 import { listSegments, searchSegments } from '../db/repos/segments'
 import { exportMeetingMarkdown } from '../services/meetings/export'
 import { summarizeStoredMeeting } from '../services/meetings/summarize'
@@ -88,7 +84,7 @@ export function registerIpcHandlers(): void {
   // meeting history
   ipcMain.handle(IPC.MeetingsList, (_e, jobId: unknown) => listMeetings(requireId(jobId, 'job id')))
   ipcMain.handle(IPC.MeetingsDelete, (_e, id: unknown) =>
-    deleteMeeting(requireId(id, 'meeting id')),
+    removeMeeting(requireId(id, 'meeting id')),
   )
   ipcMain.handle(IPC.MeetingsRename, (_e, id: unknown, title: string) =>
     renameMeeting(requireId(id, 'meeting id'), title),
@@ -124,5 +120,7 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.SegmentsSearch, (_e, query: string) =>
     query.trim().length >= 2 ? searchSegments(query.trim()) : [],
   )
+  ipcMain.handle(IPC.RetentionPreview, () => previewRetention())
+  ipcMain.handle(IPC.RetentionRun, () => runRetention())
   ipcMain.handle(IPC.OverlayClickThrough, (_e, on: boolean) => setClickThrough(on))
 }

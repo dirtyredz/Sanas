@@ -26,8 +26,10 @@ sanas/
 │   │   │   ├── meetings/        # index (live orchestration) + rediarize, export,
 │   │   │   │                    #   summarize (post-stop + on-demand), summary-email
 │   │   │   │                    #   (compose + send), channel-identity (ch0=user, one place),
-│   │   │   │                    #   speaker-carryover (pins + names across re-diarization)
+│   │   │   │                    #   speaker-carryover (pins + names across re-diarization),
+│   │   │   │                    #   remove (audio file + row — the one delete path)
 │   │   │   ├── email/           # EmailProvider seam + smtp.ts (nodemailer transport)
+│   │   │   ├── retention/       # age-based clean-up of recordings / whole meetings (timer + on demand)
 │   │   │   ├── transcript-format.ts # canonical main-side line formatting/windowing
 │   │   │   └── audio-store/     # WAV recording of the capture stream (default on)
 │   │   ├── db/                  # better-sqlite3 open + migrations
@@ -37,7 +39,7 @@ sanas/
 │   ├── renderer/                # vite root: index.html (library) + overlay.html
 │   │   ├── public/              # AudioWorklet processor served as a static asset (not bundled)
 │   │   └── src/
-│   │       ├── app/             # library UI (React): App, pages/, styles
+│   │       ├── app/             # library UI (React): App, pages/, settings/ (page sections), styles
 │   │       ├── overlay-app/     # overlay UI (React, separate tiny bundle)
 │   │       ├── audio/           # (Phase 1) mic capture + AudioWorklet downsample
 │   │       └── lib/             # renderer-side hooks + pure helpers shared across pages
@@ -53,13 +55,14 @@ sanas/
 - `src/main/windows/` — BrowserWindow builders (library window, overlay window)
 - `src/main/ipc/` — typed IPC channel handlers; validate + delegate, no business logic
 - `src/main/services/` — main-process services and provider seams: `stt/`, `assistant/`,
-  `email/`, `meetings/`, `audio-store/`, plus main-side transcript formatting
+  `email/`, `meetings/`, `audio-store/`, `retention/`, plus main-side transcript formatting
 - `src/main/db/` — better-sqlite3 connection + schema migrations
 - `src/main/db/repos/` — per-entity repositories; the only place SQL strings live
 - `src/main/config/` — settings persistence + API key storage
 - `src/preload/` — contextBridge API surface exposed to the renderers, and its type declaration
 - `src/renderer/src/app/` — library UI React app: root component, entry point, global styles
 - `src/renderer/src/app/pages/` — one React component per library UI route/page
+- `src/renderer/src/app/settings/` — sections of the Settings page, one component each
 - `src/renderer/src/overlay-app/` — overlay UI React app (separate, deliberately tiny bundle)
 - `src/renderer/src/audio/` — renderer-side mic capture + AudioWorklet downsampling
 - `src/renderer/src/lib/` — renderer hooks and pure helpers shared across pages

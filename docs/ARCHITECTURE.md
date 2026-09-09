@@ -73,7 +73,12 @@ Mic (getUserMedia, renderer)
 ### Storage
 
 - **SQLite** via `better-sqlite3` in the main process (`%APPDATA%/sanas/sanas.db`).
-- Audio files under `%APPDATA%/sanas/audio/<meetingId>/`.
+- Audio files under `%APPDATA%/sanas/audio/` (`meeting-<id>.wav`).
+- **Retention** (`services/retention/`): two age limits in Settings — recordings (default
+  90 days) and whole meetings (default keep forever). A timer in main runs the purge 30 s
+  after launch and every 6 h; Settings shows what is past its limit and can run it now.
+  Live meetings are never touched. Deleting a meeting by hand goes through the same
+  `removeMeeting` (file + row).
 - Schema (current: v1 base, v2 `speakers`, v3 `jobs.summary_email`):
 
 ```

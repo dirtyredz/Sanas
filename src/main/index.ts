@@ -12,6 +12,7 @@ import { loadSettings } from './config/settings'
 import { registerIpcHandlers } from './ipc'
 import { runSuggestion } from './services/meetings'
 import { registerSystemAudioLoopback } from './system-audio'
+import { scheduleRetention } from './services/retention'
 
 // Single-instance lock: a second launch focuses the existing window instead.
 if (!app.requestSingleInstanceLock()) {
@@ -23,6 +24,7 @@ if (!app.requestSingleInstanceLock()) {
     registerIpcHandlers()
     createMainWindow()
     registerHotkeys()
+    scheduleRetention()
   })
 }
 

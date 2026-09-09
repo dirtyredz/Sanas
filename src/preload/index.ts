@@ -5,6 +5,7 @@ import type {
   Job,
   Meeting,
   MeetingState,
+  RetentionPreview,
   Segment,
   Settings,
   SettingsView,
@@ -55,6 +56,12 @@ const api = {
       ipcRenderer.on(IPC.SuggestionEvent, listener)
       return () => ipcRenderer.removeListener(IPC.SuggestionEvent, listener)
     },
+  },
+  retention: {
+    /** What a clean-up would remove right now, under the saved limits. */
+    preview: (): Promise<RetentionPreview> => ipcRenderer.invoke(IPC.RetentionPreview),
+    /** Runs the clean-up now; resolves with what was removed. */
+    run: (): Promise<RetentionPreview> => ipcRenderer.invoke(IPC.RetentionRun),
   },
   jobs: {
     list: (): Promise<Job[]> => ipcRenderer.invoke(IPC.JobsList),

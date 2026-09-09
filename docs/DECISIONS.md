@@ -2,6 +2,17 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-09-09 — Retention: two limits, recordings default to 90 days, meetings kept
+
+Recordings are ~115 MB per mono hour and only exist to feed the batch re-diarization
+pass at stop; the transcript + summary are the product and are tiny. So retention has
+two independent age limits rather than one: **audio after N days (default 90)** and
+**whole meetings after N days (default never)**. Enforced by a timer in the main process
+(30 s after launch, then every 6 h) plus a "Clean up now" in Settings that previews what
+is due first. Rejected: a single limit (throws away the record to save disk); size-based
+quotas (unpredictable which meeting goes); purging on stop only (an app that is never
+stopped never cleans up).
+
 ## 2026-09-09 — Meeting source is a per-meeting choice, not a global capture setting
 
 Field report: a call held on another laptop, with the default "capture system audio" on,
