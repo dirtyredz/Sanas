@@ -45,7 +45,9 @@ export function EmailSection({
           value={view.smtpPort}
           onChange={(e) =>
             // clamp here: the schema would drop an out-of-range port and the field would revert
-            onChange({ smtpPort: Math.min(65_535, Math.max(1, Number(e.target.value) || 465)) })
+            onChange({
+              smtpPort: Math.min(65_535, Math.max(1, Math.trunc(Number(e.target.value)) || 465)),
+            })
           }
         />
         <small>465 (TLS) or 587 (STARTTLS).</small>
