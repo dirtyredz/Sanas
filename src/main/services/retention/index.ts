@@ -81,8 +81,9 @@ function orphans(): string[] {
     .filter((p) => !referenced.has(samePath(p)))
 }
 
-/** Removes everything past its limit and reports what actually went — a locked file
- *  counts as failed, keeps its pointer, and is retried next run. */
+/** Removes everything past its limit and reports what actually went. Anything that
+ *  could not go — a locked file, or a meeting still being summarised — counts as failed,
+ *  keeps its pointer, and is retried next run. */
 export function runRetention(): RetentionResult {
   const { meetings, audio } = due()
   const result: RetentionResult = {
@@ -133,7 +134,7 @@ export function runRetention(): RetentionResult {
     console.log(
       `[sanas] retention: removed ${result.meetings} meeting(s), ${result.audioFiles} audio file(s)` +
         (result.orphanFiles > 0 ? `, ${result.orphanFiles} orphaned recording(s)` : '') +
-        (result.failed > 0 ? `, ${result.failed} still in use (retry next run)` : ''),
+        (result.failed > 0 ? `, ${result.failed} not removable yet (retry next run)` : ''),
     )
   }
   return result

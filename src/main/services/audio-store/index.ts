@@ -4,6 +4,12 @@ import { app } from 'electron'
 
 // Writes the 16 kHz mono linear16 stream to a WAV file per meeting (opt-in).
 // Header is patched with real sizes on stop.
+//
+// A file stream fails asynchronously: the open happens after createWriteStream returns and
+// a disk-full write fails long after it was accepted, and an unhandled 'error' on a stream
+// takes the process down. So startRecording waits for the open before it claims success,
+// and a later failure drops the recording and calls back rather than throwing — a meeting
+// is worth more than its recording, and the caller decides what to tell the user.
 
 const SAMPLE_RATE = 16000
 
@@ -45,15 +51,51 @@ export function listRecordings(): { meetingId: number; path: string }[] {
     .map((x) => ({ meetingId: Number(x.m![1]), path: join(dir, x.name) }))
 }
 
-export function startRecording(meetingId: number, channels = 1): string {
+/** Opens the meeting's WAV and resolves with its path once the file is really there.
+ *  `onError` is called if the stream fails later (disk full, drive unplugged); the
+ *  recording is dropped at that point and nothing more is written. */
+export async function startRecording(
+  meetingId: number,
+  channels = 1,
+  onError: (error: Error) => void = () => {},
+): Promise<string> {
   const dir = audioDir()
   mkdirSync(dir, { recursive: true })
-  currentPath = join(dir, `meeting-${meetingId}.wav`)
+  const path = join(dir, `meeting-${meetingId}.wav`)
+  const s = createWriteStream(path)
+  await new Promise<void>((resolve, reject) => {
+    const opened = (): void => {
+      s.off('error', failed)
+      resolve()
+    }
+    const failed = (e: Error): void => {
+      s.off('open', opened)
+      s.on('error', () => {}) // it never opened; a second error must not take main down
+      s.destroy()
+      reject(e)
+    }
+    s.once('open', opened)
+    s.once('error', failed)
+  })
+  s.on('error', (e: Error) => {
+    if (stream === s) discardRecording()
+    onError(e)
+  })
+  stream = s
+  currentPath = path
   currentChannels = channels
-  stream = createWriteStream(currentPath)
   bytesWritten = 0
-  stream.write(wavHeader(0, channels)) // placeholder — patched on stop
-  return currentPath
+  s.write(wavHeader(0, channels)) // placeholder — patched on stop
+  return path
+}
+
+/** Forgets the current recording without patching its header — the file is broken or
+ *  unwanted, and whoever asked is responsible for the meeting's `audio_path`. */
+export function discardRecording(): void {
+  const s = stream
+  stream = null
+  currentPath = null
+  s?.destroy()
 }
 
 export function writeAudio(chunk: Buffer): void {
@@ -70,9 +112,14 @@ export async function stopRecording(): Promise<void> {
   stream = null
   currentPath = null
   await new Promise<void>((resolve) => s.end(resolve))
-  // patch the header with real sizes
-  const { open } = await import('fs/promises')
-  const fh = await open(path, 'r+')
-  await fh.write(wavHeader(bytes, currentChannels), 0, 44, 0)
-  await fh.close()
+  // patch the header with real sizes. A failure here must not stop the meeting from
+  // ending: the audio is on disk either way, only its declared length is wrong.
+  try {
+    const { open } = await import('fs/promises')
+    const fh = await open(path, 'r+')
+    await fh.write(wavHeader(bytes, currentChannels), 0, 44, 0)
+    await fh.close()
+  } catch (e) {
+    console.warn('[sanas] could not finalise', path, e)
+  }
 }

@@ -169,9 +169,16 @@ _Non-obvious traps. Read before touching the related area._
   what the meeting is for, so `startMeeting` stays live and returns the reason in
   `MeetingState.error` — silence there would leave the user believing a WAV exists to
   re-diarize and export from.
+- **A file stream fails ASYNCHRONOUSLY, and an unhandled `error` on one kills the main
+  process.** `createWriteStream` returns before the file is open, and a disk-full write
+  fails long after it was accepted. So `startRecording` awaits the open before it claims
+  success, and a later failure drops the recording and calls back instead of throwing:
+  the meeting keeps running, `audio_path` is cleared (a half-written WAV must not be taken
+  for the meeting's audio), and the file becomes an orphan for retention. Patching the
+  header on stop is wrapped too — a meeting must be able to end even if its file cannot.
 - **The renderer holds the capture in a local until main confirms the meeting.** If
-  `meeting.start` rejects after `startCapture` succeeded, nothing else references the
-  mic/worklet — `LiveMeetingPage.start` stops whatever it has not handed to `micRef`.
+  `meeting.start` or `meeting.resume` rejects after `startCapture` succeeded, nothing else
+  references the mic/worklet — both stop whatever they have not handed to `micRef`.
 - **Anything that writes to a meeting in the background must mark it**
   (`services/meetings/post-processing.ts`, a COUNT so concurrent writes don't clear each
   other). Four things outlive the call that started them: summarising on stop, summarising

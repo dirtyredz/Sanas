@@ -4,8 +4,13 @@ import { loadSettings } from '../../config/settings'
 import { sttProvider } from '../stt'
 import type { SttSession, SttTranscript } from '../stt/types'
 import { ensureDefaultJob, getGlossaryTerms, getJob, listGlossary } from '../../db/repos/jobs'
-import { createMeeting, endMeeting, updateMeetingAudioPath } from '../../db/repos/meetings'
-import { startRecording, stopRecording, writeAudio } from '../audio-store'
+import {
+  clearMeetingAudioPath,
+  createMeeting,
+  endMeeting,
+  updateMeetingAudioPath,
+} from '../../db/repos/meetings'
+import { discardRecording, startRecording, stopRecording, writeAudio } from '../audio-store'
 import { rediarizeMeeting } from './rediarize'
 import { summarizeLines } from './summarize'
 import { autoEmailSummary } from './summary-email'
@@ -72,6 +77,23 @@ function currentState(): MeetingState {
 function setState(state: MeetingState): MeetingState {
   broadcast(IPC.MeetingState, state)
   return state
+}
+
+function recordingFailure(e: unknown): string {
+  return `Recording could not start (${e instanceof Error ? e.message : String(e)})`
+}
+
+/** The recording died mid-meeting (disk full, drive unplugged). The meeting carries on —
+ *  but the pointer goes, because a half-written WAV must not be taken for the meeting's
+ *  audio by re-diarization or export. Retention sweeps the file as an orphan. */
+function onRecordingLost(id: number, e: Error): void {
+  console.warn('[sanas] recording stopped mid-meeting:', e)
+  clearMeetingAudioPath(id)
+  if (meetingId !== id) return
+  setState({
+    ...currentState(),
+    error: `Recording stopped (${e.message}) — the meeting is still running, but the rest of it is not being saved.`,
+  })
 }
 
 /** Closes the current session and invalidates its callbacks. */
@@ -185,11 +207,17 @@ export function startMeeting(jobId?: number, channels: ChannelCount = 1): Promis
     let recordingError = ''
     if (settings.recordAudio) {
       try {
-        updateMeetingAudioPath(id, startRecording(id, channels))
+        const path = await startRecording(id, channels, (e) => onRecordingLost(id, e))
+        try {
+          updateMeetingAudioPath(id, path)
+        } catch (e) {
+          // nothing points at the file now, so stop writing it rather than leave a
+          // recording running that no meeting claims
+          discardRecording()
+          throw e
+        }
       } catch (e) {
-        recordingError = `Recording could not start (${
-          e instanceof Error ? e.message : String(e)
-        }) — the meeting is live but nothing is being saved to disk.`
+        recordingError = `${recordingFailure(e)} — the meeting is live, but nothing is being saved to disk.`
         console.warn('[sanas] could not start recording:', e)
       }
     }
@@ -312,10 +340,11 @@ export async function runSuggestion(trigger: 'ambient' | 'hotkey'): Promise<void
   suggestionBusy = true
   // the answer outlives the meeting — Claude is still streaming when Stop returns — and it
   // ends in an insert against this meeting, so it must hold the meeting like any other
-  // background write
+  // background write. Everything after this line is inside the try: a hold that leaked
+  // would make the meeting permanently un-mergeable and un-deletable.
   markPostProcessing(id)
-  const userContent = buildUserContent(transcriptWindow, trigger, speakerNameMap(id))
   try {
+    const userContent = buildUserContent(transcriptWindow, trigger, speakerNameMap(id))
     const text = await claudeProvider.complete({
       apiKey: anthropicApiKey,
       workspaceId: anthropicWorkspaceId || undefined,

@@ -104,7 +104,7 @@ export function RetentionSection({
                 : '') +
               (result.audioBytes > 0 ? `, freeing ${size(result.audioBytes)}` : '') +
               (result.failed > 0
-                ? `. ${result.failed} still in use by another program — will retry later.`
+                ? `. ${result.failed} could not be removed yet — in use, or still being written to. Will retry later.`
                 : '')}
           </span>
         )}

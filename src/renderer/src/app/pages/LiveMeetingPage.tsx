@@ -142,22 +142,24 @@ export function LiveMeetingPage(): React.JSX.Element {
   const resume = async (): Promise<void> => {
     setBusy(true)
     setMicError('')
+    let mic: CaptureSession | null = null // released below unless main adopts it
     try {
       await micRef.current?.stop() // never leave one behind
       micRef.current = null
-      const mic = await capture()
+      mic = await capture()
       // main refuses a topology this meeting did not start with (loopback can fail
       // independently on any attempt), so tell it what we actually got
       const st = await window.sanas.meeting.resume(mic.channels)
       if (st.status === 'live') {
         micRef.current = mic
-        setSysAudio(mic.channels === 2)
-      } else {
-        await mic.stop() // still paused — the reason is in state.error
+        mic = null // adopted
+        setSysAudio(micRef.current.channels === 2)
       }
+      // still paused — the reason is in state.error, and the finally releases the mic
     } catch (e) {
       setMicError(errorText(e))
     } finally {
+      await mic?.stop()
       setBusy(false)
     }
   }
