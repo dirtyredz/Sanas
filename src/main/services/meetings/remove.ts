@@ -5,12 +5,17 @@ import { deleteMeeting, getMeeting } from '../../db/repos/meetings'
 // suggestions and speaker names cascade from it). This is the one place both happen;
 // the repo's deleteMeeting alone would leave the WAV behind (GOTCHAS.md).
 
-/** Removes the meeting's recording and then the meeting itself. */
-export function removeMeeting(meetingId: number): void {
+export type RemoveOutcome = 'removed' | 'audio-locked' | 'missing'
+
+/** Removes the meeting's recording and then the meeting itself. If the recording
+ *  cannot be deleted (locked by another process) the row is kept as well, so its
+ *  audio_path survives for a retry — a WAV without a row is an orphan nothing can find. */
+export function removeMeeting(meetingId: number): RemoveOutcome {
   const meeting = getMeeting(meetingId)
-  if (!meeting) return
-  removeAudioFile(meeting.audioPath)
+  if (!meeting) return 'missing'
+  if (!removeAudioFile(meeting.audioPath)) return 'audio-locked'
   deleteMeeting(meetingId)
+  return 'removed'
 }
 
 /** Best-effort unlink. Resolves true when the file is gone (deleted now, or already

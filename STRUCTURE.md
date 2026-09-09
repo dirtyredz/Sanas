@@ -65,9 +65,11 @@ sanas/
 - `src/main/db/repos/` — per-entity repositories; the only place SQL strings live
 - `src/main/config/` — settings persistence + API key storage
 - `src/preload/` — contextBridge API surface exposed to the renderers, and its type declaration
-- `src/renderer/src/app/` — library UI React app: root component, entry point, global styles
+- `src/renderer/src/app/` — library UI React app: root component and entry point
 - `src/renderer/src/app/pages/` — one React component per library UI route/page
 - `src/renderer/src/app/settings/` — sections of the Settings page, one component each
+- `src/renderer/src/app/styles/` — the layered stylesheet (base → controls → shell → transcript →
+  pages) and the shared control vocabulary; no per-page stylesheets
 - `src/renderer/src/overlay-app/` — overlay UI React app (separate, deliberately tiny bundle)
 - `src/renderer/src/audio/` — renderer-side mic capture + AudioWorklet downsampling
 - `src/renderer/src/lib/` — renderer hooks and pure helpers shared across pages

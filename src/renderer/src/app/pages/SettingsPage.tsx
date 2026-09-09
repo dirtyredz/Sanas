@@ -58,7 +58,7 @@ export function SettingsPage(): React.JSX.Element {
     setSecrets((prev) => ({ ...prev, [key]: value }))
 
   return (
-    <div className="settings">
+    <div className="settings-page">
       <div className="page-head">
         <h2>Settings</h2>
       </div>

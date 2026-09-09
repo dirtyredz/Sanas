@@ -54,7 +54,7 @@ export function SearchPage(): React.JSX.Element {
   const searching = query.trim().length >= 2
 
   return (
-    <div className="search">
+    <div className="search-page">
       <div className="page-head">
         <h2>Search</h2>
         <p>Anything said in any meeting, across all jobs.</p>

@@ -16,6 +16,8 @@ export default defineConfig({
   },
   renderer: {
     plugins: [react()],
+    // the browser-preview mock (src/renderer/src/dev) is compiled out of the real app
+    define: { __SANAS_WEB_PREVIEW__: 'false' },
     resolve: {
       alias: {
         '@shared': resolve(__dirname, 'src/shared'),

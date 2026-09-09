@@ -1,5 +1,5 @@
 import { statSync } from 'fs'
-import type { RetentionPreview } from '@shared/types'
+import type { Meeting, RetentionPreview, RetentionResult } from '@shared/types'
 import { loadSettings } from '../../config/settings'
 import { clearMeetingAudioPath, listMeetingsEndedBefore } from '../../db/repos/meetings'
 import { removeAudioFile, removeMeeting } from '../meetings/remove'
@@ -27,10 +27,7 @@ function fileSize(path: string | null): number {
 
 /** Meetings past the whole-meeting limit, and meetings (not among those) whose audio
  *  is past the audio limit. */
-function due(): {
-  meetings: ReturnType<typeof listMeetingsEndedBefore>
-  audio: ReturnType<typeof listMeetingsEndedBefore>
-} {
+function due(): { meetings: Meeting[]; audio: Meeting[] } {
   const { audioRetentionDays, meetingRetentionDays } = loadSettings()
   const meetings =
     meetingRetentionDays > 0 ? listMeetingsEndedBefore(cutoff(meetingRetentionDays)) : []
@@ -54,20 +51,39 @@ export function previewRetention(): RetentionPreview {
   }
 }
 
-/** Removes everything past its limit; resolves with what was removed. */
-export function runRetention(): RetentionPreview {
-  const removed = previewRetention()
+/** Removes everything past its limit and reports what actually went — a locked file
+ *  counts as failed, keeps its pointer, and is retried next run. */
+export function runRetention(): RetentionResult {
   const { meetings, audio } = due()
+  const result: RetentionResult = { meetings: 0, audioFiles: 0, audioBytes: 0, failed: 0 }
   for (const m of audio) {
-    if (removeAudioFile(m.audioPath)) clearMeetingAudioPath(m.id) // keep the pointer if it failed
+    const bytes = fileSize(m.audioPath)
+    if (removeAudioFile(m.audioPath)) {
+      clearMeetingAudioPath(m.id)
+      if (bytes > 0) {
+        result.audioFiles++
+        result.audioBytes += bytes
+      }
+    } else {
+      result.failed++
+    }
   }
-  for (const m of meetings) removeMeeting(m.id)
-  if (removed.meetings > 0 || removed.audioFiles > 0) {
+  for (const m of meetings) {
+    const bytes = fileSize(m.audioPath)
+    if (removeMeeting(m.id) === 'audio-locked') {
+      result.failed++
+    } else {
+      result.meetings++
+      result.audioBytes += bytes
+    }
+  }
+  if (result.meetings > 0 || result.audioFiles > 0 || result.failed > 0) {
     console.log(
-      `[sanas] retention: removed ${removed.meetings} meeting(s), ${removed.audioFiles} audio file(s)`,
+      `[sanas] retention: removed ${result.meetings} meeting(s), ${result.audioFiles} audio file(s)` +
+        (result.failed > 0 ? `, ${result.failed} still in use (retry next run)` : ''),
     )
   }
-  return removed
+  return result
 }
 
 let timer: ReturnType<typeof setInterval> | null = null

@@ -35,7 +35,7 @@ export function JobsPage(): React.JSX.Element {
   }
 
   return (
-    <div className="jobs">
+    <div className="jobs-page">
       <div className="page-head">
         <h2>Jobs</h2>
         <p>One per employer or client — each carries its own context pack.</p>

@@ -3,9 +3,10 @@ import ReactDOM from 'react-dom/client'
 import { App } from './App'
 import './styles/index.css'
 
-// Browser preview without Electron (electron-vite dev --rendererOnly): stand in for the
-// preload bridge. Dead code in production builds — DEV is a compile-time constant.
-if (import.meta.env.DEV && !('sanas' in window)) {
+// Browser preview without Electron (npm run dev:web): stand in for the preload bridge.
+// __SANAS_WEB_PREVIEW__ is a build-time constant — true only in vite.renderer.config.ts,
+// false in the Electron build — so this is dead code everywhere else.
+if (__SANAS_WEB_PREVIEW__ && !('sanas' in window)) {
   const { installMockApi } = await import('../dev/mock-api')
   installMockApi()
 }

@@ -73,7 +73,9 @@ _Non-obvious traps. Read before touching the related area._
 - **Deleting a meeting is two deletes.** The row (segments, suggestions, names cascade) and
   the WAV on disk. `db/repos/meetings.deleteMeeting` is row-only by design — go through
   `services/meetings/remove.ts` (`removeMeeting`) from anywhere outside repos, or the file
-  stays behind. Retention and the Delete button both use it.
+  stays behind. Retention and the Delete button both use it. If the WAV is locked by another
+  program the row is kept too (a file without a row is an orphan): Delete shows "still in use —
+  try again", retention counts it as failed and retries next run.
 - **Retention compares SQLite datetime text.** `ended_at` is `datetime('now')` (UTC,
   `YYYY-MM-DD HH:MM:SS`); the cutoff is built in the same shape so a plain `<` works. A
   meeting with no `ended_at` (still running, or the app died mid-meeting) is never purged.

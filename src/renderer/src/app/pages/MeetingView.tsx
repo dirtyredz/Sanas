@@ -130,8 +130,12 @@ export function MeetingView({
           <button
             className="btn btn-danger"
             onClick={async () => {
-              await window.sanas.meetings.delete(meeting.id)
-              onBack()
+              try {
+                await window.sanas.meetings.delete(meeting.id)
+                onBack()
+              } catch (e) {
+                flash('warn', errorText(e))
+              }
             }}
           >
             Delete

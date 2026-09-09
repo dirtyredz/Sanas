@@ -261,6 +261,11 @@
   color: var(--accent);
 }
 
+.action-items {
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
 .speaker-editor {
   display: flex;
   flex-wrap: wrap;
@@ -360,7 +365,7 @@
 }
 
 /* ---------- settings ---------- */
-.settings {
+.settings-page {
   max-width: 600px;
   display: flex;
   flex-direction: column;
@@ -385,11 +390,11 @@
   font-size: 13px;
 }
 
-.settings input[type='text'],
-.settings input[type='password'],
-.settings input[type='number'],
-.settings input[type='email'],
-.settings select {
+.settings-page input[type='text'],
+.settings-page input[type='password'],
+.settings-page input[type='number'],
+.settings-page input[type='email'],
+.settings-page select {
   width: 100%;
 }
 

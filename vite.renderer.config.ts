@@ -13,5 +13,6 @@ export default defineConfig({
       '@shared': resolve(__dirname, 'src/shared'),
     },
   },
+  define: { __SANAS_WEB_PREVIEW__: 'true' },
   server: { port: 5174, strictPort: true },
 })

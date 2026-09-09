@@ -119,11 +119,17 @@ export interface Settings {
   meetingRetentionDays: number
 }
 
-/** What a retention run would remove (or did remove). */
+/** What a retention run would remove right now. */
 export interface RetentionPreview {
   meetings: number
   audioFiles: number
   audioBytes: number
+}
+
+/** What a retention run actually removed, plus how many items it could not
+ *  (recording locked by another process — kept for the next run). */
+export interface RetentionResult extends RetentionPreview {
+  failed: number
 }
 
 /** Settings with secrets masked for display (renderer never needs raw keys). */

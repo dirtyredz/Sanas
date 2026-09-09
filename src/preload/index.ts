@@ -6,6 +6,7 @@ import type {
   Meeting,
   MeetingState,
   RetentionPreview,
+  RetentionResult,
   Segment,
   Settings,
   SettingsView,
@@ -60,8 +61,8 @@ const api = {
   retention: {
     /** What a clean-up would remove right now, under the saved limits. */
     preview: (): Promise<RetentionPreview> => ipcRenderer.invoke(IPC.RetentionPreview),
-    /** Runs the clean-up now; resolves with what was removed. */
-    run: (): Promise<RetentionPreview> => ipcRenderer.invoke(IPC.RetentionRun),
+    /** Runs the clean-up now; resolves with what was removed and what was still in use. */
+    run: (): Promise<RetentionResult> => ipcRenderer.invoke(IPC.RetentionRun),
   },
   jobs: {
     list: (): Promise<Job[]> => ipcRenderer.invoke(IPC.JobsList),

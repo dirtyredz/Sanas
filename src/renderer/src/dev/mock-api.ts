@@ -14,8 +14,9 @@ import type {
 
 // Browser preview of the renderer WITHOUT Electron: `electron-vite dev --rendererOnly`
 // serves index.html / overlay.html, and this stands in for the preload bridge with
-// sample data and a scripted live meeting. Dev-only — main.tsx installs it only when
-// import.meta.env.DEV and window.sanas is absent, so production never bundles it.
+// sample data and a scripted live meeting. Only the web-preview build defines
+// __SANAS_WEB_PREVIEW__ as true (vite.renderer.config.ts); the Electron build defines it
+// false, so a broken preload in Electron dev still fails loudly instead of being masked.
 // Typed against SanasApi (via the global Window augmentation) so it cannot drift.
 
 type SanasApi = Window['sanas']
@@ -232,6 +233,7 @@ let liveTimer: ReturnType<typeof setTimeout> | null = null
 let liveChannels = 1
 const pinned = new Set<number>()
 let suggestionSeq = 0
+let dueRecordings = 2 // retention preview: cleaned up by run()
 
 const SCRIPT: { speaker: number; user: boolean; text: string }[] = [
   { speaker: 0, user: false, text: 'Thanks for joining. Where are we on the intake forms?' },
@@ -401,10 +403,19 @@ const api: SanasApi = {
   retention: {
     preview: async (): Promise<RetentionPreview> => ({
       meetings: 0,
-      audioFiles: 2,
-      audioBytes: 231_400_000,
+      audioFiles: dueRecordings,
+      audioBytes: dueRecordings * 115_700_000,
     }),
-    run: async () => ({ meetings: 0, audioFiles: 2, audioBytes: 231_400_000 }),
+    run: async () => {
+      const removed = {
+        meetings: 0,
+        audioFiles: dueRecordings,
+        audioBytes: dueRecordings * 115_700_000,
+        failed: 0,
+      }
+      dueRecordings = 0
+      return removed
+    },
   },
   meetings: {
     list: async (jobId) => meetings.filter((m) => m.jobId === jobId),

@@ -36,7 +36,10 @@ export function RetentionSection({
     const removed = await window.sanas.retention.run()
     setResult(
       `Removed ${removed.audioFiles} recording(s) and ${removed.meetings} meeting(s)` +
-        (removed.audioBytes > 0 ? `, freeing ${size(removed.audioBytes)}` : ''),
+        (removed.audioBytes > 0 ? `, freeing ${size(removed.audioBytes)}` : '') +
+        (removed.failed > 0
+          ? `. ${removed.failed} still in use by another program — will retry later.`
+          : ''),
     )
     setPreview(await window.sanas.retention.preview())
   }

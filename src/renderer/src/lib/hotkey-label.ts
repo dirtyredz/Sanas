@@ -10,6 +10,7 @@ export function hotkeyLabel(accelerator: string): string {
         case 'Control':
           return 'Ctrl'
         case 'Super':
+        case 'Meta':
           return 'Win'
         case 'Return':
           return 'Enter'
