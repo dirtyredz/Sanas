@@ -5,24 +5,16 @@ import { loadSettings } from '../../config/settings'
 import { sttProvider } from '../stt'
 import type { SttSession } from '../stt/types'
 import { ensureDefaultJob, getGlossaryTerms, getJob, listGlossary } from '../../db/repos/jobs'
-import {
-  createMeeting,
-  endMeeting,
-  updateMeetingAudioPath,
-  updateMeetingSummary,
-} from '../../db/repos/meetings'
+import { createMeeting, endMeeting, updateMeetingAudioPath } from '../../db/repos/meetings'
 import { startRecording, stopRecording, writeAudio } from '../audio-store'
 import { rediarizeMeeting } from './rediarize'
+import { summarizeLines } from './summarize'
+import { autoEmailSummary } from './summary-email'
 import { resolveSpeakerIdentity } from './channel-identity'
 import { insertSegment, setSpeakerIsUser } from '../../db/repos/segments'
 import { insertSuggestion } from '../../db/repos/suggestions'
 import { claudeProvider } from '../assistant/claude'
-import {
-  buildSummaryPrompt,
-  buildSystemPrompt,
-  buildUserContent,
-  type TranscriptLine,
-} from '../assistant/prompts'
+import { buildSystemPrompt, buildUserContent, type TranscriptLine } from '../assistant/prompts'
 import { resetTriggers, shouldTrigger } from '../assistant/triggers'
 
 // Orchestrates one live meeting at a time: STT session, persistence, event fan-out,
@@ -143,9 +135,15 @@ export async function stopMeeting(): Promise<MeetingState> {
   await stopRecording() // no-op when recording wasn't on
   if (meetingId !== null) {
     endMeeting(meetingId)
-    // fire-and-forget: summarize + re-diarize; UI reads results from the DB later
-    void summarizeMeeting(meetingId, [...transcriptWindow])
     const endedId = meetingId
+    // fire-and-forget: summarize (+ optional auto-email) and re-diarize; open views reload
+    void summarizeLines(endedId, [...transcriptWindow], systemPrompt)
+      .then((written) => {
+        if (!written) return
+        broadcast(IPC.MeetingUpdated, endedId)
+        return autoEmailSummary(endedId)
+      })
+      .catch((e) => console.warn('[sanas] meeting summary failed:', e))
     void rediarizeMeeting(endedId, meetingChannels).then((changed) => {
       if (changed) broadcast(IPC.MeetingUpdated, endedId) // open views reload
     })
@@ -156,36 +154,13 @@ export async function stopMeeting(): Promise<MeetingState> {
   return state
 }
 
-async function summarizeMeeting(id: number, window: TranscriptLine[]): Promise<void> {
-  if (window.length < 5) return // nothing worth summarizing
-  const { anthropicApiKey } = loadSettings()
-  if (!anthropicApiKey) return
-
-  try {
-    const text = await claudeProvider.complete({
-      apiKey: anthropicApiKey,
-      system: systemPrompt,
-      userContent: buildSummaryPrompt(window),
-      maxTokens: 1500,
-      effort: 'medium',
-      // no onDelta — one-shot; persisted when done
-    })
-    const idx = text.indexOf('ACTION ITEMS')
-    const summary = (idx >= 0 ? text.slice(0, idx) : text).replace(/^SUMMARY\s*/i, '').trim()
-    const actions = idx >= 0 ? text.slice(idx + 'ACTION ITEMS'.length).trim() : ''
-    updateMeetingSummary(id, summary, actions)
-  } catch (e) {
-    console.warn('[sanas] meeting summary failed:', e)
-  }
-}
-
 /** Generate one suggestion (ambient nudge or hotkey full answer) and stream it out. */
 export async function runSuggestion(trigger: 'ambient' | 'hotkey'): Promise<void> {
   if (meetingId === null) return // no live meeting — hotkey outside a meeting is a no-op
   if (suggestionBusy) return // one at a time; drop overlapping triggers
   if (transcriptWindow.length === 0) return
 
-  const { anthropicApiKey } = loadSettings()
+  const { anthropicApiKey, anthropicWorkspaceId } = loadSettings()
   const id = meetingId
   const sid = ++suggestionSeq
   const emit = (kind: SuggestionEvent['kind'], text: string): void =>
@@ -207,6 +182,7 @@ export async function runSuggestion(trigger: 'ambient' | 'hotkey'): Promise<void
   try {
     const text = await claudeProvider.complete({
       apiKey: anthropicApiKey,
+      workspaceId: anthropicWorkspaceId || undefined,
       system: systemPrompt,
       userContent,
       // nudges stay terse and fast; hotkey answers get more room and depth

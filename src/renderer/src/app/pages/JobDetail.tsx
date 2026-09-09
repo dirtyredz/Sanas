@@ -53,6 +53,7 @@ export function JobDetail({
       notes: job.notes,
       talkingPoints: job.talkingPoints,
       persona: job.persona,
+      summaryEmail: job.summaryEmail,
     })
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
@@ -99,6 +100,15 @@ export function JobDetail({
         </section>
 
         <section className="side">
+          <h3>Summary email</h3>
+          <p className="muted">Meeting summaries for this job go here. Blank = no email.</p>
+          <input
+            type="email"
+            placeholder="client@example.com"
+            value={job.summaryEmail}
+            onChange={(e) => setJob({ ...job, summaryEmail: e.target.value })}
+          />
+
           <h3>Glossary</h3>
           <p className="muted">Jargon, product names, acronyms — also boosts transcription.</p>
           <div className="job-create">

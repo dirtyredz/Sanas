@@ -58,6 +58,19 @@ _Non-obvious traps. Read before touching the related area._
 - **Claude prompt growth:** a long meeting's transcript exceeds sensible prompt sizes —
   always window the transcript (recent N tokens) + optionally a rolling summary;
   never send the whole thing per suggestion.
+- **Anthropic keys come in two kinds.** A key created inside a Console workspace just
+  works. An org-level key (created without picking a workspace) is rejected with
+  `400 … not scoped to a workspace` unless every request carries `anthropic-workspace-id`
+  — Settings has an optional Workspace ID field for that; the Claude client adds the
+  header only when it's set. Prefer workspace-scoped keys; the field is the escape hatch.
+- **Gmail SMTP wants an App Password, not the account password** — and App Passwords
+  only exist once 2-step verification is on. "Username and Password not accepted" with
+  correct credentials almost always means this. Port 465 is implicit TLS (`secure`);
+  587 must NOT set `secure` (it upgrades via STARTTLS) — the transport derives it from
+  the port, so don't add a separate toggle.
+- **On-stop summary vs re-diarization race:** the summary uses the in-memory live
+  window; re-diarization rewrites segments concurrently. That's fine — Regenerate reads
+  the stored (post-diarization) transcript if the stop-time summary looks off.
 
 ## Product/legal
 

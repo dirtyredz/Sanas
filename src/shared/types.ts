@@ -8,6 +8,8 @@ export interface Job {
   notes: string
   talkingPoints: string
   persona: string
+  /** Where this job's meeting summaries are emailed. Empty = no email for this job. */
+  summaryEmail: string
   createdAt: string
   archived: boolean
 }
@@ -82,6 +84,8 @@ export interface MeetingState {
 export interface Settings {
   deepgramApiKey: string
   anthropicApiKey: string
+  /** Only needed for org-level (non-workspace) Anthropic keys; sent as anthropic-workspace-id. */
+  anthropicWorkspaceId: string
   overlayHotkey: string
   assistHotkey: string
   audioDeviceId: string
@@ -93,10 +97,23 @@ export interface Settings {
   overlayOpacity: number
   /** Remembered overlay window bounds; null until first moved/resized. */
   overlayBounds: { x: number; y: number; width: number; height: number } | null
+  /** Email the summary automatically when a meeting stops (to the job's address). */
+  summaryEmailAuto: boolean
+  /** Outgoing SMTP server (e.g. smtp.gmail.com). */
+  smtpHost: string
+  smtpPort: number
+  /** Login for the SMTP server; also the From address. */
+  smtpUser: string
+  /** SMTP password / app password. Main-process only, like the API keys. */
+  smtpPass: string
 }
 
 /** Settings with secrets masked for display (renderer never needs raw keys). */
-export interface SettingsView extends Omit<Settings, 'deepgramApiKey' | 'anthropicApiKey'> {
+export interface SettingsView extends Omit<
+  Settings,
+  'deepgramApiKey' | 'anthropicApiKey' | 'smtpPass'
+> {
   deepgramKeySet: boolean
   anthropicKeySet: boolean
+  smtpPassSet: boolean
 }

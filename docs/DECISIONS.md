@@ -2,6 +2,20 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-09-08 — Summary email via SMTP (nodemailer), summary-only body, recipient per job
+
+The user wants a meeting summary delivered to a predefined address without touching a
+mail client. The **recipient lives on the job** (`jobs.summary_email`), not in Settings —
+each client/job has its own stakeholder, and a job with no address simply never emails.
+Only the sending account (SMTP) is global. Chosen: direct SMTP from the main process (nodemailer) with host/login/
+app-password in Settings — fully hands-off, works with any provider, and can auto-send on
+stop. The email carries **summary + action items only**; the transcript stays local
+(Export exists for that). This is the first outbound path besides the two API vendors —
+recorded as an exception to "nothing else leaves the machine": only the summary leaves,
+only to the address the user typed. SMTP password shares the API keys' storage model.
+Rejected: `mailto:` draft (not hands-off; body length limits); Gmail API/OAuth (needs a
+GCP client + browser flow for one recipient); Resend/SendGrid (a third vendor account).
+
 ## 2026-08-28 — Post-meeting batch re-diarization + speaker rename/merge
 
 Streaming diarization drifts badly on real meetings (a speaker labeled S2 shifts to S7

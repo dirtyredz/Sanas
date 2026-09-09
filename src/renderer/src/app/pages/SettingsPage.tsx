@@ -5,6 +5,7 @@ export function SettingsPage(): React.JSX.Element {
   const [view, setView] = useState<SettingsView | null>(null)
   const [deepgramKey, setDeepgramKey] = useState('')
   const [anthropicKey, setAnthropicKey] = useState('')
+  const [smtpPass, setSmtpPass] = useState('')
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
   const [saved, setSaved] = useState(false)
 
@@ -22,18 +23,25 @@ export function SettingsPage(): React.JSX.Element {
     const patch: Partial<Settings> = {
       overlayHotkey: view.overlayHotkey,
       assistHotkey: view.assistHotkey,
+      anthropicWorkspaceId: view.anthropicWorkspaceId.trim(),
       audioDeviceId: view.audioDeviceId,
       recordAudio: view.recordAudio,
       captureSystemAudio: view.captureSystemAudio,
       overlayOpacity: view.overlayOpacity,
+      summaryEmailAuto: view.summaryEmailAuto,
+      smtpHost: view.smtpHost.trim(),
+      smtpPort: view.smtpPort,
+      smtpUser: view.smtpUser.trim(),
     }
-    // Only send keys the user actually typed — empty means "keep existing".
+    // Only send secrets the user actually typed — empty means "keep existing".
     if (deepgramKey) patch.deepgramApiKey = deepgramKey
     if (anthropicKey) patch.anthropicApiKey = anthropicKey
+    if (smtpPass) patch.smtpPass = smtpPass
     const next = await window.sanas.settings.set(patch)
     setView(next)
     setDeepgramKey('')
     setAnthropicKey('')
+    setSmtpPass('')
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
@@ -70,6 +78,20 @@ export function SettingsPage(): React.JSX.Element {
           value={anthropicKey}
           onChange={(e) => setAnthropicKey(e.target.value)}
         />
+      </label>
+
+      <label>
+        Anthropic workspace ID (optional)
+        <input
+          type="text"
+          placeholder="wrkspc_…"
+          value={view.anthropicWorkspaceId}
+          onChange={(e) => setView({ ...view, anthropicWorkspaceId: e.target.value })}
+        />
+        <small>
+          Only for org-level keys ("not scoped to a workspace" error). Leave blank for a key created
+          inside a workspace.
+        </small>
       </label>
 
       <label>
@@ -138,6 +160,67 @@ export function SettingsPage(): React.JSX.Element {
           onChange={(e) => setView({ ...view, overlayOpacity: Number(e.target.value) })}
         />
         <small>Applies when you hit Save.</small>
+      </label>
+
+      <h3>Summary email</h3>
+      <small>
+        Each job has its own recipient address (set it on the job page). The SMTP account below is
+        what Sanas sends from.
+      </small>
+
+      <label className="check">
+        <input
+          type="checkbox"
+          checked={view.summaryEmailAuto}
+          onChange={(e) => setView({ ...view, summaryEmailAuto: e.target.checked })}
+        />
+        Email the summary automatically when a meeting stops (jobs with an address only)
+      </label>
+
+      <label>
+        SMTP server
+        <input
+          type="text"
+          placeholder="smtp.gmail.com"
+          value={view.smtpHost}
+          onChange={(e) => setView({ ...view, smtpHost: e.target.value })}
+        />
+      </label>
+
+      <label>
+        SMTP port
+        <input
+          type="number"
+          value={view.smtpPort}
+          onChange={(e) => setView({ ...view, smtpPort: Number(e.target.value) || 465 })}
+        />
+        <small>465 (TLS) or 587 (STARTTLS).</small>
+      </label>
+
+      <label>
+        SMTP login (also the From address)
+        <input
+          type="text"
+          placeholder="you@gmail.com"
+          value={view.smtpUser}
+          onChange={(e) => setView({ ...view, smtpUser: e.target.value })}
+        />
+      </label>
+
+      <label>
+        SMTP password{' '}
+        {view.smtpPassSet ? (
+          <span className="ok">✓ set</span>
+        ) : (
+          <span className="warn">not set</span>
+        )}
+        <input
+          type="password"
+          placeholder={view.smtpPassSet ? '•••••••• (leave blank to keep)' : 'app password'}
+          value={smtpPass}
+          onChange={(e) => setSmtpPass(e.target.value)}
+        />
+        <small>For Gmail, use an App Password (needs 2-step verification), not your login.</small>
       </label>
 
       <button onClick={save}>Save</button>

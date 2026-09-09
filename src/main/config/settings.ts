@@ -9,6 +9,7 @@ import type { Settings, SettingsView } from '@shared/types'
 const DEFAULTS: Settings = {
   deepgramApiKey: '',
   anthropicApiKey: '',
+  anthropicWorkspaceId: '',
   overlayHotkey: 'CommandOrControl+Shift+Space',
   assistHotkey: 'CommandOrControl+Shift+Enter',
   audioDeviceId: '',
@@ -16,6 +17,11 @@ const DEFAULTS: Settings = {
   captureSystemAudio: true,
   overlayOpacity: 1,
   overlayBounds: null,
+  summaryEmailAuto: false,
+  smtpHost: '',
+  smtpPort: 465,
+  smtpUser: '',
+  smtpPass: '',
 }
 
 function settingsPath(): string {
@@ -38,10 +44,11 @@ export function saveSettings(patch: Partial<Settings>): Settings {
 }
 
 export function toView(s: Settings): SettingsView {
-  const { deepgramApiKey, anthropicApiKey, ...rest } = s
+  const { deepgramApiKey, anthropicApiKey, smtpPass, ...rest } = s
   return {
     ...rest,
     deepgramKeySet: deepgramApiKey.length > 0,
     anthropicKeySet: anthropicApiKey.length > 0,
+    smtpPassSet: smtpPass.length > 0,
   }
 }

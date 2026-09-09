@@ -20,9 +20,17 @@ import {
   addGlossaryTerm,
   removeGlossaryTerm,
 } from '../db/repos/jobs'
-import { listMeetings, deleteMeeting, renameMeeting, moveMeetingToJob } from '../db/repos/meetings'
+import {
+  listMeetings,
+  getMeeting,
+  deleteMeeting,
+  renameMeeting,
+  moveMeetingToJob,
+} from '../db/repos/meetings'
 import { listSegments, searchSegments } from '../db/repos/segments'
 import { exportMeetingMarkdown } from '../services/meetings/export'
+import { summarizeStoredMeeting } from '../services/meetings/summarize'
+import { emailMeetingSummary } from '../services/meetings/summary-email'
 import { listSuggestions } from '../db/repos/suggestions'
 import { listSpeakerNames, setSpeakerName, mergeSpeakers } from '../db/repos/speakers'
 
@@ -73,6 +81,9 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.MeetingsRename, (_e, id: number, title: string) => renameMeeting(id, title))
   ipcMain.handle(IPC.MeetingsMove, (_e, id: number, jobId: number) => moveMeetingToJob(id, jobId))
   ipcMain.handle(IPC.MeetingsExport, (_e, id: number) => exportMeetingMarkdown(id))
+  ipcMain.handle(IPC.MeetingsGet, (_e, id: number) => getMeeting(id))
+  ipcMain.handle(IPC.MeetingsSummarize, (_e, id: number) => summarizeStoredMeeting(id))
+  ipcMain.handle(IPC.MeetingsEmailSummary, (_e, id: number) => emailMeetingSummary(id))
   ipcMain.handle(IPC.SegmentsList, (_e, meetingId: number) => listSegments(meetingId))
   ipcMain.handle(IPC.SuggestionsList, (_e, meetingId: number) => listSuggestions(meetingId))
   ipcMain.handle(IPC.SpeakersList, (_e, meetingId: number) => listSpeakerNames(meetingId))

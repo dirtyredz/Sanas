@@ -59,6 +59,8 @@ const migrations: string[] = [
     PRIMARY KEY (meeting_id, speaker)
   );
   `,
+  // v3 — per-job recipient for summary emails
+  `ALTER TABLE jobs ADD COLUMN summary_email TEXT NOT NULL DEFAULT '';`,
 ]
 
 export function runMigrations(db: Database): void {

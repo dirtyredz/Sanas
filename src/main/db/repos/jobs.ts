@@ -9,6 +9,7 @@ interface JobRow {
   notes: string
   talking_points: string
   persona: string
+  summary_email: string
   created_at: string
   archived: number
 }
@@ -22,6 +23,7 @@ function toJob(r: JobRow): Job {
     notes: r.notes,
     talkingPoints: r.talking_points,
     persona: r.persona,
+    summaryEmail: r.summary_email,
     createdAt: r.created_at,
     archived: r.archived === 1,
   }
@@ -50,7 +52,7 @@ export function updateJob(job: Omit<Job, 'createdAt' | 'archived'>): Job {
   getDb()
     .prepare(
       `UPDATE jobs SET name = ?, company_info = ?, project_scope = ?, notes = ?,
-       talking_points = ?, persona = ? WHERE id = ?`,
+       talking_points = ?, persona = ?, summary_email = ? WHERE id = ?`,
     )
     .run(
       job.name,
@@ -59,6 +61,7 @@ export function updateJob(job: Omit<Job, 'createdAt' | 'archived'>): Job {
       job.notes,
       job.talkingPoints,
       job.persona,
+      job.summaryEmail.trim(),
       job.id,
     )
   return getJob(job.id)!

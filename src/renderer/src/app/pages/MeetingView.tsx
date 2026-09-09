@@ -2,6 +2,12 @@ import { useEffect, useState } from 'react'
 import type { Job, Meeting, Segment, Suggestion } from '@shared/types'
 import { speakerDisplay } from '../../lib/speaker-label'
 
+/** IPC rejections arrive as "Error invoking remote method 'x': Error: <msg>" — keep <msg>. */
+function errorText(e: unknown): string {
+  const raw = e instanceof Error ? e.message : String(e)
+  return raw.replace(/^Error invoking remote method '[^']*': (Error: )?/, '')
+}
+
 export function MeetingView({
   meeting,
   onBack,
@@ -17,12 +23,45 @@ export function MeetingView({
   const [exported, setExported] = useState('')
   const [jobs, setJobs] = useState<Job[]>([])
   const [jobId, setJobId] = useState(meeting.jobId)
+  // summary/action items can change after open (post-stop pass, regenerate)
+  const [current, setCurrent] = useState<Meeting>(meeting)
+  const [busy, setBusy] = useState<'summarize' | 'email' | null>(null)
+  const [notice, setNotice] = useState<{ kind: 'ok' | 'warn'; text: string } | null>(null)
+
+  const flash = (kind: 'ok' | 'warn', text: string): void => {
+    setNotice({ kind, text })
+    setTimeout(() => setNotice(null), 5000)
+  }
 
   const reload = (): void => {
     window.sanas.meetings.segments(meeting.id).then(setSegments)
     window.sanas.meetings
       .speakerNames(meeting.id)
       .then((rows) => setNames(new Map(rows.map((r) => [r.speaker, r.name]))))
+    window.sanas.meetings.get(meeting.id).then((m) => m && setCurrent(m))
+  }
+
+  const summarize = async (): Promise<void> => {
+    setBusy('summarize')
+    try {
+      setCurrent(await window.sanas.meetings.summarize(meeting.id))
+      flash('ok', 'Summary updated')
+    } catch (e) {
+      flash('warn', errorText(e))
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const emailSummary = async (): Promise<void> => {
+    setBusy('email')
+    try {
+      flash('ok', `Summary emailed to ${await window.sanas.meetings.emailSummary(meeting.id)}`)
+    } catch (e) {
+      flash('warn', errorText(e))
+    } finally {
+      setBusy(null)
+    }
   }
 
   useEffect(() => {
@@ -70,6 +109,16 @@ export function MeetingView({
         >
           Export
         </button>
+        <button onClick={summarize} disabled={busy !== null}>
+          {busy === 'summarize' ? 'Summarizing…' : current.summary ? 'Regenerate' : 'Summarize'}
+        </button>
+        <button
+          onClick={emailSummary}
+          disabled={busy !== null || !current.summary}
+          title={current.summary ? "Email the summary to this job's address" : 'Summarize first'}
+        >
+          {busy === 'email' ? 'Sending…' : 'Email summary'}
+        </button>
         <button
           className="danger"
           onClick={async () => {
@@ -81,6 +130,7 @@ export function MeetingView({
         </button>
       </div>
       {exported && <p className="ok">Saved to {exported}</p>}
+      {notice && <p className={notice.kind}>{notice.text}</p>}
       <p className="muted meeting-meta">
         {meeting.startedAt}
         {meeting.endedAt ? ` → ${meeting.endedAt}` : ' (never ended)'}
@@ -103,14 +153,14 @@ export function MeetingView({
         </span>
       </p>
 
-      {meeting.summary && (
+      {current.summary && (
         <section className="summary-card">
           <h3>Summary</h3>
-          <p>{meeting.summary}</p>
-          {meeting.actionItems && (
+          <p>{current.summary}</p>
+          {current.actionItems && (
             <>
               <h3>Action items</h3>
-              <p className="action-items">{meeting.actionItems}</p>
+              <p className="action-items">{current.actionItems}</p>
             </>
           )}
         </section>

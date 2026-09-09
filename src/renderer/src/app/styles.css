@@ -586,3 +586,22 @@ body {
   color: var(--text);
   padding: 8px 10px;
 }
+
+.settings h3 {
+  margin: 10px 0 -6px;
+  font-size: 0.95rem;
+  color: var(--muted);
+  border-top: 1px solid #2e333d;
+  padding-top: 14px;
+}
+
+.side > input[type='email'] {
+  width: 100%;
+  max-width: 320px;
+  background: var(--panel);
+  border: 1px solid #2e333d;
+  border-radius: 6px;
+  color: var(--text);
+  padding: 8px 10px;
+  margin-bottom: 8px;
+}

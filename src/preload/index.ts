@@ -83,6 +83,14 @@ const api = {
       ipcRenderer.invoke(IPC.MeetingsMove, meetingId, jobId),
     export: (meetingId: number): Promise<string | null> =>
       ipcRenderer.invoke(IPC.MeetingsExport, meetingId),
+    get: (meetingId: number): Promise<Meeting | null> =>
+      ipcRenderer.invoke(IPC.MeetingsGet, meetingId),
+    /** Rejects with a readable message when the summary can't run. */
+    summarize: (meetingId: number): Promise<Meeting> =>
+      ipcRenderer.invoke(IPC.MeetingsSummarize, meetingId),
+    /** Resolves with the recipient; rejects with a readable message on failure. */
+    emailSummary: (meetingId: number): Promise<string> =>
+      ipcRenderer.invoke(IPC.MeetingsEmailSummary, meetingId),
     search: (
       query: string,
     ): Promise<{ meeting: Meeting; jobName: string; tStartMs: number; snippet: string }[]> =>

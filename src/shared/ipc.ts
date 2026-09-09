@@ -35,6 +35,11 @@ export const IPC = {
   MeetingsRename: 'meetings:rename',
   MeetingsMove: 'meetings:move',
   MeetingsExport: 'meetings:export',
+  MeetingsGet: 'meetings:get',
+  /** Re-run the summary from the stored transcript; resolves with the updated meeting. */
+  MeetingsSummarize: 'meetings:summarize',
+  /** Email the stored summary to the configured address. */
+  MeetingsEmailSummary: 'meetings:email-summary',
   SegmentsList: 'segments:list',
   SuggestionsList: 'suggestions:list',
   SegmentsSearch: 'segments:search',

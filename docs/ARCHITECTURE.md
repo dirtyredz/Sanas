@@ -71,7 +71,8 @@ Mic (getUserMedia, renderer)
 
 ```
 jobs        (id, name, company_info, project_scope, notes,
-             talking_points, persona, created_at, archived)
+             talking_points, persona, created_at, archived,
+             summary_email)                 -- per-job recipient (v3)
 glossary    (id, job_id, term, note)
 meetings    (id, job_id, title, started_at, ended_at,
              audio_path, summary, action_items)
@@ -91,18 +92,23 @@ speakers    (meeting_id, speaker, name)         -- user-assigned names (v2)
 
 ### External interfaces
 
-| Service       | Purpose                | Data sent                             |
-| ------------- | ---------------------- | ------------------------------------- |
-| Deepgram WS   | streaming STT          | live audio, glossary terms            |
-| Anthropic API | suggestions, summaries | transcript excerpts, job context pack |
+| Service       | Purpose                | Data sent                              |
+| ------------- | ---------------------- | -------------------------------------- |
+| Deepgram WS   | streaming STT          | live audio, glossary terms             |
+| Anthropic API | suggestions, summaries | transcript excerpts, job context pack  |
+| SMTP (user's) | summary email          | summary + action items (no transcript) |
 
-Both keys stored locally in the app config. Nothing else leaves the machine.
+Keys and the SMTP password stored locally in the app config. The summary email goes only
+to the address set on the meeting's job; nothing else leaves the machine.
 
 ## Post-meeting
 
 On meeting end, two fire-and-forget passes:
 
 1. **Summary** — one Claude call generates summary + action items; stored on the meeting row.
+   Then `MeetingUpdated` is broadcast and, if auto-email is on, the summary is emailed.
+   The meeting view can also re-run it on demand from the full stored transcript
+   (`summarizeStoredMeeting`), rebuilding the job context prompt from the DB.
 2. **Re-diarization** — the recorded WAV goes through Deepgram's batch API
    (`SttProvider.transcribeFile`); batch diarization sees the whole file, so speaker
    labels are stable. Live segments are replaced wholesale (streaming labels drift).

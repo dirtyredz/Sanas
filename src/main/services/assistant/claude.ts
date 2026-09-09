@@ -8,7 +8,11 @@ const MODEL = 'claude-opus-5'
 
 export const claudeProvider: AssistantProvider = {
   async complete(req: AssistRequest): Promise<string> {
-    const client = new Anthropic({ apiKey: req.apiKey })
+    const client = new Anthropic({
+      apiKey: req.apiKey,
+      // org-level keys 400 without this header; workspace-scoped keys don't need it
+      defaultHeaders: req.workspaceId ? { 'anthropic-workspace-id': req.workspaceId } : undefined,
+    })
     const stream = client.messages.stream({
       model: MODEL,
       max_tokens: req.maxTokens,

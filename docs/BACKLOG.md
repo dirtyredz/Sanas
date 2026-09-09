@@ -46,6 +46,10 @@ _Prioritized task trough. P0 = next up, P1 = soon, P2 = someday._
 - [x] Overlay ghost mode (👻 → clicks pass through; overlay hotkey restores)
 - [x] Overlay opacity slider (Settings, live-applied)
 - [x] Meeting rename (inline title edit in MeetingView)
+- [x] On-demand Summarize/Regenerate from stored transcript (2026-09-08)
+- [x] Email summary to the job's address via SMTP; optional auto-send on stop (2026-09-08)
+- [ ] "Send test email" button in Settings (today the first real send is the test)
+- [ ] Summary prompt could use speaker names (rename/merge) instead of S1/S2 labels
 - [ ] Retention/auto-purge controls (per-meeting delete exists)
 
 ## P2 — Post-v1 ideas
