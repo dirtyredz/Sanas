@@ -65,9 +65,12 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(IPC.OverlayToggle, () => toggleOverlay())
 
-  ipcMain.handle(IPC.MeetingStart, (_e, jobId?: number, channels?: number) =>
-    // validate at ingress: only 1 or 2 are meaningful capture topologies
-    startMeeting(jobId, channels === 2 ? 2 : 1),
+  ipcMain.handle(IPC.MeetingStart, (_e, jobId: unknown, channels: unknown) =>
+    // validate at ingress: an optional job id, and only 1 or 2 are meaningful capture topologies
+    startMeeting(
+      jobId === undefined || jobId === null ? undefined : requireId(jobId, 'job id'),
+      channels === 2 ? 2 : 1,
+    ),
   )
   ipcMain.handle(IPC.MeetingStop, () => stopMeeting())
   ipcMain.handle(IPC.MeetingPinSpeaker, (_e, speaker: number, isUser: boolean) =>
