@@ -40,6 +40,8 @@ export function EmailSection({
         <span className="label">Port</span>
         <input
           type="number"
+          min={1}
+          max={65535}
           value={view.smtpPort}
           onChange={(e) => onChange({ smtpPort: Number(e.target.value) || 465 })}
         />

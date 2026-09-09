@@ -88,8 +88,8 @@ sanas/
 - `scripts/` — repo tooling scripts (git-hook installation, pre-commit)
 
 Tests are colocated `*.test.ts` files (vitest, `npm test`) beside the pure module they cover —
-today `services/meetings/speaker-carryover.test.ts`, `db/fts-query.test.ts` and
-`shared/search-markers.test.ts`; DB/Electron-bound code (repos, migrations, services that
+today `services/meetings/speaker-carryover.test.ts`, `db/fts-query.test.ts`,
+`shared/search-markers.test.ts` and `ipc/validate.test.ts`; DB/Electron-bound code (repos, migrations, services that
 read settings) has none — better-sqlite3 is built for Electron's ABI, so vitest cannot load it.
 
 Deliberately _not_ homes: the repo root (config + docs only), `src/main/` itself and

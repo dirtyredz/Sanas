@@ -81,6 +81,10 @@ _Non-obvious traps. Read before touching the related area._
   `{ [K in keyof Settings]: Check<Settings[K]> }`, so adding a key to `Settings` fails to
   compile until the schema has an entry — a setting can never be one the renderer silently
   cannot save. Overlay bounds saved by the main process itself bypass the schema (trusted path).
+  A value the schema drops (out of range, wrong type) is not an error: Save succeeds and the
+  field visibly reverts to the stored value, because the page applies the returned view. The
+  Settings inputs are constrained (selects, a range slider, min/max on the port) so this
+  should only ever happen to a hand-crafted payload.
 
 ## Storage
 
