@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Meeting } from '@shared/types'
 import { MeetingView } from './MeetingView'
+import { formatClock } from '../../lib/format-time'
 
 interface Match {
   meeting: Meeting
@@ -50,11 +51,15 @@ export function SearchPage(): React.JSX.Element {
     )
   }
 
+  const searching = query.trim().length >= 2
+
   return (
     <div className="search">
-      <h2>Search</h2>
-      <p className="muted">Find anything said in any meeting, across all jobs.</p>
-      <div className="job-create">
+      <div className="page-head">
+        <h2>Search</h2>
+        <p>Anything said in any meeting, across all jobs.</p>
+      </div>
+      <div className="search-box">
         <input
           autoFocus
           placeholder="Search transcripts…"
@@ -64,11 +69,12 @@ export function SearchPage(): React.JSX.Element {
       </div>
 
       <div className="search-results">
-        {query.trim().length >= 2 && matches.length === 0 && <p className="muted">No matches.</p>}
+        {searching && matches.length === 0 && <p className="empty">No matches.</p>}
         {matches.map((m, i) => (
           <button key={i} className="search-hit" onClick={() => setOpenMeeting(m.meeting)}>
             <span className="hit-meta">
-              {m.jobName} · {m.meeting.title}
+              {m.jobName} · {m.meeting.title} ·{' '}
+              <span className="when">{formatClock(m.tStartMs)}</span>
             </span>
             <span className="hit-snippet">{highlight(m.snippet)}</span>
           </button>

@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import type { GlossaryTerm, Job, Meeting } from '@shared/types'
 import { MeetingView } from './MeetingView'
+import { formatWhen } from '../../lib/format-time'
 
 const PACK_FIELDS = [
   { key: 'companyInfo', label: 'Company info', hint: 'Who they are, org quirks, key people' },
-  { key: 'projectScope', label: 'Project scope', hint: 'What you are building/doing for them' },
+  { key: 'projectScope', label: 'Project scope', hint: 'What you are building or doing for them' },
   { key: 'notes', label: 'Notes', hint: 'Anything else the assistant should know' },
   { key: 'talkingPoints', label: 'Talking points', hint: 'Things to steer toward (or avoid)' },
   { key: 'persona', label: 'Persona / tone', hint: 'How you want to come across' },
@@ -70,25 +71,32 @@ export function JobDetail({
   return (
     <div className="job-detail">
       <div className="detail-header">
-        <button className="back" onClick={onBack}>
+        <button className="btn btn-ghost" onClick={onBack}>
           ← Jobs
         </button>
         <input
-          className="job-title"
+          className="title-input"
           value={job.name}
+          aria-label="Job name"
           onChange={(e) => setJob({ ...job, name: e.target.value })}
         />
-        <button onClick={save}>Save</button>
-        {saved && <span className="ok">Saved ✓</span>}
+        <div className="actions">
+          {saved && <span className="ok">Saved ✓</span>}
+          <button className="btn btn-primary" onClick={save}>
+            Save
+          </button>
+        </div>
       </div>
 
       <div className="detail-columns">
         <section className="pack">
-          <h3>Context pack</h3>
-          <p className="muted">Fed to the AI on every suggestion for this job.</p>
+          <div>
+            <span className="eyebrow">Context pack</span>
+            <p className="hint">Fed to the AI on every suggestion and summary for this job.</p>
+          </div>
           {PACK_FIELDS.map((f) => (
-            <label key={f.key}>
-              {f.label}
+            <label key={f.key} className="field">
+              <span className="label">{f.label}</span>
               <textarea
                 rows={f.key === 'persona' ? 2 : 4}
                 placeholder={f.hint}
@@ -99,55 +107,68 @@ export function JobDetail({
           ))}
         </section>
 
-        <section className="side">
-          <h3>Summary email</h3>
-          <p className="muted">Meeting summaries for this job go here. Blank = no email.</p>
-          <input
-            type="email"
-            placeholder="client@example.com"
-            value={job.summaryEmail}
-            onChange={(e) => setJob({ ...job, summaryEmail: e.target.value })}
-          />
+        <aside className="side">
+          <section>
+            <span className="eyebrow">Summary email</span>
+            <label className="field">
+              <input
+                type="email"
+                placeholder="client@example.com"
+                value={job.summaryEmail}
+                onChange={(e) => setJob({ ...job, summaryEmail: e.target.value })}
+              />
+              <small>Meeting summaries for this job go here. Blank means no email.</small>
+            </label>
+          </section>
 
-          <h3>Glossary</h3>
-          <p className="muted">Jargon, product names, acronyms — also boosts transcription.</p>
-          <div className="job-create">
-            <input
-              placeholder="Add term…"
-              value={newTerm}
-              onChange={(e) => setNewTerm(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && addTerm()}
-            />
-            <button onClick={addTerm}>Add</button>
-          </div>
-          <div className="term-list">
-            {terms.map((t) => (
-              <span key={t.id} className="chip term">
-                {t.term}
-                <button
-                  className="x"
-                  onClick={() => {
-                    window.sanas.glossary.remove(t.id)
-                    setTerms((prev) => prev.filter((p) => p.id !== t.id))
-                  }}
-                >
-                  ×
-                </button>
-              </span>
-            ))}
-          </div>
-
-          <h3>Meetings</h3>
-          {meetings.length === 0 && <p className="muted">None yet.</p>}
-          <div className="meeting-list">
-            {meetings.map((m) => (
-              <button key={m.id} className="meeting-row" onClick={() => setOpenMeeting(m)}>
-                <span>{m.title}</span>
-                <span className="muted">{m.startedAt}</span>
+          <section>
+            <span className="eyebrow">Glossary</span>
+            <p className="hint">
+              Jargon, product names, acronyms — these also boost transcription.
+            </p>
+            <div className="row">
+              <input
+                placeholder="Add term…"
+                value={newTerm}
+                onChange={(e) => setNewTerm(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && addTerm()}
+              />
+              <button className="btn btn-sm" onClick={addTerm} disabled={!newTerm.trim()}>
+                Add
               </button>
-            ))}
-          </div>
-        </section>
+            </div>
+            <div className="term-list">
+              {terms.map((t) => (
+                <span key={t.id} className="chip">
+                  {t.term}
+                  <button
+                    className="x"
+                    aria-label={`Remove ${t.term}`}
+                    onClick={() => {
+                      window.sanas.glossary.remove(t.id)
+                      setTerms((prev) => prev.filter((p) => p.id !== t.id))
+                    }}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          </section>
+
+          <section>
+            <span className="eyebrow">Meetings</span>
+            {meetings.length === 0 && <p className="hint">None yet.</p>}
+            <div className="meeting-list">
+              {meetings.map((m) => (
+                <button key={m.id} className="meeting-row" onClick={() => setOpenMeeting(m)}>
+                  <span>{m.title}</span>
+                  <span className="when">{formatWhen(m.startedAt)}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        </aside>
       </div>
     </div>
   )

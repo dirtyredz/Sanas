@@ -22,7 +22,7 @@ export function Overlay(): React.JSX.Element {
     <div className="overlay-panel">
       <header className="overlay-header">
         <span className={`dot ${live ? 'live' : ''}`} />
-        <span className="title">Sanas</span>
+        <span className="title">SANAS</span>
         <span className="hint">
           {ghost ? 'ghost — hotkey restores' : live ? 'listening' : state.status}
         </span>
@@ -40,10 +40,10 @@ export function Overlay(): React.JSX.Element {
         )}
         {tail.map((l, i) => (
           <p key={i} className={`line ${l.interim ? 'interim' : ''}`}>
-            {(l.speaker >= 0 || l.isUser) && (
-              <span className="who">{speakerDisplay(l.speaker, l.isUser)}</span>
-            )}
-            {l.text}
+            <span className={`who ${l.isUser ? 'me' : ''}`}>
+              {l.speaker >= 0 || l.isUser ? speakerDisplay(l.speaker, l.isUser) : ''}
+            </span>
+            <span className="text">{l.text}</span>
           </p>
         ))}
       </section>

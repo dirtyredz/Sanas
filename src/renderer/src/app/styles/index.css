@@ -1,0 +1,7 @@
+/* Sanas — library window styles, split by layer. Dark by design: the app lives beside a
+   call. Speaker colour carries meaning: teal is the room and the app, sand is your own voice. */
+@import './base.css';
+@import './controls.css';
+@import './shell.css';
+@import './transcript.css';
+@import './pages.css';

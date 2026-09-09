@@ -1,0 +1,128 @@
+/* ---------- tokens ---------- */
+/* Sanas — library window. Dark by design: the app lives beside a call.
+   Tokens → base → controls → shell → transcript → pages.
+   Speaker colour carries meaning: teal is the room and the app, sand is your own voice. */
+
+:root {
+  --bg: #0f1317;
+  --panel: #161b21;
+  --panel-2: #1c2229;
+  --line: #28303a;
+  --line-strong: #364050;
+  --text: #e4e8ed;
+  --muted: #8792a0;
+  --accent: #5aa7a0;
+  --accent-hover: #6bb8b1;
+  --accent-ink: #0e1113;
+  --accent-soft: rgba(90, 167, 160, 0.14);
+  --me: #d9b26f;
+  --me-soft: rgba(217, 178, 111, 0.14);
+  --ok: #6fbf73;
+  --warn: #d9a44a;
+  --danger: #e05d5d;
+  --danger-soft: rgba(224, 93, 93, 0.14);
+  --font: 'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-display: 'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif;
+  --mono: 'Cascadia Code', 'Cascadia Mono', Consolas, 'Courier New', monospace;
+  --radius: 6px;
+  --radius-lg: 10px;
+}
+
+/* ---------- base ---------- */
+* {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.5;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+
+h2 {
+  font-size: 22px;
+}
+
+h3 {
+  font-size: 15px;
+}
+
+p {
+  margin: 0;
+}
+
+::selection {
+  background: var(--accent-soft);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: 5px;
+  border: 2px solid var(--bg);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.ok {
+  color: var(--ok);
+}
+
+.warn {
+  color: var(--warn);
+}
+
+.mono {
+  font-family: var(--mono);
+  font-size: 0.92em;
+}
+
+.eyebrow {
+  font-size: 11.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 600;
+}

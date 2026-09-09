@@ -3,17 +3,26 @@ import type { Job, MeetingSource } from '@shared/types'
 import { startCapture, type CaptureSession } from '../../audio/mic'
 import { useTranscript } from '../../lib/useTranscript'
 import { speakerDisplay } from '../../lib/speaker-label'
+import { formatClock } from '../../lib/format-time'
+import { IconLaptop, IconPeople } from '../../lib/icons'
 
-const SOURCES: { value: MeetingSource; label: string; hint: string }[] = [
+const SOURCES: {
+  value: MeetingSource
+  label: string
+  hint: string
+  icon: () => React.JSX.Element
+}[] = [
   {
     value: 'this-pc',
     label: 'This PC',
     hint: 'The call plays through this PC. Sanas taps that signal, so the mic is only you.',
+    icon: IconLaptop,
   },
   {
     value: 'elsewhere',
     label: 'Elsewhere',
     hint: 'Another laptop or in the room. Everyone comes through the mic — mark your own voice once it is heard.',
+    icon: IconPeople,
   },
 ]
 
@@ -28,6 +37,8 @@ export function LiveMeetingPage(): React.JSX.Element {
   const [userSpeakers, setUserSpeakers] = useState<Set<number>>(new Set())
   const [jobs, setJobs] = useState<Job[]>([])
   const [jobId, setJobId] = useState<number | ''>('')
+  const [elapsedMs, setElapsedMs] = useState(0)
+  const startedAt = useRef(0)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const live = state.status === 'live'
@@ -45,6 +56,15 @@ export function LiveMeetingPage(): React.JSX.Element {
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
   }, [lines])
+
+  // elapsed clock while live
+  useEffect(() => {
+    if (!live) return
+    startedAt.current = Date.now()
+    setElapsedMs(0)
+    const t = setInterval(() => setElapsedMs(Date.now() - startedAt.current), 1000)
+    return () => clearInterval(t)
+  }, [live])
 
   // stop mic if meeting dies (error) or on unmount
   useEffect(() => {
@@ -113,12 +133,13 @@ export function LiveMeetingPage(): React.JSX.Element {
   const sourceHint = SOURCES.find((s) => s.value === source)?.hint ?? ''
 
   return (
-    <div className="live">
+    <div className="live-page">
       <div className="live-toolbar">
         <h2>Live</h2>
         <select
           value={jobId}
           disabled={live}
+          aria-label="Job"
           onChange={(e) => setJobId(e.target.value === '' ? '' : Number(e.target.value))}
         >
           <option value="">Unsorted</option>
@@ -129,39 +150,42 @@ export function LiveMeetingPage(): React.JSX.Element {
           ))}
         </select>
         <div className="segmented" role="radiogroup" aria-label="Where is the meeting?">
-          {SOURCES.map((s) => (
+          {SOURCES.map(({ value, label, hint, icon: Icon }) => (
             <button
-              key={s.value}
+              key={value}
               role="radio"
-              aria-checked={source === s.value}
-              className={source === s.value ? 'active' : ''}
+              aria-checked={source === value}
+              className={source === value ? 'active' : ''}
               disabled={live}
-              title={s.hint}
-              onClick={() => setSource(s.value)}
+              title={hint}
+              onClick={() => setSource(value)}
             >
-              {s.label}
+              <Icon />
+              {label}
             </button>
           ))}
         </div>
         {!live ? (
-          <button className="rec" onClick={start} disabled={busy}>
+          <button className="btn btn-primary" onClick={start} disabled={busy}>
             ● Start listening
           </button>
         ) : (
-          <button className="rec stop" onClick={stop} disabled={busy}>
+          <button className="btn btn-stop" onClick={stop} disabled={busy}>
             ■ Stop
           </button>
         )}
         {live && (
-          <span className="ok pulse">
-            listening{sysAudio ? ' (mic + system audio)' : ' (mic only)'}…
+          <span className="listening">
+            <span className="dot live" />
+            {sysAudio ? 'mic + system audio' : 'mic only'}
+            <span className="elapsed">{formatClock(elapsedMs)}</span>
           </span>
         )}
       </div>
       {!live && <p className="muted source-hint">{sourceHint}</p>}
 
-      {(state.error || micError) && <p className="warn">{state.error || micError}</p>}
-      {notice && <p className="warn">{notice}</p>}
+      {(state.error || micError) && <p className="notice warn">{state.error || micError}</p>}
+      {notice && <p className="notice warn">{notice}</p>}
 
       {live && !sysAudio && (
         <div className="speaker-bar">
@@ -182,7 +206,7 @@ export function LiveMeetingPage(): React.JSX.Element {
 
       <div className="transcript" ref={scrollRef}>
         {lines.length === 0 && (
-          <p className="muted">
+          <p className="empty">
             {live ? 'Listening — say something…' : 'Start listening to see the live transcript.'}
           </p>
         )}
@@ -190,12 +214,11 @@ export function LiveMeetingPage(): React.JSX.Element {
           const isUser = l.isUser || userSpeakers.has(l.speaker)
           return (
             <p key={i} className={`line ${l.interim ? 'interim' : ''}`}>
-              {(l.speaker >= 0 || isUser) && (
-                <span className={`who ${isUser ? 'me' : ''}`}>
-                  {speakerDisplay(l.speaker, isUser)}
-                </span>
-              )}
-              {l.text}
+              <span className="ts">{formatClock(l.tStartMs)}</span>
+              <span className={`who ${isUser ? 'me' : ''}`}>
+                {l.speaker >= 0 || isUser ? speakerDisplay(l.speaker, isUser) : ''}
+              </span>
+              <span className="text">{l.text}</span>
             </p>
           )
         })}

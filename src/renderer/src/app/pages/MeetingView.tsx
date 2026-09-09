@@ -1,11 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Job, Meeting, Segment, Suggestion } from '@shared/types'
 import { speakerDisplay } from '../../lib/speaker-label'
+import { formatClock, formatWhen } from '../../lib/format-time'
 
 /** IPC rejections arrive as "Error invoking remote method 'x': Error: <msg>" — keep <msg>. */
 function errorText(e: unknown): string {
   const raw = e instanceof Error ? e.message : String(e)
   return raw.replace(/^Error invoking remote method '[^']*': (Error: )?/, '')
+}
+
+/** The model writes action items as "- item" lines; render them as a list when it did. */
+function actionItemList(text: string): string[] | null {
+  const lines = text.split('\n').filter((l) => l.trim())
+  if (lines.length === 0 || !lines.every((l) => /^\s*[-*•]\s+/.test(l))) return null
+  return lines.map((l) => l.replace(/^\s*[-*•]\s+/, ''))
 }
 
 export function MeetingView({
@@ -83,60 +91,64 @@ export function MeetingView({
   ].sort((a, b) => a - b)
   const label = (s: Pick<Segment, 'speaker' | 'isUser'>): string =>
     speakerDisplay(s.speaker, s.isUser, names)
-
-  const fmt = (ms: number): string => {
-    const s = Math.floor(ms / 1000)
-    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
-  }
+  const actions = current.actionItems ? actionItemList(current.actionItems) : null
 
   return (
     <div className="meeting-view">
       <div className="detail-header">
-        <button className="back" onClick={onBack}>
+        <button className="btn btn-ghost" onClick={onBack}>
           ← Back
         </button>
         <input
-          className="job-title"
+          className="title-input"
           value={title}
+          aria-label="Meeting title"
           onChange={(e) => setTitle(e.target.value)}
           onBlur={() => title.trim() && window.sanas.meetings.rename(meeting.id, title.trim())}
         />
-        <button
-          onClick={async () => {
-            const path = await window.sanas.meetings.export(meeting.id)
-            if (path) flash('ok', `Saved to ${path}`)
-          }}
-        >
-          Export
-        </button>
-        <button onClick={summarize} disabled={busy !== null}>
-          {busy === 'summarize' ? 'Summarizing…' : current.summary ? 'Regenerate' : 'Summarize'}
-        </button>
-        <button
-          onClick={emailSummary}
-          disabled={busy !== null || !current.summary}
-          title={current.summary ? "Email the summary to this job's address" : 'Summarize first'}
-        >
-          {busy === 'email' ? 'Sending…' : 'Email summary'}
-        </button>
-        <button
-          className="danger"
-          onClick={async () => {
-            await window.sanas.meetings.delete(meeting.id)
-            onBack()
-          }}
-        >
-          Delete
-        </button>
+        <div className="actions">
+          <button className="btn" onClick={summarize} disabled={busy !== null}>
+            {busy === 'summarize' ? 'Summarizing…' : current.summary ? 'Regenerate' : 'Summarize'}
+          </button>
+          <button
+            className="btn"
+            onClick={emailSummary}
+            disabled={busy !== null || !current.summary}
+            title={current.summary ? "Email the summary to this job's address" : 'Summarize first'}
+          >
+            {busy === 'email' ? 'Sending…' : 'Email summary'}
+          </button>
+          <button
+            className="btn btn-ghost"
+            onClick={async () => {
+              const path = await window.sanas.meetings.export(meeting.id)
+              if (path) flash('ok', `Saved to ${path}`)
+            }}
+          >
+            Export
+          </button>
+          <button
+            className="btn btn-danger"
+            onClick={async () => {
+              await window.sanas.meetings.delete(meeting.id)
+              onBack()
+            }}
+          >
+            Delete
+          </button>
+        </div>
       </div>
-      {notice && <p className={notice.kind}>{notice.text}</p>}
-      <p className="muted meeting-meta">
-        {meeting.startedAt}
-        {meeting.endedAt ? ` → ${meeting.endedAt}` : ' (never ended)'}
+      {notice && <p className={`notice ${notice.kind}`}>{notice.text}</p>}
+      <p className="meeting-meta">
+        <span className="when">
+          {formatWhen(meeting.startedAt)}
+          {meeting.endedAt ? ` → ${formatWhen(meeting.endedAt)}` : ' (never ended)'}
+        </span>
         <span className="job-move">
-          Job:
+          Job
           <select
             value={jobId}
+            aria-label="Move to job"
             onChange={(e) => {
               const target = Number(e.target.value)
               setJobId(target)
@@ -153,14 +165,24 @@ export function MeetingView({
       </p>
 
       {current.summary && (
-        <section className="summary-card">
-          <h3>Summary</h3>
-          <p>{current.summary}</p>
+        <section className="card summary-card">
+          <div>
+            <span className="eyebrow">Summary</span>
+            <p>{current.summary}</p>
+          </div>
           {current.actionItems && (
-            <>
-              <h3>Action items</h3>
-              <p className="action-items">{current.actionItems}</p>
-            </>
+            <div>
+              <span className="eyebrow">Action items</span>
+              {actions ? (
+                <ul className="action-list">
+                  {actions.map((a, i) => (
+                    <li key={i}>{a}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="action-items">{current.actionItems}</p>
+              )}
+            </div>
           )}
         </section>
       )}
@@ -188,6 +210,7 @@ export function MeetingView({
                 <span key={sp} className="speaker-row">
                   <input
                     placeholder={`S${sp + 1}`}
+                    aria-label={`Name for speaker ${sp + 1}`}
                     defaultValue={names.get(sp) ?? ''}
                     onBlur={(e) =>
                       window.sanas.meetings
@@ -198,6 +221,7 @@ export function MeetingView({
                   {speakers.length > 1 && (
                     <select
                       value=""
+                      aria-label={`Merge speaker ${sp + 1} into`}
                       title="Merge this speaker into another (fixes diarization drift)"
                       onChange={(e) => {
                         if (e.target.value === '') return
@@ -221,12 +245,12 @@ export function MeetingView({
             </div>
           )}
           <div className="transcript">
-            {segments.length === 0 && <p className="muted">No transcript captured.</p>}
+            {segments.length === 0 && <p className="empty">No transcript captured.</p>}
             {segments.map((s) => (
               <p key={s.id} className="line">
-                <span className="ts">{fmt(s.tStartMs)}</span>
+                <span className="ts">{formatClock(s.tStartMs)}</span>
                 <span className={`who ${s.isUser ? 'me' : ''}`}>{label(s)}</span>
-                {s.text}
+                <span className="text">{s.text}</span>
               </p>
             ))}
           </div>
@@ -235,12 +259,15 @@ export function MeetingView({
 
       {tab === 'suggestions' && (
         <div className="transcript">
-          {suggestions.length === 0 && <p className="muted">No suggestions were generated.</p>}
+          {suggestions.length === 0 && <p className="empty">No suggestions were generated.</p>}
           {suggestions.map((s) => (
             <div key={s.id} className="suggestion-entry">
               <p className="line">
-                <span className="ts">{fmt(s.tMs)}</span>
+                <span className="ts">{formatClock(s.tMs)}</span>
                 <span className="who">{s.trigger === 'hotkey' ? 'Answer' : 'Whisper'}</span>
+                <span className="text muted">
+                  {s.trigger === 'hotkey' ? 'you asked' : 'ambient'}
+                </span>
               </p>
               <p className="suggestion-body">{s.text}</p>
             </div>

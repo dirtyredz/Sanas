@@ -2,6 +2,33 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-09-09 — Visual identity: dark by design, teal for the room, sand for your voice
+
+Sanas lives beside a call, so the library window commits to a single dark theme rather
+than a light/dark pair (an Electron desktop tool; the overlay is translucent dark by
+nature). One token set in `app/styles/base.css` replaces the hard-coded greys that had
+accreted per page; one control vocabulary (`.btn` variants, `.field`, `.card`, `.chip`,
+`.segmented`) replaces per-context button styles. The signature detail is the transcript
+gutter — time · speaker · text — with the **misty-loch teal** kept for the app and other
+voices and a **warm sand** reserved for the user's own lines, so who is speaking reads at a
+glance everywhere a transcript appears (Live, meeting view, overlay). Type stays on the
+Windows system stack (Segoe UI Variable, Cascadia for timestamps and hotkeys): the
+renderer CSP blocks remote fonts and bundling one buys little on a Windows-only app.
+Rejected: a light theme (no use case yet — P2 if a daytime user appears); an icon library
+(six 16px glyphs are inline SVG in `lib/icons.tsx`); per-page stylesheets (the shared
+vocabulary is the point).
+
+## 2026-09-09 — Browser preview of the renderer with a typed mock of the bridge
+
+Design work needs eyes on the UI, and the Electron app cannot render in a browser pane.
+`npm run dev:web` runs plain Vite on the renderer (`vite.renderer.config.ts`) and
+`src/renderer/src/dev/mock-api.ts` stands in for `window.sanas` with sample jobs,
+meetings and a scripted live meeting (`overlay.html?demo=live` starts it). The mock is
+typed as `Window['sanas']`, so it fails typecheck the moment the real API drifts; main.tsx
+installs it only under `import.meta.env.DEV` when no bridge exists, so production builds
+carry none of it. Rejected: `electron-vite dev --rendererOnly` (it skips the main build
+but still launches Electron); Storybook (a second build system for six pages).
+
 ## 2026-09-09 — Retention: two limits, recordings default to 90 days, meetings kept
 
 Recordings are ~115 MB per mono hour and only exist to feed the batch re-diarization

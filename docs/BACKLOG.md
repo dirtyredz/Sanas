@@ -56,6 +56,10 @@ _Prioritized task trough. P0 = next up, P1 = soon, P2 = someday._
 
 ## P2 — Post-v1 ideas
 
+- [ ] Light theme — only if a daytime user appears (the token set makes it a second `:root` block)
+- [ ] Visual QA in the real Electron window — the browser preview cannot show the frameless
+      overlay at 380×460, transparency, or the Windows title bar
+
 - [ ] `ipc/`: shape-check string/object payloads at ingress (job update, glossary add, rename,
       settings patch, search) — row ids are validated by `requireId` since 2026-09-09
 - [ ] Neutralize the `EmailProvider` seam (SMTP-shaped `SmtpConfig`) — only if a second

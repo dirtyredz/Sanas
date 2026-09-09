@@ -1,32 +1,57 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { SettingsPage } from './pages/SettingsPage'
 import { LiveMeetingPage } from './pages/LiveMeetingPage'
 import { JobsPage } from './pages/JobsPage'
 import { SearchPage } from './pages/SearchPage'
+import { useMeetingState } from '../lib/useMeetingState'
+import { hotkeyLabel } from '../lib/hotkey-label'
+import { IconJobs, IconLive, IconSearch, IconSettings } from '../lib/icons'
 
 type Page = 'live' | 'jobs' | 'search' | 'settings'
 
+const NAV: { page: Page; label: string; icon: () => React.JSX.Element }[] = [
+  { page: 'live', label: 'Live', icon: IconLive },
+  { page: 'jobs', label: 'Jobs', icon: IconJobs },
+  { page: 'search', label: 'Search', icon: IconSearch },
+  { page: 'settings', label: 'Settings', icon: IconSettings },
+]
+
 export function App(): React.JSX.Element {
   const [page, setPage] = useState<Page>('live')
+  const [overlayHotkey, setOverlayHotkey] = useState('')
+  const state = useMeetingState()
+  const live = state.status === 'live'
+
+  useEffect(() => {
+    window.sanas.settings.get().then((s) => setOverlayHotkey(hotkeyLabel(s.overlayHotkey)))
+  }, [page]) // re-read after a visit to Settings
 
   return (
     <div className="app">
       <nav className="sidebar">
-        <h1 className="logo">Sanas</h1>
-        <button className={page === 'live' ? 'active' : ''} onClick={() => setPage('live')}>
-          Live
-        </button>
-        <button className={page === 'jobs' ? 'active' : ''} onClick={() => setPage('jobs')}>
-          Jobs
-        </button>
-        <button className={page === 'search' ? 'active' : ''} onClick={() => setPage('search')}>
-          Search
-        </button>
-        <button className={page === 'settings' ? 'active' : ''} onClick={() => setPage('settings')}>
-          Settings
-        </button>
+        <div className="brand">
+          <div className="logo">Sanas</div>
+          <div className="tagline">whisper · glossary</div>
+        </div>
+        {NAV.map(({ page: p, label, icon: Icon }) => (
+          <button
+            key={p}
+            className={`nav-item ${page === p ? 'active' : ''}`}
+            onClick={() => setPage(p)}
+          >
+            <Icon />
+            {label}
+          </button>
+        ))}
         <div className="spacer" />
-        <button onClick={() => window.sanas.overlay.toggle()}>Toggle overlay</button>
+        <div className={`status ${live ? 'live' : ''}`}>
+          <span className={`dot ${live ? 'live' : ''}`} />
+          {live ? 'Listening' : state.status === 'error' ? 'Error — see Live' : 'Idle'}
+        </div>
+        <button className="nav-item" onClick={() => window.sanas.overlay.toggle()}>
+          Overlay
+          {overlayHotkey && <span className="kbd">{overlayHotkey}</span>}
+        </button>
       </nav>
       <main className="content">
         {page === 'live' && <LiveMeetingPage />}

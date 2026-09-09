@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { RetentionPreview, SettingsView } from '@shared/types'
+import { SettingsSection } from './SettingsSection'
 
 const CHOICES: { days: number; label: string }[] = [
   { days: 0, label: 'Keep forever' },
@@ -13,10 +14,8 @@ function size(bytes: number): string {
   return bytes >= 1e9 ? `${(bytes / 1e9).toFixed(1)} GB` : `${Math.round(bytes / 1e6)} MB`
 }
 
-type RetentionFields = Pick<SettingsView, 'audioRetentionDays' | 'meetingRetentionDays'>
-
-/** The Retention section of Settings: two age limits plus an on-demand clean-up whose
- *  preview reflects the SAVED limits (main reads settings), hence `savedAt`. */
+/** Two age limits plus an on-demand clean-up. The preview reflects the SAVED limits
+ *  (main reads settings), hence `savedAt`. */
 export function RetentionSection({
   view,
   savedAt,
@@ -24,7 +23,7 @@ export function RetentionSection({
 }: {
   view: SettingsView
   savedAt: number
-  onChange: (patch: Partial<RetentionFields>) => void
+  onChange: (patch: Partial<SettingsView>) => void
 }): React.JSX.Element {
   const [preview, setPreview] = useState<RetentionPreview | null>(null)
   const [result, setResult] = useState('')
@@ -45,15 +44,12 @@ export function RetentionSection({
   const nothingDue = !preview || (preview.meetings === 0 && preview.audioFiles === 0)
 
   return (
-    <>
-      <h3>Retention</h3>
-      <small>
-        Recordings are the bulky part (about 115 MB per hour of mono audio); transcripts and
-        summaries are small. A meeting that is still running is never touched.
-      </small>
-
-      <label>
-        Delete audio recordings
+    <SettingsSection
+      title="Retention"
+      description="Recordings are the bulky part (about 115 MB per hour); transcripts and summaries are small. A meeting that is still running is never touched."
+    >
+      <label className="field">
+        <span className="label">Delete audio recordings</span>
         <select
           value={view.audioRetentionDays}
           onChange={(e) => onChange({ audioRetentionDays: Number(e.target.value) })}
@@ -67,8 +63,8 @@ export function RetentionSection({
         <small>The transcript, summary and suggestions stay; only the WAV goes.</small>
       </label>
 
-      <label>
-        Delete whole meetings
+      <label className="field">
+        <span className="label">Delete whole meetings</span>
         <select
           value={view.meetingRetentionDays}
           onChange={(e) => onChange({ meetingRetentionDays: Number(e.target.value) })}
@@ -90,11 +86,11 @@ export function RetentionSection({
             : `Past the limit right now: ${preview.audioFiles} recording(s) (${size(preview.audioBytes)}) and ${preview.meetings} whole meeting(s).`}
       </p>
       <div className="row">
-        <button type="button" className="secondary" onClick={cleanUp} disabled={nothingDue}>
+        <button type="button" className="btn btn-sm" onClick={cleanUp} disabled={nothingDue}>
           Clean up now
         </button>
         {result && <span className="ok">{result}</span>}
       </div>
-    </>
+    </SettingsSection>
   )
 }

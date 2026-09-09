@@ -5,3 +5,4 @@ out/
 .structure-review-paused
 release/
 *.tsbuildinfo
+.claude/settings.local.json

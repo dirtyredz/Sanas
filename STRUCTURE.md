@@ -39,14 +39,19 @@ sanas/
 │   ├── renderer/                # vite root: index.html (library) + overlay.html
 │   │   ├── public/              # AudioWorklet processor served as a static asset (not bundled)
 │   │   └── src/
-│   │       ├── app/             # library UI (React): App, pages/, settings/ (page sections), styles
+│   │       ├── app/             # library UI (React): App + entry, pages/, settings/ (one file per
+│   │       │                    #   Settings section), styles/ (tokens → controls → shell → transcript → pages)
 │   │       ├── overlay-app/     # overlay UI (React, separate tiny bundle)
 │   │       ├── audio/           # (Phase 1) mic capture + AudioWorklet downsample
-│   │       └── lib/             # renderer-side hooks + pure helpers shared across pages
+│   │       ├── lib/             # renderer-side hooks + pure helpers shared across pages (speaker label,
+│   │       │                    #   hotkey label, clock/date formatting, icons, meeting-state + transcript hooks)
+│   │       ├── dev/             # browser-preview mock of the preload bridge (dev only, never bundled)
+│   │       └── env.d.ts         # Vite client types (import.meta.env)
 │   └── shared/                  # IPC channel types, domain types (Job, Meeting, Segment…)
 ├── scripts/                     # repo tooling (git-hook install, pre-commit)
 ├── .github/workflows/           # CI
 ├── docs/                        # living docs (this set)
+├── vite.renderer.config.ts      # renderer-only Vite for the browser preview (npm run dev:web)
 └── STRUCTURE.md
 ```
 
@@ -66,6 +71,9 @@ sanas/
 - `src/renderer/src/overlay-app/` — overlay UI React app (separate, deliberately tiny bundle)
 - `src/renderer/src/audio/` — renderer-side mic capture + AudioWorklet downsampling
 - `src/renderer/src/lib/` — renderer hooks and pure helpers shared across pages
+- `src/renderer/src/dev/` — the browser-preview mock of `window.sanas` (typed as
+  `Window['sanas']`; installed by main.tsx only under `import.meta.env.DEV` with no Electron).
+  `src/renderer/src/env.d.ts` is the one file beside these folders: Vite client types.
 - `src/renderer/public/` — AudioWorklet processors and other assets served unbundled
 - `src/shared/` — types shared by main, preload and renderer (IPC channels, domain models)
 - `scripts/` — repo tooling scripts (git-hook installation, pre-commit)
@@ -87,6 +95,12 @@ not beside `index.ts` / `system-audio.ts`.
   will grow and churn; keep them out of the Claude client.
 - **Repos own SQL** — no SQL strings outside `db/repos/`.
 - **Overlay is a separate bundle** from the main renderer — it must stay tiny and fast.
+- **Settings sections are components** — `app/settings/` holds one file per section;
+  `SettingsPage` owns the draft and the save, nothing else.
+- **Styles are layered, not per page** — `app/styles/` is tokens → base → controls → shell →
+  transcript → pages. Page markup uses the shared vocabulary (`.btn`, `.field`, `.card`,
+  `.chip`, `.line`); a page-specific rule goes in `pages.css`, never a per-page stylesheet.
+  State modifiers are bare classes (`live`, `active`, `me`); page roots are `*-page`.
 
 ## Structural debt
 

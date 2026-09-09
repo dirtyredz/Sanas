@@ -37,6 +37,7 @@ for what is next and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the system
 ```
 npm install        # rebuilds better-sqlite3 for Electron
 npm run dev        # electron-vite dev with hot reload
+npm run dev:web    # renderer only, in a browser, with a mock of the Electron bridge
 npm test           # vitest — pure modules (speaker carry-over)
 npm run typecheck && npm run lint && npm run format:check
 npm run dist       # Windows installer → release/

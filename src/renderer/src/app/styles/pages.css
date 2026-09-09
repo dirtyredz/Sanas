@@ -1,0 +1,409 @@
+/* ---------- live ---------- */
+.live-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 12px;
+}
+
+.live-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.live-toolbar h2 {
+  margin-right: 6px;
+}
+
+.live-toolbar select {
+  min-width: 170px;
+}
+
+.live-toolbar .listening {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.live-toolbar .elapsed {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.source-hint {
+  font-size: 13px;
+  margin-top: -4px;
+}
+
+.speaker-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 13px;
+}
+
+/* ---------- jobs ---------- */
+.job-create {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.job-create input {
+  flex: 1;
+  max-width: 360px;
+}
+
+.job-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.job-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  color: var(--text);
+  text-align: left;
+  min-height: 92px;
+  transition: border-color 0.12s;
+}
+
+.job-card:hover {
+  border-color: var(--accent);
+}
+
+.job-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.job-sub {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.job-card .mail {
+  margin-top: auto;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* ---------- detail pages (job, meeting) ---------- */
+.detail-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.detail-header .actions {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+}
+
+.title-input {
+  flex: 1;
+  min-width: 0;
+  max-width: 420px;
+  background: transparent;
+  border: 1px solid transparent;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  padding: 4px 8px;
+}
+
+.title-input:hover,
+.title-input:focus {
+  border-color: var(--line);
+  background: var(--panel-2);
+  box-shadow: none;
+}
+
+.detail-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 28px;
+  align-items: start;
+}
+
+.pack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.side section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.term-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.meeting-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.meeting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--text);
+  padding: 9px 12px;
+  text-align: left;
+  font-size: 13.5px;
+}
+
+.meeting-row:hover {
+  border-color: var(--accent);
+}
+
+.meeting-row .when {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* ---------- meeting view ---------- */
+.meeting-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 12px;
+}
+
+.meeting-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.meeting-meta .when {
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.job-move {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.job-move select {
+  padding: 4px 28px 4px 8px;
+  font-size: 13px;
+}
+
+.summary-card {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(220px, 2fr);
+  gap: 20px 28px;
+}
+
+.summary-card > div {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.summary-card p {
+  line-height: 1.55;
+  max-width: 70ch;
+}
+
+.action-list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  line-height: 1.45;
+}
+
+.action-list li::marker {
+  color: var(--accent);
+}
+
+.speaker-editor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.speaker-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.speaker-row input {
+  width: 120px;
+  padding: 5px 8px;
+  font-size: 13px;
+}
+
+.speaker-row select {
+  padding: 5px 26px 5px 8px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.suggestion-entry {
+  margin-bottom: 16px;
+}
+
+.suggestion-entry .line {
+  grid-template-columns: 44px 96px minmax(0, 1fr);
+}
+
+.suggestion-body {
+  white-space: pre-wrap;
+  line-height: 1.5;
+  padding-left: 14px;
+  border-left: 2px solid var(--line-strong);
+  margin: 4px 0 0 152px;
+  max-width: 70ch;
+}
+
+/* ---------- search ---------- */
+.search-box {
+  margin-bottom: 18px;
+}
+
+.search-box input {
+  width: 100%;
+  max-width: 520px;
+  font-size: 15px;
+  padding: 10px 12px;
+}
+
+.search-results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 720px;
+}
+
+.search-hit {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  color: var(--text);
+  padding: 10px 14px;
+  text-align: left;
+}
+
+.search-hit:hover {
+  border-color: var(--accent);
+}
+
+.hit-meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.hit-meta .when {
+  font-family: var(--mono);
+}
+
+.hit-snippet {
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.hit-snippet mark {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+/* ---------- settings ---------- */
+.settings {
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.settings-section > header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 2px;
+}
+
+.settings-section > header p {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.settings input[type='text'],
+.settings input[type='password'],
+.settings input[type='number'],
+.settings input[type='email'],
+.settings select {
+  width: 100%;
+}
+
+.save-bar {
+  position: sticky;
+  bottom: -28px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  margin-top: 4px;
+  background: linear-gradient(to top, var(--bg) 70%, transparent);
+}
+
+.retention-status {
+  font-size: 13px;
+}

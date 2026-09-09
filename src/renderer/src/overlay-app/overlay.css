@@ -1,3 +1,19 @@
+/* Sanas overlay — a small translucent panel floating over the call. Same tokens as
+   the library window; teal = the room and the app, sand = your own voice. */
+
+:root {
+  --text: #e4e8ed;
+  --muted: #8792a0;
+  --accent: #5aa7a0;
+  --accent-ink: #0e1113;
+  --accent-soft: rgba(90, 167, 160, 0.14);
+  --me: #d9b26f;
+  --warn: #d9a44a;
+  --danger: #e05d5d;
+  --font: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  --mono: 'Cascadia Code', 'Cascadia Mono', Consolas, monospace;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -5,20 +21,21 @@
 
 body.overlay-body {
   background: transparent;
-  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-family: var(--font);
   height: 100vh;
   overflow: hidden;
+  color: var(--text);
 }
 
 .overlay-panel {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: rgba(20, 22, 26, 0.92);
+  background: rgba(15, 19, 23, 0.93);
   border: 1px solid rgba(90, 167, 160, 0.35);
   border-radius: 12px;
-  color: #e6e8ec;
   overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
 }
 
 .overlay-header {
@@ -35,56 +52,40 @@ body.overlay-body {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #5a6572;
+  background: #364050;
 }
 
 .dot.live {
-  background: #e05d5d;
+  background: var(--danger);
   animation: pulse 1.6s ease-in-out infinite;
 }
 
 @keyframes pulse {
   50% {
-    opacity: 0.4;
+    opacity: 0.35;
   }
 }
 
-.line {
-  margin-bottom: 6px;
-  line-height: 1.35;
-}
-
-.line.interim {
-  opacity: 0.55;
-  font-style: italic;
-}
-
-.who {
-  color: #5aa7a0;
-  font-weight: 600;
-  margin-right: 6px;
-  font-size: 0.75rem;
-}
-
 .title {
-  font-size: 0.85rem;
+  font-size: 13px;
+  font-weight: 600;
   letter-spacing: 0.08em;
-  color: #5aa7a0;
+  color: var(--accent);
 }
 
 .hint {
   margin-left: auto;
-  font-size: 0.75rem;
-  color: #8a919e;
+  font-size: 12px;
+  color: var(--muted);
 }
 
 .ghost-btn {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 14px;
   padding: 0 2px;
-  opacity: 0.6;
+  opacity: 0.55;
   -webkit-app-region: no-drag; /* clickable inside the drag strip */
 }
 
@@ -94,30 +95,51 @@ body.overlay-body {
 
 .overlay-transcript {
   flex: 1;
-  padding: 12px;
+  padding: 10px 12px;
   overflow-y: auto;
-  font-size: 0.85rem;
+  font-size: 13.5px;
+}
+
+.line {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 8px;
+  align-items: baseline;
+  padding: 3px 0;
+  line-height: 1.4;
+}
+
+.line .who {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--accent);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.line .who.me {
+  color: var(--me);
+}
+
+.line .text {
+  overflow-wrap: anywhere;
+}
+
+.line.interim .text {
+  color: var(--muted);
+  font-style: italic;
 }
 
 .overlay-suggestion {
   padding: 12px;
   border-top: 1px solid rgba(255, 255, 255, 0.07);
   min-height: 110px;
-  font-size: 0.9rem;
-}
-
-.muted {
-  color: #8a919e;
-}
-
-.warn {
-  color: #d9a44a;
-  font-size: 0.85rem;
-}
-
-.overlay-suggestion {
   max-height: 45vh;
   overflow-y: auto;
+  font-size: 14px;
+  background: rgba(90, 167, 160, 0.05);
 }
 
 .suggestion-bar {
@@ -128,10 +150,10 @@ body.overlay-body {
 }
 
 .suggestion-bar .label {
-  color: #5aa7a0;
-  font-size: 0.75rem;
+  color: var(--accent);
+  font-size: 11.5px;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -141,12 +163,12 @@ body.overlay-body {
 }
 
 .answer-now {
-  background: #5aa7a0;
+  background: var(--accent);
   border: none;
   border-radius: 6px;
-  color: #0e1113;
-  padding: 4px 12px;
-  font-size: 0.8rem;
+  color: var(--accent-ink);
+  padding: 5px 12px;
+  font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
 }
@@ -157,6 +179,22 @@ body.overlay-body {
 }
 
 .suggestion-text {
-  line-height: 1.45;
+  line-height: 1.5;
   white-space: pre-wrap;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.warn {
+  color: var(--warn);
+  font-size: 13px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dot.live,
+  .cursor {
+    animation: none;
+  }
 }

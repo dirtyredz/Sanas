@@ -20,6 +20,19 @@ _Non-obvious traps. Read before touching the related area._
   real meetings only. Also keep `autoGainControl: false` — AGC pumping erases the
   level/timbre cues separation relies on.
 
+## Renderer
+
+- **`electron-vite dev --rendererOnly` still launches Electron.** It skips _building_ main and
+  preload, then starts the app from `out/` — windows appear and global hotkeys register. For a
+  browser-only preview use `npm run dev:web` (plain Vite + the mock bridge).
+- **Renderer CSP is `default-src 'self'`.** A CSS `data:` image (the select chevron) needs the
+  explicit `img-src 'self' data:` in `index.html`; remote fonts and scripts are blocked by
+  design — keep assets local.
+- **State classes vs page roots.** `.live` was once both the Live page's root layout and the
+  sidebar's "listening" modifier, which stretched the status dot into a full-height bar. Page
+  roots are `*-page`; modifiers (`live`, `active`, `me`, `interim`) stay bare and never carry
+  layout.
+
 ## Electron
 
 - **`better-sqlite3` is a native module** — must be rebuilt for Electron's ABI
