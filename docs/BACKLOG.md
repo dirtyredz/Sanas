@@ -63,6 +63,29 @@ _Prioritized task trough. P0 = next up, P1 = soon, P2 = someday._
 - [ ] Main-process log to a file: `electron-vite dev` does not forward the Electron child's
       stdout, so `console.log` from main is invisible outside DevTools
 
+### Callback containment — the rest of the sweep (Codex, 2026-09-09)
+
+The pause/merge review wrapped every write that runs from a provider callback or a timer in
+`services/meetings`, `services/audio-store`, `services/retention` and `windows/overlay-window`.
+These are the same class, judged not-yet-reachable and left for a deliberate pass — the rule is
+in docs/GOTCHAS.md: **nothing that runs without a catch above it may throw.**
+
+- [ ] `stt/deepgram.ts` keepalive timer and `ipc/index.ts` audio ingress both assume
+      `WebSocket.send()` cannot throw synchronously; a transport that does would escape the
+      timer and the IPC listener
+- [ ] `services/history/index.ts` no-results timer and `windows/broadcast.ts` send to
+      `webContents` without containment — a send during renderer teardown could escape
+- [ ] `main/index.ts` startup has no terminal `.catch`: an `openDb()` failure becomes an
+      unhandled rejection at launch rather than a message the user can act on
+- [ ] Settings' retention preview refresh after a failed clean-up is outside the try, so a
+      second failure is an unhandled rejection in the renderer
+
+### Live-meeting polish
+
+- [ ] The on-screen clock keeps counting until main confirms a pause, so it can include the
+      WebSocket shutdown handshake after capture already stopped. Stored timestamps and the
+      WAV are unaffected — this is display only.
+
 - [ ] Light theme — only if a daytime user appears (the token set makes it a second `:root` block)
 - [ ] Visual QA in the real Electron window — the browser preview cannot show the frameless
       overlay at 380×460, transparency, or the Windows title bar
