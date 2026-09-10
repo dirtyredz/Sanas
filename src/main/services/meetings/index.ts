@@ -15,6 +15,7 @@ import { rediarizeMeeting } from './rediarize'
 import { summarizeLines } from './summarize'
 import { autoEmailSummary } from './summary-email'
 import { clearPostProcessing, markPostProcessing } from './post-processing'
+import { isLiveMeeting, liveMeetingId, setLiveMeeting } from './live-meeting'
 import { resolveSpeakerIdentity } from './channel-identity'
 import { insertSegment, setSpeakerIsUser } from '../../db/repos/segments'
 import { insertSuggestion } from '../../db/repos/suggestions'
@@ -50,7 +51,6 @@ const BYTES_PER_SAMPLE = 2 // linear16
 
 let session: SttSession | null = null
 let sessionGen = 0 // bumped whenever a session is opened or discarded
-let meetingId: number | null = null
 let meetingJobId = 0 // remembered so a resume can re-send the job's keyterms
 let meetingChannels: ChannelCount = 1
 let paused = false
@@ -61,6 +61,7 @@ const transcriptWindow: TranscriptLine[] = [] // rolling finals for prompt assem
 let systemPrompt = '' // stable per meeting (cached by the provider)
 let suggestionBusy = false
 let suggestionSeq = 0
+let persistFailed = false // one warning per meeting, not one per line
 
 /** One at a time: lifecycle calls mutate module state across awaits. */
 let lifecycle: Promise<unknown> = Promise.resolve()
@@ -71,6 +72,7 @@ function serialized(fn: () => Promise<MeetingState>): Promise<MeetingState> {
 }
 
 function currentState(): MeetingState {
+  const meetingId = liveMeetingId()
   if (meetingId === null) return { meetingId: null, status: 'idle' }
   return { meetingId, status: paused ? 'paused' : 'live' }
 }
@@ -97,10 +99,23 @@ function onRecordingLost(id: number, e: Error): void {
   } catch (dbError) {
     console.warn('[sanas] could not clear the audio path for meeting', id, dbError)
   }
-  if (meetingId !== id) return
+  if (!isLiveMeeting(id)) return
   setState({
     ...currentState(),
     error: `Recording stopped (${e.message}) — the meeting is still running, but the rest of it is not being saved.`,
+  })
+}
+
+/** A transcript line that could not be stored. Raised once per meeting: the realistic
+ *  cause is a full disk, which will not fix itself, and one banner is enough. */
+function reportPersistFailure(e: unknown): void {
+  console.warn('[sanas] could not save a transcript line:', e)
+  if (persistFailed) return
+  persistFailed = true
+  setState({
+    ...currentState(),
+    error:
+      'Some lines could not be saved — the transcript on screen is ahead of what is stored. Check free disk space.',
   })
 }
 
@@ -114,8 +129,8 @@ async function discardSession(): Promise<void> {
 
 /** One transcript event: persist finals, feed the prompt window, fan out to the windows. */
 function handleTranscript(t: SttTranscript): void {
-  if (meetingId === null) return
-  const id = meetingId
+  const id = liveMeetingId()
+  if (id === null) return
   // stereo: channel IS identity; mono: manual "that's me" pinning
   const who = resolveSpeakerIdentity(t.channel, t.speaker, meetingChannels === 2, userSpeakers)
   const ev: TranscriptEvent = {
@@ -129,14 +144,20 @@ function handleTranscript(t: SttTranscript): void {
   }
   // only persist finals — interims mutate (GOTCHAS.md)
   if (t.isFinal) {
-    insertSegment({
-      meetingId: id,
-      tStartMs: t.tStartMs,
-      tEndMs: t.tEndMs,
-      speaker: ev.speaker,
-      isUser: ev.isUser,
-      text: t.text,
-    })
+    // a throw here escapes the provider's socket listener and ends the process, so the
+    // line is kept on screen and in the prompt window even when it cannot be stored
+    try {
+      insertSegment({
+        meetingId: id,
+        tStartMs: t.tStartMs,
+        tEndMs: t.tEndMs,
+        speaker: ev.speaker,
+        isUser: ev.isUser,
+        text: t.text,
+      })
+    } catch (e) {
+      reportPersistFailure(e)
+    }
     transcriptWindow.push({ speaker: ev.speaker, isUser: ev.isUser, text: t.text })
     if (transcriptWindow.length > 200) transcriptWindow.shift()
     if (shouldTrigger({ isUser: ev.isUser, text: t.text })) {
@@ -169,7 +190,7 @@ async function openSession(apiKey: string, startOffsetMs: number): Promise<SttSe
 
 export function startMeeting(jobId?: number, channels: ChannelCount = 1): Promise<MeetingState> {
   return serialized(async () => {
-    if (meetingId !== null) return currentState() // one meeting at a time
+    if (liveMeetingId() !== null) return currentState() // one meeting at a time
 
     const settings = loadSettings()
     if (!settings.deepgramApiKey) {
@@ -182,11 +203,12 @@ export function startMeeting(jobId?: number, channels: ChannelCount = 1): Promis
 
     const job = jobId ?? ensureDefaultJob()
     const id = createMeeting(job, `Meeting ${new Date().toLocaleString()}`)
-    meetingId = id
+    setLiveMeeting(id)
     meetingJobId = job
     meetingChannels = channels
     paused = false
     audioMsReceived = 0
+    persistFailed = false
     userSpeakers.clear()
     transcriptWindow.length = 0
     resetTriggers()
@@ -201,7 +223,7 @@ export function startMeeting(jobId?: number, channels: ChannelCount = 1): Promis
     } catch (e) {
       // never leave a meeting row open with no way back to it
       endMeeting(id)
-      meetingId = null
+      setLiveMeeting(null)
       return setState({
         meetingId: null,
         status: 'error',
@@ -242,6 +264,7 @@ export function startMeeting(jobId?: number, channels: ChannelCount = 1): Promis
  *  by a lost connection rather than asked for. */
 export function pauseMeeting(reason?: string): Promise<MeetingState> {
   return serialized(async () => {
+    const meetingId = liveMeetingId()
     if (meetingId === null || paused) return currentState()
     await discardSession()
     paused = true
@@ -255,6 +278,7 @@ export function pauseMeeting(reason?: string): Promise<MeetingState> {
  *  provider's channel mapping were both fixed when it began. */
 export function resumeMeeting(channels: ChannelCount): Promise<MeetingState> {
   return serialized(async () => {
+    const meetingId = liveMeetingId()
     if (meetingId === null || !paused) return currentState()
     if (channels !== meetingChannels) {
       return setState({
@@ -295,9 +319,14 @@ export function stopMeeting(): Promise<MeetingState> {
     paused = false
     audioMsReceived = 0
     await stopRecording() // no-op when recording wasn't on
-    if (meetingId !== null) {
-      endMeeting(meetingId)
-      const endedId = meetingId
+    const endedId = liveMeetingId()
+    if (endedId !== null) {
+      setLiveMeeting(null) // released first: a failure below must not strand the lifecycle
+      try {
+        endMeeting(endedId)
+      } catch (e) {
+        console.warn('[sanas] could not close the meeting row:', e)
+      }
       const window = [...transcriptWindow]
       const prompt = systemPrompt
       const channels = meetingChannels
@@ -321,7 +350,6 @@ export function stopMeeting(): Promise<MeetingState> {
               if (changed) broadcast(IPC.MeetingUpdated, endedId) // open views reload
             }),
       ]).then(() => clearPostProcessing(endedId))
-      meetingId = null
     }
     return setState({ meetingId: null, status: 'idle' })
   })
@@ -329,12 +357,12 @@ export function stopMeeting(): Promise<MeetingState> {
 
 /** Generate one suggestion (ambient nudge or hotkey full answer) and stream it out. */
 export async function runSuggestion(trigger: 'ambient' | 'hotkey'): Promise<void> {
-  if (meetingId === null) return // no meeting — hotkey outside one is a no-op
+  const id = liveMeetingId()
+  if (id === null) return // no meeting — hotkey outside one is a no-op
   if (suggestionBusy) return // one at a time; drop overlapping triggers
   if (transcriptWindow.length === 0) return
 
   const { anthropicApiKey, anthropicWorkspaceId } = loadSettings()
-  const id = meetingId
   const atMs = Math.round(audioMsReceived) // audio time, so it lines up with the transcript
   const sid = ++suggestionSeq
   const emit = (kind: SuggestionEvent['kind'], text: string): void =>
@@ -391,5 +419,6 @@ export function sendAudioChunk(chunk: Buffer): void {
 export function pinSpeaker(speaker: number, isUser: boolean): void {
   if (isUser) userSpeakers.add(speaker)
   else userSpeakers.delete(speaker)
+  const meetingId = liveMeetingId()
   if (meetingId !== null) setSpeakerIsUser(meetingId, speaker, isUser)
 }

@@ -14,7 +14,7 @@ every timestamp main stamps itself agree, and pausing simply stops the count. Th
 orchestrator owns it (`audioMsReceived`, counted in `sendAudioChunk`) rather than the STT
 provider, which cannot see audio the socket dropped; the seam only takes a `startOffsetMs`
 telling a new connection where its clock begins, and `sendAudioChunk` accepts nothing until
-that connection exists, so the count never runs ahead of what was actually transcribed.
+the session and the recording are both ready, so the count never starts ahead of either.
 
 The agreement is exact for pause and resume, and for everything main timestamps. It is NOT
 exact across the provider's own internal reconnect: that resumes from the last final word,

@@ -1,12 +1,13 @@
 import { existsSync, unlinkSync } from 'fs'
 import { deleteMeeting, getMeeting } from '../../db/repos/meetings'
+import { isLiveMeeting } from './live-meeting'
 import { isPostProcessing } from './post-processing'
 
 // Deleting a meeting has two halves — the audio file on disk and the row (segments,
 // suggestions and speaker names cascade from it). This is the one place both happen;
 // the repo's deleteMeeting alone would leave the WAV behind (GOTCHAS.md).
 
-export type RemoveOutcome = 'removed' | 'audio-locked' | 'busy' | 'missing'
+export type RemoveOutcome = 'removed' | 'live' | 'audio-locked' | 'busy' | 'missing'
 
 /** Removes the meeting's recording and then the meeting itself. If the recording
  *  cannot be deleted (locked by another process) the row is kept as well, so its
@@ -15,6 +16,8 @@ export type RemoveOutcome = 'removed' | 'audio-locked' | 'busy' | 'missing'
 export function removeMeeting(meetingId: number): RemoveOutcome {
   const meeting = getMeeting(meetingId)
   if (!meeting) return 'missing'
+  // main is still writing to it: the next final would land on a deleted row
+  if (isLiveMeeting(meetingId)) return 'live'
   // a summary, a re-diarization or an unfinished suggestion is still writing to it
   if (isPostProcessing(meetingId)) return 'busy'
   if (!removeAudioFile(meeting.audioPath)) return 'audio-locked'

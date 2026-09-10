@@ -29,7 +29,8 @@ sanas/
 │   │   │   │                    #   speaker-carryover (pins + names across re-diarization),
 │   │   │   │                    #   remove (audio file + row — the one delete path),
 │   │   │   │                    #   merge + merge-plan (fold split recordings into one meeting),
-│   │   │   │                    #   post-processing (what is still being rewritten after stop)
+│   │   │   │                    #   post-processing (what is still being rewritten after stop),
+│   │   │   │                    #   live-meeting (which meeting main is running, for delete)
 │   │   │   ├── email/           # EmailProvider seam + smtp.ts (nodemailer transport)
 │   │   │   ├── retention/       # age-based clean-up of recordings / whole meetings (timer + on demand)
 │   │   │   ├── history/         # ask-your-history: FTS5 retrieval + grounded, streamed answer
@@ -91,6 +92,7 @@ sanas/
 
 Tests are colocated `*.test.ts` files (vitest, `npm test`) beside the pure module they cover —
 today `services/meetings/speaker-carryover.test.ts`, `services/meetings/merge-plan.test.ts`,
+`services/meetings/post-processing.test.ts`,
 `db/fts-query.test.ts`, `shared/search-markers.test.ts` and `ipc/validate.test.ts`; DB/Electron-bound code (repos, migrations, services that
 read settings) has none — better-sqlite3 is built for Electron's ABI, so vitest cannot load it.
 

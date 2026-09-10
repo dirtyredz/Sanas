@@ -114,6 +114,7 @@ export function runRetention(): RetentionResult {
         break
       case 'audio-locked':
       case 'busy': // summarising or re-diarizing — its rows are still being written
+      case 'live': // unreachable (a live meeting has no ended_at), never guessed at
         result.failed++
         break
       case 'missing':

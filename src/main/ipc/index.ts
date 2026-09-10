@@ -104,6 +104,8 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.MeetingsList, (_e, jobId: unknown) => listMeetings(requireId(jobId, 'job id')))
   ipcMain.handle(IPC.MeetingsDelete, (_e, id: unknown) => {
     switch (removeMeeting(requireId(id, 'meeting id'))) {
+      case 'live':
+        throw new Error('This meeting is still running — stop it first.')
       case 'audio-locked':
         throw new Error('The recording is still in use by another program — try again in a moment.')
       case 'busy':

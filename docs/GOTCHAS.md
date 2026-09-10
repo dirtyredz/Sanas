@@ -192,6 +192,15 @@ _Non-obvious traps. Read before touching the related area._
   still streaming when Stop returns, and the answer ends in an insert against that meeting.
   **Merge and delete both refuse a marked meeting**, because otherwise the late write lands
   on a row that has been folded away or deleted (a foreign-key failure, and the work lost).
+- **Delete also refuses the meeting main is RUNNING** (`services/meetings/live-meeting.ts`).
+  Merge gets this for free — `planMerge` rejects a meeting with no `ended_at` — but delete
+  needs its own guard, and it cannot import the orchestrator to ask, hence the small module
+  whose only writer is the orchestrator.
+- **A DB write inside a provider callback must not throw.** `handleTranscript` runs on the
+  Deepgram socket listener and `onRecordingLost` on the file stream's; an exception escaping
+  either ends the main process. Both are wrapped, and the realistic cause is the same one —
+  a full disk, which breaks the WAV and the SQLite write together. A line that cannot be
+  stored still reaches the screen and the prompt window, and the user is told once.
 
 ## APIs
 
