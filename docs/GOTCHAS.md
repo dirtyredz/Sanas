@@ -206,6 +206,19 @@ _Non-obvious traps. Read before touching the related area._
   a full disk, which breaks the WAV and the SQLite write together. A line that cannot be
   stored still reaches the screen and the prompt window, and the user is told once.
 
+## Running it
+
+- `npm run dev` needs a real terminal. Driven from a non-interactive shell (an agent, a
+  CI step, anything whose stdin is closed) electron-vite starts Electron and then tears it
+  down again within seconds, exiting 127 with nothing useful on stdout. Nothing is wrong
+  with the app: `npm run build` followed by
+  `./node_modules/electron/dist/electron.exe out/main/index.js` launches the same code and
+  stays up. Use that when you need the window without a human at the keyboard; you lose
+  hot reload and gain a launch that survives.
+- **One instance at a time** (`app.requestSingleInstanceLock`). A second launch focuses the
+  first and exits, so a leftover process from an earlier attempt looks exactly like a
+  crash. Check for a running `electron.exe` before concluding anything.
+
 ## APIs
 
 - **Deepgram WS idle timeout:** the socket closes after ~10 s without audio. Send
