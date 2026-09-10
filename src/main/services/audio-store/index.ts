@@ -40,8 +40,8 @@ function audioDir(): string {
   return join(app.getPath('userData'), 'audio')
 }
 
-/** Every recording on disk, by the meeting it was written for. Retention uses this to
- *  find files whose meeting is gone — a merge deletes rows, and a locked file survives. */
+/** Every recording on disk, by the meeting it was written for. Retention diffs this
+ *  against the paths meetings still point at, to find the ones nothing claims. */
 export function listRecordings(): { meetingId: number; path: string }[] {
   const dir = audioDir()
   if (!existsSync(dir)) return []
