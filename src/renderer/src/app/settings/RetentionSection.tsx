@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { RetentionPreview, RetentionResult, SettingsView } from '@shared/types'
 import { SettingsSection } from './SettingsSection'
+import { errorText } from '../../lib/ipc-error'
 
 const CHOICES: { days: number; label: string }[] = [
   { days: 0, label: 'Keep forever' },
@@ -27,13 +28,19 @@ export function RetentionSection({
 }): React.JSX.Element {
   const [preview, setPreview] = useState<RetentionPreview | null>(null)
   const [result, setResult] = useState<RetentionResult | null>(null)
+  const [cleanUpError, setCleanUpError] = useState('')
 
   useEffect(() => {
     window.sanas.retention.preview().then(setPreview)
   }, [savedAt])
 
   const cleanUp = async (): Promise<void> => {
-    setResult(await window.sanas.retention.run())
+    setCleanUpError('')
+    try {
+      setResult(await window.sanas.retention.run())
+    } catch (e) {
+      setCleanUpError(errorText(e))
+    }
     setPreview(await window.sanas.retention.preview())
   }
 
@@ -96,7 +103,8 @@ export function RetentionSection({
         <button type="button" className="btn btn-sm" onClick={cleanUp} disabled={nothingDue}>
           Clean up now
         </button>
-        {result && (
+        {cleanUpError && <span className="warn">{cleanUpError}</span>}
+        {!cleanUpError && result && (
           <span className={result.failed > 0 ? 'warn' : 'ok'}>
             {`Removed ${result.audioFiles} recording(s) and ${result.meetings} meeting(s)` +
               (result.orphanFiles > 0

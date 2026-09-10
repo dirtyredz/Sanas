@@ -33,11 +33,18 @@ function createOverlay(): BrowserWindow {
   overlay.setOpacity(clampOpacity(loadSettings().overlayOpacity))
   overlay.on('closed', () => (overlay = null))
 
-  // remember where the user parks it (debounced — move fires continuously)
+  // remember where the user parks it (debounced — move fires continuously). The write is
+  // wrapped because this runs from a timer: an unwritable settings file would otherwise
+  // take the whole app down for the sake of remembering a window position.
   const persistBounds = (): void => {
     if (saveBoundsTimer) clearTimeout(saveBoundsTimer)
     saveBoundsTimer = setTimeout(() => {
-      if (overlay && !overlay.isDestroyed()) saveSettings({ overlayBounds: overlay.getBounds() })
+      if (!overlay || overlay.isDestroyed()) return
+      try {
+        saveSettings({ overlayBounds: overlay.getBounds() })
+      } catch (e) {
+        console.warn('[sanas] could not save the overlay position:', e)
+      }
     }, 500)
   }
   overlay.on('moved', persistBounds)

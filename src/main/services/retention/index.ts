@@ -143,9 +143,20 @@ export function runRetention(): RetentionResult {
 
 let timer: ReturnType<typeof setInterval> | null = null
 
+/** Nothing here is worth the app for: an exception in a timer callback has no catch above
+ *  it and ends the main process, and the disk that fails a delete is exactly the state
+ *  clean-up exists for. On demand (from Settings) it still throws, so the user sees why. */
+function runQuietly(): void {
+  try {
+    runRetention()
+  } catch (e) {
+    console.warn('[sanas] retention run failed:', e)
+  }
+}
+
 /** Runs shortly after launch and every few hours after that. */
 export function scheduleRetention(): void {
   if (timer) return
-  setTimeout(() => runRetention(), FIRST_RUN_DELAY_MS)
-  timer = setInterval(() => runRetention(), RUN_EVERY_MS)
+  setTimeout(runQuietly, FIRST_RUN_DELAY_MS)
+  timer = setInterval(runQuietly, RUN_EVERY_MS)
 }

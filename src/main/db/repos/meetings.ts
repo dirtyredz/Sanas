@@ -88,8 +88,6 @@ export function listMeetings(jobId: number): Meeting[] {
   return rows.map(toMeeting)
 }
 
-/** Row-only delete (segments, suggestions, speaker names cascade). The audio file is
- *  the caller's job — use services/meetings/remove.ts, not this, from outside repos. */
 /** Every recording path a meeting still points at. Retention treats any other file in
  *  the audio folder as an orphan — including one whose row survives with a cleared
  *  audio_path, which is exactly what a merge leaves behind when it cannot delete a file. */
@@ -100,6 +98,8 @@ export function listAudioPaths(): string[] {
   return rows.map((r) => r.audio_path)
 }
 
+/** Row-only delete (segments, suggestions, speaker names cascade). The audio file is
+ *  the caller's job — use services/meetings/remove.ts, not this, from outside repos. */
 export function deleteMeeting(meetingId: number): void {
   getDb().prepare(`DELETE FROM meetings WHERE id = ?`).run(meetingId)
 }

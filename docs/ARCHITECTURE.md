@@ -133,8 +133,9 @@ to the address set on the meeting's job; nothing else leaves the machine.
 `idle → live → (paused ⇄ live)* → idle`. Start creates the row, opens the STT connection and
 begins recording; pause closes the connection and stops audio while keeping everything else;
 resume reopens with the meeting's clock carried over; stop ends the row and kicks off the
-post-meeting passes below. Only one meeting is live at a time (`services/meetings/index.ts`
-holds it in module state).
+post-meeting passes below. Only one meeting is live at a time; the orchestrator
+(`services/meetings/index.ts`) runs it and publishes which one it is through
+`services/meetings/live-meeting.ts`, so delete can refuse the meeting still being written to.
 
 ## Post-meeting
 
