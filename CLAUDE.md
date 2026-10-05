@@ -27,3 +27,10 @@ Deepgram streaming WS · Anthropic API (streaming).
 
 When a change makes a decision → DECISIONS.md; adds/changes a feature → FEATURES.md;
 reveals a trap → GOTCHAS.md; alters components → STRUCTURE.md; defers work → BACKLOG.md.
+
+## Work items (Docket)
+
+Track work in `docs/items/` through `dk`. Use filtered `dk list --json` and `dk show`; use `add`, `set`,
+and `link` for changes. Never invent IDs or ranks. Claim work in the current worktree, release it when
+finished, and run `dk check` before pushing. Drop items instead of deleting them. Living docs remain
+ordinary Markdown.

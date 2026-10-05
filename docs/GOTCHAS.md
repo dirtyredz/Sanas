@@ -248,3 +248,14 @@ _Non-obvious traps. Read before touching the related area._
 - **Recording consent:** some jurisdictions are two-party consent for recording.
   Transcription-without-audio-retention is lighter but not automatically exempt.
   Sanas records/transcribes only on explicit start; audio saving is a global Settings toggle (on by default).
+
+## Moved from the old backlog
+
+- Mic capture + AudioWorklet downsample to 16 kHz mono linear16 (static worklet file — CSP)
+- Main-process log to a file: `electron-vite dev` does not forward the Electron child's
+  stdout, so `console.log` from main is invisible outside DevTools
+- The on-screen clock keeps counting until main confirms a pause, so it can include the
+  WebSocket shutdown handshake after capture already stopped. Stored timestamps and the
+  WAV are unaffected — this is display only.
+- Visual QA in the real Electron window — the browser preview cannot show the frameless
+  overlay at 380×460, transparency, or the Windows title bar

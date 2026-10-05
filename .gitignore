@@ -6,3 +6,4 @@ out/
 release/
 *.tsbuildinfo
 .claude/settings.local.json
+.docket/
