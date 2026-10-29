@@ -13,6 +13,9 @@ export interface AssistRequest {
   /** Effort/quality dial: 'low' favors latency, 'high' depth. Providers map it
    *  to their nearest native knob (Claude: output_config.effort). */
   effort: 'low' | 'medium' | 'high'
+  /** Per-request cancellation and deadline, owned by the calling feature. */
+  signal?: AbortSignal
+  timeoutMs?: number
   /** Streaming callback; omit for one-shot completions (e.g. summaries). */
   onDelta?: (text: string) => void
 }

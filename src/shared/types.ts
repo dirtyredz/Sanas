@@ -106,8 +106,9 @@ export interface SuggestionEvent {
   suggestionId: number
   meetingId: number
   trigger: 'ambient' | 'hotkey'
-  /** 'delta' appends text; 'done' closes the suggestion; 'error' carries a message. */
-  kind: 'delta' | 'done' | 'error'
+  /** 'start' opens an empty streaming item; 'delta' appends text; 'done' closes it;
+   *  'error' carries a message. */
+  kind: 'start' | 'delta' | 'done' | 'error'
   text: string
 }
 

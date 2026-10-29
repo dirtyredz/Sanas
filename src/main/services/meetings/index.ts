@@ -15,6 +15,12 @@ import { rediarizeMeeting } from './rediarize'
 import { summarizeLines } from './summarize'
 import { autoEmailSummary } from './summary-email'
 import { clearPostProcessing, markPostProcessing } from './post-processing'
+import {
+  canStartSuggestion,
+  emptySuggestionInFlight,
+  suggestionTimeoutMs,
+  type SuggestionTrigger,
+} from './suggestion-in-flight'
 import { isLiveMeeting, liveMeetingId, setLiveMeeting } from './live-meeting'
 import { resolveSpeakerIdentity } from './channel-identity'
 import { insertSegment, setSpeakerIsUser } from '../../db/repos/segments'
@@ -64,7 +70,7 @@ const userSpeakers = new Set<number>() // diarized indices pinned as "me"
 const lostRecordings = new Set<number>() // meetings whose WAV died while they were running
 const transcriptWindow: TranscriptLine[] = [] // rolling finals for prompt assembly
 let systemPrompt = '' // stable per meeting (cached by the provider)
-let suggestionBusy = false
+const suggestionInFlight = emptySuggestionInFlight()
 let suggestionSeq = 0
 let persistFailed = false // one warning per meeting, not one per line
 
@@ -361,10 +367,10 @@ export function stopMeeting(): Promise<MeetingState> {
 }
 
 /** Generate one suggestion (ambient nudge or hotkey full answer) and stream it out. */
-export async function runSuggestion(trigger: 'ambient' | 'hotkey'): Promise<void> {
+export async function runSuggestion(trigger: SuggestionTrigger): Promise<void> {
   const id = liveMeetingId()
   if (id === null) return // no meeting — hotkey outside one is a no-op
-  if (suggestionBusy) return // one at a time; drop overlapping triggers
+  if (!canStartSuggestion(suggestionInFlight, trigger)) return
   if (transcriptWindow.length === 0) return
 
   const { anthropicApiKey, anthropicWorkspaceId, nudgeModel, answerModel, whisperMode } =
@@ -385,14 +391,18 @@ export async function runSuggestion(trigger: 'ambient' | 'hotkey'): Promise<void
     return
   }
 
-  suggestionBusy = true
+  suggestionInFlight[trigger] = true
+  emit('start', '')
   // the answer outlives the meeting — Claude is still streaming when Stop returns — and it
   // ends in an insert against this meeting, so it must hold the meeting like any other
   // background write. Everything after this line is inside the try: a hold that leaked
   // would make the meeting permanently un-mergeable and un-deletable.
   markPostProcessing(id)
+  const profile = assistProfile(trigger, whisperMode)
+  const timeoutMs = suggestionTimeoutMs(trigger, profile.kind === 'full')
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
   try {
-    const profile = assistProfile(trigger, whisperMode)
     const userContent = buildUserContent(transcriptWindow, trigger, whisperMode, speakerNameMap(id))
     const text = await claudeProvider.complete({
       apiKey: anthropicApiKey,
@@ -403,15 +413,25 @@ export async function runSuggestion(trigger: 'ambient' | 'hotkey'): Promise<void
       // points/smart ambient output stays terse; full mode and hotkey answers get code room
       maxTokens: profile.maxTokens,
       effort: profile.effort,
+      signal: controller.signal,
+      timeoutMs,
       onDelta: (delta) => emit('delta', delta),
     })
     insertSuggestion({ meetingId: id, tMs: atMs, trigger, promptWindow: userContent, text })
     emit('done', text)
   } catch (e) {
-    emit('error', e instanceof Error ? e.message : String(e))
+    emit(
+      'error',
+      controller.signal.aborted
+        ? `Answer timed out after ${timeoutMs / 1000} seconds — try again.`
+        : e instanceof Error
+          ? e.message
+          : String(e),
+    )
   } finally {
+    clearTimeout(timeout)
     clearPostProcessing(id)
-    suggestionBusy = false
+    suggestionInFlight[trigger] = false
   }
 }
 
