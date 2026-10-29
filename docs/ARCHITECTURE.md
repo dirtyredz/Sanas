@@ -62,14 +62,18 @@ Mic (getUserMedia, renderer)
   `claude-opus-5-5`. Either accepts a custom model ID.
 - **Prompt assembly:** system prompt = persona/tone + job context pack (company info,
   project scope, notes, talking points, glossary); user turn = recent transcript window
-  (last ~N seconds/tokens) + the trigger reason.
+  (last ~N seconds/tokens) + the trigger reason and compact output contract. Suggestions
+  lead with a bold, ~20-word headline, may include one runnable code block (25 lines max),
+  and may end with two short follow-up lines.
 - **Ambient triggers** (cheap, local heuristics first): a final transcript segment from a
   non-user speaker that is a question (interrogative detection), long user silence after
   a question, or explicit keywords. Debounced by the current Settings cooldown (default
   5 seconds, adjustable from 0–60).
-- **On-demand trigger:** global hotkey → immediate full-length response.
-- Ambient nudges are short (1–2 sentences, "mention the Q3 migration"); on-demand answers
-  are fuller. Both logged to the meeting record.
+- **On-demand trigger:** global hotkey → immediate full answer, regardless of whisper mode.
+- **Whisper mode:** Smart (default) answers concrete asks such as code, commands, numbers,
+  definitions and formulas while coaching other moments; Full answers every ambient moment;
+  Points keeps ambient help terse. Points/Smart use tight budgets; Full/on-demand have room
+  for the optional code block. Both ambient and on-demand output are logged.
 
 ### Storage
 

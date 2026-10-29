@@ -14,8 +14,8 @@ _Capability inventory. Status: ✅ done · 🔨 in progress · 📋 planned · �
 | Pause / resume a meeting                         | ✅     | one meeting across an interruption; clock is audio time (2026-09-09)                                  |
 | Merge meetings                                   | ✅     | job page: tick two or more, folded into the earliest; wall-clock offsets, speaker blocks (2026-09-09) |
 | Lost connection pauses instead of erroring       | ✅     | after the provider's own retries; Resume when back online (2026-09-09)                                |
-| Ambient AI nudges (question/moment detection)    | ✅     | non-user questions; configurable model + 0–60s cooldown (default Sonnet 5.5 / 5s)                     |
-| On-demand full answer (global hotkey)            | ✅     | Ctrl+Shift+Enter or "Answer now"; configurable model (default Opus 5.5)                               |
+| Ambient AI nudges (question/moment detection)    | ✅     | Smart/Full/Points modes; compact headline + optional code; configurable model/cooldown                |
+| On-demand full answer (global hotkey)            | ✅     | Ctrl+Shift+Enter or "Answer now"; always full, compact and code-capable (default Opus 5.5)            |
 | Always-on-top overlay window                     | ✅     | frameless, screen-saver level, hotkey toggle, position memory                                         |
 | Deepgram auto-reconnect                          | ✅     | backoff, monotonic timestamps across reconnects                                                       |
 | System-audio loopback capture                    | ✅     | same-PC meetings; ch0=me ch1=them via multichannel                                                    |
@@ -39,18 +39,18 @@ _Capability inventory. Status: ✅ done · 🔨 in progress · 📋 planned · �
 
 ## App
 
-| Feature                                                             | Status | Notes                                                                     |
-| ------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------- |
-| Settings: API keys, assistant models/cooldown, hotkeys, audio, SMTP | ✅     | separate nudge/answer models + custom IDs; secrets stay main-process only |
-| SQLite storage + v1 schema + migrations                             | ✅     | %APPDATA%/sanas/sanas.db, WAL                                             |
-| Retention controls                                                  | ✅     | audio after N days / whole meetings after N days; timer + Clean up now    |
-| Overlay ghost mode (click-through)                                  | ✅     | 👻 button; overlay hotkey restores                                        |
-| Per-meeting suggestion log                                          | ✅     | Transcript / Suggestions tabs                                             |
-| Audio recording (local WAV)                                         | ✅     | on by default (feeds re-diarization); Settings toggle                     |
-| Windows installer                                                   | ✅     | `npm run dist` → release/Sanas Setup.exe                                  |
-| Meeting search (across jobs)                                        | ✅     | FTS5 ranked + stemmed, matched terms marked (2026-09-09)                  |
-| Export (markdown transcript/summary)                                | ✅     | Export button in meeting view                                             |
-| Overlay opacity slider                                              | ✅     | Settings, live-applied                                                    |
-| Ask-your-history ("what did we decide about X?")                    | ✅     | Ask page: FTS5 retrieval + cited, streamed answer; job scope (2026-09-09) |
-| Visual identity (tokens, control vocabulary, transcript gutter)     | ✅     | dark by design; teal = room/app, sand = your voice (2026-09-09)           |
-| Browser preview with a typed mock bridge (`npm run dev:web`)        | ✅     | dev only; scripted live meeting, `overlay.html?demo=live`                 |
+| Feature                                                                  | Status | Notes                                                                     |
+| ------------------------------------------------------------------------ | ------ | ------------------------------------------------------------------------- |
+| Settings: API keys, assistant mode/models/cooldown, hotkeys, audio, SMTP | ✅     | Smart/Full/Points + separate nudge/answer models; secrets stay main-only  |
+| SQLite storage + v1 schema + migrations                                  | ✅     | %APPDATA%/sanas/sanas.db, WAL                                             |
+| Retention controls                                                       | ✅     | audio after N days / whole meetings after N days; timer + Clean up now    |
+| Overlay ghost mode (click-through)                                       | ✅     | 👻 button; overlay hotkey restores                                        |
+| Per-meeting suggestion log                                               | ✅     | Transcript / Suggestions tabs                                             |
+| Audio recording (local WAV)                                              | ✅     | on by default (feeds re-diarization); Settings toggle                     |
+| Windows installer                                                        | ✅     | `npm run dist` → release/Sanas Setup.exe                                  |
+| Meeting search (across jobs)                                             | ✅     | FTS5 ranked + stemmed, matched terms marked (2026-09-09)                  |
+| Export (markdown transcript/summary)                                     | ✅     | Export button in meeting view                                             |
+| Overlay opacity slider                                                   | ✅     | Settings, live-applied                                                    |
+| Ask-your-history ("what did we decide about X?")                         | ✅     | Ask page: FTS5 retrieval + cited, streamed answer; job scope (2026-09-09) |
+| Visual identity (tokens, control vocabulary, transcript gutter)          | ✅     | dark by design; teal = room/app, sand = your voice (2026-09-09)           |
+| Browser preview with a typed mock bridge (`npm run dev:web`)             | ✅     | dev only; scripted live meeting, `overlay.html?demo=live`                 |

@@ -2,6 +2,22 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-10-29 — Whisper modes share one compact, safe display contract
+
+Ambient help now has three useful behaviors: **Smart** (the default) gives the actual answer
+for concrete asks such as code, commands, numbers, definitions and formulas, but remains a
+short line to say for everything else; **Full** answers every trigger; **Points** keeps ambient
+coaching terse. “Answer now” is always Full. Smart preserves the old lightweight ambient
+feel while fixing the real-world failure where a direct code request received only coaching.
+Full/on-demand requests use the answer model and a larger token budget; Smart/Points ambient
+requests keep the nudge model and tight budgets.
+
+Every suggestion is shaped for the 380×460 overlay: one bold headline of roughly 20 words,
+optionally one minimal runnable fenced code block capped at 25 lines, then at most two short
+lines. A purpose-built renderer recognizes only that subset and inline code; model text is
+always rendered as React text, never HTML. Rejected: general Markdown (extra bundle and a
+wider parsing/XSS surface) and unrestricted chat prose (not glanceable during a meeting).
+
 ## 2026-10-29 — Separate configurable models for nudges and full answers
 
 Ambient nudges optimize for latency and repeat throughout a meeting; requested answers,

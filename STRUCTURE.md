@@ -81,7 +81,8 @@ sanas/
   pages) and the shared control vocabulary; no per-page stylesheets
 - `src/renderer/src/overlay-app/` — overlay UI React app (separate, deliberately tiny bundle)
 - `src/renderer/src/audio/` — renderer-side mic capture + AudioWorklet downsampling
-- `src/renderer/src/lib/` — renderer hooks and pure helpers shared across pages
+- `src/renderer/src/lib/` — renderer hooks and shared presentation helpers, including
+  the safe compact-suggestion parser/renderer used by both renderer bundles
 - `src/renderer/src/dev/` — the browser-preview mock of `window.sanas` (typed as
   `Window['sanas']`; installed by both renderer entry points only when the build-time
   `__SANAS_WEB_PREVIEW__` is true — set by `vite.renderer.config.ts`, false in the Electron build).
