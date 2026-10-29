@@ -18,11 +18,12 @@ Mic (getUserMedia, renderer)
   → Deepgram streaming WebSocket        [+ keyterm boosts from the job's glossary]
   → interim + final transcript events (diarized: Speaker 0/1/…)
   → Transcript store (rolling buffer + SQLite persistence)
-  → Trigger engine:
-      • ambient: question detected / key moment → short nudge
+  → Live assistance (see Assistance):
+      • ambient: completed turn → prefilter → classifier → answer;
+                 opt-in "Next point" coaching while the user talks
       • hotkey:  user asks → full answer
-  → Claude API (streaming) with prompt = job context pack + recent transcript window
-  → Suggestion rendered in overlay (streams in token by token)
+  → Claude API (answers stream; next points buffered) with prompt = job context pack + recent transcript
+  → Suggestion rendered in overlay
 ```
 
 ### Audio capture
@@ -33,7 +34,7 @@ Mic (getUserMedia, renderer)
     erases the other side from the mic, so Sanas also taps the signal headed to the
     output device via Electron's display-media loopback (`src/main/system-audio.ts`).
     Channels: **0 = mic (user), 1 = loopback (others)** — identity is structural,
-    resolved in one place (`services/meetings/channel-identity.ts`).
+    resolved in one place (`services/meetings/capture/channel-identity.ts`, returning `user | other | unknown`).
   - **Elsewhere** (another device, or in the room; the default) — mic-only mono: everyone
     arrives through the mic, voices are diarized, and the user marks their own with
     "that's me". Picking This PC for a meeting held elsewhere stamps every voice as the
@@ -51,6 +52,11 @@ Mic (getUserMedia, renderer)
 - The active job's **glossary terms are sent as keyterm boosts** — the same data that
   feeds the AI also improves STT accuracy on jargon. (This is the _sanas_ double meaning.)
 - Interim results update the overlay live; only finals are persisted.
+- Turn signals: `endpointing=600`, `utterance_end_ms=1000`, `vad_events=true`.
+  `stt/deepgram-events.ts` normalizes messages into finals plus `SttSignal`s (boundary:
+  endpoint | utterance-end; activity; reset) via the optional `onSignal` callback. A stereo
+  message with a missing or invalid channel index becomes channel -1 (identity unknown), never
+  implicitly "Me". An unexpected socket close emits `reset` at once, before the backoff.
 - Speaker labels: in This-PC (stereo) mode the user is structural (channel 0); in Elsewhere
   (mono) mode the user pins their own diarized voice ("that's me"), persisted per meeting and
   carried through re-diarization by time overlap.
@@ -65,12 +71,51 @@ Mic (getUserMedia, renderer)
   (last ~N seconds/tokens) + the trigger reason and compact output contract. Suggestions
   lead with a bold, ~20-word headline, may include one runnable code block (25 lines max),
   and may end with two short follow-up lines.
-- **Ambient triggers** (cheap, local heuristics first): a final transcript segment from a
-  non-user speaker that is a question (interrogative detection), long user silence after
-  a question, or explicit keywords. Debounced by the current Settings cooldown (default
-  5 seconds, adjustable from 0–60).
+- **Answering completed turns:** STT → existing final persistence/broadcast → identity
+  resolution → `turns/turn-assembler` → prefilter (`triggers.ts`, loose, local) → classifier →
+  freshness/cooldown → suggestion runner. Interims and VAD count only as activity, never text.
+  A turn closes after a boundary plus a 350 ms continuation grace, after 1,800 ms with no
+  advancing speech, or on a confirmed speaker change in final text; channels are independent.
+- **Classifier** (`assistant/classifier.ts`): one non-streaming call with `classifierModel`
+  (default Haiku), 64 tokens, 2.5 s hard deadline, answering one of `question | request |
+objection | none`. It **fails closed**: timeout, cancel, malformed output or provider error
+  means no automatic answer. Provider failures suspend classification for 30 s (rate-limited
+  log without transcript text, no overlay error).
+- **Admission:** one classifier at a time, one newest replacement candidate, ≥1 s between
+  starts; a candidate lives 6 s from completion (checked before classifying and before
+  generating); the answer cooldown (`nudgeCooldownSec`, 0–60, default 5) is read before
+  classification and again before generation, and consumed only when an answer starts. A
+  pending candidate is dropped when new finalized speech follows it (the speaker resumes,
+  someone else takes over, or the user answers with a final of 3+ words).
+- **Next point coaching** (opt-in `coachWhileTalking`; `coach-policy.ts`, `coach-prompts.ts`):
+  an episode is consecutive confirmed-user speech, ended by another speaker, unknown identity
+  or 8 s of silence. Long rule: ≥20 s finalized speech and ≥40 words. Pause rule: ≥8 s and ≥20
+  words, latest user turn completed, 1,800 ms without advancing speech. Attempts are 30 s apart
+  (failures included) with ≥20 new words or ≥8 s new speech. It uses `nudgeModel`, 220 tokens,
+  8 s deadline, no retries, and returns NONE when nothing is grounded. Delivery is buffered:
+  nothing is published unless complete and accepted. It never runs while a hotkey answer runs,
+  a candidate is pending or the ambient lane is busy; a new candidate, "Answer now", another
+  speaker's final or stereo ch1 activity cancels an unpublished one (ambiguous mono activity
+  blocks only the pause path). Suppressed while the capture warning is on. Extra cost is about
+  $0.11/hour (uncached).
+- **Lanes:** ambient (automatic answers and next points, `trigger='ambient'`) and hotkey. A next
+  point is `trigger='ambient'` with `purpose='next-point'`. While the ambient lane is busy only
+  the newest classified candidate waits.
+- **Transient state and the epoch:** assembler, candidates, timers and coaching state are
+  in-memory in `meetings/assist/live-assistance.ts`. Pause/stop invalidate assistance BEFORE
+  awaiting socket shutdown; reconnect resets and pin changes discard the unfinished turn and all
+  pending automatic work (epoch). An answer already streaming still finishes and persists after
+  Stop. Receipt time (`performance.now`) drives grace/cooldowns; provider audio time orders
+  speech; stored suggestion times still use `audioMsReceived`.
+- **Capture health** (`meetings/capture/capture-health.ts`): in This-PC stereo meetings it
+  inspects the PCM `sendAudioChunk` accepts, before STT and the WAV. ~5 s of continuous
+  exact-zero channel 1 while the mic peaked ≥300 for ≥1 s sets `MeetingState.captureWarning`
+  (Live page and overlay); ≥1 s of nonzero ch1 clears it. Advisory only: it never relabels,
+  drops data or stops the meeting.
+- `pinSpeaker` throws for stereo meetings (identity is by channel); on mono it relabels the
+  in-memory prompt window and invalidates pending assistance.
 - **On-demand trigger:** global hotkey → immediate full answer, regardless of whisper mode.
-  It has its own in-flight lane, so it can stream alongside one ambient nudge; each suggestion
+  It has its own in-flight lane, so it can stream alongside one ambient answer; each suggestion
   is independently timed out and balanced in the post-processing guard.
 - **Overlay history:** suggestion events are reduced by ID into an in-memory list for the
   current meeting. Ambient arrivals preserve an answer being read and advertise the newer
@@ -89,7 +134,7 @@ Mic (getUserMedia, renderer)
   after launch and every 6 h; Settings shows what is past its limit and can run it now.
   Live meetings are never touched. Deleting a meeting by hand goes through the same
   `removeMeeting` (file + row).
-- Schema (current: v1 base, v2 `speakers`, v3 `jobs.summary_email`, v4 `segments_fts`):
+- Schema (current: v1 base, v2 `speakers`, v3 `jobs.summary_email`, v4 `segments_fts`, v5 `suggestions.purpose`):
 
 ```
 jobs        (id, name, company_info, project_scope, notes,
@@ -100,8 +145,9 @@ meetings    (id, job_id, title, started_at, ended_at,
              audio_path, summary, action_items)
 segments    (id, meeting_id, t_start_ms, t_end_ms, speaker,
              is_user, text)              -- final transcript segments
-suggestions (id, meeting_id, t_ms, trigger,     -- 'ambient' | 'hotkey'
-             prompt_window, text)
+suggestions (id, meeting_id, t_ms, trigger,     -- lane: 'ambient' | 'hotkey'
+             prompt_window, text,
+             purpose)                        -- 'answer' | 'next-point', default 'answer' (v5)
 speakers    (meeting_id, speaker, name)         -- user-assigned names (v2)
 segments_fts  FTS5 over segments.text (v4)      -- external-content index, porter stemming;
                                                    -- insert/delete/update triggers keep it current

@@ -2,6 +2,35 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-10-29 — Answer completed turns, not segments; coach the user's next point on request
+
+Answering each final segment fired mid-sentence and on fragments. Sanas now assembles
+**completed turns** (`services/turns/`) and answers those. A turn closes on an acoustic
+boundary (Deepgram endpointing / UtteranceEnd) followed by a 350 ms continuation grace, with a
+1,800 ms no-speech fallback. Rejected for now: semantic endpointing — an extra model in the
+latency path before there is evidence the acoustic grace is not enough.
+
+A loose local prefilter hands candidates to a Haiku **classifier** (question | request |
+objection | none). It **fails closed**: on timeout, error or malformed output nothing fires.
+Rejected: failing open (an outage or slow call would turn every turn into an answer — cost and
+overlay churn at the worst moment). "Answer now" bypasses both, so the user always has a path.
+
+**Next point** coaching, which suggests what the user could say while they are still talking,
+is **opt-in** (`coachWhileTalking`, default off): it is unprompted help aimed at the person
+speaking, which some will find distracting, and it costs real calls (~$0.11/hour). It shares
+the **ambient lane** rather than adding a third, so one automatic thing streams at a time.
+Delivery is **buffered**: nothing is published unless the whole result is complete and still
+fresh, so a stale or cancelled next point never flashes in. Tradeoff: no token streaming for
+next points. Coverage is bounded to recent context (6,000 chars of transcript plus an excerpt
+of the current explanation) so the call stays fast and cheap.
+
+A mic-only reading of a This-PC meeting labels every voice as the user (GOTCHAS.md), so a
+**capture-health warning** appears when the loopback channel is digitally silent while the mic
+is hearing speech. It is **advisory**. Rejected: auto-relabelling heard voices as others, or
+silently switching to mono — either guesses at identity from a signal that ordinary remote
+silence can also produce, and would rewrite what the user sees. Coaching is simply suppressed
+while the warning is on.
+
 ## 2026-10-29 — Whisper modes share one compact, safe display contract
 
 Ambient help now has three useful behaviors: **Smart** (the default) gives the actual answer
@@ -31,6 +60,8 @@ known Opus/Sonnet 5.x IDs because that parameter is not supported by every model
 The ambient question heuristic remains local and unchanged, but its former fixed 20-second
 cost guard is now adjustable from 0–60 seconds and defaults to 5. The trigger reads the
 current value for every candidate so a saved change applies without restarting a meeting.
+(Superseded in part by “Answer completed turns, not segments”: the heuristic is now a loose
+prefilter ahead of a classifier, and the cooldown gates automatic answers to completed turns.)
 
 ## 2026-09-09 — A meeting's clock is the audio it captured
 

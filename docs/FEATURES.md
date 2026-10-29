@@ -4,27 +4,29 @@ _Capability inventory. Status: ✅ done · 🔨 in progress · 📋 planned · �
 
 ## Core loop
 
-| Feature                                          | Status | Notes                                                                                                    |
-| ------------------------------------------------ | ------ | -------------------------------------------------------------------------------------------------------- |
-| Mic capture → 16 kHz PCM stream                  | ✅     | AudioWorklet (static file; AGC/EC/NS off)                                                                |
-| Deepgram streaming transcription                 | ✅     | nova-3, diarize, interims, keepalive                                                                     |
-| Glossary → STT keyterm boosting                  | ✅     | per selected job                                                                                         |
-| Live transcript view (overlay + main)            | ✅     | interims live, finals persisted                                                                          |
-| "That's me" speaker pinning                      | ✅     | per meeting (Elsewhere mode); re-labels past segments; survives re-diarization                           |
-| Pause / resume a meeting                         | ✅     | one meeting across an interruption; clock is audio time (2026-09-09)                                     |
-| Merge meetings                                   | ✅     | job page: tick two or more, folded into the earliest; wall-clock offsets, speaker blocks (2026-09-09)    |
-| Lost connection pauses instead of erroring       | ✅     | after the provider's own retries; Resume when back online (2026-09-09)                                   |
-| Ambient AI nudges (question/moment detection)    | ✅     | Smart/Full/Points modes; compact headline + optional code; configurable model/cooldown                   |
-| Live whisper history                             | ✅     | Per-meeting in-memory history with previous/next/Latest navigation; new nudges never yank active reading |
-| On-demand full answer (global hotkey)            | ✅     | Ctrl+Shift+Enter or "Answer now"; runs beside an ambient nudge, opens its answer, 60 s timeout           |
-| Always-on-top overlay window                     | ✅     | frameless, position/size memory, resize grips; draggable persisted transcript/whisper split              |
-| Deepgram auto-reconnect                          | ✅     | backoff, monotonic timestamps across reconnects                                                          |
-| System-audio loopback capture                    | ✅     | same-PC meetings; ch0=me ch1=them via multichannel                                                       |
-| Post-meeting batch re-diarization                | ✅     | stable speaker labels; needs recordAudio (default on)                                                    |
-| Speaker rename + merge                           | ✅     | per meeting, in transcript view; export uses names                                                       |
-| Meeting source per meeting (This PC / Elsewhere) | ✅     | Live page, remembered; Elsewhere = mono + "that's me" pinning                                            |
-| Pins + names carried across re-diarization       | ✅     | time-overlap remap (speaker-carryover)                                                                   |
-| Speaker names in summaries + assist prompts      | ✅     | user-assigned names replace S1/S2 wherever the transcript is rendered                                    |
+| Feature                                          | Status | Notes                                                                                                          |
+| ------------------------------------------------ | ------ | -------------------------------------------------------------------------------------------------------------- |
+| Mic capture → 16 kHz PCM stream                  | ✅     | AudioWorklet (static file; AGC/EC/NS off)                                                                      |
+| Deepgram streaming transcription                 | ✅     | nova-3, diarize, interims, keepalive                                                                           |
+| Glossary → STT keyterm boosting                  | ✅     | per selected job                                                                                               |
+| Live transcript view (overlay + main)            | ✅     | interims live, finals persisted                                                                                |
+| "That's me" speaker pinning                      | ✅     | per meeting (Elsewhere mode); re-labels past segments; survives re-diarization                                 |
+| Pause / resume a meeting                         | ✅     | one meeting across an interruption; clock is audio time (2026-09-09)                                           |
+| Merge meetings                                   | ✅     | job page: tick two or more, folded into the earliest; wall-clock offsets, speaker blocks (2026-09-09)          |
+| Lost connection pauses instead of erroring       | ✅     | after the provider's own retries; Resume when back online (2026-09-09)                                         |
+| Ambient AI nudges (completed-turn detection)     | ✅     | Smart/Full/Points; answers completed turns classified question/request/objection; configurable models/cooldown |
+| Next point while you talk                        | ✅     | opt-in (off by default); ≥1 per 30 s; labelled "Next point" in overlay, history and export                     |
+| System-audio capture warning                     | ✅     | This PC mode: banner when ch1 is silent but the mic hears speech; advisory only                                |
+| Live whisper history                             | ✅     | Per-meeting in-memory history with previous/next/Latest navigation; new nudges never yank active reading       |
+| On-demand full answer (global hotkey)            | ✅     | Ctrl+Shift+Enter or "Answer now"; runs beside an ambient nudge, opens its answer, 60 s timeout                 |
+| Always-on-top overlay window                     | ✅     | frameless, position/size memory, resize grips; draggable persisted transcript/whisper split                    |
+| Deepgram auto-reconnect                          | ✅     | backoff, monotonic timestamps across reconnects                                                                |
+| System-audio loopback capture                    | ✅     | same-PC meetings; ch0=me ch1=them via multichannel                                                             |
+| Post-meeting batch re-diarization                | ✅     | stable speaker labels; needs recordAudio (default on)                                                          |
+| Speaker rename + merge                           | ✅     | per meeting, in transcript view; export uses names                                                             |
+| Meeting source per meeting (This PC / Elsewhere) | ✅     | Live page, remembered; Elsewhere = mono + "that's me" pinning                                                  |
+| Pins + names carried across re-diarization       | ✅     | time-overlap remap (speaker-carryover)                                                                         |
+| Speaker names in summaries + assist prompts      | ✅     | user-assigned names replace S1/S2 wherever the transcript is rendered                                          |
 
 ## Organization
 
@@ -40,18 +42,18 @@ _Capability inventory. Status: ✅ done · 🔨 in progress · 📋 planned · �
 
 ## App
 
-| Feature                                                                  | Status | Notes                                                                     |
-| ------------------------------------------------------------------------ | ------ | ------------------------------------------------------------------------- |
-| Settings: API keys, assistant mode/models/cooldown, hotkeys, audio, SMTP | ✅     | Smart/Full/Points + separate nudge/answer models; secrets stay main-only  |
-| SQLite storage + v1 schema + migrations                                  | ✅     | %APPDATA%/sanas/sanas.db, WAL                                             |
-| Retention controls                                                       | ✅     | audio after N days / whole meetings after N days; timer + Clean up now    |
-| Overlay ghost mode (click-through)                                       | ✅     | 👻 button; overlay hotkey restores                                        |
-| Per-meeting suggestion log                                               | ✅     | Transcript / Suggestions tabs                                             |
-| Audio recording (local WAV)                                              | ✅     | on by default (feeds re-diarization); Settings toggle                     |
-| Windows installer                                                        | ✅     | `npm run dist` → release/Sanas Setup.exe                                  |
-| Meeting search (across jobs)                                             | ✅     | FTS5 ranked + stemmed, matched terms marked (2026-09-09)                  |
-| Export (markdown transcript/summary)                                     | ✅     | Export button in meeting view                                             |
-| Overlay opacity slider                                                   | ✅     | Settings, live-applied                                                    |
-| Ask-your-history ("what did we decide about X?")                         | ✅     | Ask page: FTS5 retrieval + cited, streamed answer; job scope (2026-09-09) |
-| Visual identity (tokens, control vocabulary, transcript gutter)          | ✅     | dark by design; teal = room/app, sand = your voice (2026-09-09)           |
-| Browser preview with a typed mock bridge (`npm run dev:web`)             | ✅     | dev only; scripted live meeting, `overlay.html?demo=live`                 |
+| Feature                                                                  | Status | Notes                                                                                                                              |
+| ------------------------------------------------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Settings: API keys, assistant mode/models/cooldown, hotkeys, audio, SMTP | ✅     | Smart/Full/Points; nudge/answer/question-detection models; answer cooldown; "Next point while I'm talking"; secrets stay main-only |
+| SQLite storage + v1 schema + migrations                                  | ✅     | %APPDATA%/sanas/sanas.db, WAL                                                                                                      |
+| Retention controls                                                       | ✅     | audio after N days / whole meetings after N days; timer + Clean up now                                                             |
+| Overlay ghost mode (click-through)                                       | ✅     | 👻 button; overlay hotkey restores                                                                                                 |
+| Per-meeting suggestion log                                               | ✅     | Transcript / Suggestions tabs                                                                                                      |
+| Audio recording (local WAV)                                              | ✅     | on by default (feeds re-diarization); Settings toggle                                                                              |
+| Windows installer                                                        | ✅     | `npm run dist` → release/Sanas Setup.exe                                                                                           |
+| Meeting search (across jobs)                                             | ✅     | FTS5 ranked + stemmed, matched terms marked (2026-09-09)                                                                           |
+| Export (markdown transcript/summary)                                     | ✅     | Export button in meeting view                                                                                                      |
+| Overlay opacity slider                                                   | ✅     | Settings, live-applied                                                                                                             |
+| Ask-your-history ("what did we decide about X?")                         | ✅     | Ask page: FTS5 retrieval + cited, streamed answer; job scope (2026-09-09)                                                          |
+| Visual identity (tokens, control vocabulary, transcript gutter)          | ✅     | dark by design; teal = room/app, sand = your voice (2026-09-09)                                                                    |
+| Browser preview with a typed mock bridge (`npm run dev:web`)             | ✅     | dev only; scripted live meeting, `overlay.html?demo=live`                                                                          |

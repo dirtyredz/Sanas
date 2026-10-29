@@ -20,6 +20,19 @@ _Non-obvious traps. Read before touching the related area._
   real meetings only. Also keep `autoGainControl: false` — AGC pumping erases the
   level/timbre cues separation relies on.
 
+- **THE LOOPBACK ROUTING TRAP (This PC mode).** Electron's display-media loopback captures only
+  the console DEFAULT output device. Windows has a separate COMMUNICATIONS default, and call
+  apps (Teams/Zoom/etc.) often play to that one (reported case: the Dell monitor over NVIDIA
+  HDMI while the console default was Realtek). Then ch1 is exact digital silence, the mic hears
+  the call through the speakers, every voice is labelled Me and no automatic answer fires (seen
+  in every Constellation meeting on 2026-10-29). An acquired loopback track is not proof of a
+  working signal; the capture warning now says so. Fix: make the call app play to the console
+  default device (or set both Windows defaults to the same device); use headphones only after
+  confirming the call still reaches loopback; or pick Elsewhere and pin your voice for a new
+  meeting.
+- **A stereo message without a channel index is "unknown", not the user.** Deepgram events with a
+  missing or invalid index become channel -1 and never coach or count as "Me".
+
 ## Renderer
 
 - **`electron-vite dev --rendererOnly` still launches Electron.** It skips _building_ main and
@@ -61,7 +74,9 @@ _Non-obvious traps. Read before touching the related area._
 - **Streaming diarization drifts; batch doesn't.** Live speaker indices are unstable
   (S2 can become S7 mid-meeting) — incremental labeling, no lookahead, conference-
   compressed audio. Don't try to fix it live: the post-meeting batch re-diarization
-  pass replaces segments with stable labels. Live view jitter is expected and cosmetic.
+  pass replaces segments with stable labels. Live view jitter is expected, but no longer purely
+  cosmetic: in mono, coaching and the classifier's turn grouping depend on live identity, so a
+  drifting label can group or attribute a turn wrongly. Pin your voice early.
 - **Re-diarization re-numbers the voices.** Batch indices don't match the live ones, so
   "that's me" pins and speaker names are carried over by time overlap (a voice that keeps
   > 50% of its speaking time on one new index keeps its name/identity). A voice batch
@@ -210,6 +225,18 @@ _Non-obvious traps. Read before touching the related area._
   a full disk, which breaks the WAV and the SQLite write together. A line that cannot be
   stored still reaches the screen and the prompt window, and the user is told once.
 
+- **Cancellation epochs: invalidate BEFORE awaiting socket shutdown.** Pause/stop must bump the
+  assistance epoch first, or a boundary or final arriving during the shutdown handshake starts
+  work for a meeting that is ending. Reconnect resets and pin changes bump it too, discarding the
+  unfinished turn and pending automatic work. An answer already streaming still finishes and
+  persists after Stop.
+- **Two clocks in assistance.** Grace periods and cooldowns use receipt time
+  (`performance.now`); ordering of speech uses provider audio time; stored suggestion times use
+  `audioMsReceived`. Do not mix them.
+- **Channel is not speaker.** In stereo, ch0 = user, ch1 = others, anything else = unknown. In
+  mono the user must pin their voice or coaching never starts. Unknown identity never coaches,
+  and `pinSpeaker` throws for stereo meetings.
+
 ## Running it
 
 - `npm run dev` needs a real terminal. Driven from a non-interactive shell (an agent, a
@@ -228,6 +255,13 @@ _Non-obvious traps. Read before touching the related area._
 - **Deepgram WS idle timeout:** the socket closes after ~10 s without audio. Send
   keepalive messages (or continuous silence frames) during pauses, and implement
   auto-reconnect with transcript continuity.
+- **Turn boundaries are acoustic, and messy.** `speech_final` can arrive with empty text,
+  duplicates, or late; UtteranceEnd can arrive after speech already resumed. Neither means the
+  sentence is finished semantically — hence the 350 ms continuation grace and a boundary older
+  than observed speech being rejected.
+- **The classifier fails closed.** An Anthropic outage or slow call silences automatic answers
+  (and suspends classification for 30 s); "Answer now" still works. Effort is not sent to Haiku,
+  so the classifier's "low effort" is a no-op on it.
 - **Interim vs final results:** interims mutate/replace; only persist finals or the
   transcript in SQLite will accrete duplicates.
 - **Claude prompt growth:** a long meeting's transcript exceeds sensible prompt sizes —

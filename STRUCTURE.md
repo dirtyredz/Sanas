@@ -22,15 +22,20 @@ sanas/
 │   │   ├── system-audio.ts      # display-media loopback handler (same-PC meeting audio)
 │   │   ├── services/
 │   │   │   ├── stt/             # SttProvider seam + DeepgramSession (reconnect, splits, batch)
-│   │   │   ├── assistant/       # AssistantProvider seam + claude.ts, prompts.ts, triggers.ts
-│   │   │   ├── meetings/        # index (live orchestration) + rediarize, export,
-│   │   │   │                    #   summarize (post-stop + on-demand), summary-email
-│   │   │   │                    #   (compose + send), channel-identity (ch0=user, one place),
-│   │   │   │                    #   speaker-carryover (pins + names across re-diarization),
-│   │   │   │                    #   remove (audio file + row — the one delete path),
+│   │   │   │                    #   + deepgram-events (pure message normalization → finals + signals)
+│   │   │   ├── turns/           # turn-assembler: finals + boundaries → completed turns (pure)
+│   │   │   ├── assistant/       # AssistantProvider seam + claude.ts, prompts.ts, triggers (prefilter),
+│   │   │   │                    #   classifier, coach-policy + coach-prompts, compact-contract, excerpt
+│   │   │   ├── meetings/        # index (meeting/audio lifecycle, per-final persistence) + rediarize,
+│   │   │   │                    #   export, summarize (post-stop + on-demand), summary-email
+│   │   │   │                    #   (compose + send), speaker-carryover (pins + names across
+│   │   │   │                    #   re-diarization), remove (audio file + row — the one delete path),
 │   │   │   │                    #   merge + merge-plan (fold split recordings into one meeting),
 │   │   │   │                    #   post-processing (what is still being rewritten after stop),
 │   │   │   │                    #   live-meeting (which meeting main is running, for delete)
+│   │   │   │   ├── assist/      # live-assistance (coordinator), suggestion-runner, suggestion-requests,
+│   │   │   │   │                #   suggestion-in-flight (lane policy)
+│   │   │   │   └── capture/     # channel-identity (ch0=user, one place), capture-health
 │   │   │   ├── email/           # EmailProvider seam + smtp.ts (nodemailer transport)
 │   │   │   ├── retention/       # age-based clean-up of recordings / whole meetings (timer + on demand)
 │   │   │   ├── history/         # ask-your-history: FTS5 retrieval + grounded, streamed answer
@@ -51,7 +56,8 @@ sanas/
 │   │       │                    #   hotkey label, clock/date formatting, icons, meeting-state + transcript hooks)
 │   │       ├── dev/             # browser-preview mock of the preload bridge (dev only, never bundled)
 │   │       └── env.d.ts         # Vite client types (import.meta.env)
-│   └── shared/                  # IPC channel types, domain types (Job, Meeting, Segment…)
+│   └── shared/                  # IPC channel types, domain types (Job, Meeting, Segment…),
+│                                #   suggestion-label (one label mapping: overlay/history/export)
 ├── scripts/                     # repo tooling (git-hook install, pre-commit)
 ├── .github/workflows/           # CI
 ├── docs/                        # living docs (this set)
@@ -65,9 +71,14 @@ sanas/
   main → all-windows broadcast
 - `src/main/ipc/` — typed IPC channel handlers; validate (`validate.ts`: ids, free text, the
   job and settings payloads) + delegate, no business logic
-- `src/main/services/` — main-process services and provider seams: `stt/`, `assistant/`,
+- `src/main/services/` — main-process services and provider seams: `stt/`, `turns/`, `assistant/`,
   `email/`, `meetings/`, `audio-store/`, `retention/`, `history/`, plus main-side transcript
   formatting
+- `src/main/services/turns/` — pure turn assembly (`turn-assembler.ts`, `types.ts`); no I/O, no timers
+- `src/main/services/meetings/assist/` — live assistance: coordinator, suggestion runner, request
+  building, lane policy
+- `src/main/services/meetings/capture/` — capture-side identity (`channel-identity.ts`) and
+  capture health (`capture-health.ts`)
 - `src/main/db/` — better-sqlite3 connection, schema migrations, and the text → FTS5 MATCH
   builder (`fts-query.ts`, the only source of `FtsMatch`)
 - `src/main/db/repos/` — per-entity repositories; the only place SQL strings live
@@ -89,16 +100,21 @@ sanas/
   `__SANAS_WEB_PREVIEW__` is true — set by `vite.renderer.config.ts`, false in the Electron build).
   `src/renderer/src/env.d.ts` is the one file beside these folders: Vite client types.
 - `src/renderer/public/` — AudioWorklet processors and other assets served unbundled
-- `src/shared/` — types shared by main, preload and renderer (IPC channels, domain models)
+- `src/shared/` — types shared by main, preload and renderer (IPC channels, domain models) and
+  the one suggestion label mapping (`suggestion-label.ts`)
 - `scripts/` — repo tooling scripts (git-hook installation, pre-commit)
 
-Tests are colocated `*.test.ts` files (vitest, `npm test`) beside the pure module they cover —
-today `services/meetings/speaker-carryover.test.ts`, `services/meetings/merge-plan.test.ts`,
-`services/assistant/completion-result.test.ts`, `services/meetings/post-processing.test.ts`,
-`services/meetings/suggestion-in-flight.test.ts`,
-`renderer/src/lib/whisper-history.test.ts`, `db/fts-query.test.ts`, `shared/search-markers.test.ts`
-and `ipc/validate.test.ts`; DB/Electron-bound code (repos, migrations, services that
-read settings) has none — better-sqlite3 is built for Electron's ABI, so vitest cannot load it.
+Tests are colocated `*.test.ts` files (vitest, `npm test`) beside the module they cover:
+`services/turns/turn-assembler`, `services/stt/deepgram-events` and `deepgram`;
+`services/assistant/` triggers, classifier, coach-policy, coach-prompts, prompts, claude and
+completion-result; `services/meetings/assist/` live-assistance, suggestion-runner and
+suggestion-in-flight; `services/meetings/capture/` capture-health and channel-identity;
+`services/meetings/` speaker-carryover, merge-plan and post-processing; `config/settings`,
+`db/fts-query`, `ipc/validate`, `shared/search-markers`, `shared/suggestion-label`, and the
+renderer `lib/` and `overlay-app/` helpers (whisper-history, glossary-input, overlay-split).
+Services that read settings are tested by mocking electron/fs (`config/settings.test.ts`).
+DB-bound code (repos, migrations) has none — better-sqlite3 is built for Electron's ABI, so
+vitest cannot load it.
 
 Deliberately _not_ homes: the repo root (config + docs only), `src/main/` itself and
 `src/renderer/src/` itself. New main-process code belongs in a responsibility folder above,
@@ -110,8 +126,12 @@ not beside `index.ts` / `system-audio.ts`.
   isolate Deepgram, Claude and SMTP so any can be swapped without touching orchestration or UI.
 - **`ipc/` stays thin** — handlers validate + delegate to `services/`; no business logic
   in IPC glue. Renderer never talks to APIs or the DB directly.
-- **Trigger engine is its own module** inside `assistant/` — ambient-detection heuristics
-  will grow and churn; keep them out of the Claude client.
+- **Turn detection, classification and coaching are their own modules.** `stt/deepgram-events`
+  normalizes provider messages, `turns/turn-assembler` closes turns, and `assistant/triggers`
+  (prefilter), `classifier` and `coach-policy` decide — all pure or behind the provider seam.
+  `meetings/assist/live-assistance` is only the coordinator (turn assembly, timers, admission,
+  freshness, cancellation; no SQL or SDK imports); `suggestion-runner` owns generation and
+  persistence. Keep all of it out of the Claude client.
 - **Repos own SQL** — no SQL strings outside `db/repos/`. FTS5 MATCH expressions are built
   only by `db/fts-query.ts` from user text (every token quoted), never concatenated elsewhere.
 - **Overlay is a separate bundle** from the main renderer — it must stay tiny and fast.
@@ -131,10 +151,10 @@ not beside `index.ts` / `system-audio.ts`.
   provider seam map closely to Anthropic-specific knobs (Claude model IDs, output effort,
   and the `anthropic-workspace-id` header). A second provider would need its own model-ID
   settings and interpretation of low/medium/high, and likely no workspace concept at all.
-- `services/meetings/index.ts` imports `deepgramProvider`/`claudeProvider` concretely
-  (no DI/composition root) — deliberate while there is exactly one of each; the swap
-  point is one import line (`services/email/index.ts` and `services/history/index.ts`
-  follow the same pattern).
+- `services/meetings/index.ts` reaches STT through the `stt/index.ts` seam but still imports
+  `claudeProvider` concretely (no DI/composition root) — deliberate while there is exactly one
+  of each; the swap point is one import line (`services/email/index.ts` and
+  `services/history/index.ts` follow the same pattern).
   Revisit only when a second provider actually exists.
 - SMTP password sits in plain `settings.json` next to the API keys — same trust model,
   same debt; `safeStorage` encryption for all three is one change if it ever matters.
