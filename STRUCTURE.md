@@ -31,6 +31,7 @@ sanas/
 │   │   │   │                    #   (compose + send), speaker-carryover (pins + names across
 │   │   │   │                    #   re-diarization), remove (audio file + row — the one delete path),
 │   │   │   │                    #   merge + merge-plan (fold split recordings into one meeting),
+│   │   │   │                    #   startup-recovery (close rows stranded by an earlier process),
 │   │   │   │                    #   post-processing (what is still being rewritten after stop),
 │   │   │   │                    #   live-meeting (which meeting main is running, for delete)
 │   │   │   │   ├── assist/      # live-assistance (coordinator), suggestion-runner, suggestion-requests,
@@ -109,7 +110,7 @@ Tests are colocated `*.test.ts` files (vitest, `npm test`) beside the module the
 `services/assistant/` triggers, classifier, coach-policy, coach-prompts, prompts, claude and
 completion-result; `services/meetings/assist/` live-assistance, suggestion-runner and
 suggestion-in-flight; `services/meetings/capture/` capture-health and channel-identity;
-`services/meetings/` speaker-carryover, merge-plan and post-processing; `config/settings`,
+`services/meetings/` speaker-carryover, merge-plan, post-processing and startup-recovery; `config/settings`,
 `db/fts-query`, `ipc/validate`, `shared/search-markers`, `shared/suggestion-label`, and the
 renderer `lib/` and `overlay-app/` helpers (whisper-history, glossary-input, overlay-split).
 Services that read settings are tested by mocking electron/fs (`config/settings.test.ts`).

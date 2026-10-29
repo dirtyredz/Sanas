@@ -13,6 +13,7 @@ import { registerIpcHandlers } from './ipc'
 import { runSuggestion } from './services/meetings'
 import { registerSystemAudioLoopback } from './system-audio'
 import { scheduleRetention } from './services/retention'
+import { closeDanglingMeetingsAtStartup } from './services/meetings/startup-recovery'
 
 // Single-instance lock: a second launch focuses the existing window instead.
 if (!app.requestSingleInstanceLock()) {
@@ -21,6 +22,7 @@ if (!app.requestSingleInstanceLock()) {
   app.whenReady().then(() => {
     registerSystemAudioLoopback()
     openDb()
+    closeDanglingMeetingsAtStartup()
     registerIpcHandlers()
     createMainWindow()
     registerHotkeys()
