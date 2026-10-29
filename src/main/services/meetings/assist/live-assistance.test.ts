@@ -52,6 +52,7 @@ function setup(over: Partial<AssistSettings> = {}) {
     log: () => undefined,
   })
   const window: { speaker: number; isUser: boolean; text: string }[] = []
+  const recent: string[] = []
   const assist = new LiveAssistance({
     now: () => Date.now(),
     setTimer: (fn, ms) => setTimeout(fn, ms),
@@ -63,7 +64,14 @@ function setup(over: Partial<AssistSettings> = {}) {
       return d.promise
     },
     runner,
-    snapshot: () => ({ meetingId: 7, atMs: 1_000, system: 'sys', window, names: undefined }),
+    snapshot: () => ({
+      meetingId: 7,
+      atMs: 1_000,
+      system: 'sys',
+      window,
+      names: undefined,
+      recent,
+    }),
     log: () => undefined,
   })
   assist.start()
@@ -71,7 +79,7 @@ function setup(over: Partial<AssistSettings> = {}) {
     classifications[i].d.resolve(outcome)
     await vi.advanceTimersByTimeAsync(0)
   }
-  const question: ClassifierOutcome = { status: 'classified', kind: 'question' }
+  const question: ClassifierOutcome = { status: 'classified', kind: 'question', addressee: 'me' }
   const none: ClassifierOutcome = { status: 'classified', kind: 'none' }
   return {
     assist,
@@ -80,6 +88,7 @@ function setup(over: Partial<AssistSettings> = {}) {
     generations,
     events,
     window,
+    recent,
     classify,
     question,
     none,
@@ -144,6 +153,8 @@ describe('live assistance: answers to completed turns', () => {
     expect(t.generations[0].req.userContent).toContain(
       'Respond to this completed turn (a question):\nS2: How do you make a linked list?',
     )
+    expect(t.events).toEqual([]) // held until the text cannot be the no-op
+    t.generations[0].req.onDelta?.('**Use nodes')
     expect(t.events[0]).toMatchObject({ kind: 'start', trigger: 'ambient', purpose: 'answer' })
   })
 
@@ -273,6 +284,46 @@ describe('live assistance: answers to completed turns', () => {
     }
   })
 
+  it('does not answer a turn put to another participant', async () => {
+    const t = setup()
+    await otherTurn(t.assist, 'Sarah, can you share the numbers?', 0, 1_000)
+    await t.classify(0, { status: 'classified', kind: 'request', addressee: 'other' })
+    expect(t.generations).toHaveLength(0)
+  })
+
+  it('tells the answer an open-floor question was put to the room', async () => {
+    const t = setup()
+    await otherTurn(t.assist, 'So any questions about the use of these models?', 0, 1_500)
+    await t.classify(0, { status: 'classified', kind: 'question', addressee: 'room' })
+    expect(t.generations[0].req.userContent).toContain('It was put to the room')
+  })
+
+  it('shows the model what was already shown, and lets it decline', async () => {
+    const t = setup()
+    t.recent.push('I’ll verify AS9 writeback in sandbox after the catalog change.')
+    await otherTurn(t.assist, 'What context window does it have?', 0, 1_000)
+    await t.classify(0, t.question)
+    expect(t.generations[0].req.userContent).toContain(
+      '- I’ll verify AS9 writeback in sandbox after the catalog change.',
+    )
+    t.generations[0].d.resolve('<none>')
+    await vi.advanceTimersByTimeAsync(0)
+    expect(t.events).toEqual([]) // declined: nothing displayed
+  })
+
+  it('counts a declined answer against the cooldown', async () => {
+    const t = setup({ nudgeCooldownSec: 10 })
+    await otherTurn(t.assist, 'Any questions?', 0, 800)
+    await t.classify(0, t.question)
+    t.generations[0].d.resolve('<none>')
+    await vi.advanceTimersByTimeAsync(2_000)
+    await otherTurn(t.assist, 'Anything else?', 3_000, 3_800, 2)
+    expect(t.classifications).toHaveLength(1) // still cooling down
+    await vi.advanceTimersByTimeAsync(10_000)
+    await otherTurn(t.assist, 'Last call, questions?', 20_000, 20_800, 3)
+    expect(t.classifications).toHaveLength(2)
+  })
+
   it('answers now regardless of classification, taking the hotkey lane', async () => {
     const t = setup()
     t.window.push({ speaker: 1, isUser: false, text: 'hello' })
@@ -320,10 +371,10 @@ describe('live assistance: next point while the user talks', () => {
     ])
   })
 
-  it('publishes nothing for NONE', async () => {
+  it('publishes nothing for <none>', async () => {
     const t = setup({ coachWhileTalking: true })
     explain(t)
-    t.generations[0].d.resolve('NONE')
+    t.generations[0].d.resolve('<none>')
     await vi.advanceTimersByTimeAsync(0)
     expect(t.events).toEqual([])
   })

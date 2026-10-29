@@ -5,10 +5,10 @@ import type {
   ClassifierOutcome,
   ClassifierTurn,
   ClassifyRequest,
+  Addressee,
   ResponseKind,
 } from '../../assistant/classifier'
 import { CoachPolicy } from '../../assistant/coach-policy'
-import { isCoachNoop } from '../../assistant/coach-prompts'
 import { speakerLabel } from '../../transcript-format'
 import type { SuggestionHandle, SuggestionRunner } from './suggestion-runner'
 import {
@@ -41,7 +41,6 @@ const AFTER_TOLERANCE_MS = 250
 /** A user final this short ("yeah", "good question") is not the user answering yet. */
 const USER_RESPONSE_MIN_WORDS = 3
 const RECENT_TURNS = 3
-const RECENT_COACH = 3
 
 export interface LiveAssistanceDeps {
   /** Monotonic receipt time, ms. */
@@ -60,6 +59,7 @@ interface Candidate {
   turn: CompletedTurn
   previous: CompletedTurn[]
   kind?: ResponseKind
+  addressee?: Exclude<Addressee, 'other'>
   abort?: AbortController
   dropped: boolean
 }
@@ -84,7 +84,6 @@ export class LiveAssistance {
   private suspendedUntil = 0
   private lastAnswerAt: number | null = null
   private coachRun: SuggestionHandle | null = null
-  private recentCoach: string[] = []
   private identityTrusted = true
   private timers = new Map<TimerName, unknown>()
   private lastFailureLogAt = Number.NEGATIVE_INFINITY
@@ -100,7 +99,6 @@ export class LiveAssistance {
       this.active = true
       this.coach.reset()
       this.recentTurns = []
-      this.recentCoach = []
       this.lastAnswerAt = null
       this.lastClassifierStartAt = null
       this.suspendedUntil = 0
@@ -311,8 +309,10 @@ export class LiveAssistance {
           this.suspendedUntil = this.deps.now() + CLASSIFIER_SUSPEND_MS
         }
         this.logFailure(`turn classifier ${outcome.reason}; failing closed`)
-      } else if (outcome.kind !== 'none') {
+      } else if (outcome.kind !== 'none' && outcome.addressee !== 'other') {
+        // put to someone else: not Me's to answer. Me or the room: the prompt says which.
         c.kind = outcome.kind
+        c.addressee = outcome.addressee
         this.ready = c
         this.tryGenerate()
       }
@@ -323,7 +323,7 @@ export class LiveAssistance {
 
   private tryGenerate(): void {
     const c = this.ready
-    if (!c || !c.kind) return
+    if (!c || !c.kind || !c.addressee) return
     const now = this.deps.now()
     const s = this.deps.settings()
     if (this.expired(c, now) || !answerCooldownAllows(this.lastAnswerAt, now, s.nudgeCooldownSec)) {
@@ -339,10 +339,13 @@ export class LiveAssistance {
         speaker: speakerLabel({ speaker: c.turn.speaker, isUser: false }, snap.names),
         text: c.turn.text,
         kind: c.kind,
+        addressee: c.addressee,
       }),
     )
     if (!handle) return
-    this.lastAnswerAt = now // consumed only when an answer actually starts
+    // consumed when an answer starts — and kept even if it declines with the no-op, so a
+    // model with nothing new to say cannot be asked again and again
+    this.lastAnswerAt = now
     this.afterRun(handle)
   }
 
@@ -374,31 +377,19 @@ export class LiveAssistance {
     if (!snap) return
     this.coach.attempted(now) // the cooldown runs from dispatch, failures included
     const epoch = this.epoch
-    let delivered = ''
     let handle: SuggestionHandle | null = null
-    const accept = (text: string): boolean => {
-      const current = epoch === this.epoch && this.coachRun === handle && !this.candidatePending()
-      if (!current || isCoachNoop(text)) return false
-      delivered = text.trim()
-      return true
-    }
+    // the runner has already discarded the no-op; this is the "still current?" check
+    const accept = (): boolean =>
+      epoch === this.epoch && this.coachRun === handle && !this.candidatePending()
     handle = this.deps.runner.start(
-      coachRequest(
-        snap,
-        s,
-        { excerpt: this.coach.excerpt(), reason, recentCoach: this.recentCoach },
-        accept,
-      ),
+      coachRequest(snap, s, { excerpt: this.coach.excerpt(), reason }, accept),
     )
     if (!handle) return
     const mine = handle
     this.coachRun = mine
-    void mine.done.then((outcome) =>
+    void mine.done.then(() =>
       this.guard(() => {
         if (this.coachRun === mine) this.coachRun = null
-        if (outcome === 'done' && delivered) {
-          this.recentCoach = [...this.recentCoach, delivered].slice(-RECENT_COACH)
-        }
         this.tryGenerate()
       }),
     )

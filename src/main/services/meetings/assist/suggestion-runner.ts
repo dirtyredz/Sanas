@@ -1,5 +1,6 @@
 import type { SuggestionEvent, SuggestionPurpose, SuggestionTrigger } from '@shared/types'
 import type { AssistantProvider } from '../../assistant/types'
+import { couldBeNoSuggestion, isNoSuggestion } from '../../assistant/compact-contract'
 import { canStartSuggestion, type SuggestionInFlight } from './suggestion-in-flight'
 
 // Runs one suggestion end to end: lane ownership, deadline, provider call, events,
@@ -31,6 +32,10 @@ export interface SuggestionRequest {
   /** 'stream' shows tokens as they arrive; 'buffered' publishes only a complete, accepted
    *  result (or nothing at all), so a cancelled or empty next point never leaves a card. */
   delivery: 'stream' | 'buffered'
+  /** Automatic suggestions may decline with the no-op output (`<none>`): then nothing is
+   *  shown or stored, and a streamed answer shows nothing until its text cannot be the
+   *  no-op. Requested answers never decline. */
+  allowNoop?: boolean
   /** Buffered only: last-moment check that the result is still useful and current. */
   accept?: (text: string) => boolean
 }
@@ -105,7 +110,18 @@ export class SuggestionRunner {
     let cancelled = false
     const controller = new AbortController()
 
-    if (streamed) emit('start', '')
+    // a streamed answer that may decline is held back until it visibly is not the no-op
+    let shown = streamed && !req.allowNoop
+    let held = ''
+    if (shown) emit('start', '')
+    const onDelta = (delta: string): void => {
+      if (shown) return emit('delta', delta)
+      held += delta
+      if (couldBeNoSuggestion(held)) return
+      shown = true
+      emit('start', '')
+      emit('delta', held)
+    }
     // the request outlives the call that started it and ends in an insert against this
     // meeting, so it holds the meeting like any other background write. Everything after
     // this line is inside the try: a leaked hold makes the meeting un-mergeable forever.
@@ -125,9 +141,11 @@ export class SuggestionRunner {
           signal: controller.signal,
           timeoutMs: req.timeoutMs,
           maxRetries: req.maxRetries,
-          onDelta: streamed ? (delta) => emit('delta', delta) : undefined,
+          onDelta: streamed ? onDelta : undefined,
         })
         if (cancelled) return 'cancelled'
+        // declined: nothing displayed, nothing persisted; the lane frees in `finally`
+        if (req.allowNoop && !shown && isNoSuggestion(text)) return 'noop'
         if (!streamed && !(req.accept?.(text) ?? true)) return 'noop'
         this.deps.persist({
           meetingId: req.meetingId,
@@ -137,7 +155,7 @@ export class SuggestionRunner {
           promptWindow: req.userContent,
           text,
         })
-        if (!streamed) emit('start', '')
+        if (!shown) emit('start', '') // buffered, or a short answer still being held
         emit('done', text)
         return 'done'
       } catch (e) {

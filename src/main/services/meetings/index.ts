@@ -25,6 +25,7 @@ import { insertSuggestion } from '../../db/repos/suggestions'
 import { speakerNameMap } from '../../db/repos/speakers'
 import { claudeProvider } from '../assistant/claude'
 import { classifyTurn } from '../assistant/classifier'
+import { RECENT_SUGGESTIONS, headlineOf } from '../assistant/compact-contract'
 import { buildSystemPrompt, type TranscriptLine } from '../assistant/prompts'
 import { broadcast } from '../../windows/broadcast'
 
@@ -68,10 +69,20 @@ let persistFailed = false // one warning per meeting, not one per line
 const captureHealth = new CaptureHealth()
 let lastError: string | undefined // the error shown now, kept when only capture health changes
 
+/** Headlines of suggestions shown this meeting, so automatic prompts do not repeat them. */
+const shownHeadlines: string[] = []
+
 const runner = new SuggestionRunner({
   provider: claudeProvider,
   emit: (event) => broadcast(IPC.SuggestionEvent, event),
-  persist: (s) => insertSuggestion(s),
+  persist: (s) => {
+    insertSuggestion(s)
+    // a late answer from a meeting that has since ended must not leak into the next one
+    if (isLiveMeeting(s.meetingId)) {
+      shownHeadlines.push(headlineOf(s.text))
+      if (shownHeadlines.length > RECENT_SUGGESTIONS) shownHeadlines.shift()
+    }
+  },
   hold: markPostProcessing,
   release: clearPostProcessing,
   log: (message) => console.warn(`[sanas] ${message}`),
@@ -99,6 +110,7 @@ const assistance = new LiveAssistance({
       system: systemPrompt,
       window: [...transcriptWindow],
       names,
+      recent: [...shownHeadlines],
     }
   },
   log: (message) => console.warn(`[sanas] ${message}`),
@@ -279,6 +291,7 @@ export function startMeeting(jobId?: number, channels: ChannelCount = 1): Promis
     persistFailed = false
     userSpeakers.clear()
     transcriptWindow.length = 0
+    shownHeadlines.length = 0 // per meeting; a resume keeps them
     captureHealth.reset()
     assistance.start()
     systemPrompt = buildSystemPrompt(getJob(job), listGlossary(job))

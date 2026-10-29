@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assistProfile, buildUserContent, type TranscriptLine } from './prompts'
+import { assistProfile, buildSystemPrompt, buildUserContent, type TranscriptLine } from './prompts'
 
 const window: TranscriptLine[] = [
   { speaker: 1, isUser: false, text: 'Can you make me a linked list in JavaScript?' },
@@ -48,18 +48,73 @@ describe('whisper prompt modes', () => {
       ...window,
       { speaker: -1, isUser: true, text: 'Sure, one second.' },
     ]
-    const prompt = buildUserContent(lines, 'ambient', 'smart', undefined, {
-      speaker: 'S2',
-      text: 'Can you make me a linked list in JavaScript?',
-      kind: 'request',
+    const prompt = buildUserContent(lines, 'ambient', 'smart', {
+      turn: {
+        speaker: 'S2',
+        text: 'Can you make me a linked list in JavaScript?',
+        kind: 'request',
+        addressee: 'me',
+      },
     })
     expect(prompt).toContain(
       'Respond to this completed turn (a request):\nS2: Can you make me a linked list in JavaScript?',
     )
+    expect(prompt).toContain('Answer THAT turn, about the topic being discussed now.')
     expect(prompt.indexOf('Respond to this completed turn')).toBeLessThan(
       prompt.indexOf('concrete ask for code'),
     )
     expect(buildUserContent(lines, 'hotkey', 'smart')).not.toContain('Respond to this completed')
+  })
+
+  it('lets an open-floor question yield a suggestion only if it is genuinely useful', () => {
+    const prompt = buildUserContent(window, 'ambient', 'smart', {
+      turn: {
+        speaker: 'S1',
+        text: 'So any questions about the use of these models?',
+        kind: 'question',
+        addressee: 'room',
+      },
+    })
+    expect(prompt).toContain('It was put to the room, not to Me specifically.')
+    expect(prompt).toContain('otherwise output\nexactly <none>')
+  })
+
+  it('includes recently shown suggestions so automatic answers do not repeat them', () => {
+    const recent = [
+      'I’ll verify AS9 writeback in sandbox after the catalog change; report back.',
+      'Ask which context window the catalog lists.',
+    ]
+    const prompt = buildUserContent(window, 'ambient', 'smart', { recent })
+    expect(prompt).toContain(
+      '- I’ll verify AS9 writeback in sandbox after the catalog change; report back.\n- Ask which context window the catalog lists.',
+    )
+    expect(prompt).toContain('Do not repeat or re-assert these.')
+    expect(prompt).toContain('output exactly <none>')
+    // a requested answer always answers: no recent list, no no-op
+    expect(buildUserContent(window, 'hotkey', 'smart')).not.toContain('<none>')
+  })
+
+  it('treats job context as background, not a topic to steer back to', () => {
+    const system = buildSystemPrompt(
+      {
+        id: 1,
+        name: 'Acme',
+        companyInfo: '',
+        projectScope: '',
+        notes: 'Verify AS9 writeback in sandbox.',
+        talkingPoints: 'Catalog change',
+        persona: '',
+        summaryEmail: '',
+        createdAt: '',
+        archived: false,
+      },
+      [],
+    )
+    expect(system).toContain('never a default topic')
+    expect(system).toContain(
+      'Talking points (raise only when the current topic makes them relevant)',
+    )
+    expect(system).not.toContain('steer toward these')
   })
 
   it('always includes the compact output contract', () => {

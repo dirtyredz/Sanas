@@ -27,6 +27,8 @@ export interface AssistSnapshot {
   system: string
   window: TranscriptLine[]
   names?: SpeakerNames
+  /** Headlines of suggestions already shown this meeting, oldest first. */
+  recent: readonly string[]
 }
 
 export type AssistSettings = Pick<
@@ -41,7 +43,9 @@ export type AssistSettings = Pick<
   | 'coachWhileTalking'
 >
 
-/** An answer: automatic (to a classified turn) or requested ("Answer now"). Streams. */
+/** An answer: automatic (to a classified turn) or requested ("Answer now"). Streams.
+ *  Automatic answers name the turn they answer, see what was already shown, and may
+ *  decline with the no-op; a requested answer always answers. */
 export function answerRequest(
   snap: AssistSnapshot,
   s: AssistSettings,
@@ -49,6 +53,7 @@ export function answerRequest(
   turn?: TriggeringTurn,
 ): SuggestionRequest {
   const profile = assistProfile(trigger, s.whisperMode)
+  const automatic = trigger === 'ambient'
   return {
     meetingId: snap.meetingId,
     trigger,
@@ -58,12 +63,17 @@ export function answerRequest(
     workspaceId: s.anthropicWorkspaceId || undefined,
     model: profile.useAnswerModel ? s.answerModel : s.nudgeModel,
     system: snap.system,
-    userContent: buildUserContent(snap.window, trigger, s.whisperMode, snap.names, turn),
+    userContent: buildUserContent(snap.window, trigger, s.whisperMode, {
+      names: snap.names,
+      turn,
+      recent: automatic ? snap.recent : undefined,
+    }),
     // points/smart ambient output stays terse; full mode and hotkey answers get code room
     maxTokens: profile.maxTokens,
     effort: profile.effort,
     timeoutMs: suggestionTimeoutMs(trigger, profile.kind === 'full'),
     delivery: 'stream',
+    allowNoop: automatic,
   }
 }
 
@@ -72,7 +82,7 @@ export function answerRequest(
 export function coachRequest(
   snap: AssistSnapshot,
   s: AssistSettings,
-  input: Omit<CoachPromptInput, 'window' | 'names'>,
+  input: Omit<CoachPromptInput, 'window' | 'names' | 'recent'>,
   accept: (text: string) => boolean,
 ): SuggestionRequest {
   return {
@@ -84,12 +94,18 @@ export function coachRequest(
     workspaceId: s.anthropicWorkspaceId || undefined,
     model: s.nudgeModel,
     system: snap.system,
-    userContent: buildCoachUserContent({ ...input, window: snap.window, names: snap.names }),
+    userContent: buildCoachUserContent({
+      ...input,
+      window: snap.window,
+      names: snap.names,
+      recent: snap.recent,
+    }),
     maxTokens: COACH_PROFILE.maxTokens,
     effort: COACH_PROFILE.effort,
     timeoutMs: suggestionTimeoutMs('ambient', false, 'next-point'),
     maxRetries: COACH_PROFILE.maxRetries,
     delivery: 'buffered',
+    allowNoop: true,
     accept,
   }
 }

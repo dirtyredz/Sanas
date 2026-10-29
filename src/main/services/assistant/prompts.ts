@@ -4,7 +4,7 @@ import {
   type FormattableLine,
   type SpeakerNames,
 } from '../transcript-format'
-import { COMPACT_CONTRACT } from './compact-contract'
+import { COMPACT_CONTRACT, NO_SUGGESTION, recentSuggestionsBlock } from './compact-contract'
 import { boundedExcerpt } from './excerpt'
 import type { ResponseKind } from './classifier'
 
@@ -45,7 +45,11 @@ labels may be imperfect).
 Your job: help the user decide what to say next. Be immediately usable — the user is
 reading you mid-conversation. Lead with the substance (a suggested reply, phrasing, or
 key point), not with analysis. Never mention that you are an AI or that a transcript
-exists. Transcription may contain errors; infer intent charitably.`,
+exists. Transcription may contain errors; infer intent charitably.
+
+Follow the conversation's CURRENT topic. The job context below is background to draw on
+only when it is relevant to what is being discussed right now — never a default topic to
+steer back to, and never a reason to repeat an earlier point.`,
   ]
 
   if (job) {
@@ -53,7 +57,7 @@ exists. Transcription may contain errors; infer intent charitably.`,
       ['Company info', job.companyInfo],
       ['Project scope', job.projectScope],
       ['Notes', job.notes],
-      ['Talking points (steer toward these when natural)', job.talkingPoints],
+      ['Talking points (raise only when the current topic makes them relevant)', job.talkingPoints],
       ['Persona — how the user wants to come across', job.persona],
     ]
     const pack = sections
@@ -79,19 +83,40 @@ export interface TriggeringTurn {
   speaker: string
   text: string
   kind: ResponseKind
+  /** Who it was put to: Me specifically, or the room (an open floor). */
+  addressee: 'me' | 'room'
+}
+
+export interface UserContentOptions {
+  names?: SpeakerNames
+  /** Automatic answers: the turn being answered. */
+  turn?: TriggeringTurn
+  /** Automatic answers: headlines already shown this meeting. Its presence also enables the
+   *  no-op output — an automatic answer may decline; a requested one never does. */
+  recent?: readonly string[]
+}
+
+function focusBlock(turn: TriggeringTurn): string {
+  const who =
+    turn.addressee === 'room'
+      ? `It was put to the room, not to Me specifically. Only suggest something if there is a
+genuinely useful, non-repeated contribution or question for Me to raise; otherwise output
+exactly ${NO_SUGGESTION}.`
+      : 'It was put to Me.'
+  return `Respond to this completed turn (a ${turn.kind}):
+${turn.speaker}: ${boundedExcerpt(turn.text, TURN_CHARS)}
+Answer THAT turn, about the topic being discussed now. ${who}`
 }
 
 export function buildUserContent(
   window: TranscriptLine[],
   trigger: 'ambient' | 'hotkey',
   mode: WhisperMode,
-  names?: SpeakerNames,
-  turn?: TriggeringTurn,
+  opts: UserContentOptions = {},
 ): string {
-  const transcript = renderTranscriptWindow(window, WINDOW_CHARS, names)
-  const focus = turn
-    ? `\n\nRespond to this completed turn (a ${turn.kind}):\n${turn.speaker}: ${boundedExcerpt(turn.text, TURN_CHARS)}`
-    : ''
+  const transcript = renderTranscriptWindow(window, WINDOW_CHARS, opts.names)
+  const focus = opts.turn ? `\n\n${focusBlock(opts.turn)}` : ''
+  const recent = opts.recent ? `\n\n${recentSuggestionsBlock(opts.recent)}` : ''
   const profile = assistProfile(trigger, mode)
   const ask = {
     full: `Give the actual answer to the current ask. Be complete enough to use immediately.
@@ -103,7 +128,7 @@ minimal exact artifact when useful. Otherwise give one short, speakable line for
 Coach the user toward an answer; do not expand into a full answer or code solution.`,
   }[profile.kind]
 
-  return `Rolling transcript (most recent last):\n\n${transcript}${focus}\n\n---\n${ask}\n\n${COMPACT_CONTRACT}`
+  return `Rolling transcript (most recent last):\n\n${transcript}${focus}\n\n---\n${ask}${recent}\n\n${COMPACT_CONTRACT}`
 }
 
 /** Ask-your-history: answers come from excerpts only, with citations. */

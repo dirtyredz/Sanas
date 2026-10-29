@@ -39,10 +39,11 @@ describe('turn classifier', () => {
   afterEach(() => vi.useRealTimers())
 
   it('sends one bounded, non-streaming, zero-retry request with the chosen model', async () => {
-    const { p, calls } = provider(async () => 'question')
+    const { p, calls } = provider(async () => 'question me')
     await expect(classifyTurn(p, request())).resolves.toEqual({
       status: 'classified',
       kind: 'question',
+      addressee: 'me',
     })
     expect(calls).toHaveLength(1)
     expect(calls[0]).toMatchObject({
@@ -59,24 +60,36 @@ describe('turn classifier', () => {
     expect(calls[0].userContent).toContain('S2: How do you make a linked list?')
   })
 
-  it.each(['question', 'request', 'objection', 'none'])('accepts %s', async (token) => {
+  it.each([
+    ['question me', { kind: 'question', addressee: 'me' }],
+    ['request room', { kind: 'request', addressee: 'room' }],
+    ['objection other', { kind: 'objection', addressee: 'other' }],
+    ['none', { kind: 'none' }],
+  ])('accepts %s', async (token, verdict) => {
     const { p } = provider(async () => ` ${token}\n`)
     await expect(classifyTurn(p, request())).resolves.toEqual({
       status: 'classified',
-      kind: token,
+      ...verdict,
     })
   })
 
-  it.each(['', 'Question', 'question.', 'question because they asked', 'yes', 'ques'])(
-    'fails closed on malformed output %j',
-    async (text) => {
-      const { p } = provider(async () => text)
-      await expect(classifyTurn(p, request())).resolves.toEqual({
-        status: 'failed',
-        reason: 'malformed',
-      })
-    },
-  )
+  it.each([
+    '',
+    'question',
+    'Question me',
+    'question  me',
+    'question everyone',
+    'none room',
+    'question me.',
+    'question me because they asked',
+    'yes',
+  ])('fails closed on malformed output %j', async (text) => {
+    const { p } = provider(async () => text)
+    await expect(classifyTurn(p, request())).resolves.toEqual({
+      status: 'failed',
+      reason: 'malformed',
+    })
+  })
 
   it('fails closed when the provider rejects, without retrying', async () => {
     const { p, calls } = provider(async () => {
@@ -101,7 +114,7 @@ describe('turn classifier', () => {
     await vi.advanceTimersByTimeAsync(CLASSIFIER_DEADLINE_MS)
     await expect(outcome).resolves.toEqual({ status: 'failed', reason: 'timeout' })
     expect(calls[0].signal?.aborted).toBe(true)
-    resolveLate('question') // too late: the outcome is already settled
+    resolveLate('question me') // too late: the outcome is already settled
     await expect(outcome).resolves.toEqual({ status: 'failed', reason: 'timeout' })
   })
 
@@ -145,7 +158,7 @@ describe('classifier input', () => {
   })
 
   it('parses strictly', () => {
-    expect(parseClassification('none')).toBe('none')
+    expect(parseClassification('none')).toEqual({ kind: 'none' })
     expect(parseClassification('NONE')).toBeNull()
   })
 })

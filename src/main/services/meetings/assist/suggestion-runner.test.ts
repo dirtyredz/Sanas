@@ -116,6 +116,54 @@ describe('suggestion runner', () => {
     expect(stored).toHaveLength(1)
   })
 
+  it('treats an automatic answer of <none> as no suggestion: nothing shown or stored', async () => {
+    const { runner, pending, events, stored, holds } = harness()
+    const run = runner.start(answer({ allowNoop: true }))!
+    expect(events).toEqual([]) // held back while it could still be the no-op
+    pending[0].req.onDelta?.('<no')
+    pending[0].req.onDelta?.('ne>')
+    pending[0].resolve('<none>')
+    await expect(run.done).resolves.toBe('noop')
+    expect(events).toEqual([])
+    expect(stored).toEqual([])
+    expect(holds.get(7)).toBe(0)
+    expect(runner.canStart('ambient')).toBe(true) // lane freed
+  })
+
+  it('streams a real automatic answer once it cannot be the no-op', async () => {
+    const { runner, pending, events, stored } = harness()
+    const run = runner.start(answer({ allowNoop: true }))!
+    pending[0].req.onDelta?.('**')
+    expect(events).toEqual([])
+    pending[0].req.onDelta?.('Use')
+    pending[0].req.onDelta?.(' a map.**')
+    pending[0].resolve('**Use a map.**')
+    await expect(run.done).resolves.toBe('done')
+    expect(events.map((e) => [e.kind, e.text])).toEqual([
+      ['start', ''],
+      ['delta', '**Use'],
+      ['delta', ' a map.**'],
+      ['done', '**Use a map.**'],
+    ])
+    expect(stored).toHaveLength(1)
+
+    // a short answer that never left the held prefix is still shown when it completes
+    const short = runner.start(answer({ allowNoop: true }))!
+    pending[1].req.onDelta?.('No')
+    pending[1].resolve('No')
+    await expect(short.done).resolves.toBe('done')
+    expect(events.slice(4).map((e) => e.kind)).toEqual(['start', 'done'])
+  })
+
+  it('never declines a requested answer', async () => {
+    const { runner, pending, events, stored } = harness()
+    const run = runner.start(answer({ trigger: 'hotkey' }))!
+    pending[0].resolve('<none>')
+    await expect(run.done).resolves.toBe('done')
+    expect(events.map((e) => e.kind)).toEqual(['start', 'done'])
+    expect(stored).toHaveLength(1)
+  })
+
   it('frees the lane on cancel, and the stale owner cannot release the new one', async () => {
     const { runner, pending, events, stored, holds } = harness()
     const old = runner.start(coach())!
