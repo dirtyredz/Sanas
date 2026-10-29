@@ -7,6 +7,7 @@ export const IPC = {
   SettingsSet: 'settings:set',
   // overlay
   OverlayToggle: 'overlay:toggle',
+  OverlayResize: 'overlay:resize',
   // meetings (renderer → main)
   MeetingStart: 'meeting:start',
   MeetingPause: 'meeting:pause',

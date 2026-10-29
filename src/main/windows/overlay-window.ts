@@ -1,10 +1,13 @@
 import { BrowserWindow, screen } from 'electron'
 import { join } from 'path'
 import { IPC } from '@shared/ipc'
+import type { OverlayResizeRequest } from '@shared/types'
 import { loadSettings, saveSettings } from '../config/settings'
 
 let overlay: BrowserWindow | null = null
 let saveBoundsTimer: ReturnType<typeof setTimeout> | null = null
+const MIN_WIDTH = 280
+const MIN_HEIGHT = 220
 
 function createOverlay(): BrowserWindow {
   const { width } = screen.getPrimaryDisplay().workAreaSize
@@ -17,7 +20,11 @@ function createOverlay(): BrowserWindow {
     show: false,
     frame: false,
     transparent: true,
-    resizable: true,
+    // Electron does not support native resizing for transparent windows; renderer grips
+    // drive the programmatic resize path below instead.
+    resizable: false,
+    minWidth: MIN_WIDTH,
+    minHeight: MIN_HEIGHT,
     skipTaskbar: true,
     title: 'Sanas Overlay',
     webPreferences: {
@@ -65,6 +72,22 @@ function clampOpacity(o: number): number {
 /** Live-applies opacity when settings change (no-op if overlay not open). */
 export function applyOverlayOpacity(opacity: number): void {
   if (overlay && !overlay.isDestroyed()) overlay.setOpacity(clampOpacity(opacity))
+}
+
+/** Programmatic resize path for transparent windows, which have no native resize border. */
+export function resizeOverlay(request: OverlayResizeRequest): void {
+  if (!overlay || overlay.isDestroyed()) return
+
+  const bounds = overlay.getBounds()
+  const workArea = screen.getDisplayMatching(bounds).workArea
+  const right = workArea.x + workArea.width
+  const bottom = workArea.y + workArea.height
+  const x = Math.min(Math.max(bounds.x, workArea.x), right - MIN_WIDTH)
+  const y = Math.min(Math.max(bounds.y, workArea.y), bottom - MIN_HEIGHT)
+  const width = Math.min(Math.max(request.width ?? bounds.width, MIN_WIDTH), right - x)
+  const height = Math.min(Math.max(request.height ?? bounds.height, MIN_HEIGHT), bottom - y)
+
+  overlay.setBounds({ x, y, width, height })
 }
 
 let clickThrough = false

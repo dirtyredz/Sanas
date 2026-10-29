@@ -16,7 +16,7 @@ _Capability inventory. Status: ✅ done · 🔨 in progress · 📋 planned · �
 | Lost connection pauses instead of erroring       | ✅     | after the provider's own retries; Resume when back online (2026-09-09)                                |
 | Ambient AI nudges (question/moment detection)    | ✅     | Smart/Full/Points modes; compact headline + optional code; configurable model/cooldown                |
 | On-demand full answer (global hotkey)            | ✅     | Ctrl+Shift+Enter or "Answer now"; always full, compact and code-capable (default Opus 5.5)            |
-| Always-on-top overlay window                     | ✅     | frameless, screen-saver level, hotkey toggle, position memory                                         |
+| Always-on-top overlay window                     | ✅     | frameless, screen-saver level, hotkey toggle, position/size memory, custom resize grips               |
 | Deepgram auto-reconnect                          | ✅     | backoff, monotonic timestamps across reconnects                                                       |
 | System-audio loopback capture                    | ✅     | same-PC meetings; ch0=me ch1=them via multichannel                                                    |
 | Post-meeting batch re-diarization                | ✅     | stable speaker labels; needs recordAudio (default on)                                                 |

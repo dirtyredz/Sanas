@@ -3,12 +3,25 @@ import { useTranscript } from '../lib/useTranscript'
 import { useSuggestion } from '../lib/useSuggestion'
 import { speakerDisplay } from '../lib/speaker-label'
 import { CompactSuggestion } from '../lib/CompactSuggestion'
+import type { OverlayResizeRequest } from '@shared/types'
+
+type ResizeAxis = 'right' | 'bottom' | 'corner'
+
+interface ResizeSession {
+  pointerId: number
+  axis: ResizeAxis
+  screenX: number
+  screenY: number
+  width: number
+  height: number
+}
 
 export function Overlay(): React.JSX.Element {
   const { lines, state } = useTranscript()
   const suggestion = useSuggestion()
   const [ghost, setGhost] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const resizeRef = useRef<ResizeSession | null>(null)
 
   useEffect(() => window.sanas.overlay.onGhostState(setGhost), [])
 
@@ -19,6 +32,43 @@ export function Overlay(): React.JSX.Element {
   const live = state.status === 'live'
   const paused = state.status === 'paused'
   const tail = lines.slice(-12)
+
+  const startResize = (axis: ResizeAxis, event: React.PointerEvent<HTMLDivElement>): void => {
+    if (event.button !== 0) return
+    event.preventDefault()
+    event.currentTarget.setPointerCapture(event.pointerId)
+    resizeRef.current = {
+      pointerId: event.pointerId,
+      axis,
+      screenX: event.screenX,
+      screenY: event.screenY,
+      width: window.innerWidth,
+      height: window.innerHeight,
+    }
+  }
+
+  const continueResize = (event: React.PointerEvent<HTMLDivElement>): void => {
+    const session = resizeRef.current
+    if (!session || session.pointerId !== event.pointerId) return
+    const request: OverlayResizeRequest = {}
+    if (session.axis !== 'bottom') {
+      request.width = Math.round(session.width + event.screenX - session.screenX)
+    }
+    if (session.axis !== 'right') {
+      request.height = Math.round(session.height + event.screenY - session.screenY)
+    }
+    if ((request.width ?? 1) > 0 && (request.height ?? 1) > 0) {
+      void window.sanas.overlay.resize(request)
+    }
+  }
+
+  const stopResize = (event: React.PointerEvent<HTMLDivElement>): void => {
+    if (resizeRef.current?.pointerId !== event.pointerId) return
+    resizeRef.current = null
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+  }
 
   return (
     <div className="overlay-panel">
@@ -81,6 +131,16 @@ export function Overlay(): React.JSX.Element {
           </p>
         )}
       </section>
+      {(['right', 'bottom', 'corner'] as const).map((axis) => (
+        <div
+          key={axis}
+          className={`resize-handle ${axis}`}
+          onPointerDown={(event) => startResize(axis, event)}
+          onPointerMove={continueResize}
+          onPointerUp={stopResize}
+          onPointerCancel={stopResize}
+        />
+      ))}
     </div>
   )
 }

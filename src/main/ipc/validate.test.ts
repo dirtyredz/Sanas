@@ -5,6 +5,7 @@ import {
   requireBool,
   requireId,
   requireJob,
+  requireOverlayResize,
   requireSettingsPatch,
   requireSpeaker,
   requireText,
@@ -28,6 +29,16 @@ describe('scalars', () => {
     expect(requireBool(false, 'flag')).toBe(false)
     for (const bad of [1, 'true', null, undefined]) {
       expect(() => requireBool(bad, 'flag')).toThrow('Invalid flag')
+    }
+  })
+  it('requireOverlayResize accepts one or both positive integer dimensions', () => {
+    expect(requireOverlayResize({ width: 380 })).toEqual({ width: 380 })
+    expect(requireOverlayResize({ width: 380, height: 460, ignored: true })).toEqual({
+      width: 380,
+      height: 460,
+    })
+    for (const bad of [{}, null, { width: 0 }, { height: 12.5 }, { width: '380' }]) {
+      expect(() => requireOverlayResize(bad)).toThrow('Invalid overlay resize')
     }
   })
   it('requireText trims and caps, rejecting empty', () => {

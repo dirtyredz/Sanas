@@ -357,6 +357,7 @@ const api: SanasApi = {
     toggle: async () => {
       window.open('/overlay.html', 'sanas-overlay', 'width=380,height=460')
     },
+    resize: async () => {},
     setClickThrough: async (on) => ghostListeners.forEach((l) => l(on)),
     onGhostState: on(ghostListeners),
   },

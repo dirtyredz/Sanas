@@ -119,6 +119,12 @@ export interface MeetingState {
   error?: string
 }
 
+/** Desired overlay dimensions from one or both custom resize axes. */
+export interface OverlayResizeRequest {
+  width?: number
+  height?: number
+}
+
 export interface Settings {
   deepgramApiKey: string
   anthropicApiKey: string

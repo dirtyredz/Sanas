@@ -1,4 +1,4 @@
-import type { Job, Settings } from '@shared/types'
+import type { Job, OverlayResizeRequest, Settings } from '@shared/types'
 import { SETTINGS_SCHEMA } from '../config/settings-schema'
 
 // Ingress checks for what the renderer sends over IPC. Preload's TypeScript types do not
@@ -24,6 +24,23 @@ export function requireSpeaker(v: unknown, what: string): number {
 export function requireBool(v: unknown, what: string): boolean {
   if (typeof v !== 'boolean') throw new Error(`Invalid ${what}`)
   return v
+}
+
+/** One or both overlay dimensions. Main clamps valid requests to the display work area. */
+export function requireOverlayResize(v: unknown): OverlayResizeRequest {
+  if (typeof v !== 'object' || v === null) throw new Error('Invalid overlay resize')
+  const request = v as Record<string, unknown>
+  const out: OverlayResizeRequest = {}
+  const dimension = (value: unknown): number => {
+    if (typeof value !== 'number' || !Number.isSafeInteger(value) || value <= 0) {
+      throw new Error('Invalid overlay resize')
+    }
+    return value
+  }
+  if ('width' in request) out.width = dimension(request.width)
+  if ('height' in request) out.height = dimension(request.height)
+  if (out.width === undefined && out.height === undefined) throw new Error('Invalid overlay resize')
+  return out
 }
 
 /** Non-empty free text, trimmed, capped so a stray payload cannot be huge. */

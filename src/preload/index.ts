@@ -8,6 +8,7 @@ import type {
   Meeting,
   MeetingState,
   MergeResult,
+  OverlayResizeRequest,
   RetentionPreview,
   RetentionResult,
   SearchMatch,
@@ -28,6 +29,8 @@ const api = {
   },
   overlay: {
     toggle: (): Promise<void> => ipcRenderer.invoke(IPC.OverlayToggle),
+    resize: (request: OverlayResizeRequest): Promise<void> =>
+      ipcRenderer.invoke(IPC.OverlayResize, request),
     setClickThrough: (on: boolean): Promise<void> =>
       ipcRenderer.invoke(IPC.OverlayClickThrough, on),
     onGhostState: (cb: (on: boolean) => void): (() => void) => {

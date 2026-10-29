@@ -1,7 +1,12 @@
 import { ipcMain } from 'electron'
 import { IPC } from '@shared/ipc'
 import { loadSettings, saveSettings, toView } from '../config/settings'
-import { applyOverlayOpacity, setClickThrough, toggleOverlay } from '../windows/overlay-window'
+import {
+  applyOverlayOpacity,
+  resizeOverlay,
+  setClickThrough,
+  toggleOverlay,
+} from '../windows/overlay-window'
 import {
   startMeeting,
   pauseMeeting,
@@ -17,6 +22,7 @@ import {
   requireId,
   requireIdList,
   requireJob,
+  requireOverlayResize,
   requireSettingsPatch,
   requireSpeaker,
   requireText,
@@ -55,6 +61,9 @@ export function registerIpcHandlers(): void {
   })
 
   ipcMain.handle(IPC.OverlayToggle, () => toggleOverlay())
+  ipcMain.handle(IPC.OverlayResize, (_e, request: unknown) =>
+    resizeOverlay(requireOverlayResize(request)),
+  )
 
   ipcMain.handle(IPC.MeetingStart, (_e, jobId: unknown, channels: unknown) =>
     // validate at ingress: an optional job id, and only 1 or 2 are meaningful capture topologies
