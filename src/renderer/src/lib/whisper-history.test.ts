@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { SuggestionEvent } from '@shared/types'
+import type { SuggestionEvent, SuggestionPurpose } from '@shared/types'
 import {
   EMPTY_WHISPER_HISTORY,
   READING_GRACE_MS,
@@ -12,8 +12,9 @@ function event(
   kind: SuggestionEvent['kind'],
   text = '',
   trigger: SuggestionEvent['trigger'] = 'ambient',
+  purpose: SuggestionPurpose = 'answer',
 ): SuggestionEvent {
-  return { suggestionId, meetingId: 7, trigger, kind, text }
+  return { suggestionId, meetingId: 7, trigger, purpose, kind, text }
 }
 
 describe('whisper history', () => {
@@ -91,5 +92,42 @@ describe('whisper history', () => {
         now: 100 + READING_GRACE_MS,
       }),
     ).toBe(false)
+  })
+
+  it('keeps the next-point purpose from start to done', () => {
+    let state = whisperHistoryReducer(EMPTY_WHISPER_HISTORY, {
+      type: 'event',
+      event: event(1, 'start', '', 'ambient', 'next-point'),
+      followNewest: true,
+      now: 10,
+    })
+    expect(state.items[0]).toMatchObject({ purpose: 'next-point', streaming: true })
+    state = whisperHistoryReducer(state, {
+      type: 'event',
+      event: event(1, 'done', 'Next, check the status.', 'ambient', 'next-point'),
+      followNewest: false,
+      now: 20,
+    })
+    expect(state.items[0]).toMatchObject({
+      purpose: 'next-point',
+      streaming: false,
+      text: 'Next, check the status.',
+    })
+  })
+
+  it('still focuses a requested answer when followNewest is false', () => {
+    let state = whisperHistoryReducer(EMPTY_WHISPER_HISTORY, {
+      type: 'event',
+      event: event(1, 'done', 'one'),
+      followNewest: true,
+      now: 10,
+    })
+    state = whisperHistoryReducer(state, {
+      type: 'event',
+      event: event(2, 'start', '', 'hotkey'),
+      followNewest: false,
+      now: 20,
+    })
+    expect(state.selectedId).toBe(2)
   })
 })

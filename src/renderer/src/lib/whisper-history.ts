@@ -1,4 +1,4 @@
-import type { SuggestionEvent } from '@shared/types'
+import type { SuggestionEvent, SuggestionPurpose } from '@shared/types'
 
 export const READING_GRACE_MS = 8_000
 
@@ -6,6 +6,7 @@ export interface SuggestionView {
   suggestionId: number
   meetingId: number
   trigger: 'ambient' | 'hotkey'
+  purpose: SuggestionPurpose
   text: string
   streaming: boolean
   error: string | null
@@ -70,6 +71,7 @@ export function whisperHistoryReducer(
     suggestionId: event.suggestionId,
     meetingId: event.meetingId,
     trigger: event.trigger,
+    purpose: event.purpose,
     text:
       event.kind === 'done'
         ? event.text

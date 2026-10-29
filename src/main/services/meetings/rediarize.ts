@@ -6,7 +6,7 @@ import { deleteSegmentsForMeeting, insertSegment, listSegments } from '../../db/
 import { clearSpeakerNames, setSpeakerName, speakerNameMap } from '../../db/repos/speakers'
 import { getGlossaryTerms } from '../../db/repos/jobs'
 import { getDb } from '../../db'
-import { resolveSpeakerIdentity } from './channel-identity'
+import { resolveSpeakerIdentity } from './capture/channel-identity'
 import { carrySpeakerNames, carryUserIdentity } from './speaker-carryover'
 
 // Post-meeting re-diarization: streaming diarization drifts (S2 becomes S7 mid-

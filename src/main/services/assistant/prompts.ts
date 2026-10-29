@@ -4,13 +4,17 @@ import {
   type FormattableLine,
   type SpeakerNames,
 } from '../transcript-format'
+import { COMPACT_CONTRACT } from './compact-contract'
+import { boundedExcerpt } from './excerpt'
+import type { ResponseKind } from './classifier'
 
 // Prompt assembly: stable system prompt (cacheable, per meeting) + volatile
 // transcript window in the user turn. Never send the whole meeting (GOTCHAS.md).
 
 export type TranscriptLine = FormattableLine
 
-const WINDOW_CHARS = 6000 // ~recent few minutes of conversation
+export const WINDOW_CHARS = 6000 // ~recent few minutes of conversation
+const TURN_CHARS = 4000 // the triggering turn, opening + ending kept
 const SUMMARY_CHARS = 30_000 // a very long meeting still summarizes
 
 export interface AssistProfile {
@@ -68,13 +72,26 @@ exists. Transcription may contain errors; infer intent charitably.`,
   return parts.join('\n\n')
 }
 
+/** The completed turn an automatic answer responds to, so generation answers THAT turn
+ *  rather than whichever line happens to be the latest in the window. */
+export interface TriggeringTurn {
+  /** Display label of the speaker ("Sarah", "S2", "?"). */
+  speaker: string
+  text: string
+  kind: ResponseKind
+}
+
 export function buildUserContent(
   window: TranscriptLine[],
   trigger: 'ambient' | 'hotkey',
   mode: WhisperMode,
   names?: SpeakerNames,
+  turn?: TriggeringTurn,
 ): string {
   const transcript = renderTranscriptWindow(window, WINDOW_CHARS, names)
+  const focus = turn
+    ? `\n\nRespond to this completed turn (a ${turn.kind}):\n${turn.speaker}: ${boundedExcerpt(turn.text, TURN_CHARS)}`
+    : ''
   const profile = assistProfile(trigger, mode)
   const ask = {
     full: `Give the actual answer to the current ask. Be complete enough to use immediately.
@@ -86,15 +103,7 @@ minimal exact artifact when useful. Otherwise give one short, speakable line for
 Coach the user toward an answer; do not expand into a full answer or code solution.`,
   }[profile.kind]
 
-  const contract = `Format for a small live-meeting overlay (follow exactly):
-- Line 1 is one bold headline, written as **text**, at most about 20 words. It must contain
-  the thing to say or the answer, not a label.
-- Optionally include ONE fenced code block after it. Keep it minimal, runnable, and at most
-  25 lines. No comments unless essential.
-- Optionally include at most 2 short follow-up lines after the headline or code.
-- No headings, bullet walls, preamble, or praise such as "Great question".`
-
-  return `Rolling transcript (most recent last):\n\n${transcript}\n\n---\n${ask}\n\n${contract}`
+  return `Rolling transcript (most recent last):\n\n${transcript}${focus}\n\n---\n${ask}\n\n${COMPACT_CONTRACT}`
 }
 
 /** Ask-your-history: answers come from excerpts only, with citations. */

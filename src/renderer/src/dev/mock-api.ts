@@ -194,6 +194,7 @@ const suggestions: Suggestion[] = [
     meetingId: 11,
     tMs: 46_900,
     trigger: 'ambient',
+    purpose: 'answer',
     text: 'Mention the Azure credits expire at the end of November — finance needs the review booked first.',
   },
   {
@@ -201,7 +202,16 @@ const suggestions: Suggestion[] = [
     meetingId: 11,
     tMs: 27_600,
     trigger: 'hotkey',
+    purpose: 'answer',
     text: 'Yes — the real-time map ships in November. The driver app is phase 2; you can send a scoped estimate this week so finance has a number for the quarterly review. If they push for both in November, offer the geofence fix in the November release and the driver app beta in January.',
+  },
+  {
+    id: 3,
+    meetingId: 11,
+    tMs: 38_200,
+    trigger: 'ambient',
+    purpose: 'next-point',
+    text: "**202 means accepted for processing; completion still needs confirmation.**\nNext, explain how we check the job's status.",
   },
 ]
 
@@ -211,6 +221,8 @@ let settings: SettingsView = {
   anthropicWorkspaceId: '',
   nudgeModel: 'claude-sonnet-5-5',
   answerModel: 'claude-opus-5-5',
+  classifierModel: 'claude-haiku-5-5',
+  coachWhileTalking: false,
   nudgeCooldownSec: 5,
   whisperMode: 'smart',
   overlayHotkey: 'CommandOrControl+Shift+Space',
@@ -298,12 +310,27 @@ function runScript(meetingId: number, i: number, t: number): void {
   liveTimer = setTimeout(() => {
     if (state.status !== 'live') return
     emit({ ...base, isFinal: true, text: line.text })
+    // coach demo: the user is explaining, so one buffered next point arrives (start, then done)
+    if (i === 3) streamSuggestion('ambient', 'next-point')
     liveTimer = setTimeout(() => runScript(meetingId, i + 1, t + 4500), 1800)
   }, 1200)
 }
 
-function streamSuggestion(trigger: 'ambient' | 'hotkey'): void {
+function streamSuggestion(
+  trigger: 'ambient' | 'hotkey',
+  purpose: 'answer' | 'next-point' = 'answer',
+): void {
   const id = ++suggestionSeq
+  const meetingId = state.meetingId ?? 0
+  if (purpose === 'next-point') {
+    // coach output is buffered: no deltas, just start immediately followed by done
+    const text =
+      "**202 means accepted for processing; completion still needs confirmation.**\nNext, explain how we check the job's status."
+    const ev = { suggestionId: id, meetingId, trigger, purpose }
+    suggestionListeners.forEach((l) => l({ ...ev, kind: 'start', text: '' }))
+    suggestionListeners.forEach((l) => l({ ...ev, kind: 'done', text }))
+    return
+  }
   const text =
     trigger === 'hotkey'
       ? 'Say that paper stays available: the form prints to a PDF the front desk can sign by hand, and the scan is attached to the same record. Then ask whether Beaverton wants that in the pilot.'
@@ -311,20 +338,21 @@ function streamSuggestion(trigger: 'ambient' | 'hotkey'): void {
   const words = text.split(' ')
   let i = 0
   suggestionListeners.forEach((l) =>
-    l({ suggestionId: id, meetingId: state.meetingId ?? 0, trigger, kind: 'start', text: '' }),
+    l({ suggestionId: id, meetingId, trigger, purpose, kind: 'start', text: '' }),
   )
   const tick = (): void => {
     if (i >= words.length) {
       suggestionListeners.forEach((l) =>
-        l({ suggestionId: id, meetingId: state.meetingId ?? 0, trigger, kind: 'done', text }),
+        l({ suggestionId: id, meetingId, trigger, purpose, kind: 'done', text }),
       )
       return
     }
     suggestionListeners.forEach((l) =>
       l({
         suggestionId: id,
-        meetingId: state.meetingId ?? 0,
+        meetingId,
         trigger,
+        purpose,
         kind: 'delta',
         text: (i === 0 ? '' : ' ') + words[i],
       }),

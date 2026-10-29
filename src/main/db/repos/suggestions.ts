@@ -1,10 +1,10 @@
 import { getDb } from '../index'
-import type { Suggestion } from '@shared/types'
+import type { Suggestion, SuggestionPurpose, SuggestionTrigger } from '@shared/types'
 
 export function listSuggestions(meetingId: number): Suggestion[] {
   return getDb()
     .prepare(
-      `SELECT id, meeting_id AS meetingId, t_ms AS tMs, trigger, text
+      `SELECT id, meeting_id AS meetingId, t_ms AS tMs, trigger, purpose, text
        FROM suggestions WHERE meeting_id = ? ORDER BY t_ms`,
     )
     .all(meetingId) as Suggestion[]
@@ -24,15 +24,16 @@ export function reassignSuggestions(
 export function insertSuggestion(s: {
   meetingId: number
   tMs: number
-  trigger: 'ambient' | 'hotkey'
+  trigger: SuggestionTrigger
+  purpose: SuggestionPurpose
   promptWindow: string
   text: string
 }): number {
   const res = getDb()
     .prepare(
-      `INSERT INTO suggestions (meeting_id, t_ms, trigger, prompt_window, text)
-       VALUES (?, ?, ?, ?, ?)`,
+      `INSERT INTO suggestions (meeting_id, t_ms, trigger, purpose, prompt_window, text)
+       VALUES (?, ?, ?, ?, ?, ?)`,
     )
-    .run(s.meetingId, s.tMs, s.trigger, s.promptWindow, s.text)
+    .run(s.meetingId, s.tMs, s.trigger, s.purpose, s.promptWindow, s.text)
   return Number(res.lastInsertRowid)
 }

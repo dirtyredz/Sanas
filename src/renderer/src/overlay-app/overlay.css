@@ -408,6 +408,12 @@ body.overlay-body {
   font-size: 13px;
 }
 
+.capture-warning {
+  margin: 0 0 6px;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .dot.live,
   .cursor {

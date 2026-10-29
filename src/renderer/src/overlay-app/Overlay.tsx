@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { OverlayResizeRequest } from '@shared/types'
+import { suggestionArrivalLabel, suggestionLabel } from '@shared/suggestion-label'
 import { CompactSuggestion } from '../lib/CompactSuggestion'
 import { speakerDisplay } from '../lib/speaker-label'
 import { useSuggestionHistory, type WhisperReadingState } from '../lib/useSuggestionHistory'
@@ -201,6 +202,7 @@ export function Overlay(): React.JSX.Element {
         style={{ gridTemplateRows: splitRows }}
       >
         <section className="overlay-transcript" ref={scrollRef}>
+          {state.captureWarning && <p className="warn capture-warning">{state.captureWarning}</p>}
           {tail.length === 0 && (
             <p className="muted">
               {live ? 'Listening…' : paused ? 'Paused.' : 'Start a meeting in the Sanas window.'}
@@ -238,7 +240,7 @@ export function Overlay(): React.JSX.Element {
         >
           <div className="suggestion-bar">
             <span className="label">
-              {suggestion ? (suggestion.trigger === 'hotkey' ? 'Answer' : 'Whisper') : 'Whisper'}
+              {suggestion ? suggestionLabel(suggestion) : 'Whisper'}
               {suggestion?.streaming && <span className="cursor">▍</span>}
             </span>
             {history.items.length > 0 && (
@@ -279,7 +281,7 @@ export function Overlay(): React.JSX.Element {
           </div>
           {hasNewAnswer && (
             <button className="new-answer" onClick={() => selectSuggestion(latest.suggestionId)}>
-              New answer ›
+              {suggestionArrivalLabel(latest)} ›
             </button>
           )}
           <div

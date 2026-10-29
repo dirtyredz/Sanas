@@ -35,6 +35,8 @@ export function SettingsPage(): React.JSX.Element {
       anthropicWorkspaceId: view.anthropicWorkspaceId.trim(),
       nudgeModel: view.nudgeModel.trim(),
       answerModel: view.answerModel.trim(),
+      classifierModel: view.classifierModel.trim(),
+      coachWhileTalking: view.coachWhileTalking,
       nudgeCooldownSec: view.nudgeCooldownSec,
       whisperMode: view.whisperMode,
       audioDeviceId: view.audioDeviceId,

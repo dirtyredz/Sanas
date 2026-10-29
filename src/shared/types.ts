@@ -42,11 +42,18 @@ export interface Segment {
   text: string
 }
 
+/** Which lane started a suggestion: automatic ('ambient') or requested ('hotkey'). */
+export type SuggestionTrigger = 'ambient' | 'hotkey'
+
+/** What a suggestion is for: an answer to the room, or the next point while the user talks. */
+export type SuggestionPurpose = 'answer' | 'next-point'
+
 export interface Suggestion {
   id: number
   meetingId: number
   tMs: number
-  trigger: 'ambient' | 'hotkey'
+  trigger: SuggestionTrigger
+  purpose: SuggestionPurpose
   text: string
 }
 
@@ -105,7 +112,8 @@ export interface TranscriptEvent {
 export interface SuggestionEvent {
   suggestionId: number
   meetingId: number
-  trigger: 'ambient' | 'hotkey'
+  trigger: SuggestionTrigger
+  purpose: SuggestionPurpose
   /** 'start' opens an empty streaming item; 'delta' appends text; 'done' closes it;
    *  'error' carries a message. */
   kind: 'start' | 'delta' | 'done' | 'error'
@@ -118,6 +126,10 @@ export interface MeetingState {
   status: 'idle' | 'live' | 'paused' | 'error'
   /** Why, when the status is 'error', or when a lost connection forced the pause. */
   error?: string
+  /** Mic + system audio meetings only: the system-audio channel has stayed silent while the
+   *  mic heard sound, so remote voices are probably being labelled as the user. Advisory:
+   *  nothing is relabelled or dropped because of it. */
+  captureWarning?: string
 }
 
 /** Desired overlay dimensions from one or both custom resize axes. */
@@ -135,8 +147,12 @@ export interface Settings {
   nudgeModel: string
   /** Claude model used for on-demand answers, summaries and Ask-your-history. */
   answerModel: string
-  /** Minimum time between ambient nudges; 0 disables the cooldown. */
+  /** Claude model that decides whether a finished turn needs a response from the user. */
+  classifierModel: string
+  /** Minimum time between automatic answers to completed turns; 0 disables the cooldown. */
   nudgeCooldownSec: number
+  /** Suggest the next point while the user is explaining something (off by default). */
+  coachWhileTalking: boolean
   /** Shape of ambient suggestions. The assist hotkey is always a full answer. */
   whisperMode: WhisperMode
   overlayHotkey: string

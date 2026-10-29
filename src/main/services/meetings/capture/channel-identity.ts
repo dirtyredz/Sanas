@@ -2,10 +2,15 @@
 // channel 0 is the mic (the user) and channel 1 is system loopback (others).
 // Both the live path and batch re-diarization consume this — never re-derive it.
 
+/** How sure the identity is. 'unknown' never initiates coaching, and in stereo it is what a
+ *  provider message without a usable channel becomes, instead of implicit user speech. */
+export type IdentityRole = 'user' | 'other' | 'unknown'
+
 export interface SpeakerIdentity {
   /** Diarized speaker index; -1 for the user (no diarization needed on their channel). */
   speaker: number
   isUser: boolean
+  role: IdentityRole
 }
 
 export function resolveSpeakerIdentity(
@@ -16,8 +21,10 @@ export function resolveSpeakerIdentity(
   pinnedUserSpeakers?: ReadonlySet<number>,
 ): SpeakerIdentity {
   if (stereo) {
-    const isUser = channel === 0
-    return { speaker: isUser ? -1 : speaker, isUser }
+    if (channel === 0) return { speaker: -1, isUser: true, role: 'user' }
+    if (channel === 1) return { speaker, isUser: false, role: 'other' }
+    return { speaker: -1, isUser: false, role: 'unknown' }
   }
-  return { speaker, isUser: pinnedUserSpeakers?.has(speaker) ?? false }
+  if (pinnedUserSpeakers?.has(speaker)) return { speaker, isUser: true, role: 'user' }
+  return { speaker, isUser: false, role: speaker >= 0 ? 'other' : 'unknown' }
 }

@@ -24,7 +24,11 @@ export const claudeProvider: AssistantProvider = {
         system: [{ type: 'text', text: req.system, cache_control: { type: 'ephemeral' } }],
         messages: [{ role: 'user', content: req.userContent }],
       },
-      { signal: req.signal, timeout: req.timeoutMs },
+      {
+        signal: req.signal,
+        timeout: req.timeoutMs,
+        ...(req.maxRetries !== undefined ? { maxRetries: req.maxRetries } : {}),
+      },
     )
     if (req.onDelta) stream.on('text', req.onDelta)
     const final = await stream.finalMessage()

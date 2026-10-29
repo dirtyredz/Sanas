@@ -43,6 +43,25 @@ describe('whisper prompt modes', () => {
     })
   })
 
+  it('answers the explicit triggering turn, not just the latest line', () => {
+    const lines: TranscriptLine[] = [
+      ...window,
+      { speaker: -1, isUser: true, text: 'Sure, one second.' },
+    ]
+    const prompt = buildUserContent(lines, 'ambient', 'smart', undefined, {
+      speaker: 'S2',
+      text: 'Can you make me a linked list in JavaScript?',
+      kind: 'request',
+    })
+    expect(prompt).toContain(
+      'Respond to this completed turn (a request):\nS2: Can you make me a linked list in JavaScript?',
+    )
+    expect(prompt.indexOf('Respond to this completed turn')).toBeLessThan(
+      prompt.indexOf('concrete ask for code'),
+    )
+    expect(buildUserContent(lines, 'hotkey', 'smart')).not.toContain('Respond to this completed')
+  })
+
   it('always includes the compact output contract', () => {
     const prompt = buildUserContent(window, 'ambient', 'smart')
     expect(prompt).toContain('Line 1 is one bold headline')

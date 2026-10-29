@@ -79,6 +79,10 @@ const migrations: string[] = [
     INSERT INTO segments_fts(rowid, text) VALUES (new.id, new.text);
   END;
   `,
+  // v5 — what a suggestion is for. `trigger` still names the lane (ambient | hotkey);
+  // coaching while the user talks rides the ambient lane as purpose 'next-point'.
+  `ALTER TABLE suggestions ADD COLUMN purpose TEXT NOT NULL DEFAULT 'answer'
+     CHECK (purpose IN ('answer','next-point'));`,
 ]
 
 export function runMigrations(db: Database): void {

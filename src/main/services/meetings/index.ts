@@ -1,8 +1,8 @@
 import { IPC } from '@shared/ipc'
-import type { ChannelCount, MeetingState, SuggestionEvent, TranscriptEvent } from '@shared/types'
+import type { ChannelCount, MeetingState, Settings, TranscriptEvent } from '@shared/types'
 import { loadSettings } from '../../config/settings'
 import { sttProvider } from '../stt'
-import type { SttSession, SttTranscript } from '../stt/types'
+import type { SttSession, SttSignal, SttTranscript } from '../stt/types'
 import { ensureDefaultJob, getGlossaryTerms, getJob, listGlossary } from '../../db/repos/jobs'
 import {
   clearMeetingAudioPath,
@@ -15,29 +15,23 @@ import { rediarizeMeeting } from './rediarize'
 import { summarizeLines } from './summarize'
 import { autoEmailSummary } from './summary-email'
 import { clearPostProcessing, markPostProcessing } from './post-processing'
-import {
-  canStartSuggestion,
-  emptySuggestionInFlight,
-  suggestionTimeoutMs,
-  type SuggestionTrigger,
-} from './suggestion-in-flight'
 import { isLiveMeeting, liveMeetingId, setLiveMeeting } from './live-meeting'
-import { resolveSpeakerIdentity } from './channel-identity'
+import { resolveSpeakerIdentity } from './capture/channel-identity'
+import { CAPTURE_WARNING, CaptureHealth } from './capture/capture-health'
+import { SuggestionRunner } from './assist/suggestion-runner'
+import { LiveAssistance } from './assist/live-assistance'
 import { insertSegment, setSpeakerIsUser } from '../../db/repos/segments'
 import { insertSuggestion } from '../../db/repos/suggestions'
 import { speakerNameMap } from '../../db/repos/speakers'
 import { claudeProvider } from '../assistant/claude'
-import {
-  assistProfile,
-  buildSystemPrompt,
-  buildUserContent,
-  type TranscriptLine,
-} from '../assistant/prompts'
-import { resetTriggers, shouldTrigger } from '../assistant/triggers'
+import { classifyTurn } from '../assistant/classifier'
+import { buildSystemPrompt, type TranscriptLine } from '../assistant/prompts'
 import { broadcast } from '../../windows/broadcast'
 
-// Orchestrates one live meeting at a time: STT session, persistence, event fan-out,
-// and the assist loop (ambient triggers + on-demand suggestions).
+// Orchestrates one live meeting at a time: STT session, persistence, event fan-out, and
+// lifecycle. Automatic assistance (turn detection, classification, next points) lives in
+// ./assist/live-assistance.ts; this module feeds it identity-resolved events and lifecycle
+// calls, and keeps the "Answer now" facade (`runSuggestion('hotkey')`).
 //
 // A meeting can be PAUSED: the STT connection closes and audio stops flowing, but the
 // meeting row, the transcript window and the pinned speakers all stay. Resuming opens a
@@ -70,9 +64,45 @@ const userSpeakers = new Set<number>() // diarized indices pinned as "me"
 const lostRecordings = new Set<number>() // meetings whose WAV died while they were running
 const transcriptWindow: TranscriptLine[] = [] // rolling finals for prompt assembly
 let systemPrompt = '' // stable per meeting (cached by the provider)
-const suggestionInFlight = emptySuggestionInFlight()
-let suggestionSeq = 0
 let persistFailed = false // one warning per meeting, not one per line
+const captureHealth = new CaptureHealth()
+let lastError: string | undefined // the error shown now, kept when only capture health changes
+
+const runner = new SuggestionRunner({
+  provider: claudeProvider,
+  emit: (event) => broadcast(IPC.SuggestionEvent, event),
+  persist: (s) => insertSuggestion(s),
+  hold: markPostProcessing,
+  release: clearPostProcessing,
+  log: (message) => console.warn(`[sanas] ${message}`),
+})
+
+const assistance = new LiveAssistance({
+  now: () => performance.now(),
+  setTimer: (fn, ms) => setTimeout(fn, ms),
+  clearTimer: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
+  settings: loadSettings,
+  classify: (req) => classifyTurn(claudeProvider, req),
+  runner,
+  snapshot: () => {
+    const meetingId = liveMeetingId()
+    if (meetingId === null) return null
+    let names: ReadonlyMap<number, string> | undefined
+    try {
+      names = speakerNameMap(meetingId)
+    } catch (e) {
+      console.warn('[sanas] could not read speaker names:', e) // labels fall back to S1/S2
+    }
+    return {
+      meetingId,
+      atMs: Math.round(audioMsReceived), // audio time, so it lines up with the transcript
+      system: systemPrompt,
+      window: [...transcriptWindow],
+      names,
+    }
+  },
+  log: (message) => console.warn(`[sanas] ${message}`),
+})
 
 /** One at a time: lifecycle calls mutate module state across awaits. */
 let lifecycle: Promise<unknown> = Promise.resolve()
@@ -85,10 +115,14 @@ function serialized(fn: () => Promise<MeetingState>): Promise<MeetingState> {
 function currentState(): MeetingState {
   const meetingId = liveMeetingId()
   if (meetingId === null) return { meetingId: null, status: 'idle' }
-  return { meetingId, status: paused ? 'paused' : 'live' }
+  if (paused) return { meetingId, status: 'paused' }
+  return captureHealth.warned
+    ? { meetingId, status: 'live', captureWarning: CAPTURE_WARNING }
+    : { meetingId, status: 'live' }
 }
 
 function setState(state: MeetingState): MeetingState {
+  lastError = state.error
   broadcast(IPC.MeetingState, state)
   return state
 }
@@ -138,12 +172,14 @@ async function discardSession(): Promise<void> {
   if (dying) await dying.stop()
 }
 
-/** One transcript event: persist finals, feed the prompt window, fan out to the windows. */
+/** One transcript event: persist finals, feed the prompt window and live assistance, fan
+ *  out to the windows. */
 function handleTranscript(t: SttTranscript): void {
   const id = liveMeetingId()
   if (id === null) return
   // stereo: channel IS identity; mono: manual "that's me" pinning
-  const who = resolveSpeakerIdentity(t.channel, t.speaker, meetingChannels === 2, userSpeakers)
+  const stereo = meetingChannels === 2
+  const who = resolveSpeakerIdentity(t.channel, t.speaker, stereo, userSpeakers)
   const ev: TranscriptEvent = {
     meetingId: id,
     isFinal: t.isFinal,
@@ -171,11 +207,31 @@ function handleTranscript(t: SttTranscript): void {
     }
     transcriptWindow.push({ speaker: ev.speaker, isUser: ev.isUser, text: t.text })
     if (transcriptWindow.length > 200) transcriptWindow.shift()
-    if (shouldTrigger({ isUser: ev.isUser, text: t.text })) {
-      void runSuggestion('ambient')
-    }
+    assistance.final({
+      channel: t.channel,
+      speaker: who.speaker,
+      role: who.role,
+      tStartMs: t.tStartMs,
+      tEndMs: t.tEndMs,
+      text: t.text,
+    })
+  } else {
+    // an interim is activity only; in mono its first-word speaker is no evidence of who
+    assistance.activity(t.channel, t.tEndMs, stereo ? who.role : 'unknown')
   }
   broadcast(IPC.TranscriptEvent, ev)
+}
+
+/** Streaming turn evidence from the provider. */
+function handleSignal(s: SttSignal): void {
+  if (liveMeetingId() === null) return
+  if (s.kind === 'reset') assistance.connectionReset()
+  else if (s.kind === 'boundary') assistance.boundary(s.channel, s.atMs, s.source)
+  else {
+    const stereo = meetingChannels === 2
+    const role = stereo ? resolveSpeakerIdentity(s.channel, -1, true).role : 'unknown'
+    assistance.activity(s.channel, s.atMs, role)
+  }
 }
 
 /** Opens an STT connection for the current meeting, continuing the meeting's clock.
@@ -193,6 +249,7 @@ async function openSession(apiKey: string, startOffsetMs: number): Promise<SttSe
     keyterms: getGlossaryTerms(meetingJobId),
     startOffsetMs,
     onTranscript: mine(handleTranscript),
+    onSignal: mine(handleSignal),
     // the provider only reports here once its own reconnect attempts are exhausted:
     // hold the meeting open so the user can resume instead of losing the record
     onError: mine((message: string) => void pauseMeeting(message)),
@@ -222,7 +279,8 @@ export function startMeeting(jobId?: number, channels: ChannelCount = 1): Promis
     persistFailed = false
     userSpeakers.clear()
     transcriptWindow.length = 0
-    resetTriggers()
+    captureHealth.reset()
+    assistance.start()
     systemPrompt = buildSystemPrompt(getJob(job), listGlossary(job))
 
     // held back until the recording is open too: sendAudioChunk accepts nothing until the
@@ -233,6 +291,7 @@ export function startMeeting(jobId?: number, channels: ChannelCount = 1): Promis
       opened = await openSession(settings.deepgramApiKey, 0)
     } catch (e) {
       // never leave a meeting row open with no way back to it
+      assistance.halt()
       endMeeting(id)
       setLiveMeeting(null)
       return setState({
@@ -277,8 +336,10 @@ export function pauseMeeting(reason?: string): Promise<MeetingState> {
   return serialized(async () => {
     const meetingId = liveMeetingId()
     if (meetingId === null || paused) return currentState()
+    assistance.halt() // before the shutdown is awaited: nothing generates from what is left
     await discardSession()
     paused = true
+    captureHealth.reset() // nothing is captured while paused; resume starts fresh
     if (reason) console.warn('[sanas] meeting paused:', reason)
     return setState({ meetingId, status: 'paused', error: reason })
   })
@@ -319,16 +380,21 @@ export function resumeMeeting(channels: ChannelCount): Promise<MeetingState> {
       })
     }
     paused = false
-    resetTriggers() // a debounce from before the pause should not swallow the first nudge
+    captureHealth.reset()
+    // pins persist across the pause; transient turn state and cooldowns start over, so a
+    // debounce from before the pause cannot swallow the first answer
+    assistance.start()
     return setState({ meetingId, status: 'live' })
   })
 }
 
 export function stopMeeting(): Promise<MeetingState> {
   return serialized(async () => {
+    assistance.halt() // an answer already streaming still finishes and persists
     await discardSession()
     paused = false
     audioMsReceived = 0
+    captureHealth.reset()
     await stopRecording() // no-op when recording wasn't on
     const endedId = liveMeetingId()
     if (endedId !== null) {
@@ -366,73 +432,17 @@ export function stopMeeting(): Promise<MeetingState> {
   })
 }
 
-/** Generate one suggestion (ambient nudge or hotkey full answer) and stream it out. */
-export async function runSuggestion(trigger: SuggestionTrigger): Promise<void> {
-  const id = liveMeetingId()
-  if (id === null) return // no meeting — hotkey outside one is a no-op
-  if (!canStartSuggestion(suggestionInFlight, trigger)) return
-  if (transcriptWindow.length === 0) return
+/** "Answer now" (hotkey or overlay button): a full answer, regardless of whisper mode and
+ *  of turn detection. A no-op outside a meeting or while a requested answer is running. */
+export async function runSuggestion(trigger: 'hotkey'): Promise<void> {
+  if (trigger !== 'hotkey' || liveMeetingId() === null) return
+  assistance.answerNow()
+}
 
-  const { anthropicApiKey, anthropicWorkspaceId, nudgeModel, answerModel, whisperMode } =
-    loadSettings()
-  const atMs = Math.round(audioMsReceived) // audio time, so it lines up with the transcript
-  const sid = ++suggestionSeq
-  const emit = (kind: SuggestionEvent['kind'], text: string): void =>
-    broadcast(IPC.SuggestionEvent, {
-      suggestionId: sid,
-      meetingId: id,
-      trigger,
-      kind,
-      text,
-    } satisfies SuggestionEvent)
-
-  if (!anthropicApiKey) {
-    emit('error', 'No Anthropic API key set — add it in Settings.')
-    return
-  }
-
-  suggestionInFlight[trigger] = true
-  emit('start', '')
-  // the answer outlives the meeting — Claude is still streaming when Stop returns — and it
-  // ends in an insert against this meeting, so it must hold the meeting like any other
-  // background write. Everything after this line is inside the try: a hold that leaked
-  // would make the meeting permanently un-mergeable and un-deletable.
-  markPostProcessing(id)
-  const profile = assistProfile(trigger, whisperMode)
-  const timeoutMs = suggestionTimeoutMs(trigger, profile.kind === 'full')
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), timeoutMs)
-  try {
-    const userContent = buildUserContent(transcriptWindow, trigger, whisperMode, speakerNameMap(id))
-    const text = await claudeProvider.complete({
-      apiKey: anthropicApiKey,
-      workspaceId: anthropicWorkspaceId || undefined,
-      model: profile.useAnswerModel ? answerModel : nudgeModel,
-      system: systemPrompt,
-      userContent,
-      // points/smart ambient output stays terse; full mode and hotkey answers get code room
-      maxTokens: profile.maxTokens,
-      effort: profile.effort,
-      signal: controller.signal,
-      timeoutMs,
-      onDelta: (delta) => emit('delta', delta),
-    })
-    insertSuggestion({ meetingId: id, tMs: atMs, trigger, promptWindow: userContent, text })
-    emit('done', text)
-  } catch (e) {
-    emit(
-      'error',
-      controller.signal.aborted
-        ? `Answer timed out after ${timeoutMs / 1000} seconds — try again.`
-        : e instanceof Error
-          ? e.message
-          : String(e),
-    )
-  } finally {
-    clearTimeout(timeout)
-    clearPostProcessing(id)
-    suggestionInFlight[trigger] = false
-  }
+/** Settings were saved. Only assistance keys concern live assistance — an overlay resize
+ *  also saves settings and must not reset anything. */
+export function assistanceSettingsChanged(patch: Partial<Settings>): void {
+  if ('coachWhileTalking' in patch) assistance.settingsChanged()
 }
 
 export function sendAudioChunk(chunk: Buffer): void {
@@ -440,13 +450,29 @@ export function sendAudioChunk(chunk: Buffer): void {
   // recording, the clock and the provider's timeline describing the same audio
   if (session === null) return
   audioMsReceived += (chunk.length / (BYTES_PER_SAMPLE * meetingChannels) / SAMPLE_RATE) * 1000
+  // the same buffer the provider and the WAV receive, inspected before either
+  const health = captureHealth.push(chunk, meetingChannels)
   session.sendAudio(chunk)
   writeAudio(chunk) // no-op when recording wasn't started
+  if (health !== null) {
+    // advisory: identity stays structural, but "Me" is no longer trustworthy for coaching
+    assistance.setIdentityTrusted(!health)
+    setState({ ...currentState(), ...(lastError ? { error: lastError } : {}) })
+  }
 }
 
+/** "That's me" for a diarized voice. Mic-only meetings only: in a mic + system audio
+ *  meeting identity is structural (channel 0 is the user), and a direct IPC call must not
+ *  be able to relabel it. */
 export function pinSpeaker(speaker: number, isUser: boolean): void {
+  const meetingId = liveMeetingId()
+  if (meetingId !== null && meetingChannels === 2) {
+    throw new Error('This meeting uses mic + system audio — voices are identified by channel.')
+  }
   if (isUser) userSpeakers.add(speaker)
   else userSpeakers.delete(speaker)
-  const meetingId = liveMeetingId()
+  // the prompt window describes the same voices: relabel it so the next prompt agrees
+  for (const line of transcriptWindow) if (line.speaker === speaker) line.isUser = isUser
+  assistance.identityChanged() // pending work used the old identity; old turns stay old
   if (meetingId !== null) setSpeakerIsUser(meetingId, speaker, isUser)
 }

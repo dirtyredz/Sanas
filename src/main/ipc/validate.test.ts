@@ -143,6 +143,18 @@ describe('requireSettingsPatch', () => {
   it('rejects empty model IDs', () => {
     expect(requireSettingsPatch({ nudgeModel: '', answerModel: '   ' })).toEqual({})
   })
+  it('validates the classifier model and the coaching switch', () => {
+    expect(
+      requireSettingsPatch({ classifierModel: ' claude-haiku-5-5 ', coachWhileTalking: true }),
+    ).toEqual({ classifierModel: 'claude-haiku-5-5', coachWhileTalking: true })
+    expect(requireSettingsPatch({ classifierModel: '   ', coachWhileTalking: 'true' })).toEqual({})
+    expect(requireSettingsPatch({ classifierModel: 'x'.repeat(201) })).toEqual({})
+    expect(requireSettingsPatch({ classifierModel: 'x'.repeat(200) })).toEqual({
+      classifierModel: 'x'.repeat(200),
+    })
+    expect(requireSettingsPatch({ coachWhileTalking: 1 })).toEqual({})
+    expect(requireSettingsPatch({ coachWhileTalking: false })).toEqual({ coachWhileTalking: false })
+  })
   it('accepts only known whisper modes', () => {
     expect(requireSettingsPatch({ whisperMode: 'smart' })).toEqual({ whisperMode: 'smart' })
     expect(requireSettingsPatch({ whisperMode: 'points' })).toEqual({ whisperMode: 'points' })

@@ -24,4 +24,14 @@ describe('suggestion in-flight lanes', () => {
     expect(suggestionTimeoutMs('ambient', true)).toBe(60_000)
     expect(suggestionTimeoutMs('hotkey', false)).toBe(60_000)
   })
+
+  it('gives a next point the ambient lane and its own tight deadline', () => {
+    // coaching is trigger 'ambient': it shares that lane and leaves "Answer now" free
+    const coaching = { ...emptySuggestionInFlight(), ambient: true }
+    expect(canStartSuggestion(coaching, 'ambient')).toBe(false)
+    expect(canStartSuggestion(coaching, 'hotkey')).toBe(true)
+    expect(suggestionTimeoutMs('ambient', false, 'next-point')).toBe(8_000)
+    expect(suggestionTimeoutMs('ambient', false, 'answer')).toBe(25_000)
+    expect(suggestionTimeoutMs('hotkey', true, 'answer')).toBe(60_000)
+  })
 })

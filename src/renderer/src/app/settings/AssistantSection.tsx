@@ -68,7 +68,7 @@ export function AssistantSection({
   return (
     <SettingsSection
       title="Assistant"
-      description="Use a fast model for ambient nudges and a deeper model for requested answers and meeting follow-up."
+      description="Use a fast model for ambient nudges, a small fast model to decide which finished turns need an answer, and a deeper model for requested answers and meeting follow-up."
     >
       <ModelField
         label="Ambient nudge model"
@@ -79,6 +79,11 @@ export function AssistantSection({
         label="Full answer model"
         model={view.answerModel}
         onChange={(answerModel) => onChange({ answerModel })}
+      />
+      <ModelField
+        label="Question detection model"
+        model={view.classifierModel}
+        onChange={(classifierModel) => onChange({ classifierModel })}
       />
       <label className="field">
         <span className="label">Whisper mode</span>
@@ -92,8 +97,23 @@ export function AssistantSection({
         </select>
         <small>Answer now always gives the full answer, including code when useful.</small>
       </label>
+      <label className="check">
+        <input
+          type="checkbox"
+          checked={view.coachWhileTalking}
+          onChange={(e) => onChange({ coachWhileTalking: e.target.checked })}
+        />
+        <span>
+          Next point while I&apos;m talking
+          <br />
+          <small className="hint">
+            While you explain something, suggest one grounded next point. Uses the ambient nudge
+            model; at most one every 30 seconds.
+          </small>
+        </span>
+      </label>
       <label className="field">
-        <span className="label">Nudge cooldown</span>
+        <span className="label">Answer cooldown</span>
         <input
           type="number"
           min={0}
@@ -102,7 +122,9 @@ export function AssistantSection({
           value={view.nudgeCooldownSec}
           onChange={(e) => onChange({ nudgeCooldownSec: Number(e.target.value) })}
         />
-        <small>Seconds between ambient nudges (0–60). Set to 0 for no cooldown.</small>
+        <small>
+          Seconds between automatic answers to the room (0–60). Set to 0 for no cooldown.
+        </small>
       </label>
     </SettingsSection>
   )

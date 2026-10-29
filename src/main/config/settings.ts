@@ -12,7 +12,9 @@ const DEFAULTS: Settings = {
   anthropicWorkspaceId: '',
   nudgeModel: 'claude-sonnet-5-5',
   answerModel: 'claude-opus-5-5',
+  classifierModel: 'claude-haiku-5-5', // fast and cheap: it only answers "does this need a reply?"
   nudgeCooldownSec: 5,
+  coachWhileTalking: false, // opt-in: coaching while the user talks costs a call every ~30 s
   whisperMode: 'smart',
   overlayHotkey: 'CommandOrControl+Shift+Space',
   assistHotkey: 'CommandOrControl+Shift+Enter',

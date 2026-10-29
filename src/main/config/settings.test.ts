@@ -29,4 +29,22 @@ describe('settings defaults', () => {
     expect(settings.overlayWhisperRatio).toBe(0.27)
     expect(settings.overlayHotkey).toBe('Control+Space')
   })
+
+  it('gives a legacy settings file the turn-detection and coaching defaults', () => {
+    const settings = loadSettings()
+
+    expect(settings.classifierModel).toBe('claude-haiku-5-5')
+    expect(settings.coachWhileTalking).toBe(false)
+  })
+
+  it('keeps stored classifier and coaching values', () => {
+    file.contents = JSON.stringify({
+      classifierModel: 'custom-classifier',
+      coachWhileTalking: true,
+    })
+    const settings = loadSettings()
+
+    expect(settings.classifierModel).toBe('custom-classifier')
+    expect(settings.coachWhileTalking).toBe(true)
+  })
 })

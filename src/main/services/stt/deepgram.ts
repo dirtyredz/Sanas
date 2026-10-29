@@ -5,43 +5,36 @@ import type {
   SttProvider,
   SttSession,
   SttSessionOptions,
+  SttSignal,
 } from './types'
+import {
+  normalizeDeepgramMessage,
+  runText,
+  splitBySpeaker,
+  type DeepgramWord,
+} from './deepgram-events'
 
 // Deepgram streaming over Node's built-in WebSocket.
 // Auth rides the Sec-WebSocket-Protocol header (['token', key]) since the
 // browser-style WebSocket API can't set arbitrary headers.
 //
 // The session survives socket death: on an unexpected close it reconnects with
-// backoff and keeps streaming. Two continuity caveats (GOTCHAS.md):
+// backoff and keeps streaming. Continuity caveats (GOTCHAS.md):
 //  - each connection's clock restarts at 0 → we add the previous connection's
 //    last end-time as an offset so meeting timestamps stay monotonic;
-//  - diarized speaker indices can reshuffle across connections.
+//  - diarized speaker indices can reshuffle across connections;
+//  - a lost socket reports `reset` at once (before the backoff), and anything a retired
+//    socket still delivers is ignored, so a half-assembled turn never completes from it.
+//
+// Message interpretation (speaker runs, boundaries, channels) lives in deepgram-events.ts.
 
 const WS_BASE = 'wss://api.deepgram.com/v1/listen'
 const KEEPALIVE_MS = 5000 // socket dies after ~10s of silence (GOTCHAS.md)
 const RECONNECT_DELAYS_MS = [1000, 2000, 4000, 8000, 8000] // then give up
 
-interface DeepgramWord {
-  word: string
-  punctuated_word?: string
-  start: number
-  end: number
-  speaker?: number
-}
-
-/** Split a final result into contiguous same-speaker runs so one segment never
- *  flattens two voices into one label. */
-function splitBySpeaker(words: DeepgramWord[]): DeepgramWord[][] {
-  const runs: DeepgramWord[][] = []
-  for (const w of words) {
-    const last = runs[runs.length - 1]
-    if (last && last[0].speaker === w.speaker) last.push(w)
-    else runs.push([w])
-  }
-  return runs
-}
-
-function buildUrl(keyterms: string[], channels: number): string {
+/** Streaming query. Endpointing and utterance-end give turn assembly its boundary evidence;
+ *  VAD events give it speech activity. */
+export function buildStreamUrl(keyterms: string[], channels: number): string {
   const params = new URLSearchParams({
     model: 'nova-3',
     encoding: 'linear16',
@@ -52,6 +45,9 @@ function buildUrl(keyterms: string[], channels: number): string {
     diarize: 'true',
     interim_results: 'true',
     smart_format: 'true',
+    endpointing: '600',
+    utterance_end_ms: '1000',
+    vad_events: 'true',
   })
   for (const term of keyterms) params.append('keyterm', term) // repeatable
   return `${WS_BASE}?${params}`
@@ -63,6 +59,7 @@ class DeepgramSession implements SttSession {
   private stopped = false
   private offsetMs: number // added to this connection's clock, which starts at 0
   private lastEndMs: number // audio time reached, absolute within the meeting
+  private warnedChannel = false
 
   constructor(private opts: SttSessionOptions) {
     // a resumed meeting continues where its last session stopped
@@ -71,7 +68,7 @@ class DeepgramSession implements SttSession {
   }
 
   async connect(): Promise<void> {
-    const ws = new WebSocket(buildUrl(this.opts.keyterms, this.opts.channels), [
+    const ws = new WebSocket(buildStreamUrl(this.opts.keyterms, this.opts.channels), [
       'token',
       this.opts.apiKey,
     ])
@@ -90,59 +87,44 @@ class DeepgramSession implements SttSession {
       if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'KeepAlive' }))
     }, KEEPALIVE_MS)
 
-    ws.addEventListener('message', (ev) => this.handleMessage(ev))
+    // a socket that is no longer the current one is retired: its callbacks are ignored
+    ws.addEventListener('message', (ev) => {
+      if (this.ws === ws) this.handleMessage(ev)
+    })
     ws.addEventListener('close', (ev) => {
-      if (this.stopped || ev.code === 1000) return
+      if (this.ws !== ws || this.stopped || ev.code === 1000) return
+      this.ws = null
+      this.signal({ kind: 'reset' }) // continuity is gone now, not after the backoff
       void this.reconnect(ev.code)
     })
   }
 
-  private handleMessage(ev: MessageEvent): void {
-    let msg: {
-      type?: string
-      is_final?: boolean
-      channel_index?: number[]
-      channel?: { alternatives?: { transcript?: string; words?: DeepgramWord[] }[] }
-    }
+  private signal(s: SttSignal): void {
     try {
-      msg = JSON.parse(String(ev.data))
-    } catch {
-      return
+      this.opts.onSignal?.(s)
+    } catch (e) {
+      console.warn('[deepgram] signal handler failed:', e)
     }
-    if (msg.type !== 'Results') return
-    const alt = msg.channel?.alternatives?.[0]
-    const text = alt?.transcript ?? ''
-    if (!text) return
-    const words = alt?.words ?? []
-    const isFinal = msg.is_final === true
-    const channel = msg.channel_index?.[0] ?? 0
-    const t = (sec: number): number => Math.round(sec * 1000) + this.offsetMs
+  }
 
-    if (!isFinal || words.length === 0) {
-      // interims are ephemeral — one line with the first word's speaker is fine
-      this.opts.onTranscript({
-        isFinal,
-        channel,
-        speaker: words[0]?.speaker ?? -1,
-        tStartMs: t(words[0]?.start ?? 0),
-        tEndMs: t(words[words.length - 1]?.end ?? 0),
-        text,
+  private handleMessage(ev: MessageEvent): void {
+    // an exception escaping a socket listener ends the main process
+    try {
+      const out = normalizeDeepgramMessage(String(ev.data), {
+        channels: this.opts.channels,
+        offsetMs: this.offsetMs,
       })
-      return
-    }
-
-    // finals: one event per contiguous same-speaker run
-    for (const run of splitBySpeaker(words)) {
-      const tEndMs = t(run[run.length - 1].end)
-      this.lastEndMs = Math.max(this.lastEndMs, tEndMs)
-      this.opts.onTranscript({
-        isFinal: true,
-        channel,
-        speaker: run[0].speaker ?? -1,
-        tStartMs: t(run[0].start),
-        tEndMs,
-        text: run.map((w) => w.punctuated_word ?? w.word).join(' '),
-      })
+      if (out.invalidChannel && !this.warnedChannel) {
+        this.warnedChannel = true // once per session: a diagnostic, not a log flood
+        console.warn('[deepgram] multichannel message without a valid channel index')
+      }
+      if (out.finalEndMs !== null) this.lastEndMs = Math.max(this.lastEndMs, out.finalEndMs)
+      for (const e of out.events) {
+        if (e.type === 'transcript') this.opts.onTranscript(e.transcript)
+        else this.signal(e.signal)
+      }
+    } catch (e) {
+      console.warn('[deepgram] could not handle a message:', e)
     }
   }
 
@@ -219,7 +201,7 @@ export const deepgramProvider: SttProvider = {
           speaker: run[0].speaker ?? -1,
           tStartMs: Math.round(run[0].start * 1000),
           tEndMs: Math.round(run[run.length - 1].end * 1000),
-          text: run.map((w) => w.punctuated_word ?? w.word).join(' '),
+          text: runText(run),
         })
       }
     }

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Job, Meeting, Segment, Suggestion } from '@shared/types'
+import { suggestionLabel, suggestionOrigin } from '@shared/suggestion-label'
 import { speakerDisplay } from '../../lib/speaker-label'
 import { formatClock, formatWhen } from '../../lib/format-time'
 import { errorText } from '../../lib/ipc-error'
@@ -264,10 +265,8 @@ export function MeetingView({
             <div key={s.id} className="suggestion-entry">
               <p className="line">
                 <span className="ts">{formatClock(s.tMs)}</span>
-                <span className="who">{s.trigger === 'hotkey' ? 'Answer' : 'Whisper'}</span>
-                <span className="text muted">
-                  {s.trigger === 'hotkey' ? 'you asked' : 'ambient'}
-                </span>
+                <span className="who">{suggestionLabel(s)}</span>
+                <span className="text muted">{suggestionOrigin(s)}</span>
               </p>
               <div className="suggestion-body">
                 <CompactSuggestion text={s.text} />

@@ -15,6 +15,7 @@ import {
   sendAudioChunk,
   pinSpeaker,
   runSuggestion,
+  assistanceSettingsChanged,
 } from '../services/meetings'
 import {
   optionalText,
@@ -57,6 +58,7 @@ export function registerIpcHandlers(): void {
     const patch = requireSettingsPatch(raw)
     const next = saveSettings(patch)
     if (patch.overlayOpacity !== undefined) applyOverlayOpacity(next.overlayOpacity)
+    assistanceSettingsChanged(patch) // live assistance decides which keys concern it
     return toView(next)
   })
 

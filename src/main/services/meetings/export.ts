@@ -1,4 +1,5 @@
 import { dialog } from 'electron'
+import { suggestionLabel } from '@shared/suggestion-label'
 import { writeFileSync } from 'fs'
 import { getMeeting } from '../../db/repos/meetings'
 import { listSegments } from '../../db/repos/segments'
@@ -41,12 +42,7 @@ export async function exportMeetingMarkdown(meetingId: number): Promise<string |
   if (suggestions.length > 0) {
     lines.push('## AI suggestions', '')
     for (const s of suggestions) {
-      lines.push(
-        `### ${fmt(s.tMs)} — ${s.trigger === 'hotkey' ? 'Answer' : 'Whisper'}`,
-        '',
-        s.text,
-        '',
-      )
+      lines.push(`### ${fmt(s.tMs)} — ${suggestionLabel(s)}`, '', s.text, '')
     }
   }
 

@@ -16,6 +16,9 @@ export interface AssistRequest {
   /** Per-request cancellation and deadline, owned by the calling feature. */
   signal?: AbortSignal
   timeoutMs?: number
+  /** Provider-level retries for this request; omit for the provider default. Short-lived
+   *  decisions (turn classification, coaching) pass 0: a retried answer arrives stale. */
+  maxRetries?: number
   /** Streaming callback; omit for one-shot completions (e.g. summaries). */
   onDelta?: (text: string) => void
 }

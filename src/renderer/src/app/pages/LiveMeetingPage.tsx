@@ -252,6 +252,7 @@ export function LiveMeetingPage(): React.JSX.Element {
 
       {micError && <p className="notice warn">{micError}</p>}
       {state.error && <p className="notice warn">{state.error}</p>}
+      {state.captureWarning && <p className="notice warn">{state.captureWarning}</p>}
       {notice && <p className="notice warn">{notice}</p>}
 
       {active && !sysAudio && (
