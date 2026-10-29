@@ -29,6 +29,7 @@ sanas/
 │   │   │   │                    #   speaker-carryover (pins + names across re-diarization),
 │   │   │   │                    #   remove (audio file + row — the one delete path),
 │   │   │   │                    #   merge + merge-plan (fold split recordings into one meeting),
+│   │   │   │                    #   startup-recovery (close rows stranded by an earlier process),
 │   │   │   │                    #   post-processing (what is still being rewritten after stop),
 │   │   │   │                    #   live-meeting (which meeting main is running, for delete)
 │   │   │   ├── email/           # EmailProvider seam + smtp.ts (nodemailer transport)
@@ -94,7 +95,8 @@ sanas/
 
 Tests are colocated `*.test.ts` files (vitest, `npm test`) beside the pure module they cover —
 today `services/meetings/speaker-carryover.test.ts`, `services/meetings/merge-plan.test.ts`,
-`services/assistant/completion-result.test.ts`, `services/meetings/post-processing.test.ts`,
+`services/meetings/startup-recovery.test.ts`, `services/assistant/completion-result.test.ts`,
+`services/meetings/post-processing.test.ts`,
 `services/meetings/suggestion-in-flight.test.ts`,
 `renderer/src/lib/whisper-history.test.ts`, `db/fts-query.test.ts`, `shared/search-markers.test.ts`
 and `ipc/validate.test.ts`; DB/Electron-bound code (repos, migrations, services that

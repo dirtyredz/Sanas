@@ -44,6 +44,7 @@ _Capability inventory. Status: ✅ done · 🔨 in progress · 📋 planned · �
 | ------------------------------------------------------------------------ | ------ | ------------------------------------------------------------------------- |
 | Settings: API keys, assistant mode/models/cooldown, hotkeys, audio, SMTP | ✅     | Smart/Full/Points + separate nudge/answer models; secrets stay main-only  |
 | SQLite storage + v1 schema + migrations                                  | ✅     | %APPDATA%/sanas/sanas.db, WAL                                             |
+| Startup recovery for unfinished meetings                                 | ✅     | Closes crash/reload leftovers at their last persisted segment             |
 | Retention controls                                                       | ✅     | audio after N days / whole meetings after N days; timer + Clean up now    |
 | Overlay ghost mode (click-through)                                       | ✅     | 👻 button; overlay hotkey restores                                        |
 | Per-meeting suggestion log                                               | ✅     | Transcript / Suggestions tabs                                             |

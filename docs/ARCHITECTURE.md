@@ -146,6 +146,8 @@ resume reopens with the meeting's clock carried over; stop ends the row and kick
 post-meeting passes below. Only one meeting is live at a time; the orchestrator
 (`services/meetings/index.ts`) runs it and publishes which one it is through
 `services/meetings/live-meeting.ts`, so delete can refuse the meeting still being written to.
+At main-process startup, before IPC can start another meeting, rows left open by an earlier
+process are closed at their last persisted segment end (or at their start if empty).
 
 ## Post-meeting
 

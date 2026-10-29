@@ -12,6 +12,17 @@ export interface MeetingRow {
   action_items: string | null
 }
 
+export interface UnendedMeeting {
+  id: number
+  startedAt: string
+  lastSegmentEndMs: number | null
+}
+
+export interface MeetingClosure {
+  id: number
+  endedAt: string
+}
+
 export function toMeeting(r: MeetingRow): Meeting {
   return {
     id: r.id,
@@ -34,6 +45,39 @@ export function createMeeting(jobId: number, title: string): number {
 
 export function endMeeting(meetingId: number): void {
   getDb().prepare(`UPDATE meetings SET ended_at = datetime('now') WHERE id = ?`).run(meetingId)
+}
+
+/** Open rows left by an earlier main process, excluding the meeting this process owns. */
+export function listUnendedMeetingsExcept(liveMeetingId: number | null): UnendedMeeting[] {
+  const rows = getDb()
+    .prepare(
+      `SELECT m.id, m.started_at, MAX(s.t_end_ms) AS last_segment_end_ms
+       FROM meetings m
+       LEFT JOIN segments s ON s.meeting_id = m.id
+       WHERE m.ended_at IS NULL AND m.id IS NOT ?
+       GROUP BY m.id, m.started_at`,
+    )
+    .all(liveMeetingId) as {
+    id: number
+    started_at: string
+    last_segment_end_ms: number | null
+  }[]
+  return rows.map((row) => ({
+    id: row.id,
+    startedAt: row.started_at,
+    lastSegmentEndMs: row.last_segment_end_ms,
+  }))
+}
+
+/** Closes rows only while they are still open; returns the number actually changed. */
+export function closeMeetingsAt(closures: MeetingClosure[]): number {
+  const db = getDb()
+  const update = db.prepare(`UPDATE meetings SET ended_at = ? WHERE id = ? AND ended_at IS NULL`)
+  return db.transaction(() =>
+    closures.reduce((count, meeting) => {
+      return count + update.run(meeting.endedAt, meeting.id).changes
+    }, 0),
+  )()
 }
 
 export function getMeeting(meetingId: number): Meeting | null {

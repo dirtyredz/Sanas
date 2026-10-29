@@ -111,6 +111,11 @@ _Non-obvious traps. Read before touching the related area._
 
 ## Meetings
 
+- **Startup closes meetings stranded by an earlier process.** Before IPC can start a new
+  meeting, main gives every non-live row with no `ended_at` an end based on its last persisted
+  segment (`started_at + max(t_end_ms)`), or its start when no segment made it to disk. This
+  keeps a crash or dev reload from leaving an un-stoppable row that merge will reject.
+
 - **The meeting clock is audio received, not wall time and not transcript time.**
   `sendAudioChunk` counts the PCM it accepts (`audioMsReceived`), and it accepts a chunk
   only while a session exists. That count is exactly what the WAV holds, so the clock, the
