@@ -15,6 +15,8 @@
   --accent-hover: #6bb8b1;
   --accent-ink: #0e1113;
   --accent-soft: rgba(90, 167, 160, 0.14);
+  --scrollbar-thumb: rgba(90, 167, 160, 0.28);
+  --scrollbar-thumb-hover: rgba(90, 167, 160, 0.46);
   --me: #d9b26f;
   --me-soft: rgba(217, 178, 111, 0.14);
   --ok: #6fbf73;
@@ -32,6 +34,8 @@
 * {
   box-sizing: border-box;
   margin: 0;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+  scrollbar-width: thin;
 }
 
 html,
@@ -92,14 +96,25 @@ p {
 }
 
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--line-strong);
-  border-radius: 5px;
-  border: 2px solid var(--bg);
+  background: var(--scrollbar-thumb);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+::-webkit-scrollbar-button {
+  display: none;
 }
 
 .muted {

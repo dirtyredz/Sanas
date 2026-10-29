@@ -7,6 +7,8 @@
   --accent: #5aa7a0;
   --accent-ink: #0e1113;
   --accent-soft: rgba(90, 167, 160, 0.14);
+  --scrollbar-thumb: rgba(90, 167, 160, 0.28);
+  --scrollbar-thumb-hover: rgba(90, 167, 160, 0.46);
   --me: #d9b26f;
   --warn: #d9a44a;
   --danger: #e05d5d;
@@ -17,6 +19,30 @@
 * {
   box-sizing: border-box;
   margin: 0;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+  scrollbar-width: thin;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+::-webkit-scrollbar-button {
+  display: none;
 }
 
 body.overlay-body {
@@ -186,6 +212,7 @@ body.overlay-body {
   min-height: 0;
   padding: 10px 12px;
   overflow-y: auto;
+  -webkit-app-region: no-drag;
   font-size: 13.5px;
 }
 
@@ -277,6 +304,7 @@ body.overlay-body {
 .suggestion-content {
   min-height: 0;
   overflow-y: auto;
+  -webkit-app-region: no-drag;
 }
 
 .suggestion-bar .label {
@@ -428,6 +456,7 @@ body.overlay-body {
   min-height: 0;
   padding: 8px;
   overflow: auto;
+  -webkit-app-region: no-drag;
   white-space: pre;
 }
 
