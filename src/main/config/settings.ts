@@ -23,6 +23,7 @@ const DEFAULTS: Settings = {
   meetingSource: 'elsewhere',
   overlayOpacity: 1,
   overlayBounds: null,
+  overlayWhisperRatio: 0.27,
   summaryEmailAuto: false,
   smtpHost: '',
   smtpPort: 465,

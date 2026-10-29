@@ -149,6 +149,8 @@ export interface Settings {
   overlayOpacity: number
   /** Remembered overlay window bounds; null until first moved/resized. */
   overlayBounds: { x: number; y: number; width: number; height: number } | null
+  /** Share of the overlay content area assigned to the whisper panel. */
+  overlayWhisperRatio: number
   /** Email the summary automatically when a meeting stops (to the job's address). */
   summaryEmailAuto: boolean
   /** Outgoing SMTP server (e.g. smtp.gmail.com). */

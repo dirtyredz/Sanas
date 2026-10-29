@@ -7,7 +7,7 @@ import { loadSettings, saveSettings } from '../config/settings'
 let overlay: BrowserWindow | null = null
 let saveBoundsTimer: ReturnType<typeof setTimeout> | null = null
 const MIN_WIDTH = 280
-const MIN_HEIGHT = 220
+const MIN_HEIGHT = 230
 
 function createOverlay(): BrowserWindow {
   const { width } = screen.getPrimaryDisplay().workAreaSize

@@ -220,6 +220,7 @@ let settings: SettingsView = {
   meetingSource: 'elsewhere',
   overlayOpacity: 0.95,
   overlayBounds: null,
+  overlayWhisperRatio: 0.27,
   summaryEmailAuto: false,
   smtpHost: 'smtp.gmail.com',
   smtpPort: 465,

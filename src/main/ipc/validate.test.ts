@@ -102,6 +102,7 @@ describe('requireSettingsPatch', () => {
       recordAudio: false,
       smtpHost: 'smtp.example',
       overlayBounds: { x: 10, y: 20, width: 380, height: 460 },
+      overlayWhisperRatio: 0.4,
       deepgramApiKey: 'dg_x',
       unknownKey: true,
     })
@@ -117,6 +118,7 @@ describe('requireSettingsPatch', () => {
       recordAudio: false,
       smtpHost: 'smtp.example',
       overlayBounds: { x: 10, y: 20, width: 380, height: 460 },
+      overlayWhisperRatio: 0.4,
       deepgramApiKey: 'dg_x',
     })
   })
@@ -133,6 +135,7 @@ describe('requireSettingsPatch', () => {
         meetingSource: 'the-moon',
         recordAudio: 'yes',
         overlayBounds: { x: 1, y: 2, width: 5, height: 5 },
+        overlayWhisperRatio: 2,
       }),
     ).toEqual({})
     expect(requireSettingsPatch({ overlayBounds: null })).toEqual({ overlayBounds: null })

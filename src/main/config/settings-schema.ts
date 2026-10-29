@@ -65,6 +65,7 @@ export const SETTINGS_SCHEMA: { [K in keyof Settings]: Check<Settings[K]> } = {
   meetingSource: source,
   overlayOpacity: num(0.4, 1, false),
   overlayBounds: bounds,
+  overlayWhisperRatio: num(0.05, 0.95, false),
   summaryEmailAuto: bool,
   smtpHost: text(253),
   smtpPort: num(1, 65_535, true),

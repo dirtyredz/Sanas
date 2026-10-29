@@ -1,9 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
-import { useTranscript } from '../lib/useTranscript'
-import { useSuggestion } from '../lib/useSuggestion'
-import { speakerDisplay } from '../lib/speaker-label'
-import { CompactSuggestion } from '../lib/CompactSuggestion'
 import type { OverlayResizeRequest } from '@shared/types'
+import { CompactSuggestion } from '../lib/CompactSuggestion'
+import { speakerDisplay } from '../lib/speaker-label'
+import { useSuggestion } from '../lib/useSuggestion'
+import { useTranscript } from '../lib/useTranscript'
+import {
+  DEFAULT_WHISPER_RATIO,
+  MAXIMIZED_TRANSCRIPT_HEIGHT,
+  SPLITTER_HEIGHT,
+  overlaySplit,
+  whisperRatioFromHeight,
+} from './overlay-split'
 
 type ResizeAxis = 'right' | 'bottom' | 'corner'
 
@@ -16,14 +23,48 @@ interface ResizeSession {
   height: number
 }
 
+interface SplitSession {
+  pointerId: number
+  screenY: number
+  whisperHeight: number
+  containerHeight: number
+}
+
 export function Overlay(): React.JSX.Element {
   const { lines, state } = useTranscript()
   const suggestion = useSuggestion()
   const [ghost, setGhost] = useState(false)
+  const [whisperRatio, setWhisperRatio] = useState(DEFAULT_WHISPER_RATIO)
+  const [whisperMaximized, setWhisperMaximized] = useState(false)
+  const [contentHeight, setContentHeight] = useState(0)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
   const resizeRef = useRef<ResizeSession | null>(null)
+  const splitRef = useRef<SplitSession | null>(null)
+  const saveSplitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => window.sanas.overlay.onGhostState(setGhost), [])
+
+  useEffect(() => {
+    let active = true
+    void window.sanas.settings.get().then((settings) => {
+      if (active) setWhisperRatio(settings.overlayWhisperRatio)
+    })
+    return () => {
+      active = false
+      if (saveSplitTimerRef.current) clearTimeout(saveSplitTimerRef.current)
+    }
+  }, [])
+
+  useEffect(() => {
+    const content = contentRef.current
+    if (!content) return
+    const measure = (): void => setContentHeight(content.clientHeight)
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(content)
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
@@ -32,6 +73,23 @@ export function Overlay(): React.JSX.Element {
   const live = state.status === 'live'
   const paused = state.status === 'paused'
   const tail = lines.slice(-12)
+  const split = overlaySplit(contentHeight, whisperRatio)
+  const transcriptHeight = whisperMaximized
+    ? Math.min(MAXIMIZED_TRANSCRIPT_HEIGHT, Math.max(0, contentHeight - SPLITTER_HEIGHT))
+    : split.transcriptHeight
+  const whisperHeight = Math.max(0, contentHeight - SPLITTER_HEIGHT - transcriptHeight)
+  const splitRows =
+    contentHeight > 0 ? `${transcriptHeight}px ${SPLITTER_HEIGHT}px ${whisperHeight}px` : undefined
+
+  const persistSplit = (ratio: number): void => {
+    if (saveSplitTimerRef.current) clearTimeout(saveSplitTimerRef.current)
+    saveSplitTimerRef.current = setTimeout(() => {
+      saveSplitTimerRef.current = null
+      void window.sanas.settings
+        .set({ overlayWhisperRatio: ratio })
+        .catch((error) => console.warn('[sanas] could not save the overlay split:', error))
+    }, 400)
+  }
 
   const startResize = (axis: ResizeAxis, event: React.PointerEvent<HTMLDivElement>): void => {
     if (event.button !== 0) return
@@ -70,6 +128,39 @@ export function Overlay(): React.JSX.Element {
     }
   }
 
+  const startSplit = (event: React.PointerEvent<HTMLDivElement>): void => {
+    if (event.button !== 0 || contentHeight <= SPLITTER_HEIGHT) return
+    event.preventDefault()
+    event.currentTarget.setPointerCapture(event.pointerId)
+    splitRef.current = {
+      pointerId: event.pointerId,
+      screenY: event.screenY,
+      whisperHeight,
+      containerHeight: contentHeight,
+    }
+  }
+
+  const continueSplit = (event: React.PointerEvent<HTMLDivElement>): void => {
+    const session = splitRef.current
+    if (!session || session.pointerId !== event.pointerId) return
+    if (Math.abs(session.screenY - event.screenY) < 3) return
+    const ratio = whisperRatioFromHeight(
+      session.containerHeight,
+      session.whisperHeight + session.screenY - event.screenY,
+    )
+    setWhisperMaximized(false)
+    setWhisperRatio(ratio)
+    persistSplit(ratio)
+  }
+
+  const stopSplit = (event: React.PointerEvent<HTMLDivElement>): void => {
+    if (splitRef.current?.pointerId !== event.pointerId) return
+    splitRef.current = null
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+  }
+
   return (
     <div className="overlay-panel">
       <header className="overlay-header">
@@ -92,45 +183,65 @@ export function Overlay(): React.JSX.Element {
           👻
         </button>
       </header>
-      <section className="overlay-transcript" ref={scrollRef}>
-        {tail.length === 0 && (
-          <p className="muted">
-            {live ? 'Listening…' : paused ? 'Paused.' : 'Start a meeting in the Sanas window.'}
-          </p>
-        )}
-        {tail.map((l, i) => (
-          <p key={i} className={`line ${l.interim ? 'interim' : ''}`}>
-            <span className={`who ${l.isUser ? 'me' : ''}`}>
-              {l.speaker >= 0 || l.isUser ? speakerDisplay(l.speaker, l.isUser) : ''}
+      <div
+        className={`overlay-content ${whisperMaximized ? 'whisper-maximized' : ''}`}
+        ref={contentRef}
+        style={{ gridTemplateRows: splitRows }}
+      >
+        <section className="overlay-transcript" ref={scrollRef}>
+          {tail.length === 0 && (
+            <p className="muted">
+              {live ? 'Listening…' : paused ? 'Paused.' : 'Start a meeting in the Sanas window.'}
+            </p>
+          )}
+          {tail.map((line, index) => (
+            <p key={index} className={`line ${line.interim ? 'interim' : ''}`}>
+              <span className={`who ${line.isUser ? 'me' : ''}`}>
+                {line.speaker >= 0 || line.isUser ? speakerDisplay(line.speaker, line.isUser) : ''}
+              </span>
+              <span className="text">{line.text}</span>
+            </p>
+          ))}
+        </section>
+        <div
+          className="overlay-splitter"
+          role="separator"
+          aria-orientation="horizontal"
+          aria-label="Resize transcript and whisper panels"
+          title="Drag to resize; double-click to maximize the whisper"
+          onDoubleClick={() => setWhisperMaximized((maximized) => !maximized)}
+          onPointerDown={startSplit}
+          onPointerMove={continueSplit}
+          onPointerUp={stopSplit}
+          onPointerCancel={stopSplit}
+        />
+        <section className="overlay-suggestion">
+          <div className="suggestion-bar">
+            <span className="label">
+              {suggestion ? (suggestion.trigger === 'hotkey' ? 'Answer' : 'Whisper') : 'Sanas'}
+              {suggestion?.streaming && <span className="cursor">▍</span>}
             </span>
-            <span className="text">{l.text}</span>
-          </p>
-        ))}
-      </section>
-      <section className="overlay-suggestion">
-        <div className="suggestion-bar">
-          <span className="label">
-            {suggestion ? (suggestion.trigger === 'hotkey' ? 'Answer' : 'Whisper') : 'Sanas'}
-            {suggestion?.streaming && <span className="cursor">▍</span>}
-          </span>
-          <button
-            className="answer-now"
-            disabled={!live || suggestion?.streaming === true}
-            onClick={() => window.sanas.assist.now()}
-          >
-            Answer now
-          </button>
-        </div>
-        {suggestion?.error && <p className="warn">{suggestion.error}</p>}
-        {suggestion && !suggestion.error && <CompactSuggestion text={suggestion.text} />}
-        {!suggestion && (
-          <p className="muted">
-            {live
-              ? 'Listening for key moments — or press the hotkey for an answer.'
-              : 'Suggestions appear here during a meeting.'}
-          </p>
-        )}
-      </section>
+            <button
+              className="answer-now"
+              disabled={!live || suggestion?.streaming === true}
+              onClick={() => window.sanas.assist.now()}
+            >
+              Answer now
+            </button>
+          </div>
+          <div className="suggestion-content">
+            {suggestion?.error && <p className="warn">{suggestion.error}</p>}
+            {suggestion && !suggestion.error && <CompactSuggestion text={suggestion.text} />}
+            {!suggestion && (
+              <p className="muted">
+                {live
+                  ? 'Listening for key moments — or press the hotkey for an answer.'
+                  : 'Suggestions appear here during a meeting.'}
+              </p>
+            )}
+          </div>
+        </section>
+      </div>
       {(['right', 'bottom', 'corner'] as const).map((axis) => (
         <div
           key={axis}
