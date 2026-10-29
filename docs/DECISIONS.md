@@ -2,6 +2,20 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-10-29 — Separate configurable models for nudges and full answers
+
+Ambient nudges optimize for latency and repeat throughout a meeting; requested answers,
+summaries and Ask-your-history optimize for depth. They therefore have separate Settings:
+nudges default to `claude-sonnet-5-5`, while full answers default to
+`claude-opus-5-5`. The three current Opus/Sonnet/Haiku 5.5 IDs are convenient choices,
+and a custom ID keeps a new model usable without an app release. The provider receives the
+model per request and remains the only Anthropic SDK boundary. It sends effort only for
+known Opus/Sonnet 5.x IDs because that parameter is not supported by every model.
+
+The ambient question heuristic remains local and unchanged, but its former fixed 20-second
+cost guard is now adjustable from 0–60 seconds and defaults to 5. The trigger reads the
+current value for every candidate so a saved change applies without restarting a meeting.
+
 ## 2026-09-09 — A meeting's clock is the audio it captured
 
 Pause forced the question of what a meeting's timeline actually measures. Three candidates:

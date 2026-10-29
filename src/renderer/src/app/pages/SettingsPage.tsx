@@ -6,6 +6,7 @@ import { MicrophoneSection } from '../settings/MicrophoneSection'
 import { OverlaySection } from '../settings/OverlaySection'
 import { EmailSection } from '../settings/EmailSection'
 import { RetentionSection } from '../settings/RetentionSection'
+import { AssistantSection } from '../settings/AssistantSection'
 import type { SecretKey } from '../settings/SettingsSection'
 
 const NO_SECRETS: Record<SecretKey, string> = {
@@ -32,6 +33,9 @@ export function SettingsPage(): React.JSX.Element {
       overlayHotkey: view.overlayHotkey,
       assistHotkey: view.assistHotkey,
       anthropicWorkspaceId: view.anthropicWorkspaceId.trim(),
+      nudgeModel: view.nudgeModel.trim(),
+      answerModel: view.answerModel.trim(),
+      nudgeCooldownSec: view.nudgeCooldownSec,
       audioDeviceId: view.audioDeviceId,
       recordAudio: view.recordAudio,
       overlayOpacity: view.overlayOpacity,
@@ -63,6 +67,7 @@ export function SettingsPage(): React.JSX.Element {
         <h2>Settings</h2>
       </div>
       <ApiKeysSection view={view} secrets={secrets} onChange={onChange} onSecret={onSecret} />
+      <AssistantSection view={view} onChange={onChange} />
       <HotkeysSection view={view} onChange={onChange} />
       <MicrophoneSection view={view} onChange={onChange} />
       <OverlaySection view={view} onChange={onChange} />

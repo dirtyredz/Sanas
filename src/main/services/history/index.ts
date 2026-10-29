@@ -117,7 +117,7 @@ export function askHistory(
   question: string,
   jobId?: number,
 ): { askId: number; sources: HistoryHit[] } {
-  const { anthropicApiKey, anthropicWorkspaceId } = loadSettings()
+  const { anthropicApiKey, anthropicWorkspaceId, answerModel } = loadSettings()
   if (!anthropicApiKey) throw new Error('Anthropic API key is not set — add it in Settings.')
   const { text, included } = renderExcerpts(retrieveHistory(question, jobId))
   const askId = ++askSeq
@@ -133,6 +133,7 @@ export function askHistory(
     .complete({
       apiKey: anthropicApiKey,
       workspaceId: anthropicWorkspaceId || undefined,
+      model: answerModel,
       system: HISTORY_SYSTEM,
       userContent: buildHistoryPrompt(question, text),
       maxTokens: 1200,

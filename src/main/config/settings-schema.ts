@@ -12,6 +12,13 @@ const text =
   (v) =>
     typeof v === 'string' ? v.slice(0, max) : undefined
 
+const nonEmptyText =
+  (max: number): Check<string> =>
+  (v) => {
+    if (typeof v !== 'string' || v.length > max || v.trim().length === 0) return undefined
+    return v.trim()
+  }
+
 const bool: Check<boolean> = (v) => (typeof v === 'boolean' ? v : undefined)
 
 const num =
@@ -43,6 +50,9 @@ export const SETTINGS_SCHEMA: { [K in keyof Settings]: Check<Settings[K]> } = {
   deepgramApiKey: text(500),
   anthropicApiKey: text(500),
   anthropicWorkspaceId: text(200),
+  nudgeModel: nonEmptyText(200),
+  answerModel: nonEmptyText(200),
+  nudgeCooldownSec: num(0, 60, false),
   overlayHotkey: text(60),
   assistHotkey: text(60),
   audioDeviceId: text(300),

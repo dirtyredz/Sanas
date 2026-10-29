@@ -121,6 +121,12 @@ export interface Settings {
   anthropicApiKey: string
   /** Only needed for org-level (non-workspace) Anthropic keys; sent as anthropic-workspace-id. */
   anthropicWorkspaceId: string
+  /** Claude model used for short ambient suggestions. */
+  nudgeModel: string
+  /** Claude model used for on-demand answers, summaries and Ask-your-history. */
+  answerModel: string
+  /** Minimum time between ambient nudges; 0 disables the cooldown. */
+  nudgeCooldownSec: number
   overlayHotkey: string
   assistHotkey: string
   audioDeviceId: string

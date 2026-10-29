@@ -57,15 +57,16 @@ Mic (getUserMedia, renderer)
 
 ### Assistance (Claude)
 
-- Model: `claude-opus-5` (the `MODEL` constant in `services/assistant/claude.ts`) via the
-  Anthropic API, streaming.
+- Models are selected in Settings and passed per request: ambient nudges default to
+  `claude-sonnet-5-5`; on-demand answers, summaries and Ask-your-history default to
+  `claude-opus-5-5`. Either accepts a custom model ID.
 - **Prompt assembly:** system prompt = persona/tone + job context pack (company info,
   project scope, notes, talking points, glossary); user turn = recent transcript window
   (last ~N seconds/tokens) + the trigger reason.
 - **Ambient triggers** (cheap, local heuristics first): a final transcript segment from a
   non-user speaker that is a question (interrogative detection), long user silence after
-  a question, or explicit keywords. Debounced — suggestions never fire more often than a
-  floor interval.
+  a question, or explicit keywords. Debounced by the current Settings cooldown (default
+  5 seconds, adjustable from 0–60).
 - **On-demand trigger:** global hotkey → immediate full-length response.
 - Ambient nudges are short (1–2 sentences, "mention the Q3 migration"); on-demand answers
   are fuller. Both logged to the meeting record.

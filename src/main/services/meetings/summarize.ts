@@ -29,12 +29,13 @@ export async function summarizeLines(
   systemPrompt: string,
 ): Promise<boolean> {
   if (lines.length < MIN_LINES) return false
-  const { anthropicApiKey, anthropicWorkspaceId } = loadSettings()
+  const { anthropicApiKey, anthropicWorkspaceId, answerModel } = loadSettings()
   if (!anthropicApiKey) return false
 
   const text = await claudeProvider.complete({
     apiKey: anthropicApiKey,
     workspaceId: anthropicWorkspaceId || undefined,
+    model: answerModel,
     system: systemPrompt,
     userContent: buildSummaryPrompt(lines, speakerNameMap(meetingId)),
     maxTokens: 1500,

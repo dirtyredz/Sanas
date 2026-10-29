@@ -229,6 +229,13 @@ _Non-obvious traps. Read before touching the related area._
 - **Claude prompt growth:** a long meeting's transcript exceeds sensible prompt sizes —
   always window the transcript (recent N tokens) + optionally a rolling summary;
   never send the whole thing per suggestion.
+- **The ambient cooldown is a cost and distraction guard.** It was originally fixed at
+  20 seconds to avoid a Claude call for every nearby question. It is now a 0–60 second
+  Settings value (default 5) and the trigger reads it when each candidate fires. Lowering
+  it makes nudges faster but can increase API usage and on-screen churn.
+- **Claude effort is not portable across models.** The provider sends
+  `output_config.effort` only to Claude Opus/Sonnet 5.x IDs. Haiku and custom model IDs use
+  the base request shape so selecting an unsupported model does not fail on that parameter.
 - **Anthropic keys come in two kinds.** A key created inside a Console workspace just
   works. An org-level key (created without picking a workspace) is rejected with
   `400 … not scoped to a workspace` unless every request carries `anthropic-workspace-id`

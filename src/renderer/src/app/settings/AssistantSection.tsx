@@ -1,0 +1,97 @@
+import { useEffect, useState } from 'react'
+import type { SettingsView } from '@shared/types'
+import { SettingsSection } from './SettingsSection'
+
+const MODELS = ['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-5-5'] as const
+
+function isListedModel(model: string): boolean {
+  return MODELS.some((choice) => choice === model)
+}
+
+function ModelField({
+  label,
+  model,
+  onChange,
+}: {
+  label: string
+  model: string
+  onChange: (model: string) => void
+}): React.JSX.Element {
+  const [custom, setCustom] = useState(!isListedModel(model))
+
+  useEffect(() => {
+    if (isListedModel(model)) setCustom(false)
+  }, [model])
+
+  return (
+    <label className="field">
+      <span className="label">{label}</span>
+      <select
+        value={custom ? 'custom' : model}
+        onChange={(e) => {
+          if (e.target.value === 'custom') {
+            setCustom(true)
+            onChange('')
+          } else {
+            setCustom(false)
+            onChange(e.target.value)
+          }
+        }}
+      >
+        {MODELS.map((choice) => (
+          <option key={choice} value={choice}>
+            {choice}
+          </option>
+        ))}
+        <option value="custom">Custom…</option>
+      </select>
+      {custom && (
+        <input
+          value={model}
+          maxLength={200}
+          placeholder="Claude model ID"
+          aria-label={`${label} custom model ID`}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      )}
+    </label>
+  )
+}
+
+export function AssistantSection({
+  view,
+  onChange,
+}: {
+  view: SettingsView
+  onChange: (patch: Partial<SettingsView>) => void
+}): React.JSX.Element {
+  return (
+    <SettingsSection
+      title="Assistant"
+      description="Use a fast model for ambient nudges and a deeper model for requested answers and meeting follow-up."
+    >
+      <ModelField
+        label="Ambient nudge model"
+        model={view.nudgeModel}
+        onChange={(nudgeModel) => onChange({ nudgeModel })}
+      />
+      <ModelField
+        label="Full answer model"
+        model={view.answerModel}
+        onChange={(answerModel) => onChange({ answerModel })}
+      />
+      <label className="field">
+        <span className="label">Nudge cooldown</span>
+        <input
+          type="number"
+          min={0}
+          max={60}
+          step={1}
+          value={view.nudgeCooldownSec}
+          onChange={(e) => onChange({ nudgeCooldownSec: Number(e.target.value) })}
+        />
+        <small>Seconds between ambient nudges (0–60). Set to 0 for no cooldown.</small>
+      </label>
+    </SettingsSection>
+  )
+}

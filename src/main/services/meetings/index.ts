@@ -362,7 +362,7 @@ export async function runSuggestion(trigger: 'ambient' | 'hotkey'): Promise<void
   if (suggestionBusy) return // one at a time; drop overlapping triggers
   if (transcriptWindow.length === 0) return
 
-  const { anthropicApiKey, anthropicWorkspaceId } = loadSettings()
+  const { anthropicApiKey, anthropicWorkspaceId, nudgeModel, answerModel } = loadSettings()
   const atMs = Math.round(audioMsReceived) // audio time, so it lines up with the transcript
   const sid = ++suggestionSeq
   const emit = (kind: SuggestionEvent['kind'], text: string): void =>
@@ -390,6 +390,7 @@ export async function runSuggestion(trigger: 'ambient' | 'hotkey'): Promise<void
     const text = await claudeProvider.complete({
       apiKey: anthropicApiKey,
       workspaceId: anthropicWorkspaceId || undefined,
+      model: trigger === 'ambient' ? nudgeModel : answerModel,
       system: systemPrompt,
       userContent,
       // nudges stay terse and fast; hotkey answers get more room and depth

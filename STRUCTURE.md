@@ -123,10 +123,10 @@ not beside `index.ts` / `system-audio.ts`.
 - `windows/main-window.ts` + `overlay-window.ts` share webPreferences/load-URL
   boilerplate — extract a `createAppWindow(opts)` helper if a third window appears
   (deliberately not abstracted at two call sites).
-- `AssistRequest.effort` and `AssistRequest.workspaceId` on the provider seam map 1:1 to
-  Anthropic-specific knobs (output effort; the `anthropic-workspace-id` header). A second
-  provider would need its own interpretation of low/medium/high and likely no workspace
-  concept at all.
+- `AssistRequest.model`, `AssistRequest.effort` and `AssistRequest.workspaceId` on the
+  provider seam map closely to Anthropic-specific knobs (Claude model IDs, output effort,
+  and the `anthropic-workspace-id` header). A second provider would need its own model-ID
+  settings and interpretation of low/medium/high, and likely no workspace concept at all.
 - `services/meetings/index.ts` imports `deepgramProvider`/`claudeProvider` concretely
   (no DI/composition root) — deliberate while there is exactly one of each; the swap
   point is one import line (`services/email/index.ts` and `services/history/index.ts`

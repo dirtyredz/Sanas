@@ -83,6 +83,9 @@ describe('requireSettingsPatch', () => {
       smtpPort: 587,
       overlayOpacity: 0.7,
       audioRetentionDays: 30,
+      nudgeCooldownSec: 5,
+      nudgeModel: ' custom-nudge-model ',
+      answerModel: 'claude-opus-5-5',
       meetingSource: 'this-pc',
       recordAudio: false,
       smtpHost: 'smtp.example',
@@ -94,6 +97,9 @@ describe('requireSettingsPatch', () => {
       smtpPort: 587,
       overlayOpacity: 0.7,
       audioRetentionDays: 30,
+      nudgeCooldownSec: 5,
+      nudgeModel: 'custom-nudge-model',
+      answerModel: 'claude-opus-5-5',
       meetingSource: 'this-pc',
       recordAudio: false,
       smtpHost: 'smtp.example',
@@ -107,12 +113,18 @@ describe('requireSettingsPatch', () => {
         smtpPort: 70_000,
         overlayOpacity: 2,
         audioRetentionDays: -1,
+        nudgeCooldownSec: 61,
+        nudgeModel: '',
+        answerModel: 'x'.repeat(201),
         meetingSource: 'the-moon',
         recordAudio: 'yes',
         overlayBounds: { x: 1, y: 2, width: 5, height: 5 },
       }),
     ).toEqual({})
     expect(requireSettingsPatch({ overlayBounds: null })).toEqual({ overlayBounds: null })
+  })
+  it('rejects empty model IDs', () => {
+    expect(requireSettingsPatch({ nudgeModel: '', answerModel: '   ' })).toEqual({})
   })
   it('rejects a non-object', () => {
     expect(() => requireSettingsPatch(null)).toThrow('Invalid settings')

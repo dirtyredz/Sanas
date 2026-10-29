@@ -2,11 +2,12 @@
 // an unprompted nudge. Cheap local checks only — the expensive call happens
 // after this gate. Expected to grow; keep it isolated here (STRUCTURE.md).
 
+import { loadSettings } from '../../config/settings'
+
 const INTERROGATIVE_START =
   /^(what|how|why|when|where|who|which|can|could|would|should|will|do|does|did|are|is|was|were|have|has|any thoughts|thoughts on)\b/i
 
 const MIN_WORDS = 4
-const DEBOUNCE_MS = 20_000
 
 let lastFiredAt = 0
 
@@ -24,7 +25,8 @@ export function shouldTrigger(seg: { isUser: boolean; text: string }): boolean {
   if (!looksLikeQuestion) return false
 
   const now = Date.now()
-  if (now - lastFiredAt < DEBOUNCE_MS) return false
+  const cooldownMs = loadSettings().nudgeCooldownSec * 1000
+  if (now - lastFiredAt < cooldownMs) return false
   lastFiredAt = now
   return true
 }

@@ -5,6 +5,8 @@ export interface AssistRequest {
   apiKey: string
   /** Org-level keys must name a workspace per request; blank for workspace-scoped keys. */
   workspaceId?: string
+  /** Provider model ID, chosen per request by the owning feature. */
+  model: string
   system: string
   userContent: string
   maxTokens: number

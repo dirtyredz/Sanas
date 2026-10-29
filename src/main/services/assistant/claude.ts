@@ -1,10 +1,11 @@
 import Anthropic from '@anthropic-ai/sdk'
 import type { AssistantProvider, AssistRequest } from './types'
 
-// Claude Opus 5: thinking is adaptive by default (no `thinking` param needed);
-// effort dials depth vs latency — 'low' keeps ambient nudges snappy.
-
-const MODEL = 'claude-opus-5'
+// Adaptive thinking is model-specific. Opus and Sonnet 5.x accept effort; Haiku and
+// unknown custom model IDs get the portable request shape so choosing one cannot break calls.
+function supportsEffort(model: string): boolean {
+  return /^claude-(?:opus|sonnet)-5(?:-|$)/.test(model)
+}
 
 export const claudeProvider: AssistantProvider = {
   async complete(req: AssistRequest): Promise<string> {
@@ -14,9 +15,9 @@ export const claudeProvider: AssistantProvider = {
       defaultHeaders: req.workspaceId ? { 'anthropic-workspace-id': req.workspaceId } : undefined,
     })
     const stream = client.messages.stream({
-      model: MODEL,
+      model: req.model,
       max_tokens: req.maxTokens,
-      output_config: { effort: req.effort },
+      ...(supportsEffort(req.model) ? { output_config: { effort: req.effort } } : {}),
       // job context pack is stable for the whole meeting — cache it
       system: [{ type: 'text', text: req.system, cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content: req.userContent }],
