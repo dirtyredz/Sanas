@@ -13,6 +13,7 @@ import { buildSummaryPrompt, buildSystemPrompt, type TranscriptLine } from '../a
 // and the on-demand pass from the meeting view (stored transcript, capped by SUMMARY_CHARS).
 
 const MIN_LINES = 5 // fewer than this isn't worth a call
+const SUMMARY_TIMEOUT_MS = 120_000
 
 function splitSections(text: string): { summary: string; actions: string } {
   const idx = text.indexOf('ACTION ITEMS')
@@ -40,6 +41,8 @@ export async function summarizeLines(
     userContent: buildSummaryPrompt(lines, speakerNameMap(meetingId)),
     maxTokens: 1500,
     effort: 'medium',
+    // generous: a long meeting's summary is a big one-shot call, and nobody is waiting
+    timeoutMs: SUMMARY_TIMEOUT_MS,
     // no onDelta — one-shot; persisted when done
   })
   const { summary, actions } = splitSections(text)

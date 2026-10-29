@@ -8,6 +8,27 @@ function supportsEffort(model: string): boolean {
   return /^claude-(?:opus|sonnet)-5(?:-|$)/.test(model)
 }
 
+interface SdkRequestOptions {
+  signal?: AbortSignal
+  timeout?: number
+  maxRetries?: number
+}
+
+/** Per-request SDK options. The SDK validates every option it is GIVEN — an explicit
+ *  `timeout: undefined` is rejected as "timeout must be an integer" — so each one is
+ *  included only when the caller set a usable value. */
+export function requestOptions(req: AssistRequest): SdkRequestOptions {
+  const opts: SdkRequestOptions = {}
+  if (req.signal) opts.signal = req.signal
+  if (req.timeoutMs !== undefined && Number.isFinite(req.timeoutMs) && req.timeoutMs > 0) {
+    opts.timeout = Math.max(1, Math.round(req.timeoutMs))
+  }
+  if (req.maxRetries !== undefined && Number.isInteger(req.maxRetries) && req.maxRetries >= 0) {
+    opts.maxRetries = req.maxRetries
+  }
+  return opts
+}
+
 export const claudeProvider: AssistantProvider = {
   async complete(req: AssistRequest): Promise<string> {
     const client = new Anthropic({
@@ -24,11 +45,7 @@ export const claudeProvider: AssistantProvider = {
         system: [{ type: 'text', text: req.system, cache_control: { type: 'ephemeral' } }],
         messages: [{ role: 'user', content: req.userContent }],
       },
-      {
-        signal: req.signal,
-        timeout: req.timeoutMs,
-        ...(req.maxRetries !== undefined ? { maxRetries: req.maxRetries } : {}),
-      },
+      requestOptions(req),
     )
     if (req.onDelta) stream.on('text', req.onDelta)
     const final = await stream.finalMessage()

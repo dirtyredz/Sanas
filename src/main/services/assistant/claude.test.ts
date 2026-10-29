@@ -25,7 +25,7 @@ vi.mock('@anthropic-ai/sdk', () => ({
   },
 }))
 
-import { claudeProvider } from './claude'
+import { claudeProvider, requestOptions } from './claude'
 
 const base = {
   apiKey: 'sk-test',
@@ -67,6 +67,22 @@ describe('Claude provider request options', () => {
     expect(sdk.calls[0].options).not.toHaveProperty('maxRetries')
     expect(sdk.calls[0].options.timeout).toBe(25_000)
     expect(sdk.calls[0].body).toMatchObject({ output_config: { effort: 'low' } })
+  })
+
+  it('omits timeout entirely when the caller set none (summaries, Ask)', async () => {
+    // the SDK rejects an explicit `timeout: undefined` as "timeout must be an integer"
+    await claudeProvider.complete(base)
+    expect(sdk.calls[0].options).toEqual({})
+    expect('timeout' in sdk.calls[0].options).toBe(false)
+    expect('signal' in sdk.calls[0].options).toBe(false)
+  })
+
+  it('sends only valid positive integer timeouts', () => {
+    expect(requestOptions({ ...base, timeoutMs: 2_500.4 })).toEqual({ timeout: 2_500 })
+    expect(requestOptions({ ...base, timeoutMs: 0 })).toEqual({})
+    expect(requestOptions({ ...base, timeoutMs: -5 })).toEqual({})
+    expect(requestOptions({ ...base, timeoutMs: Number.NaN })).toEqual({})
+    expect(requestOptions({ ...base, maxRetries: 1.5 })).toEqual({})
   })
 
   it('adds the workspace header only when set', async () => {
