@@ -10,10 +10,7 @@
 //    two's "S1" is something only a listener knows; the meeting view's merge-speakers
 //    control is how they say so.
 
-/** SQLite's datetime text ("YYYY-MM-DD HH:MM:SS", UTC). */
-function parseUtc(s: string): number {
-  return Date.parse(s.replace(' ', 'T') + 'Z')
-}
+import { parseSqliteDateTime } from '../../../db/sqlite-time'
 
 export interface MergePart {
   id: number
@@ -54,22 +51,27 @@ export function planMerge(parts: MergePart[]): MergePlan {
     throw new Error('One of those meetings never ended — stop it before merging.')
   }
 
-  const ordered = [...parts].sort((a, b) => parseUtc(a.startedAt) - parseUtc(b.startedAt))
+  const ordered = [...parts].sort(
+    (a, b) => parseSqliteDateTime(a.startedAt) - parseSqliteDateTime(b.startedAt),
+  )
   for (let i = 1; i < ordered.length; i++) {
     const prev = ordered[i - 1]
-    if (prev.endedAt && parseUtc(ordered[i].startedAt) < parseUtc(prev.endedAt)) {
+    if (
+      prev.endedAt &&
+      parseSqliteDateTime(ordered[i].startedAt) < parseSqliteDateTime(prev.endedAt)
+    ) {
       throw new Error('Those meetings overlap in time — they were not one conversation.')
     }
   }
   const [keep, ...rest] = ordered
-  const base = parseUtc(keep.startedAt)
+  const base = parseSqliteDateTime(keep.startedAt)
 
   const steps: MergeStep[] = []
   let speakerOffset = keep.maxSpeaker + 1
   for (const p of rest) {
     steps.push({
       from: p.id,
-      timeOffsetMs: Math.max(0, parseUtc(p.startedAt) - base),
+      timeOffsetMs: Math.max(0, parseSqliteDateTime(p.startedAt) - base),
       speakerOffset,
     })
     speakerOffset += p.maxSpeaker + 1
@@ -78,7 +80,9 @@ export function planMerge(parts: MergePart[]): MergePlan {
   // the merged record ends when its last part ended
   const endedAt = ordered.reduce<string | null>(
     (latest, p) =>
-      p.endedAt && (!latest || parseUtc(p.endedAt) > parseUtc(latest)) ? p.endedAt : latest,
+      p.endedAt && (!latest || parseSqliteDateTime(p.endedAt) > parseSqliteDateTime(latest))
+        ? p.endedAt
+        : latest,
     null,
   )
   // keep every part's text rather than discarding it; Regenerate replaces it with one piece

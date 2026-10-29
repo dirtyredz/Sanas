@@ -97,4 +97,18 @@ describe('planMerge', () => {
     })
     expect(() => planMerge([a, abutting])).not.toThrow()
   })
+
+  it('compares millisecond ended_at values written by startup recovery', () => {
+    const recovered = part({
+      id: 32,
+      startedAt: '2026-09-09 20:45:57',
+      endedAt: '2026-09-09 20:50:39.456',
+    })
+    const overlapping = part({
+      id: 33,
+      startedAt: '2026-09-09 20:50:39.123',
+      endedAt: '2026-09-09 20:52:00',
+    })
+    expect(() => planMerge([recovered, overlapping])).toThrow('overlap')
+  })
 })
