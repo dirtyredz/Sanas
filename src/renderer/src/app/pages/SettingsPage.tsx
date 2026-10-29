@@ -24,6 +24,11 @@ export function SettingsPage(): React.JSX.Element {
 
   useEffect(() => {
     window.sanas.settings.get().then(setView)
+    return window.sanas.settings.onChanged((settings) => {
+      setView((current) =>
+        current ? { ...current, overlayOpacity: settings.overlayOpacity } : settings,
+      )
+    })
   }, [])
 
   if (!view) return <p className="muted">Loading…</p>

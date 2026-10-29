@@ -277,11 +277,10 @@ _Non-obvious traps. Read before touching the related area._
   separately marks/clears post-processing, and the overlay disables “Answer now” only while
   the requested lane is occupied. Smart/Points ambient calls time out after 25 seconds;
   Full ambient and requested answers after 60 seconds.
-- **A new ambient whisper does not automatically replace what is being read.** It follows
-  only when the owner is already on the newest item, has not scrolled it, the pointer is
-  outside the whisper panel, and the current item did not finish in the last eight seconds.
-  Otherwise the overlay keeps its place and shows “New answer”. A hotkey/“Answer now” request
-  always selects the answer it started.
+- **Whisper history follows the latest answer by default.** It stays put only after the owner
+  navigates to an older item or scrolls within the current answer, and then shows “New answer”.
+  Selecting Latest or navigating forward to the end resumes following. A hotkey/“Answer now”
+  request always selects the answer it started.
 - **Claude effort is not portable across models.** The provider sends
   `output_config.effort` only to Claude Opus/Sonnet 5.x IDs. Haiku and custom model IDs use
   the base request shape so selecting an unsupported model does not fail on that parameter.

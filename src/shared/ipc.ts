@@ -5,11 +5,13 @@ export const IPC = {
   // settings
   SettingsGet: 'settings:get',
   SettingsSet: 'settings:set',
+  SettingsChanged: 'settings:changed',
   // overlay
   OverlayToggle: 'overlay:toggle',
   OverlayResize: 'overlay:resize',
   // meetings (renderer → main)
   MeetingStart: 'meeting:start',
+  MeetingGetState: 'meeting:get-state',
   MeetingPause: 'meeting:pause',
   MeetingResume: 'meeting:resume',
   MeetingStop: 'meeting:stop',

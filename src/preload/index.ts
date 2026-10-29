@@ -26,6 +26,11 @@ const api = {
     get: (): Promise<SettingsView> => ipcRenderer.invoke(IPC.SettingsGet),
     set: (patch: Partial<Settings>): Promise<SettingsView> =>
       ipcRenderer.invoke(IPC.SettingsSet, patch),
+    onChanged: (cb: (settings: SettingsView) => void): (() => void) => {
+      const listener = (_e: unknown, settings: SettingsView): void => cb(settings)
+      ipcRenderer.on(IPC.SettingsChanged, listener)
+      return () => ipcRenderer.removeListener(IPC.SettingsChanged, listener)
+    },
   },
   overlay: {
     toggle: (): Promise<void> => ipcRenderer.invoke(IPC.OverlayToggle),
@@ -40,6 +45,7 @@ const api = {
     },
   },
   meeting: {
+    getState: (): Promise<MeetingState> => ipcRenderer.invoke(IPC.MeetingGetState),
     start: (jobId?: number, channels?: number): Promise<MeetingState> =>
       ipcRenderer.invoke(IPC.MeetingStart, jobId, channels),
     /** Stop listening but keep the meeting open; resume continues its clock. */

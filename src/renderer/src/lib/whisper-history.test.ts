@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import type { SuggestionEvent, SuggestionPurpose } from '@shared/types'
 import {
   EMPTY_WHISPER_HISTORY,
-  READING_GRACE_MS,
   shouldFollowNewAmbient,
   whisperHistoryReducer,
 } from './whisper-history'
@@ -61,37 +60,61 @@ describe('whisper history', () => {
     expect(next.selectedId).toBe(2)
   })
 
-  it('follows only when the latest answer is not being read', () => {
-    const state = whisperHistoryReducer(EMPTY_WHISPER_HISTORY, {
+  it('follows a new answer immediately while the latest answer is selected', () => {
+    let state = whisperHistoryReducer(EMPTY_WHISPER_HISTORY, {
       type: 'event',
       event: event(1, 'done', 'answer'),
       followNewest: true,
       now: 100,
     })
-    expect(shouldFollowNewAmbient(state, { scrolled: false, pointerOver: false, now: 100 })).toBe(
-      false,
-    )
-    expect(
-      shouldFollowNewAmbient(state, {
-        scrolled: false,
-        pointerOver: false,
-        now: 100 + READING_GRACE_MS,
-      }),
-    ).toBe(true)
-    expect(
-      shouldFollowNewAmbient(state, {
-        scrolled: true,
-        pointerOver: false,
-        now: 100 + READING_GRACE_MS,
-      }),
-    ).toBe(false)
-    expect(
-      shouldFollowNewAmbient(state, {
-        scrolled: false,
-        pointerOver: true,
-        now: 100 + READING_GRACE_MS,
-      }),
-    ).toBe(false)
+    expect(shouldFollowNewAmbient(state, { scrolled: false })).toBe(true)
+
+    state = whisperHistoryReducer(state, {
+      type: 'event',
+      event: event(2, 'start'),
+      followNewest: shouldFollowNewAmbient(state, { scrolled: false }),
+      now: 101,
+    })
+    expect(state.selectedId).toBe(2)
+  })
+
+  it('stays on an older answer until Latest or next-to-end resumes following', () => {
+    let state = whisperHistoryReducer(EMPTY_WHISPER_HISTORY, {
+      type: 'event',
+      event: event(1, 'done', 'first'),
+      followNewest: true,
+      now: 100,
+    })
+    state = whisperHistoryReducer(state, {
+      type: 'event',
+      event: event(2, 'done', 'second'),
+      followNewest: true,
+      now: 101,
+    })
+    state = whisperHistoryReducer(state, { type: 'select', suggestionId: 1 })
+
+    expect(shouldFollowNewAmbient(state, { scrolled: false })).toBe(false)
+    state = whisperHistoryReducer(state, {
+      type: 'event',
+      event: event(3, 'start'),
+      followNewest: shouldFollowNewAmbient(state, { scrolled: false }),
+      now: 102,
+    })
+    expect(state.selectedId).toBe(1)
+
+    state = whisperHistoryReducer(state, { type: 'select', suggestionId: 3 })
+    expect(shouldFollowNewAmbient(state, { scrolled: false })).toBe(true)
+  })
+
+  it('stays on the latest answer while it has been scrolled', () => {
+    const state = whisperHistoryReducer(EMPTY_WHISPER_HISTORY, {
+      type: 'event',
+      event: event(1, 'done', 'long answer'),
+      followNewest: true,
+      now: 100,
+    })
+
+    expect(shouldFollowNewAmbient(state, { scrolled: true })).toBe(false)
   })
 
   it('keeps the next-point purpose from start to done', () => {

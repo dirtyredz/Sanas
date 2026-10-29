@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { MeetingState, TranscriptEvent } from '@shared/types'
+import { useMeetingState } from './useMeetingState'
 
 export interface TranscriptLine {
   speaker: number
@@ -10,41 +11,39 @@ export interface TranscriptLine {
   interim: boolean
 }
 
-/** Subscribes to live transcript + meeting state. Finals append; the interim line replaces itself. */
+/** Subscribes to the live transcript and reads meeting state from the shared state hook. */
 export function useTranscript(): {
   lines: TranscriptLine[]
   state: MeetingState
   setLines: React.Dispatch<React.SetStateAction<TranscriptLine[]>>
 } {
   const [lines, setLines] = useState<TranscriptLine[]>([])
-  const [state, setState] = useState<MeetingState>({ meetingId: null, status: 'idle' })
+  const state = useMeetingState()
   const shownMeetingId = useRef<number | null>(null)
 
-  useEffect(() => {
-    const offT = window.sanas.meeting.onTranscript((ev: TranscriptEvent) => {
-      setLines((prev) => {
-        const next = prev.filter((l) => !l.interim)
-        next.push({
-          speaker: ev.speaker,
-          isUser: ev.isUser,
-          text: ev.text,
-          tStartMs: ev.tStartMs,
-          interim: !ev.isFinal,
+  useEffect(
+    () =>
+      window.sanas.meeting.onTranscript((ev: TranscriptEvent) => {
+        setLines((prev) => {
+          const next = prev.filter((line) => !line.interim)
+          next.push({
+            speaker: ev.speaker,
+            isUser: ev.isUser,
+            text: ev.text,
+            tStartMs: ev.tStartMs,
+            interim: !ev.isFinal,
+          })
+          return next.slice(-200) // cap render buffer; SQLite holds the full record
         })
-        return next.slice(-200) // cap render buffer; SQLite holds the full record
-      })
-    })
-    const offS = window.sanas.meeting.onState((s: MeetingState) => {
-      setState(s)
-      // clear for a NEW meeting only — resuming a paused one keeps what is on screen
-      if (s.status === 'live' && s.meetingId !== shownMeetingId.current) setLines([])
-      if (s.meetingId !== null) shownMeetingId.current = s.meetingId
-    })
-    return () => {
-      offT()
-      offS()
-    }
-  }, [])
+      }),
+    [],
+  )
+
+  useEffect(() => {
+    // Clear for a new meeting only; resuming a paused one keeps what is on screen.
+    if (state.status === 'live' && state.meetingId !== shownMeetingId.current) setLines([])
+    if (state.meetingId !== null) shownMeetingId.current = state.meetingId
+  }, [state])
 
   return { lines, state, setLines }
 }

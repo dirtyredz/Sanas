@@ -1,7 +1,5 @@
 import type { SuggestionEvent, SuggestionPurpose } from '@shared/types'
 
-export const READING_GRACE_MS = 8_000
-
 export interface SuggestionView {
   suggestionId: number
   meetingId: number
@@ -32,17 +30,14 @@ export const EMPTY_WHISPER_HISTORY: WhisperHistoryState = {
 
 export interface ReadingState {
   scrolled: boolean
-  pointerOver: boolean
-  now: number
 }
 
-/** Ambient answers follow only when the current newest answer is not being read. */
+/** Ambient answers follow unless the owner deliberately left or scrolled the newest answer. */
 export function shouldFollowNewAmbient(state: WhisperHistoryState, reading: ReadingState): boolean {
   if (state.items.length === 0) return true
   const latest = state.items[state.items.length - 1]
   if (state.selectedId !== latest.suggestionId) return false
-  if (reading.scrolled || reading.pointerOver) return false
-  return latest.finishedAt === null || reading.now - latest.finishedAt >= READING_GRACE_MS
+  return !reading.scrolled
 }
 
 export function whisperHistoryReducer(

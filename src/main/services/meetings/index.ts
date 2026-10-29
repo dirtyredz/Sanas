@@ -124,7 +124,7 @@ function serialized(fn: () => Promise<MeetingState>): Promise<MeetingState> {
   return run
 }
 
-function currentState(): MeetingState {
+export function currentState(): MeetingState {
   const meetingId = liveMeetingId()
   if (meetingId === null) return { meetingId: null, status: 'idle' }
   if (paused) return { meetingId, status: 'paused' }
