@@ -25,6 +25,7 @@ describe('settings defaults', () => {
     expect(settings.nudgeModel).toBe('claude-sonnet-5-5')
     expect(settings.answerModel).toBe('claude-opus-5-5')
     expect(settings.nudgeCooldownSec).toBe(5)
+    expect(settings.whisperMode).toBe('smart')
     expect(settings.overlayHotkey).toBe('Control+Space')
   })
 })

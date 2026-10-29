@@ -36,6 +36,7 @@ export function SettingsPage(): React.JSX.Element {
       nudgeModel: view.nudgeModel.trim(),
       answerModel: view.answerModel.trim(),
       nudgeCooldownSec: view.nudgeCooldownSec,
+      whisperMode: view.whisperMode,
       audioDeviceId: view.audioDeviceId,
       recordAudio: view.recordAudio,
       overlayOpacity: view.overlayOpacity,

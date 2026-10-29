@@ -1,4 +1,4 @@
-import type { MeetingSource, Settings } from '@shared/types'
+import type { MeetingSource, Settings, WhisperMode } from '@shared/types'
 
 // One runtime check per Settings key, exhaustive by construction: adding a key to the
 // Settings type fails to compile until it has a checker here, so a new setting can never
@@ -32,6 +32,10 @@ const SOURCES: readonly MeetingSource[] = ['this-pc', 'elsewhere']
 const source: Check<MeetingSource> = (v) =>
   SOURCES.includes(v as MeetingSource) ? (v as MeetingSource) : undefined
 
+const WHISPER_MODES: readonly WhisperMode[] = ['smart', 'full', 'points']
+const whisperMode: Check<WhisperMode> = (v) =>
+  WHISPER_MODES.includes(v as WhisperMode) ? (v as WhisperMode) : undefined
+
 const bounds: Check<Settings['overlayBounds']> = (v) => {
   if (v === null) return null
   if (typeof v !== 'object' || v === null) return undefined
@@ -53,6 +57,7 @@ export const SETTINGS_SCHEMA: { [K in keyof Settings]: Check<Settings[K]> } = {
   nudgeModel: nonEmptyText(200),
   answerModel: nonEmptyText(200),
   nudgeCooldownSec: num(0, 60, false),
+  whisperMode,
   overlayHotkey: text(60),
   assistHotkey: text(60),
   audioDeviceId: text(300),

@@ -81,6 +81,18 @@ export function AssistantSection({
         onChange={(answerModel) => onChange({ answerModel })}
       />
       <label className="field">
+        <span className="label">Whisper mode</span>
+        <select
+          value={view.whisperMode}
+          onChange={(e) => onChange({ whisperMode: e.target.value as SettingsView['whisperMode'] })}
+        >
+          <option value="smart">Smart — answer concrete asks, coach the rest</option>
+          <option value="full">Full — answer every key moment</option>
+          <option value="points">Points — keep ambient help brief</option>
+        </select>
+        <small>Answer now always gives the full answer, including code when useful.</small>
+      </label>
+      <label className="field">
         <span className="label">Nudge cooldown</span>
         <input
           type="number"

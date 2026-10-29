@@ -178,9 +178,65 @@ body.overlay-body {
   cursor: default;
 }
 
-.suggestion-text {
-  line-height: 1.5;
-  white-space: pre-wrap;
+.compact-suggestion {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  line-height: 1.4;
+}
+
+.compact-headline {
+  display: block;
+  font-size: 14px;
+}
+
+.compact-suggestion code {
+  font-family: var(--mono);
+  font-size: 0.9em;
+}
+
+.compact-suggestion > :not(.compact-code) code {
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.compact-code {
+  min-width: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  background: rgba(8, 11, 14, 0.82);
+  overflow: hidden;
+}
+
+.compact-code-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 7px;
+  color: var(--muted);
+  font: 10.5px var(--mono);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.compact-code-bar button {
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  padding: 1px 3px;
+  font-size: 10.5px;
+}
+
+.compact-code pre {
+  max-height: 150px;
+  padding: 8px;
+  overflow: auto;
+  white-space: pre;
+}
+
+.compact-follow-up {
+  color: var(--muted);
+  font-size: 12.5px;
 }
 
 .muted {

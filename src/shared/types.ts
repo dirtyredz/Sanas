@@ -86,6 +86,9 @@ export type ChannelCount = 1 | 2
  *  are diarized and the user marks their own (mono + "that's me" pinning). */
 export type MeetingSource = 'this-pc' | 'elsewhere'
 
+/** How ambient suggestions balance coaching against concrete answers. */
+export type WhisperMode = 'smart' | 'full' | 'points'
+
 /** Live transcript event pushed from main to windows. */
 export interface TranscriptEvent {
   meetingId: number
@@ -127,6 +130,8 @@ export interface Settings {
   answerModel: string
   /** Minimum time between ambient nudges; 0 disables the cooldown. */
   nudgeCooldownSec: number
+  /** Shape of ambient suggestions. The assist hotkey is always a full answer. */
+  whisperMode: WhisperMode
   overlayHotkey: string
   assistHotkey: string
   audioDeviceId: string

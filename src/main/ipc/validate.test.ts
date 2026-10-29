@@ -86,6 +86,7 @@ describe('requireSettingsPatch', () => {
       nudgeCooldownSec: 5,
       nudgeModel: ' custom-nudge-model ',
       answerModel: 'claude-opus-5-5',
+      whisperMode: 'full',
       meetingSource: 'this-pc',
       recordAudio: false,
       smtpHost: 'smtp.example',
@@ -100,6 +101,7 @@ describe('requireSettingsPatch', () => {
       nudgeCooldownSec: 5,
       nudgeModel: 'custom-nudge-model',
       answerModel: 'claude-opus-5-5',
+      whisperMode: 'full',
       meetingSource: 'this-pc',
       recordAudio: false,
       smtpHost: 'smtp.example',
@@ -116,6 +118,7 @@ describe('requireSettingsPatch', () => {
         nudgeCooldownSec: 61,
         nudgeModel: '',
         answerModel: 'x'.repeat(201),
+        whisperMode: 'verbose',
         meetingSource: 'the-moon',
         recordAudio: 'yes',
         overlayBounds: { x: 1, y: 2, width: 5, height: 5 },
@@ -125,6 +128,11 @@ describe('requireSettingsPatch', () => {
   })
   it('rejects empty model IDs', () => {
     expect(requireSettingsPatch({ nudgeModel: '', answerModel: '   ' })).toEqual({})
+  })
+  it('accepts only known whisper modes', () => {
+    expect(requireSettingsPatch({ whisperMode: 'smart' })).toEqual({ whisperMode: 'smart' })
+    expect(requireSettingsPatch({ whisperMode: 'points' })).toEqual({ whisperMode: 'points' })
+    expect(requireSettingsPatch({ whisperMode: 'anything' })).toEqual({})
   })
   it('rejects a non-object', () => {
     expect(() => requireSettingsPatch(null)).toThrow('Invalid settings')

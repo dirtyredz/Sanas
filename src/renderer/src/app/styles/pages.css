@@ -299,12 +299,70 @@
 }
 
 .suggestion-body {
-  white-space: pre-wrap;
   line-height: 1.5;
   padding-left: 14px;
   border-left: 2px solid var(--line-strong);
   margin: 4px 0 0 152px;
   max-width: 70ch;
+}
+
+.compact-suggestion {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.compact-headline {
+  display: block;
+}
+
+.compact-suggestion code {
+  font-family: var(--mono);
+  font-size: 0.92em;
+}
+
+.compact-suggestion > :not(.compact-code) code {
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: var(--panel-2);
+}
+
+.compact-code {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.compact-code-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+  color: var(--muted);
+  font: 11px var(--mono);
+  border-bottom: 1px solid var(--line);
+}
+
+.compact-code-bar button {
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  padding: 1px 4px;
+  font-size: 11px;
+}
+
+.compact-code pre {
+  max-height: 240px;
+  padding: 10px;
+  overflow: auto;
+  white-space: pre;
+}
+
+.compact-follow-up {
+  color: var(--muted);
+  font-size: 13px;
 }
 
 /* ---------- search ---------- */

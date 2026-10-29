@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranscript } from '../lib/useTranscript'
 import { useSuggestion } from '../lib/useSuggestion'
 import { speakerDisplay } from '../lib/speaker-label'
+import { CompactSuggestion } from '../lib/CompactSuggestion'
 
 export function Overlay(): React.JSX.Element {
   const { lines, state } = useTranscript()
@@ -71,7 +72,7 @@ export function Overlay(): React.JSX.Element {
           </button>
         </div>
         {suggestion?.error && <p className="warn">{suggestion.error}</p>}
-        {suggestion && !suggestion.error && <p className="suggestion-text">{suggestion.text}</p>}
+        {suggestion && !suggestion.error && <CompactSuggestion text={suggestion.text} />}
         {!suggestion && (
           <p className="muted">
             {live

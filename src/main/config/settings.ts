@@ -13,6 +13,7 @@ const DEFAULTS: Settings = {
   nudgeModel: 'claude-sonnet-5-5',
   answerModel: 'claude-opus-5-5',
   nudgeCooldownSec: 5,
+  whisperMode: 'smart',
   overlayHotkey: 'CommandOrControl+Shift+Space',
   assistHotkey: 'CommandOrControl+Shift+Enter',
   audioDeviceId: '',

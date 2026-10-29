@@ -3,6 +3,7 @@ import type { Job, Meeting, Segment, Suggestion } from '@shared/types'
 import { speakerDisplay } from '../../lib/speaker-label'
 import { formatClock, formatWhen } from '../../lib/format-time'
 import { errorText } from '../../lib/ipc-error'
+import { CompactSuggestion } from '../../lib/CompactSuggestion'
 
 /** The model writes action items as "- item" lines; render them as a list when it did. */
 function actionItemList(text: string): string[] | null {
@@ -268,7 +269,9 @@ export function MeetingView({
                   {s.trigger === 'hotkey' ? 'you asked' : 'ambient'}
                 </span>
               </p>
-              <p className="suggestion-body">{s.text}</p>
+              <div className="suggestion-body">
+                <CompactSuggestion text={s.text} />
+              </div>
             </div>
           ))}
         </div>

@@ -21,7 +21,12 @@ import { insertSegment, setSpeakerIsUser } from '../../db/repos/segments'
 import { insertSuggestion } from '../../db/repos/suggestions'
 import { speakerNameMap } from '../../db/repos/speakers'
 import { claudeProvider } from '../assistant/claude'
-import { buildSystemPrompt, buildUserContent, type TranscriptLine } from '../assistant/prompts'
+import {
+  assistProfile,
+  buildSystemPrompt,
+  buildUserContent,
+  type TranscriptLine,
+} from '../assistant/prompts'
 import { resetTriggers, shouldTrigger } from '../assistant/triggers'
 import { broadcast } from '../../windows/broadcast'
 
@@ -362,7 +367,8 @@ export async function runSuggestion(trigger: 'ambient' | 'hotkey'): Promise<void
   if (suggestionBusy) return // one at a time; drop overlapping triggers
   if (transcriptWindow.length === 0) return
 
-  const { anthropicApiKey, anthropicWorkspaceId, nudgeModel, answerModel } = loadSettings()
+  const { anthropicApiKey, anthropicWorkspaceId, nudgeModel, answerModel, whisperMode } =
+    loadSettings()
   const atMs = Math.round(audioMsReceived) // audio time, so it lines up with the transcript
   const sid = ++suggestionSeq
   const emit = (kind: SuggestionEvent['kind'], text: string): void =>
@@ -386,16 +392,17 @@ export async function runSuggestion(trigger: 'ambient' | 'hotkey'): Promise<void
   // would make the meeting permanently un-mergeable and un-deletable.
   markPostProcessing(id)
   try {
-    const userContent = buildUserContent(transcriptWindow, trigger, speakerNameMap(id))
+    const profile = assistProfile(trigger, whisperMode)
+    const userContent = buildUserContent(transcriptWindow, trigger, whisperMode, speakerNameMap(id))
     const text = await claudeProvider.complete({
       apiKey: anthropicApiKey,
       workspaceId: anthropicWorkspaceId || undefined,
-      model: trigger === 'ambient' ? nudgeModel : answerModel,
+      model: profile.useAnswerModel ? answerModel : nudgeModel,
       system: systemPrompt,
       userContent,
-      // nudges stay terse and fast; hotkey answers get more room and depth
-      maxTokens: trigger === 'ambient' ? 300 : 1000,
-      effort: trigger === 'ambient' ? 'low' : 'medium',
+      // points/smart ambient output stays terse; full mode and hotkey answers get code room
+      maxTokens: profile.maxTokens,
+      effort: profile.effort,
       onDelta: (delta) => emit('delta', delta),
     })
     insertSuggestion({ meetingId: id, tMs: atMs, trigger, promptWindow: userContent, text })
