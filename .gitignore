@@ -7,3 +7,14 @@ release/
 *.tsbuildinfo
 .claude/settings.local.json
 .docket/
+
+# scratch (agent briefs, reports, owner-run logs)
+.tmp/
+
+# Codex launcher run artifacts beside plans
+docs/plans/*.events.jsonl
+docs/plans/*.job.json
+docs/plans/*.stderr.log
+
+# Agent-tool worktrees
+.claude/worktrees/
