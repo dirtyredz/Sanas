@@ -11,6 +11,7 @@ export const IPC = {
   OverlayResize: 'overlay:resize',
   // meetings (renderer → main)
   MeetingStart: 'meeting:start',
+  MeetingGetState: 'meeting:get-state',
   MeetingPause: 'meeting:pause',
   MeetingResume: 'meeting:resume',
   MeetingStop: 'meeting:stop',

@@ -45,6 +45,7 @@ const api = {
     },
   },
   meeting: {
+    getState: (): Promise<MeetingState> => ipcRenderer.invoke(IPC.MeetingGetState),
     start: (jobId?: number, channels?: number): Promise<MeetingState> =>
       ipcRenderer.invoke(IPC.MeetingStart, jobId, channels),
     /** Stop listening but keep the meeting open; resume continues its clock. */

@@ -15,6 +15,7 @@ import {
   sendAudioChunk,
   pinSpeaker,
   runSuggestion,
+  currentState,
 } from '../services/meetings'
 import {
   optionalText,
@@ -75,6 +76,7 @@ export function registerIpcHandlers(): void {
       channels === 2 ? 2 : 1,
     ),
   )
+  ipcMain.handle(IPC.MeetingGetState, () => currentState())
   ipcMain.handle(IPC.MeetingPause, () => pauseMeeting())
   ipcMain.handle(IPC.MeetingResume, (_e, channels: unknown) =>
     // only 1 or 2 are meaningful; main refuses a topology the meeting did not start with

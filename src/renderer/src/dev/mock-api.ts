@@ -369,6 +369,7 @@ const api: SanasApi = {
     onGhostState: on(ghostListeners),
   },
   meeting: {
+    getState: async () => state,
     start: async (_jobId, channels) => {
       liveChannels = channels ?? 1
       pinned.clear()
