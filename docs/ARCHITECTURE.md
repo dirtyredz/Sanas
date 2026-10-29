@@ -191,7 +191,7 @@ begins recording; pause closes the connection and stops audio while keeping ever
 resume reopens with the meeting's clock carried over; stop ends the row and kicks off the
 post-meeting passes below. Only one meeting is live at a time; the orchestrator
 (`services/meetings/index.ts`) runs it and publishes which one it is through
-`services/meetings/live-meeting.ts`, so delete can refuse the meeting still being written to.
+`services/meetings/status/live-meeting.ts`, so delete can refuse the meeting still being written to.
 At main-process startup, before IPC can start another meeting, rows left open by an earlier
 process are closed at their last persisted segment end (or at their start if empty).
 
@@ -208,5 +208,5 @@ On meeting end, two fire-and-forget passes:
    (`SttProvider.transcribeFile`); batch diarization sees the whole file, so speaker
    labels are stable. Live segments are replaced wholesale (streaming labels drift).
    Batch re-numbers the voices, so "that's me" pins (mono) and speaker names are carried
-   over by time overlap (`meetings/speaker-carryover.ts`); names/merges stay user-editable
+   over by time overlap (`meetings/rediarize/speaker-carryover.ts`); names/merges stay user-editable
    per meeting in the transcript view.

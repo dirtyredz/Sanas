@@ -7,6 +7,7 @@ import {
   listAudioPaths,
   listMeetingsEndedBefore,
 } from '../../db/repos/meetings'
+import { toSqliteDateTime } from '../../db/sqlite-time'
 import { listRecordings } from '../audio-store'
 import { removeAudioFile, removeMeeting } from '../meetings/remove'
 
@@ -24,9 +25,9 @@ import { removeAudioFile, removeMeeting } from '../meetings/remove'
 const RUN_EVERY_MS = 6 * 60 * 60 * 1000
 const FIRST_RUN_DELAY_MS = 30 * 1000
 
-/** SQLite's datetime('now') text ("YYYY-MM-DD HH:MM:SS", UTC), so string compare works. */
+/** In SQLite's datetime('now') form, so the repo's string compare works. */
 function cutoff(days: number): string {
-  return new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 19).replace('T', ' ')
+  return toSqliteDateTime(Date.now() - days * 86_400_000)
 }
 
 function fileSize(path: string | null): number {

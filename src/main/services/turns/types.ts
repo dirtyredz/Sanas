@@ -3,9 +3,9 @@
 // plus a short continuation grace) or, without that evidence, after a silence fallback.
 // These are not renderer IPC models — nothing here crosses the preload boundary.
 
-import type { IdentityRole } from '../meetings/capture/channel-identity'
-
-export type { IdentityRole }
+/** How sure an identity is. 'unknown' never initiates coaching, and in stereo it is what a
+ *  provider message without a usable channel becomes, instead of implicit user speech. */
+export type IdentityRole = 'user' | 'other' | 'unknown'
 
 /** One finalized transcript fragment, already resolved to an identity. */
 export interface TurnFinal {

@@ -1,12 +1,12 @@
 import type { Meeting } from '@shared/types'
-import { loadSettings } from '../../config/settings'
-import { getMeeting, updateMeetingSummary } from '../../db/repos/meetings'
-import { listSegments } from '../../db/repos/segments'
-import { getJob, listGlossary } from '../../db/repos/jobs'
-import { speakerNameMap } from '../../db/repos/speakers'
-import { whilePostProcessing } from './post-processing'
-import { claudeProvider } from '../assistant/claude'
-import { buildSummaryPrompt, buildSystemPrompt, type TranscriptLine } from '../assistant/prompts'
+import { loadSettings } from '../../../config/settings'
+import { getMeeting, updateMeetingSummary } from '../../../db/repos/meetings'
+import { listSegments } from '../../../db/repos/segments'
+import { getJob, listGlossary } from '../../../db/repos/jobs'
+import { speakerNameMap } from '../../../db/repos/speakers'
+import { whilePostProcessing } from '../status/post-processing'
+import { claudeProvider } from '../../assistant/claude'
+import { buildSummaryPrompt, buildSystemPrompt, type TranscriptLine } from '../../assistant/prompts'
 
 // Post-meeting summary + action items. Two entry points share one Claude call:
 // the fire-and-forget pass on stop (live transcript window, no DB round-trip)

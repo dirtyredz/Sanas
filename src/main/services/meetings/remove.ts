@@ -1,7 +1,7 @@
 import { existsSync, unlinkSync } from 'fs'
 import { deleteMeeting, getMeeting } from '../../db/repos/meetings'
-import { isLiveMeeting } from './live-meeting'
-import { isPostProcessing } from './post-processing'
+import { isLiveMeeting } from './status/live-meeting'
+import { isPostProcessing } from './status/post-processing'
 
 // Deleting a meeting has two halves — the audio file on disk and the row (segments,
 // suggestions and speaker names cascade from it). This is the one place both happen;

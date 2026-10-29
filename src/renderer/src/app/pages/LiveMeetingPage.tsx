@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Job, MeetingSource } from '@shared/types'
 import { startCapture, type CaptureSession } from '../../audio/mic'
-import { useTranscript } from '../../lib/useTranscript'
+import { useTranscript } from '../../lib/meeting/useTranscript'
 import { speakerDisplay } from '../../lib/speaker-label'
 import { formatClock } from '../../lib/format-time'
 import { errorText } from '../../lib/ipc-error'

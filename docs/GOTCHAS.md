@@ -164,7 +164,7 @@ _Non-obvious traps. Read before touching the related area._
   meeting's `audio_path`. No single WAV covers a merged span, and re-diarization reads that
   WAV and replaces the WHOLE transcript — so keeping one would let a later pass silently
   reduce a merged meeting back to a single part. Merge also refuses a meeting that is still
-  being summarised or re-diarized (`services/meetings/post-processing.ts`), since those
+  being summarised or re-diarized (`services/meetings/status/post-processing.ts`), since those
   rewrite the row underneath it.
 - **Merging renumbers speakers into blocks, on purpose.** Diarized numbers are assigned per
   connection, so part one’s S1 and part two’s S1 are not knowably the same person. Merge gives
@@ -210,13 +210,13 @@ _Non-obvious traps. Read before touching the related area._
   `meeting.start` or `meeting.resume` rejects after `startCapture` succeeded, nothing else
   references the mic/worklet — both stop whatever they have not handed to `micRef`.
 - **Anything that writes to a meeting in the background must mark it**
-  (`services/meetings/post-processing.ts`, a COUNT so concurrent writes don't clear each
+  (`services/meetings/status/post-processing.ts`, a COUNT so concurrent writes don't clear each
   other). Four things outlive the call that started them: summarising on stop, summarising
   on demand from the meeting view, re-diarization, and an unfinished suggestion — Claude is
   still streaming when Stop returns, and the answer ends in an insert against that meeting.
   **Merge and delete both refuse a marked meeting**, because otherwise the late write lands
   on a row that has been folded away or deleted (a foreign-key failure, and the work lost).
-- **Delete also refuses the meeting main is RUNNING** (`services/meetings/live-meeting.ts`).
+- **Delete also refuses the meeting main is RUNNING** (`services/meetings/status/live-meeting.ts`).
   Merge gets this for free — `planMerge` rejects a meeting with no `ended_at` — but delete
   needs its own guard, and it cannot import the orchestrator to ask, hence the small module
   whose only writer is the orchestrator.

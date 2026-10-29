@@ -4,7 +4,7 @@ import { suggestionLabel, suggestionOrigin } from '@shared/suggestion-label'
 import { speakerDisplay } from '../../lib/speaker-label'
 import { formatClock, formatWhen } from '../../lib/format-time'
 import { errorText } from '../../lib/ipc-error'
-import { CompactSuggestion } from '../../lib/CompactSuggestion'
+import { CompactSuggestion } from '../../lib/suggestions/CompactSuggestion'
 
 /** The model writes action items as "- item" lines; render them as a list when it did. */
 function actionItemList(text: string): string[] | null {

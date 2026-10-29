@@ -26,23 +26,25 @@ sanas/
 │   │   │   ├── turns/           # turn-assembler: finals + boundaries → completed turns (pure)
 │   │   │   ├── assistant/       # AssistantProvider seam + claude.ts, prompts.ts, triggers (prefilter),
 │   │   │   │                    #   classifier, coach-policy + coach-prompts, compact-contract, excerpt
-│   │   │   ├── meetings/        # index (meeting/audio lifecycle, per-final persistence) + rediarize,
-│   │   │   │                    #   export, summarize (post-stop + on-demand), summary-email
-│   │   │   │                    #   (compose + send), speaker-carryover (pins + names across
-│   │   │   │                    #   re-diarization), remove (audio file + row — the one delete path),
-│   │   │   │                    #   merge + merge-plan (fold split recordings into one meeting),
-│   │   │   │                    #   startup-recovery (close rows stranded by an earlier process),
-│   │   │   │                    #   post-processing (what is still being rewritten after stop),
-│   │   │   │                    #   live-meeting (which meeting main is running, for delete)
-│   │   │   │   ├── assist/      # live-assistance (coordinator), suggestion-runner, suggestion-requests,
-│   │   │   │   │                #   suggestion-in-flight (lane policy)
-│   │   │   │   └── capture/     # channel-identity (ch0=user, one place), capture-health
+│   │   │   ├── meetings/        # index (meeting/audio lifecycle, STT wiring, per-final persistence),
+│   │   │   │                    #   export, remove (audio file + row — the one delete path)
+│   │   │   │   ├── assist/      # live-session (window + shown headlines + prompt + runner/coordinator
+│   │   │   │   │                #   assembly), live-assistance (coordinator), suggestion-runner,
+│   │   │   │   │                #   suggestion-requests, suggestion-in-flight (lane policy)
+│   │   │   │   ├── capture/     # channel-identity (ch0=user, one place), capture-health
+│   │   │   │   ├── status/      # live-meeting (which meeting main is running), post-processing
+│   │   │   │   │                #   (what is still being rewritten after stop)
+│   │   │   │   ├── summary/     # summarize (post-stop + on-demand), summary-email (compose + send)
+│   │   │   │   ├── rediarize/   # rediarize (batch pass after stop), speaker-carryover (pins + names)
+│   │   │   │   ├── merge/       # merge + merge-plan (fold split recordings into one meeting)
+│   │   │   │   └── recovery/    # startup-recovery (close rows stranded by an earlier process)
 │   │   │   ├── email/           # EmailProvider seam + smtp.ts (nodemailer transport)
 │   │   │   ├── retention/       # age-based clean-up of recordings / whole meetings (timer + on demand)
 │   │   │   ├── history/         # ask-your-history: FTS5 retrieval + grounded, streamed answer
 │   │   │   ├── transcript-format.ts # canonical main-side line formatting/windowing
 │   │   │   └── audio-store/     # WAV recording of the capture stream (default on)
-│   │   ├── db/                  # better-sqlite3 open + migrations, fts-query (text → safe FTS5 MATCH)
+│   │   ├── db/                  # better-sqlite3 open + migrations, fts-query (text → safe FTS5 MATCH),
+│   │   │                        #   sqlite-time (the one SQLite UTC datetime text format)
 │   │   │   └── repos/           # jobs+glossary, meetings+segments, suggestions (SQL lives here only)
 │   │   └── config/              # settings + API key storage, settings-schema (one check per key)
 │   ├── preload/                 # contextBridge API surface (typed)
@@ -53,8 +55,10 @@ sanas/
 │   │       │                    #   Settings section), styles/ (tokens → controls → shell → transcript → pages)
 │   │       ├── overlay-app/     # overlay UI (React, separate tiny bundle)
 │   │       ├── audio/           # (Phase 1) mic capture + AudioWorklet downsample
-│   │       ├── lib/             # renderer-side hooks + pure helpers shared across pages (speaker label,
-│   │       │                    #   hotkey label, clock/date formatting, icons, meeting-state + transcript hooks)
+│   │       ├── lib/             # pure presentation helpers shared across pages (speaker label, hotkey
+│   │       │   │                #   label, clock/date formatting, icons, IPC error text, glossary input)
+│   │       │   ├── meeting/     # meeting-state reducer + useMeetingState, useTranscript
+│   │       │   └── suggestions/ # CompactSuggestion (safe renderer), whisper-history + useSuggestionHistory
 │   │       ├── dev/             # browser-preview mock of the preload bridge (dev only, never bundled)
 │   │       └── env.d.ts         # Vite client types (import.meta.env)
 │   └── shared/                  # IPC channel types, domain types (Job, Meeting, Segment…),
@@ -75,13 +79,26 @@ sanas/
 - `src/main/services/` — main-process services and provider seams: `stt/`, `turns/`, `assistant/`,
   `email/`, `meetings/`, `audio-store/`, `retention/`, `history/`, plus main-side transcript
   formatting
-- `src/main/services/turns/` — pure turn assembly (`turn-assembler.ts`, `types.ts`); no I/O, no timers
-- `src/main/services/meetings/assist/` — live assistance: coordinator, suggestion runner, request
-  building, lane policy
+- `src/main/services/turns/` — pure turn assembly (`turn-assembler.ts`, `types.ts`, which also owns
+  `IdentityRole`); no I/O, no timers
+- `src/main/services/meetings/` — the live meeting orchestrator (`index.ts`: lifecycle, STT wiring,
+  per-final persistence), export and the one delete path (`remove.ts`)
+- `src/main/services/meetings/assist/` — live assistance: the per-meeting assembly
+  (`live-session.ts`: prompt window, shown headlines, system prompt, runner + coordinator
+  wiring), coordinator, suggestion runner, request building, lane policy
 - `src/main/services/meetings/capture/` — capture-side identity (`channel-identity.ts`) and
   capture health (`capture-health.ts`)
-- `src/main/db/` — better-sqlite3 connection, schema migrations, and the text → FTS5 MATCH
-  builder (`fts-query.ts`, the only source of `FtsMatch`)
+- `src/main/services/meetings/status/` — which meeting is live and which are still being
+  rewritten after stop (the guards delete and merge consult)
+- `src/main/services/meetings/summary/` — meeting summaries (post-stop, on demand) and the
+  summary email
+- `src/main/services/meetings/rediarize/` — the batch re-diarization pass and the pin/name
+  carry-over it applies
+- `src/main/services/meetings/merge/` — merging split recordings (pure plan + DB apply)
+- `src/main/services/meetings/recovery/` — startup repair of meetings an earlier process left open
+- `src/main/db/` — better-sqlite3 connection, schema migrations, the text → FTS5 MATCH
+  builder (`fts-query.ts`, the only source of `FtsMatch`), and `sqlite-time.ts` (pure: the one
+  builder/parser of SQLite's UTC datetime text, used by retention and startup recovery)
 - `src/main/db/repos/` — per-entity repositories; the only place SQL strings live
 - `src/main/config/` — settings persistence + API key storage, and the exhaustive per-key
   settings schema (`settings-schema.ts`) that IPC validation consumes
@@ -93,9 +110,10 @@ sanas/
   pages) and the shared control vocabulary; no per-page stylesheets
 - `src/renderer/src/overlay-app/` — overlay UI React app (separate, deliberately tiny bundle)
 - `src/renderer/src/audio/` — renderer-side mic capture + AudioWorklet downsampling
-- `src/renderer/src/lib/` — renderer hooks and shared presentation helpers, including
-  the safe compact-suggestion parser/renderer used by both renderer bundles and the pure
-  live whisper-history reducer/follow policy
+- `src/renderer/src/lib/` — pure presentation helpers shared across pages and both bundles
+- `src/renderer/src/lib/meeting/` — the meeting-state reducer and the meeting/transcript hooks
+- `src/renderer/src/lib/suggestions/` — the safe compact-suggestion parser/renderer used by both
+  renderer bundles, and the live whisper-history reducer/follow policy + its hook
 - `src/renderer/src/dev/` — the browser-preview mock of `window.sanas` (typed as
   `Window['sanas']`; installed by both renderer entry points only when the build-time
   `__SANAS_WEB_PREVIEW__` is true — set by `vite.renderer.config.ts`, false in the Electron build).
@@ -110,9 +128,12 @@ Tests are colocated `*.test.ts` files (vitest, `npm test`) beside the module the
 `services/assistant/` triggers, classifier, coach-policy, coach-prompts, prompts, claude and
 completion-result; `services/meetings/assist/` live-assistance, suggestion-runner and
 suggestion-in-flight; `services/meetings/capture/` capture-health and channel-identity;
-`services/meetings/` speaker-carryover, merge-plan, post-processing and startup-recovery; `config/settings`,
-`db/fts-query`, `ipc/validate`, `shared/search-markers`, `shared/suggestion-label`, and the
-renderer `lib/` and `overlay-app/` helpers (whisper-history, glossary-input, overlay-split).
+`services/meetings/` `rediarize/speaker-carryover`, `merge/merge-plan`, `status/post-processing`
+and `recovery/startup-recovery`; `services/assistant/compact-contract`; `config/settings`,
+`db/fts-query`, `db/sqlite-time`, `ipc/validate`, `shared/search-markers`,
+`shared/suggestion-label`, and the renderer helpers (`lib/glossary-input`,
+`lib/meeting/meeting-state`, `lib/suggestions/` CompactSuggestion + whisper-history,
+`overlay-app/` overlay-split).
 Services that read settings are tested by mocking electron/fs (`config/settings.test.ts`).
 DB-bound code (repos, migrations) has none — better-sqlite3 is built for Electron's ABI, so
 vitest cannot load it.
@@ -168,4 +189,7 @@ not beside `index.ts` / `system-audio.ts`.
 (2026-08-27 review: transcript formatting/windowing extracted to
 `services/transcript-format.ts`; summary prompt moved into `assistant/prompts.ts`.
 2026-09-08: summary split out of the orchestrator into `meetings/summarize.ts` when the
-on-demand path was added.)
+on-demand path was added. 2026-10-29: live-assist state + wiring extracted from
+`meetings/index.ts` into `meetings/assist/live-session.ts`; `meetings/` and renderer `lib/`
+grouped into responsibility subfolders; `IdentityRole` moved into `turns/types.ts`;
+SQLite datetime text centralised in `db/sqlite-time.ts`.)

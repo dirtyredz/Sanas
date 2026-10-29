@@ -4,7 +4,7 @@ import { LiveMeetingPage } from './pages/LiveMeetingPage'
 import { JobsPage } from './pages/JobsPage'
 import { SearchPage } from './pages/SearchPage'
 import { AskPage } from './pages/AskPage'
-import { useMeetingState } from '../lib/useMeetingState'
+import { useMeetingState } from '../lib/meeting/useMeetingState'
 import { hotkeyLabel } from '../lib/hotkey-label'
 import { IconAsk, IconJobs, IconLive, IconSearch, IconSettings } from '../lib/icons'
 

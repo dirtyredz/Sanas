@@ -1,5 +1,5 @@
 // The overlay's output contract, shared by every live suggestion (answers and next points)
-// so the safe renderer (renderer/src/lib/CompactSuggestion.tsx) always sees the same subset:
+// so the safe renderer (renderer/src/lib/suggestions/CompactSuggestion.tsx) always sees the same subset:
 // one bold headline, optionally one short fenced code block, at most two short lines.
 //
 // Plus the two anti-repetition pieces every AUTOMATIC suggestion shares: the defined no-op
@@ -31,12 +31,20 @@ export function couldBeNoSuggestion(prefix: string): boolean {
 }
 
 const HEADLINE_CHARS = 200
-export const RECENT_SUGGESTIONS = 3
+/** How many shown headlines an automatic prompt carries — and so how many are kept. */
+const RECENT_SUGGESTIONS = 3
 
 /** The headline of a compact suggestion: its first non-empty line, without bold markers. */
 export function headlineOf(text: string): string {
   const line = text.split('\n').find((l) => l.trim()) ?? ''
   return line.replace(/\*\*/g, '').trim().slice(0, HEADLINE_CHARS)
+}
+
+/** Records a shown suggestion's headline, keeping only as many as the prompt uses. */
+export function rememberHeadline(headlines: string[], text: string): void {
+  headlines.push(headlineOf(text))
+  if (headlines.length > RECENT_SUGGESTIONS)
+    headlines.splice(0, headlines.length - RECENT_SUGGESTIONS)
 }
 
 /** The "already shown" block for an automatic prompt. */

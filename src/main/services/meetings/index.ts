@@ -3,7 +3,7 @@ import type { ChannelCount, MeetingState, Settings, TranscriptEvent } from '@sha
 import { loadSettings } from '../../config/settings'
 import { sttProvider } from '../stt'
 import type { SttSession, SttSignal, SttTranscript } from '../stt/types'
-import { ensureDefaultJob, getGlossaryTerms, getJob, listGlossary } from '../../db/repos/jobs'
+import { ensureDefaultJob, getGlossaryTerms } from '../../db/repos/jobs'
 import {
   clearMeetingAudioPath,
   createMeeting,
@@ -11,28 +11,21 @@ import {
   updateMeetingAudioPath,
 } from '../../db/repos/meetings'
 import { discardRecording, startRecording, stopRecording, writeAudio } from '../audio-store'
-import { rediarizeMeeting } from './rediarize'
-import { summarizeLines } from './summarize'
-import { autoEmailSummary } from './summary-email'
-import { clearPostProcessing, markPostProcessing } from './post-processing'
-import { isLiveMeeting, liveMeetingId, setLiveMeeting } from './live-meeting'
+import { rediarizeMeeting } from './rediarize/rediarize'
+import { summarizeLines } from './summary/summarize'
+import { autoEmailSummary } from './summary/summary-email'
+import { clearPostProcessing, markPostProcessing } from './status/post-processing'
+import { isLiveMeeting, liveMeetingId, setLiveMeeting } from './status/live-meeting'
 import { resolveSpeakerIdentity } from './capture/channel-identity'
 import { CAPTURE_WARNING, CaptureHealth } from './capture/capture-health'
-import { SuggestionRunner } from './assist/suggestion-runner'
-import { LiveAssistance } from './assist/live-assistance'
+import { LiveSession } from './assist/live-session'
 import { insertSegment, setSpeakerIsUser } from '../../db/repos/segments'
-import { insertSuggestion } from '../../db/repos/suggestions'
-import { speakerNameMap } from '../../db/repos/speakers'
-import { claudeProvider } from '../assistant/claude'
-import { classifyTurn } from '../assistant/classifier'
-import { RECENT_SUGGESTIONS, headlineOf } from '../assistant/compact-contract'
-import { buildSystemPrompt, type TranscriptLine } from '../assistant/prompts'
 import { broadcast } from '../../windows/broadcast'
 
 // Orchestrates one live meeting at a time: STT session, persistence, event fan-out, and
-// lifecycle. Automatic assistance (turn detection, classification, next points) lives in
-// ./assist/live-assistance.ts; this module feeds it identity-resolved events and lifecycle
-// calls, and keeps the "Answer now" facade (`runSuggestion('hotkey')`).
+// lifecycle. Live assistance — the prompt window, shown headlines, system prompt and the
+// runner/coordinator pair — is assembled in ./assist/live-session.ts; this module feeds it
+// identity-resolved finals and lifecycle calls, and keeps the "Answer now" facade.
 //
 // A meeting can be PAUSED: the STT connection closes and audio stops flowing, but the
 // meeting row, the transcript window and the pinned speakers all stay. Resuming opens a
@@ -63,58 +56,12 @@ let paused = false
 let audioMsReceived = 0 // the meeting's clock: audio actually captured, in ms
 const userSpeakers = new Set<number>() // diarized indices pinned as "me"
 const lostRecordings = new Set<number>() // meetings whose WAV died while they were running
-const transcriptWindow: TranscriptLine[] = [] // rolling finals for prompt assembly
-let systemPrompt = '' // stable per meeting (cached by the provider)
 let persistFailed = false // one warning per meeting, not one per line
 const captureHealth = new CaptureHealth()
 let lastError: string | undefined // the error shown now, kept when only capture health changes
 
-/** Headlines of suggestions shown this meeting, so automatic prompts do not repeat them. */
-const shownHeadlines: string[] = []
-
-const runner = new SuggestionRunner({
-  provider: claudeProvider,
-  emit: (event) => broadcast(IPC.SuggestionEvent, event),
-  persist: (s) => {
-    insertSuggestion(s)
-    // a late answer from a meeting that has since ended must not leak into the next one
-    if (isLiveMeeting(s.meetingId)) {
-      shownHeadlines.push(headlineOf(s.text))
-      if (shownHeadlines.length > RECENT_SUGGESTIONS) shownHeadlines.shift()
-    }
-  },
-  hold: markPostProcessing,
-  release: clearPostProcessing,
-  log: (message) => console.warn(`[sanas] ${message}`),
-})
-
-const assistance = new LiveAssistance({
-  now: () => performance.now(),
-  setTimer: (fn, ms) => setTimeout(fn, ms),
-  clearTimer: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
-  settings: loadSettings,
-  classify: (req) => classifyTurn(claudeProvider, req),
-  runner,
-  snapshot: () => {
-    const meetingId = liveMeetingId()
-    if (meetingId === null) return null
-    let names: ReadonlyMap<number, string> | undefined
-    try {
-      names = speakerNameMap(meetingId)
-    } catch (e) {
-      console.warn('[sanas] could not read speaker names:', e) // labels fall back to S1/S2
-    }
-    return {
-      meetingId,
-      atMs: Math.round(audioMsReceived), // audio time, so it lines up with the transcript
-      system: systemPrompt,
-      window: [...transcriptWindow],
-      names,
-      recent: [...shownHeadlines],
-    }
-  },
-  log: (message) => console.warn(`[sanas] ${message}`),
-})
+const live = new LiveSession(() => audioMsReceived)
+const assistance = live.assistance
 
 /** One at a time: lifecycle calls mutate module state across awaits. */
 let lifecycle: Promise<unknown> = Promise.resolve()
@@ -217,16 +164,17 @@ function handleTranscript(t: SttTranscript): void {
     } catch (e) {
       reportPersistFailure(e)
     }
-    transcriptWindow.push({ speaker: ev.speaker, isUser: ev.isUser, text: t.text })
-    if (transcriptWindow.length > 200) transcriptWindow.shift()
-    assistance.final({
-      channel: t.channel,
-      speaker: who.speaker,
-      role: who.role,
-      tStartMs: t.tStartMs,
-      tEndMs: t.tEndMs,
-      text: t.text,
-    })
+    live.final(
+      { speaker: ev.speaker, isUser: ev.isUser, text: t.text },
+      {
+        channel: t.channel,
+        speaker: who.speaker,
+        role: who.role,
+        tStartMs: t.tStartMs,
+        tEndMs: t.tEndMs,
+        text: t.text,
+      },
+    )
   } else {
     // an interim is activity only; in mono its first-word speaker is no evidence of who
     assistance.activity(t.channel, t.tEndMs, stereo ? who.role : 'unknown')
@@ -290,11 +238,8 @@ export function startMeeting(jobId?: number, channels: ChannelCount = 1): Promis
     audioMsReceived = 0
     persistFailed = false
     userSpeakers.clear()
-    transcriptWindow.length = 0
-    shownHeadlines.length = 0 // per meeting; a resume keeps them
     captureHealth.reset()
-    assistance.start()
-    systemPrompt = buildSystemPrompt(getJob(job), listGlossary(job))
+    live.begin(job) // window, headlines and prompt are per meeting; a resume keeps them
 
     // held back until the recording is open too: sendAudioChunk accepts nothing until the
     // session is published, so the provider, the WAV and the clock all begin on the same
@@ -417,8 +362,7 @@ export function stopMeeting(): Promise<MeetingState> {
       } catch (e) {
         console.warn('[sanas] could not close the meeting row:', e)
       }
-      const window = [...transcriptWindow]
-      const prompt = systemPrompt
+      const { window, prompt } = live.closing()
       const channels = meetingChannels
       // a WAV that died mid-meeting is truncated: re-diarizing from it would replace the
       // whole transcript with the part that made it to disk
@@ -447,8 +391,8 @@ export function stopMeeting(): Promise<MeetingState> {
 
 /** "Answer now" (hotkey or overlay button): a full answer, regardless of whisper mode and
  *  of turn detection. A no-op outside a meeting or while a requested answer is running. */
-export async function runSuggestion(trigger: 'hotkey'): Promise<void> {
-  if (trigger !== 'hotkey' || liveMeetingId() === null) return
+export function answerNow(): void {
+  if (liveMeetingId() === null) return
   assistance.answerNow()
 }
 
@@ -484,8 +428,6 @@ export function pinSpeaker(speaker: number, isUser: boolean): void {
   }
   if (isUser) userSpeakers.add(speaker)
   else userSpeakers.delete(speaker)
-  // the prompt window describes the same voices: relabel it so the next prompt agrees
-  for (const line of transcriptWindow) if (line.speaker === speaker) line.isUser = isUser
-  assistance.identityChanged() // pending work used the old identity; old turns stay old
+  live.relabel(speaker, isUser) // the prompt window and pending work follow the new identity
   if (meetingId !== null) setSpeakerIsUser(meetingId, speaker, isUser)
 }

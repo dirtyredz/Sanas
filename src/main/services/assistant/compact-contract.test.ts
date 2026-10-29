@@ -4,6 +4,7 @@ import {
   headlineOf,
   isNoSuggestion,
   recentSuggestionsBlock,
+  rememberHeadline,
 } from './compact-contract'
 
 describe('the no-op output', () => {
@@ -30,6 +31,12 @@ describe('recently shown suggestions', () => {
     expect(headlineOf('\n**Verify AS9 writeback in sandbox.**\nThen report back.')).toBe(
       'Verify AS9 writeback in sandbox.',
     )
+  })
+
+  it('remembers only as many headlines as the prompt carries', () => {
+    const shown: string[] = []
+    for (const t of ['**a**', '**b**\nmore', '**c**', '**d**']) rememberHeadline(shown, t)
+    expect(shown).toEqual(['b', 'c', 'd'])
   })
 
   it('lists the last three and tells the model not to repeat them', () => {

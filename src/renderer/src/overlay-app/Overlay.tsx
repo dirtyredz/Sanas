@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import type { OverlayResizeRequest } from '@shared/types'
 import { suggestionArrivalLabel, suggestionLabel } from '@shared/suggestion-label'
-import { CompactSuggestion } from '../lib/CompactSuggestion'
+import { CompactSuggestion } from '../lib/suggestions/CompactSuggestion'
 import { speakerDisplay } from '../lib/speaker-label'
-import { useSuggestionHistory, type WhisperReadingState } from '../lib/useSuggestionHistory'
-import { useTranscript } from '../lib/useTranscript'
+import {
+  useSuggestionHistory,
+  type WhisperReadingState,
+} from '../lib/suggestions/useSuggestionHistory'
+import { useTranscript } from '../lib/meeting/useTranscript'
 import {
   DEFAULT_WHISPER_RATIO,
   MAXIMIZED_TRANSCRIPT_HEIGHT,

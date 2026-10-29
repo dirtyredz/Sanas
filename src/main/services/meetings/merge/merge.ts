@@ -1,11 +1,11 @@
 import type { Meeting, MergeResult } from '@shared/types'
-import { getDb } from '../../db'
-import { applyMerge, deleteMeeting, getMeeting } from '../../db/repos/meetings'
-import { maxSpeaker, reassignSegments } from '../../db/repos/segments'
-import { reassignSuggestions } from '../../db/repos/suggestions'
-import { reassignSpeakerNames } from '../../db/repos/speakers'
-import { isPostProcessing } from './post-processing'
-import { removeAudioFile } from './remove'
+import { getDb } from '../../../db'
+import { applyMerge, deleteMeeting, getMeeting } from '../../../db/repos/meetings'
+import { maxSpeaker, reassignSegments } from '../../../db/repos/segments'
+import { reassignSuggestions } from '../../../db/repos/suggestions'
+import { reassignSpeakerNames } from '../../../db/repos/speakers'
+import { isPostProcessing } from '../status/post-processing'
+import { removeAudioFile } from '../remove'
 import { planMerge, type MergePart } from './merge-plan'
 
 // Folds several meeting rows into one — the repair for a conversation that a dropped

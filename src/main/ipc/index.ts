@@ -14,7 +14,7 @@ import {
   stopMeeting,
   sendAudioChunk,
   pinSpeaker,
-  runSuggestion,
+  answerNow,
   assistanceSettingsChanged,
   currentState,
 } from '../services/meetings'
@@ -40,13 +40,13 @@ import {
 } from '../db/repos/jobs'
 import { listMeetings, getMeeting, renameMeeting, moveMeetingToJob } from '../db/repos/meetings'
 import { removeMeeting } from '../services/meetings/remove'
-import { mergeMeetings } from '../services/meetings/merge'
+import { mergeMeetings } from '../services/meetings/merge/merge'
 import { previewRetention, runRetention } from '../services/retention'
 import { listSegments } from '../db/repos/segments'
 import { askHistory, searchTranscripts } from '../services/history'
 import { exportMeetingMarkdown } from '../services/meetings/export'
-import { summarizeStoredMeeting } from '../services/meetings/summarize'
-import { emailMeetingSummary } from '../services/meetings/summary-email'
+import { summarizeStoredMeeting } from '../services/meetings/summary/summarize'
+import { emailMeetingSummary } from '../services/meetings/summary/summary-email'
 import { listSuggestions } from '../db/repos/suggestions'
 import { listSpeakerNames, setSpeakerName, mergeSpeakers } from '../db/repos/speakers'
 import { broadcast } from '../windows/broadcast'
@@ -88,7 +88,7 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.MeetingPinSpeaker, (_e, speaker: unknown, isUser: unknown) =>
     pinSpeaker(requireSpeaker(speaker, 'speaker'), requireBool(isUser, 'pin')),
   )
-  ipcMain.handle(IPC.AssistNow, () => runSuggestion('hotkey'))
+  ipcMain.handle(IPC.AssistNow, () => answerNow())
 
   // fire-and-forget audio stream — .on, not .handle (no reply per chunk)
   ipcMain.on(IPC.AudioChunk, (_e, chunk: unknown) => {

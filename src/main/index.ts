@@ -10,10 +10,10 @@ import { showOverlay, toggleOverlay } from './windows/overlay-window'
 import { openDb } from './db'
 import { loadSettings } from './config/settings'
 import { registerIpcHandlers } from './ipc'
-import { runSuggestion } from './services/meetings'
+import { answerNow } from './services/meetings'
 import { registerSystemAudioLoopback } from './system-audio'
 import { scheduleRetention } from './services/retention'
-import { closeDanglingMeetingsAtStartup } from './services/meetings/startup-recovery'
+import { closeDanglingMeetingsAtStartup } from './services/meetings/recovery/startup-recovery'
 
 // Single-instance lock: a second launch focuses the existing window instead.
 if (!app.requestSingleInstanceLock()) {
@@ -39,7 +39,7 @@ function registerHotkeys(): void {
   if (
     !globalShortcut.register(assistHotkey, () => {
       showOverlay() // the answer lands in the overlay — make sure it's visible
-      void runSuggestion('hotkey')
+      answerNow()
     })
   ) {
     console.warn(`[sanas] global hotkey ${assistHotkey} is taken by another app`)

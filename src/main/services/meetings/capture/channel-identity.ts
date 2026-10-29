@@ -2,9 +2,7 @@
 // channel 0 is the mic (the user) and channel 1 is system loopback (others).
 // Both the live path and batch re-diarization consume this — never re-derive it.
 
-/** How sure the identity is. 'unknown' never initiates coaching, and in stereo it is what a
- *  provider message without a usable channel becomes, instead of implicit user speech. */
-export type IdentityRole = 'user' | 'other' | 'unknown'
+import type { IdentityRole } from '../../turns/types'
 
 export interface SpeakerIdentity {
   /** Diarized speaker index; -1 for the user (no diarization needed on their channel). */

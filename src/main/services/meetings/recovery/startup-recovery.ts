@@ -1,5 +1,5 @@
-import { closeMeetingsAt, listUnendedMeetingsExcept } from '../../db/repos/meetings'
-import { liveMeetingId } from './live-meeting'
+import { closeMeetingsAt, listUnendedMeetingsExcept } from '../../../db/repos/meetings'
+import { liveMeetingId } from '../status/live-meeting'
 import { danglingMeetingEndedAt } from './startup-recovery-time'
 
 /** Repairs meetings left open when the previous main process stopped unexpectedly. */
