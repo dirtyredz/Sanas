@@ -38,7 +38,7 @@ export function Overlay(): React.JSX.Element {
   const [contentHeight, setContentHeight] = useState(0)
   const scrollRef = useRef<HTMLDivElement>(null)
   const suggestionScrollRef = useRef<HTMLDivElement>(null)
-  const readingRef = useRef<WhisperReadingState>({ scrolled: false, pointerOver: false })
+  const readingRef = useRef<WhisperReadingState>({ scrolled: false })
   const [history, selectSuggestion] = useSuggestionHistory(state.meetingId, readingRef)
   const contentRef = useRef<HTMLDivElement>(null)
   const resizeRef = useRef<ResizeSession | null>(null)
@@ -227,15 +227,7 @@ export function Overlay(): React.JSX.Element {
           onPointerUp={stopSplit}
           onPointerCancel={stopSplit}
         />
-        <section
-          className="overlay-suggestion"
-          onPointerEnter={() => {
-            readingRef.current.pointerOver = true
-          }}
-          onPointerLeave={() => {
-            readingRef.current.pointerOver = false
-          }}
-        >
+        <section className="overlay-suggestion">
           <div className="suggestion-bar">
             <span className="label">
               {suggestion ? (suggestion.trigger === 'hotkey' ? 'Answer' : 'Whisper') : 'Whisper'}

@@ -15,7 +15,7 @@ _Capability inventory. Status: ✅ done · 🔨 in progress · 📋 planned · �
 | Merge meetings                                   | ✅     | job page: tick two or more, folded into the earliest; wall-clock offsets, speaker blocks (2026-09-09)    |
 | Lost connection pauses instead of erroring       | ✅     | after the provider's own retries; Resume when back online (2026-09-09)                                   |
 | Ambient AI nudges (question/moment detection)    | ✅     | Smart/Full/Points modes; compact headline + optional code; configurable model/cooldown                   |
-| Live whisper history                             | ✅     | Per-meeting in-memory history with previous/next/Latest navigation; new nudges never yank active reading |
+| Live whisper history                             | ✅     | Per-meeting history with previous/next/Latest; follows new answers unless reading an older/scrolled item |
 | On-demand full answer (global hotkey)            | ✅     | Ctrl+Shift+Enter or "Answer now"; runs beside an ambient nudge, opens its answer, 60 s timeout           |
 | Always-on-top overlay window                     | ✅     | frameless, position/size memory, resize grips; draggable persisted transcript/whisper split              |
 | Deepgram auto-reconnect                          | ✅     | backoff, monotonic timestamps across reconnects                                                          |

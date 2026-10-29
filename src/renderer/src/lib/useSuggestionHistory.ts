@@ -9,7 +9,6 @@ import {
 
 export interface WhisperReadingState {
   scrolled: boolean
-  pointerOver: boolean
 }
 
 export function useSuggestionHistory(
@@ -30,13 +29,12 @@ export function useSuggestionHistory(
         // It is still persisted by main, but it does not belong in this live meeting's list.
         if (event.meetingId !== meetingIdRef.current) return
         const now = Date.now()
-        const reading = readingRef.current
         dispatch({
           type: 'event',
           event,
           followNewest:
             event.trigger === 'hotkey' ||
-            shouldFollowNewAmbient(stateRef.current, { ...reading, now }),
+            shouldFollowNewAmbient(stateRef.current, readingRef.current),
           now,
         })
       }),
