@@ -2,7 +2,7 @@ export const DEFAULT_WHISPER_RATIO = 0.27
 export const MIN_TRANSCRIPT_HEIGHT = 60
 export const MIN_WHISPER_HEIGHT = 120
 export const MAXIMIZED_TRANSCRIPT_HEIGHT = 18
-export const SPLITTER_HEIGHT = 6
+export const SPLITTER_HEIGHT = 8
 
 export interface OverlaySplit {
   transcriptHeight: number

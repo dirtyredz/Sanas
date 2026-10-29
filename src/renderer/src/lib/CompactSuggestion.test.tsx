@@ -31,6 +31,7 @@ describe('compact suggestion renderer', () => {
     )
     expect(html).toContain('class="compact-code"')
     expect(html).toContain('<pre><code>npm test</code></pre>')
+    expect(html).toContain('aria-live="polite"')
     expect(html).toContain('>Copy</button>')
   })
 })

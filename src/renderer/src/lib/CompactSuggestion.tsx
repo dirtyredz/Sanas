@@ -73,7 +73,7 @@ export function CompactSuggestion({ text }: { text: string }): React.JSX.Element
     try {
       await navigator.clipboard.writeText(parsed.code)
       setCopied(true)
-      window.setTimeout(() => setCopied(false), 1200)
+      window.setTimeout(() => setCopied(false), 1500)
     } catch {
       // Clipboard access can be denied by the OS; leave the button available to retry.
     }
@@ -90,7 +90,7 @@ export function CompactSuggestion({ text }: { text: string }): React.JSX.Element
         <div className="compact-code">
           <div className="compact-code-bar">
             <span>{parsed.language ?? 'code'}</span>
-            <button type="button" onClick={() => void copy()}>
+            <button type="button" aria-live="polite" onClick={() => void copy()}>
               {copied ? 'Copied' : 'Copy'}
             </button>
           </div>
