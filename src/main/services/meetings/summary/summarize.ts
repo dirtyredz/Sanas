@@ -6,21 +6,20 @@ import { getJob, listGlossary } from '../../../db/repos/jobs'
 import { speakerNameMap } from '../../../db/repos/speakers'
 import { whilePostProcessing } from '../status/post-processing'
 import { claudeProvider } from '../../assistant/claude'
-import { buildSummaryPrompt, buildSystemPrompt, type TranscriptLine } from '../../assistant/prompts'
+import {
+  buildSummaryPrompt,
+  buildSystemPrompt,
+  summaryMaxTokens,
+  type TranscriptLine,
+} from '../../assistant/prompts'
+import { splitSummaryOutput } from './summary-output'
 
 // Post-meeting summary + action items. Two entry points share one Claude call:
 // the fire-and-forget pass on stop (live transcript window, no DB round-trip)
 // and the on-demand pass from the meeting view (stored transcript, capped by SUMMARY_CHARS).
 
 const MIN_LINES = 5 // fewer than this isn't worth a call
-const SUMMARY_TIMEOUT_MS = 120_000
-
-function splitSections(text: string): { summary: string; actions: string } {
-  const idx = text.indexOf('ACTION ITEMS')
-  const summary = (idx >= 0 ? text.slice(0, idx) : text).replace(/^SUMMARY\s*/i, '').trim()
-  const actions = idx >= 0 ? text.slice(idx + 'ACTION ITEMS'.length).trim() : ''
-  return { summary, actions }
-}
+const SUMMARY_TIMEOUT_MS = 300_000
 
 /** Runs the summary prompt over `lines` and stores the result on the meeting.
  *  Resolves true when a summary was written; false when skipped (too short / no key). */
@@ -33,19 +32,20 @@ export async function summarizeLines(
   const { anthropicApiKey, anthropicWorkspaceId, answerModel } = loadSettings()
   if (!anthropicApiKey) return false
 
+  const names = speakerNameMap(meetingId)
   const text = await claudeProvider.complete({
     apiKey: anthropicApiKey,
     workspaceId: anthropicWorkspaceId || undefined,
     model: answerModel,
     system: systemPrompt,
-    userContent: buildSummaryPrompt(lines, speakerNameMap(meetingId)),
-    maxTokens: 1500,
+    userContent: buildSummaryPrompt(lines, names),
+    maxTokens: summaryMaxTokens(lines, names),
     effort: 'medium',
-    // generous: a long meeting's summary is a big one-shot call, and nobody is waiting
+    // generous: a long meeting's detailed summary is a large one-shot call
     timeoutMs: SUMMARY_TIMEOUT_MS,
     // no onDelta — one-shot; persisted when done
   })
-  const { summary, actions } = splitSections(text)
+  const { summary, actions } = splitSummaryOutput(text)
   updateMeetingSummary(meetingId, summary, actions)
   return true
 }

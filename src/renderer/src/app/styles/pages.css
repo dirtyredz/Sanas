@@ -248,8 +248,24 @@
   max-width: 70ch;
 }
 
-.action-list {
+.summary-markdown {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.summary-markdown h3 {
+  margin: 8px 0 0;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.summary-markdown p,
+.summary-markdown ul {
   margin: 0;
+}
+
+.summary-markdown ul {
   padding-left: 18px;
   display: flex;
   flex-direction: column;
@@ -257,13 +273,12 @@
   line-height: 1.45;
 }
 
-.action-list li::marker {
+.summary-markdown li::marker {
   color: var(--accent);
 }
 
-.action-items {
-  white-space: pre-wrap;
-  line-height: 1.5;
+.summary-markdown code {
+  overflow-wrap: anywhere;
 }
 
 .speaker-editor {

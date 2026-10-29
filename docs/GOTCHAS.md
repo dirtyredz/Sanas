@@ -257,6 +257,11 @@ _Non-obvious traps. Read before touching the related area._
 
 ## APIs
 
+- **Anthropic request options reject unusable values even when they look absent.** In particular,
+  passing `timeout: undefined` fails with "timeout must be an integer". The provider seam's
+  `requestOptions` includes `timeout` only for a finite positive value and rounds it to an integer;
+  summary deadlines must remain integer milliseconds.
+
 - **Deepgram WS idle timeout:** the socket closes after ~10 s without audio. Send
   keepalive messages (or continuous silence frames) during pauses, and implement
   auto-reconnect with transcript continuity.

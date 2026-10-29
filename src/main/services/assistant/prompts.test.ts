@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { assistProfile, buildSystemPrompt, buildUserContent, type TranscriptLine } from './prompts'
+import {
+  assistProfile,
+  buildSummaryPrompt,
+  buildSystemPrompt,
+  buildUserContent,
+  SUMMARY_CHARS,
+  summaryMaxTokens,
+  type TranscriptLine,
+} from './prompts'
 
 const window: TranscriptLine[] = [
   { speaker: 1, isUser: false, text: 'Can you make me a linked list in JavaScript?' },
@@ -123,5 +131,36 @@ describe('whisper prompt modes', () => {
     expect(prompt).toContain('Optionally include ONE fenced code block')
     expect(prompt).toContain('at most 2 short follow-up lines')
     expect(prompt).toContain('No headings, bullet walls, preamble')
+  })
+})
+
+describe('knowledge summary prompt', () => {
+  it('requests durable, grounded knowledge with the required optional sections', () => {
+    const prompt = buildSummaryPrompt([
+      { speaker: 0, isUser: false, text: 'Use branch feat/catalog-v2 in sandbox.' },
+      { speaker: -1, isUser: true, text: 'I will verify that by Friday.' },
+    ])
+
+    expect(prompt).toContain('Extract durable knowledge the user can rely on weeks later')
+    expect(prompt).toContain('Do not merely recap')
+    expect(prompt).toContain('Never invent')
+    expect(prompt).toContain('Preserve\ntechnical tokens exactly as spoken')
+    expect(prompt).toContain('**Overview**')
+    expect(prompt).toContain('**Decisions**')
+    expect(prompt).toContain('**What we learned**')
+    expect(prompt).toContain('**Specifics**')
+    expect(prompt).toContain('**Open questions / unverified**')
+    expect(prompt).toContain('**People & roles**')
+    expect(prompt).toContain('Include owner (if known), task, and\ndue date (if stated)')
+    expect(prompt).toContain('Leave this section empty when there are no action items')
+  })
+
+  it('scales the output ceiling with transcript size and keeps long input bounded', () => {
+    const short = [{ speaker: 0, isUser: false, text: 'A short meeting.' }]
+    const long = [{ speaker: 0, isUser: false, text: 'x'.repeat(SUMMARY_CHARS * 2) }]
+
+    expect(summaryMaxTokens(short)).toBe(1500)
+    expect(summaryMaxTokens(long)).toBe(8000)
+    expect(buildSummaryPrompt(long).length).toBeLessThan(SUMMARY_CHARS + 5000)
   })
 })

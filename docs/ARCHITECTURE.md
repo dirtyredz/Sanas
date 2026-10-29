@@ -199,10 +199,13 @@ process are closed at their last persisted segment end (or at their start if emp
 
 On meeting end, two fire-and-forget passes:
 
-1. **Summary** — one Claude call generates summary + action items; stored on the meeting row.
+1. **Summary** — one Claude call generates a durable, sectioned Markdown knowledge extract plus
+   action items; stored on the meeting row. Its output ceiling scales with transcript length, so a
+   short meeting stays short while a long technical meeting can retain decisions, learned facts,
+   exact technical specifics, uncertainties, and people/roles.
    Then `MeetingUpdated` is broadcast and, if auto-email is on, the summary is emailed.
    The meeting view can also re-run it on demand from the stored transcript — capped at
-   ~30k characters by `SUMMARY_CHARS` in `assistant/prompts.ts` (`summarizeStoredMeeting`),
+   ~120k characters by `SUMMARY_CHARS` in `assistant/prompts.ts` (`summarizeStoredMeeting`),
    rebuilding the job context prompt from the DB.
 2. **Re-diarization** — the recorded WAV goes through Deepgram's batch API
    (`SttProvider.transcribeFile`); batch diarization sees the whole file, so speaker

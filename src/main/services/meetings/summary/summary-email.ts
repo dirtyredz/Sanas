@@ -1,3 +1,4 @@
+import { parseSummaryInline, parseSummaryMarkdown } from '@shared/summary-markdown'
 import { loadSettings } from '../../../config/settings'
 import { getMeeting } from '../../../db/repos/meetings'
 import { getJob } from '../../../db/repos/jobs'
@@ -18,6 +19,30 @@ function htmlBlock(text: string): string {
     return `<ul>${lines.map((l) => `<li>${escapeHtml(l.replace(/^\s*[-*•]\s+/, ''))}</li>`).join('')}</ul>`
   }
   return lines.map((l) => `<p>${escapeHtml(l)}</p>`).join('')
+}
+
+function htmlInline(text: string): string {
+  return parseSummaryInline(text)
+    .map((part) => {
+      const escaped = escapeHtml(part.text)
+      if (part.kind === 'code') return `<code>${escaped}</code>`
+      if (part.kind === 'strong') return `<strong>${escaped}</strong>`
+      return escaped
+    })
+    .join('')
+}
+
+/** Renders the constrained, escaped Markdown contract used by knowledge summaries. */
+function knowledgeHtmlBlock(text: string): string {
+  return parseSummaryMarkdown(text)
+    .map((block) => {
+      if (block.kind === 'heading') return `<h4>${escapeHtml(block.text)}</h4>`
+      if (block.kind === 'list') {
+        return `<ul>${block.items.map((item) => `<li>${htmlInline(item)}</li>`).join('')}</ul>`
+      }
+      return `<p>${htmlInline(block.text)}</p>`
+    })
+    .join('')
 }
 
 /** Recipient comes from the meeting's job — each client/job has its own address. */
@@ -54,7 +79,7 @@ export function composeSummaryEmail(
     `<p><b>Job:</b> ${escapeHtml(jobName)}<br><b>Started:</b> ${escapeHtml(meeting.startedAt)}`,
     meeting.endedAt ? `<br><b>Ended:</b> ${escapeHtml(meeting.endedAt)}</p>` : '</p>',
     '<h3>Summary</h3>',
-    htmlBlock(meeting.summary),
+    knowledgeHtmlBlock(meeting.summary),
     '<h3>Action items</h3>',
     htmlBlock(actions),
     '<p style="color:#888;font-size:12px">Sent by Sanas</p>',

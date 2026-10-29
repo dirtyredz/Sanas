@@ -15,7 +15,9 @@ export type TranscriptLine = FormattableLine
 
 export const WINDOW_CHARS = 6000 // ~recent few minutes of conversation
 const TURN_CHARS = 4000 // the triggering turn, opening + ending kept
-const SUMMARY_CHARS = 30_000 // a very long meeting still summarizes
+export const SUMMARY_CHARS = 120_000 // enough for a long technical meeting, while still bounded
+const MIN_SUMMARY_TOKENS = 1500
+const MAX_SUMMARY_TOKENS = 8000
 
 export interface AssistProfile {
   kind: 'points' | 'smart' | 'full'
@@ -150,11 +152,44 @@ named when known, otherwise S1/S2/…). Refer to people by name where the transc
 
 ${transcript}
 
-Write two sections in exactly this format:
+Extract durable knowledge the user can rely on weeks later. Do not merely recap the sequence of
+conversation. Never invent or fill gaps from general knowledge. Mark uncertainty explicitly, and
+put anything doubted, contradicted, or left to verify under **Open questions / unverified**. Preserve
+technical tokens exactly as spoken: commands, branch and target names, endpoints, headers, IDs,
+numbers, dates, and tool names must not be normalized or paraphrased.
+
+The amount of detail must scale with the transcript: keep a short meeting short, but make a long,
+technical meeting as detailed as needed to retain its useful knowledge. Use standalone statements,
+not "S1 said..." narration; attribute a statement only when who said it affects its meaning or
+reliability.
+
+Write exactly this outer format so the result can be stored in two database columns:
 
 SUMMARY
-<4-8 sentence summary of what was discussed and decided>
+<a Markdown knowledge extract using the applicable sections below, in this order; omit any section
+that would be empty>
+
+Allowed summary sections and content:
+- **Overview** — 2-3 sentences stating the meeting's purpose and outcome.
+- **Decisions** — what was decided, and why when the transcript states a reason.
+- **What we learned** — facts, how systems or processes work, constraints, gotchas, and reasons
+  given. Write these as durable standalone knowledge.
+- **Specifics** — exact commands, branch/target names, endpoints, headers, IDs, numbers, dates,
+  and tools. Put every exact technical token in inline code formatting.
+- **Open questions / unverified** — doubts, contradictions, and anything left to check.
+- **People & roles** — who is who, only when the transcript makes it learnable.
+
+Format each included section label as a bold line exactly like **Overview**. Use short paragraphs
+or "- " bullets beneath it. Do not use other headings or fenced code blocks.
 
 ACTION ITEMS
-<bulleted list of concrete follow-ups, each starting with "- "; write "- none" if there are none>`
+<bulleted list of concrete follow-ups, each starting with "- ". Include owner (if known), task, and
+due date (if stated). Leave this section empty when there are no action items.>`
+}
+
+/** A ceiling, not a target: short meetings stay concise while long transcripts have room to retain
+ *  substantially more knowledge. The provider receives this as Anthropic's integer max_tokens. */
+export function summaryMaxTokens(window: TranscriptLine[], names?: SpeakerNames): number {
+  const transcriptChars = renderTranscriptWindow(window, SUMMARY_CHARS, names).length
+  return Math.min(MAX_SUMMARY_TOKENS, Math.max(MIN_SUMMARY_TOKENS, Math.ceil(transcriptChars / 15)))
 }

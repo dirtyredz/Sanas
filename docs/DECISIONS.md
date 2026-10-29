@@ -2,6 +2,22 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-10-29 — A meeting summary is a knowledge extract, not a recap
+
+Post-meeting output is meant to be useful weeks later, so the summary now preserves durable
+knowledge in optional Markdown sections: overview, decisions, learned facts and process knowledge,
+exact technical specifics, open or unverified questions, and people/roles. Action items remain in
+their existing database column and outer model delimiter so existing meeting, export, and email
+flows keep their contract. Rejected: a fixed 4–8 sentence recap, because meeting value does not
+scale to a fixed paragraph count and long technical meetings lose the constraints and exact tokens
+the owner needs later.
+
+The transcript window grows from about 30k to 120k characters and the output ceiling scales from
+1,500 to at most 8,000 tokens. This is a bounded ceiling, not a requested length: short meetings can
+stay concise while long meetings have room. The meeting view and HTML email render only the small
+Markdown subset the prompt requests (bold section labels, lists, emphasis, and inline code), keeping
+model output as text rather than accepting arbitrary HTML.
+
 ## 2026-10-29 — Answer completed turns, not segments; coach the user's next point on request
 
 Answering each final segment fired mid-sentence and on fragments. Sanas now assembles

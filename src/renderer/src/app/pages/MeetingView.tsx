@@ -5,13 +5,7 @@ import { speakerDisplay } from '../../lib/speaker-label'
 import { formatClock, formatWhen } from '../../lib/format-time'
 import { errorText } from '../../lib/ipc-error'
 import { CompactSuggestion } from '../../lib/suggestions/CompactSuggestion'
-
-/** The model writes action items as "- item" lines; render them as a list when it did. */
-function actionItemList(text: string): string[] | null {
-  const lines = text.split('\n').filter((l) => l.trim())
-  if (lines.length === 0 || !lines.every((l) => /^\s*[-*•]\s+/.test(l))) return null
-  return lines.map((l) => l.replace(/^\s*[-*•]\s+/, ''))
-}
+import { SummaryMarkdown } from '../../lib/SummaryMarkdown'
 
 export function MeetingView({
   meeting,
@@ -88,8 +82,6 @@ export function MeetingView({
   ].sort((a, b) => a - b)
   const label = (s: Pick<Segment, 'speaker' | 'isUser'>): string =>
     speakerDisplay(s.speaker, s.isUser, names)
-  const actions = current.actionItems ? actionItemList(current.actionItems) : null
-
   return (
     <div className="meeting-view">
       <div className="detail-header">
@@ -169,20 +161,12 @@ export function MeetingView({
         <section className="card summary-card">
           <div>
             <span className="eyebrow">Summary</span>
-            <p>{current.summary}</p>
+            <SummaryMarkdown text={current.summary} />
           </div>
           {current.actionItems && (
             <div>
               <span className="eyebrow">Action items</span>
-              {actions ? (
-                <ul className="action-list">
-                  {actions.map((a, i) => (
-                    <li key={i}>{a}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="action-items">{current.actionItems}</p>
-              )}
+              <SummaryMarkdown text={current.actionItems} />
             </div>
           )}
         </section>

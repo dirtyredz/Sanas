@@ -119,8 +119,9 @@ sanas/
   `__SANAS_WEB_PREVIEW__` is true — set by `vite.renderer.config.ts`, false in the Electron build).
   `src/renderer/src/env.d.ts` is the one file beside these folders: Vite client types.
 - `src/renderer/public/` — AudioWorklet processors and other assets served unbundled
-- `src/shared/` — types shared by main, preload and renderer (IPC channels, domain models) and
-  the one suggestion label mapping (`suggestion-label.ts`)
+- `src/shared/` — types shared by main, preload and renderer (IPC channels, domain models),
+  suggestion labels, and the constrained knowledge-summary Markdown parser used by the meeting
+  view and summary email
 - `scripts/` — repo tooling scripts (git-hook installation, pre-commit)
 
 Tests are colocated `*.test.ts` files (vitest, `npm test`) beside the module they cover:
@@ -129,9 +130,10 @@ Tests are colocated `*.test.ts` files (vitest, `npm test`) beside the module the
 completion-result; `services/meetings/assist/` live-assistance, suggestion-runner and
 suggestion-in-flight; `services/meetings/capture/` capture-health and channel-identity;
 `services/meetings/` `rediarize/speaker-carryover`, `merge/merge-plan`, `status/post-processing`
-and `recovery/startup-recovery`; `services/assistant/compact-contract`; `config/settings`,
+and `recovery/startup-recovery`; `meetings/summary/summary-output`;
+`services/assistant/compact-contract`; `config/settings`,
 `db/fts-query`, `db/sqlite-time`, `ipc/validate`, `shared/search-markers`,
-`shared/suggestion-label`, and the renderer helpers (`lib/glossary-input`,
+`shared/suggestion-label`, `shared/summary-markdown`, and the renderer helpers (`lib/glossary-input`,
 `lib/meeting/meeting-state`, `lib/suggestions/` CompactSuggestion + whisper-history,
 `overlay-app/` overlay-split).
 Services that read settings are tested by mocking electron/fs (`config/settings.test.ts`).
