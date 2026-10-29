@@ -3,6 +3,7 @@ import type { GlossaryTerm, Job, Meeting } from '@shared/types'
 import { MeetingView } from './MeetingView'
 import { formatWhen } from '../../lib/format-time'
 import { errorText } from '../../lib/ipc-error'
+import { parseGlossaryInput } from '../../lib/glossary-input'
 
 const PACK_FIELDS = [
   { key: 'companyInfo', label: 'Company info', hint: 'Who they are, org quirks, key people' },
@@ -23,6 +24,7 @@ export function JobDetail({
   const [terms, setTerms] = useState<GlossaryTerm[]>([])
   const [meetings, setMeetings] = useState<Meeting[]>([])
   const [newTerm, setNewTerm] = useState('')
+  const [glossaryNotice, setGlossaryNotice] = useState('')
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [openMeeting, setOpenMeeting] = useState<Meeting | null>(null)
@@ -38,6 +40,12 @@ export function JobDetail({
     window.sanas.glossary.list(jobId).then(setTerms)
     window.sanas.meetings.list(jobId).then(setMeetings)
   }, [jobId])
+
+  useEffect(() => {
+    if (!glossaryNotice) return
+    const timeout = window.setTimeout(() => setGlossaryNotice(''), 3000)
+    return () => window.clearTimeout(timeout)
+  }, [glossaryNotice])
 
   if (openMeeting) {
     return (
@@ -77,11 +85,20 @@ export function JobDetail({
   }
 
   const addTerm = async (): Promise<void> => {
-    const term = newTerm.trim()
-    if (!term) return
-    const t = await window.sanas.glossary.add(jobId, term, '')
-    setTerms((prev) => [...prev, t].sort((a, b) => a.term.localeCompare(b.term)))
+    const parsed = parseGlossaryInput(
+      newTerm,
+      terms.map((term) => term.term),
+    )
+    if (parsed.terms.length === 0 && parsed.alreadyThere === 0) return
+
+    const added: GlossaryTerm[] = []
+    for (const term of parsed.terms) {
+      added.push(await window.sanas.glossary.add(jobId, term, ''))
+    }
+
+    setTerms((prev) => [...prev, ...added].sort((a, b) => a.term.localeCompare(b.term)))
     setNewTerm('')
+    setGlossaryNotice(`Added ${added.length} · ${parsed.alreadyThere} already there`)
   }
 
   const togglePick = (id: number): void => {
@@ -183,17 +200,28 @@ export function JobDetail({
             <p className="hint">
               Jargon, product names, acronyms — these also boost transcription.
             </p>
-            <div className="row">
-              <input
+            <div className="row glossary-add">
+              <textarea
+                rows={2}
                 placeholder="Add term…"
                 value={newTerm}
                 onChange={(e) => setNewTerm(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && addTerm()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    void addTerm()
+                  }
+                }}
               />
-              <button className="btn btn-sm" onClick={addTerm} disabled={!newTerm.trim()}>
+              <button
+                className="btn btn-sm"
+                onClick={() => void addTerm()}
+                disabled={!newTerm.trim()}
+              >
                 Add
               </button>
             </div>
+            {glossaryNotice && <p className="hint glossary-notice">{glossaryNotice}</p>}
             <div className="term-list">
               {terms.map((t) => (
                 <span key={t.id} className="chip">

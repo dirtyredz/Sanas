@@ -561,3 +561,17 @@
   font-size: 13px;
   margin-top: 4px;
 }
+
+.glossary-add {
+  align-items: flex-start;
+}
+
+.glossary-add textarea {
+  flex: 1;
+  min-width: 0;
+  resize: vertical;
+}
+
+.glossary-notice {
+  margin: 6px 0 0;
+}
