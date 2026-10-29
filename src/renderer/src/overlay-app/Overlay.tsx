@@ -11,6 +11,7 @@ import {
   overlaySplit,
   whisperRatioFromHeight,
 } from './overlay-split'
+import { createOverlayOpacitySaver } from './overlay-opacity'
 
 type ResizeAxis = 'right' | 'bottom' | 'corner'
 
@@ -33,6 +34,7 @@ interface SplitSession {
 export function Overlay(): React.JSX.Element {
   const { lines, state } = useTranscript()
   const [ghost, setGhost] = useState(false)
+  const [overlayOpacity, setOverlayOpacity] = useState(1)
   const [whisperRatio, setWhisperRatio] = useState(DEFAULT_WHISPER_RATIO)
   const [whisperMaximized, setWhisperMaximized] = useState(false)
   const [contentHeight, setContentHeight] = useState(0)
@@ -44,16 +46,27 @@ export function Overlay(): React.JSX.Element {
   const resizeRef = useRef<ResizeSession | null>(null)
   const splitRef = useRef<SplitSession | null>(null)
   const saveSplitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const opacitySaverRef = useRef(
+    createOverlayOpacitySaver((opacity) => window.sanas.settings.set({ overlayOpacity: opacity })),
+  )
 
   useEffect(() => window.sanas.overlay.onGhostState(setGhost), [])
 
   useEffect(() => {
     let active = true
     void window.sanas.settings.get().then((settings) => {
-      if (active) setWhisperRatio(settings.overlayWhisperRatio)
+      if (active) {
+        setWhisperRatio(settings.overlayWhisperRatio)
+        setOverlayOpacity(settings.overlayOpacity)
+      }
+    })
+    const removeSettingsListener = window.sanas.settings.onChanged((settings) => {
+      setOverlayOpacity(settings.overlayOpacity)
     })
     return () => {
       active = false
+      removeSettingsListener()
+      opacitySaverRef.current.dispose()
       if (saveSplitTimerRef.current) clearTimeout(saveSplitTimerRef.current)
     }
   }, [])
@@ -187,6 +200,25 @@ export function Overlay(): React.JSX.Element {
                 ? 'paused'
                 : state.status}
         </span>
+        <label
+          className="opacity-control"
+          title={`Overlay opacity: ${Math.round(overlayOpacity * 100)}%`}
+        >
+          <span aria-hidden="true">◐</span>
+          <input
+            aria-label="Overlay opacity"
+            type="range"
+            min="0.4"
+            max="1"
+            step="0.05"
+            value={overlayOpacity}
+            onChange={(event) => {
+              const opacity = Number(event.target.value)
+              setOverlayOpacity(opacity)
+              opacitySaverRef.current.schedule(opacity)
+            }}
+          />
+        </label>
         <button
           className="ghost-btn"
           title="Ghost mode: clicks pass through. Press the overlay hotkey to restore."

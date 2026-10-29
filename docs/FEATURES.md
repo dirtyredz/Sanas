@@ -51,7 +51,7 @@ _Capability inventory. Status: ✅ done · 🔨 in progress · 📋 planned · �
 | Windows installer                                                        | ✅     | `npm run dist` → release/Sanas Setup.exe                                  |
 | Meeting search (across jobs)                                             | ✅     | FTS5 ranked + stemmed, matched terms marked (2026-09-09)                  |
 | Export (markdown transcript/summary)                                     | ✅     | Export button in meeting view                                             |
-| Overlay opacity slider                                                   | ✅     | Settings, live-applied                                                    |
+| Overlay opacity slider                                                   | ✅     | Overlay header + Settings, live-applied and kept in sync                  |
 | Ask-your-history ("what did we decide about X?")                         | ✅     | Ask page: FTS5 retrieval + cited, streamed answer; job scope (2026-09-09) |
 | Visual identity (tokens, control vocabulary, transcript gutter)          | ✅     | dark by design; teal = room/app, sand = your voice (2026-09-09)           |
 | Browser preview with a typed mock bridge (`npm run dev:web`)             | ✅     | dev only; scripted live meeting, `overlay.html?demo=live`                 |

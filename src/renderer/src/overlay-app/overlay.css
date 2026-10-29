@@ -131,14 +131,51 @@ body.overlay-body {
   color: var(--muted);
 }
 
+.opacity-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+  color: var(--muted);
+  font-size: 14px;
+  -webkit-app-region: no-drag;
+}
+
+.opacity-control input {
+  width: 82px;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
 .ghost-btn {
   background: none;
   border: none;
   cursor: pointer;
   font-size: 14px;
+  min-width: 28px;
+  min-height: 28px;
   padding: 0 2px;
   opacity: 0.55;
   -webkit-app-region: no-drag; /* clickable inside the drag strip */
+}
+
+@media (max-width: 340px) {
+  .overlay-header {
+    gap: 5px;
+    padding-inline: 9px;
+  }
+
+  .hint {
+    display: none;
+  }
+
+  .opacity-control {
+    margin-left: auto;
+  }
+
+  .opacity-control input {
+    width: 72px;
+  }
 }
 
 .ghost-btn:hover {

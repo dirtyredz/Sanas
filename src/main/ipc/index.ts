@@ -47,6 +47,7 @@ import { summarizeStoredMeeting } from '../services/meetings/summarize'
 import { emailMeetingSummary } from '../services/meetings/summary-email'
 import { listSuggestions } from '../db/repos/suggestions'
 import { listSpeakerNames, setSpeakerName, mergeSpeakers } from '../db/repos/speakers'
+import { broadcast } from '../windows/broadcast'
 
 // Thin handlers only — validate (./validate.ts) and delegate (see STRUCTURE.md).
 
@@ -57,7 +58,9 @@ export function registerIpcHandlers(): void {
     const patch = requireSettingsPatch(raw)
     const next = saveSettings(patch)
     if (patch.overlayOpacity !== undefined) applyOverlayOpacity(next.overlayOpacity)
-    return toView(next)
+    const view = toView(next)
+    broadcast(IPC.SettingsChanged, view)
+    return view
   })
 
   ipcMain.handle(IPC.OverlayToggle, () => toggleOverlay())

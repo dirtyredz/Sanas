@@ -237,6 +237,7 @@ const transcriptListeners = new Set<Listener<TranscriptEvent>>()
 const stateListeners = new Set<Listener<MeetingState>>()
 const suggestionListeners = new Set<Listener<SuggestionEvent>>()
 const ghostListeners = new Set<Listener<boolean>>()
+const settingsListeners = new Set<Listener<SettingsView>>()
 const historyListeners = new Set<Listener<HistoryEvent>>()
 let askSeq = 0
 let state: MeetingState = { meetingId: null, status: 'idle' }
@@ -354,8 +355,10 @@ const api: SanasApi = {
         anthropicKeySet: settings.anthropicKeySet || !!anthropicApiKey,
         smtpPassSet: settings.smtpPassSet || !!smtpPass,
       }
+      settingsListeners.forEach((listener) => listener(settings))
       return settings
     },
+    onChanged: on(settingsListeners),
   },
   overlay: {
     toggle: async () => {

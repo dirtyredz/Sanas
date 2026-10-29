@@ -5,6 +5,7 @@ export const IPC = {
   // settings
   SettingsGet: 'settings:get',
   SettingsSet: 'settings:set',
+  SettingsChanged: 'settings:changed',
   // overlay
   OverlayToggle: 'overlay:toggle',
   OverlayResize: 'overlay:resize',
