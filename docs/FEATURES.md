@@ -4,26 +4,27 @@ _Capability inventory. Status: ✅ done · 🔨 in progress · 📋 planned · �
 
 ## Core loop
 
-| Feature                                          | Status | Notes                                                                                                 |
-| ------------------------------------------------ | ------ | ----------------------------------------------------------------------------------------------------- |
-| Mic capture → 16 kHz PCM stream                  | ✅     | AudioWorklet (static file; AGC/EC/NS off)                                                             |
-| Deepgram streaming transcription                 | ✅     | nova-3, diarize, interims, keepalive                                                                  |
-| Glossary → STT keyterm boosting                  | ✅     | per selected job                                                                                      |
-| Live transcript view (overlay + main)            | ✅     | interims live, finals persisted                                                                       |
-| "That's me" speaker pinning                      | ✅     | per meeting (Elsewhere mode); re-labels past segments; survives re-diarization                        |
-| Pause / resume a meeting                         | ✅     | one meeting across an interruption; clock is audio time (2026-09-09)                                  |
-| Merge meetings                                   | ✅     | job page: tick two or more, folded into the earliest; wall-clock offsets, speaker blocks (2026-09-09) |
-| Lost connection pauses instead of erroring       | ✅     | after the provider's own retries; Resume when back online (2026-09-09)                                |
-| Ambient AI nudges (question/moment detection)    | ✅     | Smart/Full/Points modes; compact headline + optional code; configurable model/cooldown                |
-| On-demand full answer (global hotkey)            | ✅     | Ctrl+Shift+Enter or "Answer now"; always full, compact and code-capable (default Opus 5.5)            |
-| Always-on-top overlay window                     | ✅     | frameless, position/size memory, resize grips; draggable persisted transcript/whisper split           |
-| Deepgram auto-reconnect                          | ✅     | backoff, monotonic timestamps across reconnects                                                       |
-| System-audio loopback capture                    | ✅     | same-PC meetings; ch0=me ch1=them via multichannel                                                    |
-| Post-meeting batch re-diarization                | ✅     | stable speaker labels; needs recordAudio (default on)                                                 |
-| Speaker rename + merge                           | ✅     | per meeting, in transcript view; export uses names                                                    |
-| Meeting source per meeting (This PC / Elsewhere) | ✅     | Live page, remembered; Elsewhere = mono + "that's me" pinning                                         |
-| Pins + names carried across re-diarization       | ✅     | time-overlap remap (speaker-carryover)                                                                |
-| Speaker names in summaries + assist prompts      | ✅     | user-assigned names replace S1/S2 wherever the transcript is rendered                                 |
+| Feature                                          | Status | Notes                                                                                                    |
+| ------------------------------------------------ | ------ | -------------------------------------------------------------------------------------------------------- |
+| Mic capture → 16 kHz PCM stream                  | ✅     | AudioWorklet (static file; AGC/EC/NS off)                                                                |
+| Deepgram streaming transcription                 | ✅     | nova-3, diarize, interims, keepalive                                                                     |
+| Glossary → STT keyterm boosting                  | ✅     | per selected job                                                                                         |
+| Live transcript view (overlay + main)            | ✅     | interims live, finals persisted                                                                          |
+| "That's me" speaker pinning                      | ✅     | per meeting (Elsewhere mode); re-labels past segments; survives re-diarization                           |
+| Pause / resume a meeting                         | ✅     | one meeting across an interruption; clock is audio time (2026-09-09)                                     |
+| Merge meetings                                   | ✅     | job page: tick two or more, folded into the earliest; wall-clock offsets, speaker blocks (2026-09-09)    |
+| Lost connection pauses instead of erroring       | ✅     | after the provider's own retries; Resume when back online (2026-09-09)                                   |
+| Ambient AI nudges (question/moment detection)    | ✅     | Smart/Full/Points modes; compact headline + optional code; configurable model/cooldown                   |
+| Live whisper history                             | ✅     | Per-meeting in-memory history with previous/next/Latest navigation; new nudges never yank active reading |
+| On-demand full answer (global hotkey)            | ✅     | Ctrl+Shift+Enter or "Answer now"; runs beside an ambient nudge, opens its answer, 60 s timeout           |
+| Always-on-top overlay window                     | ✅     | frameless, position/size memory, resize grips; draggable persisted transcript/whisper split              |
+| Deepgram auto-reconnect                          | ✅     | backoff, monotonic timestamps across reconnects                                                          |
+| System-audio loopback capture                    | ✅     | same-PC meetings; ch0=me ch1=them via multichannel                                                       |
+| Post-meeting batch re-diarization                | ✅     | stable speaker labels; needs recordAudio (default on)                                                    |
+| Speaker rename + merge                           | ✅     | per meeting, in transcript view; export uses names                                                       |
+| Meeting source per meeting (This PC / Elsewhere) | ✅     | Live page, remembered; Elsewhere = mono + "that's me" pinning                                            |
+| Pins + names carried across re-diarization       | ✅     | time-overlap remap (speaker-carryover)                                                                   |
+| Speaker names in summaries + assist prompts      | ✅     | user-assigned names replace S1/S2 wherever the transcript is rendered                                    |
 
 ## Organization
 

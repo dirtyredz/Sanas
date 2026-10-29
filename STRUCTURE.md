@@ -82,7 +82,8 @@ sanas/
 - `src/renderer/src/overlay-app/` — overlay UI React app (separate, deliberately tiny bundle)
 - `src/renderer/src/audio/` — renderer-side mic capture + AudioWorklet downsampling
 - `src/renderer/src/lib/` — renderer hooks and shared presentation helpers, including
-  the safe compact-suggestion parser/renderer used by both renderer bundles
+  the safe compact-suggestion parser/renderer used by both renderer bundles and the pure
+  live whisper-history reducer/follow policy
 - `src/renderer/src/dev/` — the browser-preview mock of `window.sanas` (typed as
   `Window['sanas']`; installed by both renderer entry points only when the build-time
   `__SANAS_WEB_PREVIEW__` is true — set by `vite.renderer.config.ts`, false in the Electron build).
@@ -93,8 +94,10 @@ sanas/
 
 Tests are colocated `*.test.ts` files (vitest, `npm test`) beside the pure module they cover —
 today `services/meetings/speaker-carryover.test.ts`, `services/meetings/merge-plan.test.ts`,
-`services/meetings/post-processing.test.ts`,
-`db/fts-query.test.ts`, `shared/search-markers.test.ts` and `ipc/validate.test.ts`; DB/Electron-bound code (repos, migrations, services that
+`services/assistant/completion-result.test.ts`, `services/meetings/post-processing.test.ts`,
+`services/meetings/suggestion-in-flight.test.ts`,
+`renderer/src/lib/whisper-history.test.ts`, `db/fts-query.test.ts`, `shared/search-markers.test.ts`
+and `ipc/validate.test.ts`; DB/Electron-bound code (repos, migrations, services that
 read settings) has none — better-sqlite3 is built for Electron's ABI, so vitest cannot load it.
 
 Deliberately _not_ homes: the repo root (config + docs only), `src/main/` itself and

@@ -237,6 +237,17 @@ _Non-obvious traps. Read before touching the related area._
   20 seconds to avoid a Claude call for every nearby question. It is now a 0–60 second
   Settings value (default 5) and the trigger reads it when each candidate fires. Lowering
   it makes nudges faster but can increase API usage and on-screen churn.
+- **Suggestion concurrency has two lanes, not one global lock.** One ambient nudge and one
+  requested answer may stream together; each lane still caps itself at one. A requested
+  answer must never be dropped just because an ambient nudge owns the provider. Each request
+  separately marks/clears post-processing, and the overlay disables “Answer now” only while
+  the requested lane is occupied. Smart/Points ambient calls time out after 25 seconds;
+  Full ambient and requested answers after 60 seconds.
+- **A new ambient whisper does not automatically replace what is being read.** It follows
+  only when the owner is already on the newest item, has not scrolled it, the pointer is
+  outside the whisper panel, and the current item did not finish in the last eight seconds.
+  Otherwise the overlay keeps its place and shows “New answer”. A hotkey/“Answer now” request
+  always selects the answer it started.
 - **Claude effort is not portable across models.** The provider sends
   `output_config.effort` only to Claude Opus/Sonnet 5.x IDs. Haiku and custom model IDs use
   the base request shape so selecting an unsupported model does not fail on that parameter.

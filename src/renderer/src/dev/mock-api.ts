@@ -310,6 +310,9 @@ function streamSuggestion(trigger: 'ambient' | 'hotkey'): void {
       : 'Offer the printed fallback — a signed scan attaches to the same record.'
   const words = text.split(' ')
   let i = 0
+  suggestionListeners.forEach((l) =>
+    l({ suggestionId: id, meetingId: state.meetingId ?? 0, trigger, kind: 'start', text: '' }),
+  )
   const tick = (): void => {
     if (i >= words.length) {
       suggestionListeners.forEach((l) =>

@@ -70,6 +70,11 @@ Mic (getUserMedia, renderer)
   a question, or explicit keywords. Debounced by the current Settings cooldown (default
   5 seconds, adjustable from 0–60).
 - **On-demand trigger:** global hotkey → immediate full answer, regardless of whisper mode.
+  It has its own in-flight lane, so it can stream alongside one ambient nudge; each suggestion
+  is independently timed out and balanced in the post-processing guard.
+- **Overlay history:** suggestion events are reduced by ID into an in-memory list for the
+  current meeting. Ambient arrivals preserve an answer being read and advertise the newer
+  item; explicitly requested answers always take focus.
 - **Whisper mode:** Smart (default) answers concrete asks such as code, commands, numbers,
   definitions and formulas while coaching other moments; Full answers every ambient moment;
   Points keeps ambient help terse. Points/Smart use tight budgets; Full/on-demand have room

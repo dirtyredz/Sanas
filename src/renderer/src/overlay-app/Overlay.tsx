@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { OverlayResizeRequest } from '@shared/types'
 import { CompactSuggestion } from '../lib/CompactSuggestion'
 import { speakerDisplay } from '../lib/speaker-label'
-import { useSuggestion } from '../lib/useSuggestion'
+import { useSuggestionHistory, type WhisperReadingState } from '../lib/useSuggestionHistory'
 import { useTranscript } from '../lib/useTranscript'
 import {
   DEFAULT_WHISPER_RATIO,
@@ -32,12 +32,14 @@ interface SplitSession {
 
 export function Overlay(): React.JSX.Element {
   const { lines, state } = useTranscript()
-  const suggestion = useSuggestion()
   const [ghost, setGhost] = useState(false)
   const [whisperRatio, setWhisperRatio] = useState(DEFAULT_WHISPER_RATIO)
   const [whisperMaximized, setWhisperMaximized] = useState(false)
   const [contentHeight, setContentHeight] = useState(0)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const suggestionScrollRef = useRef<HTMLDivElement>(null)
+  const readingRef = useRef<WhisperReadingState>({ scrolled: false, pointerOver: false })
+  const [history, selectSuggestion] = useSuggestionHistory(state.meetingId, readingRef)
   const contentRef = useRef<HTMLDivElement>(null)
   const resizeRef = useRef<ResizeSession | null>(null)
   const splitRef = useRef<SplitSession | null>(null)
@@ -70,9 +72,19 @@ export function Overlay(): React.JSX.Element {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
   }, [lines])
 
+  useEffect(() => {
+    readingRef.current.scrolled = false
+    suggestionScrollRef.current?.scrollTo({ top: 0 })
+  }, [history.selectedId])
+
   const live = state.status === 'live'
   const paused = state.status === 'paused'
   const tail = lines.slice(-12)
+  const selectedIndex = history.items.findIndex((item) => item.suggestionId === history.selectedId)
+  const suggestion = selectedIndex >= 0 ? history.items[selectedIndex] : null
+  const latest = history.items[history.items.length - 1] ?? null
+  const hasNewAnswer = latest !== null && latest.suggestionId !== history.selectedId
+  const hotkeyInFlight = history.items.some((item) => item.trigger === 'hotkey' && item.streaming)
   const split = overlaySplit(contentHeight, whisperRatio)
   const transcriptHeight = whisperMaximized
     ? Math.min(MAXIMIZED_TRANSCRIPT_HEIGHT, Math.max(0, contentHeight - SPLITTER_HEIGHT))
@@ -215,21 +227,68 @@ export function Overlay(): React.JSX.Element {
           onPointerUp={stopSplit}
           onPointerCancel={stopSplit}
         />
-        <section className="overlay-suggestion">
+        <section
+          className="overlay-suggestion"
+          onPointerEnter={() => {
+            readingRef.current.pointerOver = true
+          }}
+          onPointerLeave={() => {
+            readingRef.current.pointerOver = false
+          }}
+        >
           <div className="suggestion-bar">
             <span className="label">
-              {suggestion ? (suggestion.trigger === 'hotkey' ? 'Answer' : 'Whisper') : 'Sanas'}
+              {suggestion ? (suggestion.trigger === 'hotkey' ? 'Answer' : 'Whisper') : 'Whisper'}
               {suggestion?.streaming && <span className="cursor">▍</span>}
             </span>
+            {history.items.length > 0 && (
+              <span className="suggestion-nav" aria-label="Whisper history">
+                <button
+                  aria-label="Previous answer"
+                  disabled={selectedIndex <= 0}
+                  onClick={() => selectSuggestion(history.items[selectedIndex - 1].suggestionId)}
+                >
+                  ‹
+                </button>
+                <span>
+                  {selectedIndex + 1}/{history.items.length}
+                </span>
+                <button
+                  aria-label="Next answer"
+                  disabled={selectedIndex < 0 || selectedIndex >= history.items.length - 1}
+                  onClick={() => selectSuggestion(history.items[selectedIndex + 1].suggestionId)}
+                >
+                  ›
+                </button>
+                <button
+                  className="latest"
+                  disabled={!hasNewAnswer}
+                  onClick={() => latest && selectSuggestion(latest.suggestionId)}
+                >
+                  Latest
+                </button>
+              </span>
+            )}
             <button
               className="answer-now"
-              disabled={!live || suggestion?.streaming === true}
+              disabled={!live || hotkeyInFlight}
               onClick={() => window.sanas.assist.now()}
             >
               Answer now
             </button>
           </div>
-          <div className="suggestion-content">
+          {hasNewAnswer && (
+            <button className="new-answer" onClick={() => selectSuggestion(latest.suggestionId)}>
+              New answer ›
+            </button>
+          )}
+          <div
+            className="suggestion-content"
+            ref={suggestionScrollRef}
+            onScroll={(event) => {
+              readingRef.current.scrolled = event.currentTarget.scrollTop > 4
+            }}
+          >
             {suggestion?.error && <p className="warn">{suggestion.error}</p>}
             {suggestion && !suggestion.error && <CompactSuggestion text={suggestion.text} />}
             {!suggestion && (
