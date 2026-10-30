@@ -412,8 +412,7 @@ export function sendAudioChunk(chunk: Buffer): void {
   session.sendAudio(chunk)
   writeAudio(chunk) // no-op when recording wasn't started
   if (health !== null) {
-    // advisory: identity stays structural, but "Me" is no longer trustworthy for coaching
-    assistance.setIdentityTrusted(!health)
+    // advisory only: keep the banner in sync without changing identity or assistance
     setState({ ...currentState(), ...(lastError ? { error: lastError } : {}) })
   }
 }

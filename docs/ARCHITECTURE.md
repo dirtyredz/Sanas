@@ -96,8 +96,8 @@ objection | none`. It **fails closed**: timeout, cancel, malformed output or pro
   nothing is published unless complete and accepted. It never runs while a hotkey answer runs,
   a candidate is pending or the ambient lane is busy; a new candidate, "Answer now", another
   speaker's final or stereo ch1 activity cancels an unpublished one (ambiguous mono activity
-  blocks only the pause path). Suppressed while the capture warning is on. Extra cost is about
-  $0.11/hour (uncached).
+  blocks only the pause path). The advisory capture warning does not suppress coaching. Extra
+  cost is about $0.11/hour (uncached).
 - **Lanes:** ambient (automatic answers and next points, `trigger='ambient'`) and hotkey. A next
   point is `trigger='ambient'` with `purpose='next-point'`. While the ambient lane is busy only
   the newest classified candidate waits.

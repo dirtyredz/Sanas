@@ -84,7 +84,6 @@ export class LiveAssistance {
   private suspendedUntil = 0
   private lastAnswerAt: number | null = null
   private coachRun: SuggestionHandle | null = null
-  private identityTrusted = true
   private timers = new Map<TimerName, unknown>()
   private lastFailureLogAt = Number.NEGATIVE_INFINITY
 
@@ -123,16 +122,6 @@ export class LiveAssistance {
    *  not re-triggered. */
   identityChanged(): void {
     this.guard(() => this.invalidate())
-  }
-
-  /** Capture health: with an unhealthy loopback, "Me" is not really known, so no coaching. */
-  setIdentityTrusted(trusted: boolean): void {
-    this.guard(() => {
-      if (trusted === this.identityTrusted) return
-      this.identityTrusted = trusted
-      if (!trusted) this.stopCoaching()
-      else this.evaluateCoach(this.deps.now())
-    })
   }
 
   /** Assistance settings were saved. Disabling coaching cancels it at once. */
@@ -363,7 +352,7 @@ export class LiveAssistance {
 
   private evaluateCoach(now: number): void {
     const s = this.deps.settings()
-    if (!this.active || !s.coachWhileTalking || !this.identityTrusted) {
+    if (!this.active || !s.coachWhileTalking) {
       this.clearTimer('coach')
       return
     }
@@ -425,7 +414,7 @@ export class LiveAssistance {
 
   private scheduleCoachTimer(now: number): void {
     const s = this.deps.settings()
-    const at = s.coachWhileTalking && this.identityTrusted ? this.coach.nextCheckAt(now) : null
+    const at = s.coachWhileTalking ? this.coach.nextCheckAt(now) : null
     if (at === null) {
       this.clearTimer('coach')
       return

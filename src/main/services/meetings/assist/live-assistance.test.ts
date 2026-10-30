@@ -411,15 +411,10 @@ describe('live assistance: next point while the user talks', () => {
     }
   })
 
-  it('never coaches an unknown voice or while identity is untrusted', () => {
+  it('never coaches an unknown voice', () => {
     const t = setup({ coachWhileTalking: true })
     t.assist.final({ ...me(words(50), 0, 21_000), role: 'unknown', speaker: -1 })
     expect(t.generations).toHaveLength(0)
-
-    const u = setup({ coachWhileTalking: true })
-    u.assist.setIdentityTrusted(false)
-    explain(u)
-    expect(u.generations).toHaveLength(0)
   })
 
   it('waits 30 s and new content before the next attempt', async () => {

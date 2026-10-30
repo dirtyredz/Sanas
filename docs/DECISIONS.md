@@ -44,8 +44,8 @@ A mic-only reading of a This-PC meeting labels every voice as the user (GOTCHAS.
 **capture-health warning** appears when the loopback channel is digitally silent while the mic
 is hearing speech. It is **advisory**. Rejected: auto-relabelling heard voices as others, or
 silently switching to mono — either guesses at identity from a signal that ordinary remote
-silence can also produce, and would rewrite what the user sees. Coaching is simply suppressed
-while the warning is on.
+silence can also produce, and would rewrite what the user sees. Coaching continues because
+ordinary remote silence can raise the advisory warning during a presentation or rehearsal.
 
 ## 2026-10-29 — Whisper modes share one compact, safe display contract
 
