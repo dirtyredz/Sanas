@@ -3,6 +3,8 @@
 // extracted so the speaker-label and windowing rules can't drift apart.
 
 export interface FormattableLine {
+  tStartMs?: number
+  tEndMs?: number
   speaker: number
   isUser: boolean
   text: string

@@ -1,5 +1,5 @@
 import type { SuggestionPurpose, SuggestionTrigger } from '@shared/types'
-import { COACH_PROFILE } from '../../assistant/coach-prompts'
+import { COACH_PROFILE } from '../../assistant/coach/coach-prompts'
 
 export type { SuggestionTrigger }
 

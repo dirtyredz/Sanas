@@ -8,7 +8,7 @@ import type {
   Addressee,
   ResponseKind,
 } from '../../assistant/classifier'
-import { CoachPolicy } from '../../assistant/coach-policy'
+import { CoachPolicy } from '../../assistant/coach/coach-policy'
 import { speakerLabel } from '../../transcript-format'
 import type { SuggestionHandle, SuggestionRunner } from './suggestion-runner'
 import {
@@ -76,6 +76,7 @@ export class LiveAssistance {
   private epoch = 0
   private assembler = new TurnAssembler()
   private coach = new CoachPolicy()
+  private coachBoundary = 0
   private recentTurns: CompletedTurn[] = []
   private classifying: Candidate | null = null
   private queued: Candidate | null = null
@@ -143,7 +144,7 @@ export class LiveAssistance {
       if (accepted) {
         this.dropOvertakenCandidates(f)
         if (f.role === 'user') {
-          this.coach.userFinal(f, now)
+          if (f.tStartMs >= this.coachBoundary) this.coach.userFinal(f, now)
         } else {
           this.coach.endEpisode() // another voice took the floor, or we cannot tell
           this.cancelCoach()
@@ -161,7 +162,7 @@ export class LiveAssistance {
       if (!this.active) return
       const now = this.deps.now()
       this.assembler.activity(channel, atMs, now)
-      if (role === 'user') this.coach.userActivity(now)
+      if (role === 'user' && atMs >= this.coachBoundary) this.coach.userActivity(now)
       else if (role === 'other') this.cancelCoach()
       else this.coach.ambiguousActivity(now)
       this.scheduleTurnTimer(now)
@@ -186,7 +187,7 @@ export class LiveAssistance {
     this.guard(() => {
       if (!this.deps.runner.canStart('hotkey')) return
       const snap = this.deps.snapshot()
-      if (!snap || snap.window.length === 0) return
+      if (!snap || (snap.window.length === 0 && !snap.presentation?.current)) return
       this.cancelCoach()
       const handle = this.deps.runner.start(answerRequest(snap, this.deps.settings(), 'hotkey'))
       if (handle) this.afterRun(handle)
@@ -200,7 +201,7 @@ export class LiveAssistance {
       const previous = this.recentTurns.slice(-2)
       this.recentTurns = [...this.recentTurns, turn].slice(-RECENT_TURNS)
       if (turn.role === 'user') {
-        this.coach.userTurnCompleted(now)
+        if (turn.startMs >= this.coachBoundary) this.coach.userTurnCompleted(now)
         continue
       }
       if (looksLikeResponseCandidate(turn.text)) this.admit({ turn, previous, dropped: false })
@@ -388,6 +389,13 @@ export class LiveAssistance {
     const run = this.coachRun
     this.coachRun = null
     run?.cancel()
+  }
+
+  presentationChanged(atMs: number): void {
+    this.cancelCoach()
+    this.clearTimer('coach')
+    this.coach.reset()
+    this.coachBoundary = atMs
   }
 
   private stopCoaching(): void {

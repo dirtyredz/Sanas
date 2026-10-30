@@ -2,6 +2,13 @@
 // Keep this the single source of truth for channel strings.
 
 export const IPC = {
+  PresentationJobGet: 'presentation:job-get',
+  PresentationJobReplace: 'presentation:job-replace',
+  PresentationState: 'presentation:state',
+  PresentationChanged: 'presentation:changed',
+  PresentationMove: 'presentation:move',
+  PresentationHistory: 'presentation:history',
+  HotkeysStatus: 'hotkeys:status',
   // settings
   SettingsGet: 'settings:get',
   SettingsSet: 'settings:set',

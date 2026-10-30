@@ -37,6 +37,8 @@ export function SettingsPage(): React.JSX.Element {
     const patch: Partial<Settings> = {
       overlayHotkey: view.overlayHotkey,
       assistHotkey: view.assistHotkey,
+      presentationPrevHotkey: view.presentationPrevHotkey,
+      presentationNextHotkey: view.presentationNextHotkey,
       anthropicWorkspaceId: view.anthropicWorkspaceId.trim(),
       nudgeModel: view.nudgeModel.trim(),
       answerModel: view.answerModel.trim(),

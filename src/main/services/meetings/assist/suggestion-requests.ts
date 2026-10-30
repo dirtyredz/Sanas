@@ -1,4 +1,7 @@
 import type { Settings } from '@shared/types'
+import type { PresentationState } from '@shared/presentation/types'
+import { presentationCoachContent, presentationHint } from '../../assistant/presentation/prompts'
+import { COMPACT_CONTRACT, recentSuggestionsBlock } from '../../assistant/compact-contract'
 import type { SpeakerNames } from '../../transcript-format'
 import {
   assistProfile,
@@ -10,7 +13,7 @@ import {
   COACH_PROFILE,
   buildCoachUserContent,
   type CoachPromptInput,
-} from '../../assistant/coach-prompts'
+} from '../../assistant/coach/coach-prompts'
 import { suggestionTimeoutMs, type SuggestionTrigger } from './suggestion-in-flight'
 import type { SuggestionRequest } from './suggestion-runner'
 
@@ -20,6 +23,10 @@ import type { SuggestionRequest } from './suggestion-runner'
 
 /** The live meeting at the moment a request is built. */
 export interface AssistSnapshot {
+  presentation?: PresentationState
+  coachSystem?: string
+  coachEvidence?: { text: string; incomplete: boolean }
+  coachRecent?: readonly string[]
   meetingId: number
   /** The meeting clock (audio received), which stored suggestion times use. */
   atMs: number
@@ -63,11 +70,12 @@ export function answerRequest(
     workspaceId: s.anthropicWorkspaceId || undefined,
     model: profile.useAnswerModel ? s.answerModel : s.nudgeModel,
     system: snap.system,
-    userContent: buildUserContent(snap.window, trigger, s.whisperMode, {
-      names: snap.names,
-      turn,
-      recent: automatic ? snap.recent : undefined,
-    }),
+    userContent:
+      buildUserContent(snap.window, trigger, s.whisperMode, {
+        names: snap.names,
+        turn,
+        recent: automatic ? snap.recent : undefined,
+      }) + (snap.presentation ? presentationHint(snap.presentation) : ''),
     // points/smart ambient output stays terse; full mode and hotkey answers get code room
     maxTokens: profile.maxTokens,
     effort: profile.effort,
@@ -89,17 +97,28 @@ export function coachRequest(
     meetingId: snap.meetingId,
     trigger: 'ambient',
     purpose: 'next-point',
+    presentationRevision: snap.presentation?.current ? snap.presentation.revision : undefined,
     atMs: snap.atMs,
     apiKey: s.anthropicApiKey,
     workspaceId: s.anthropicWorkspaceId || undefined,
     model: s.nudgeModel,
-    system: snap.system,
-    userContent: buildCoachUserContent({
-      ...input,
-      window: snap.window,
-      names: snap.names,
-      recent: snap.recent,
-    }),
+    system: snap.coachSystem ?? snap.system,
+    userContent: snap.presentation?.current
+      ? presentationCoachContent(
+          snap.presentation,
+          snap.coachEvidence?.text ?? '',
+          snap.coachEvidence?.incomplete ?? true,
+        ) +
+        '\n' +
+        recentSuggestionsBlock(snap.coachRecent ?? []) +
+        '\n' +
+        COMPACT_CONTRACT
+      : buildCoachUserContent({
+          ...input,
+          window: snap.window,
+          names: snap.names,
+          recent: snap.recent,
+        }),
     maxTokens: COACH_PROFILE.maxTokens,
     effort: COACH_PROFILE.effort,
     timeoutMs: suggestionTimeoutMs('ambient', false, 'next-point'),

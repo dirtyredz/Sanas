@@ -18,6 +18,7 @@ export interface WhisperHistoryState {
 }
 
 export type WhisperHistoryAction =
+  | { type: 'slide' }
   | { type: 'meeting'; meetingId: number | null }
   | { type: 'event'; event: SuggestionEvent; followNewest: boolean; now: number }
   | { type: 'select'; suggestionId: number }
@@ -44,6 +45,16 @@ export function whisperHistoryReducer(
   state: WhisperHistoryState,
   action: WhisperHistoryAction,
 ): WhisperHistoryState {
+  if (action.type === 'slide') {
+    const items = state.items.filter((item) => item.purpose !== 'next-point')
+    return {
+      ...state,
+      items,
+      selectedId: items.some((item) => item.suggestionId === state.selectedId)
+        ? state.selectedId
+        : (items.at(-1)?.suggestionId ?? null),
+    }
+  }
   if (action.type === 'meeting') {
     return action.meetingId === state.meetingId
       ? state

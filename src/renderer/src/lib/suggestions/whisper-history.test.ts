@@ -17,6 +17,31 @@ function event(
 }
 
 describe('whisper history', () => {
+  it('a slide move removes only coaching and preserves streaming answers and their selection', () => {
+    let state = whisperHistoryReducer(EMPTY_WHISPER_HISTORY, {
+      type: 'event',
+      event: event(1, 'start', '', 'hotkey'),
+      followNewest: true,
+      now: 1,
+    })
+    state = whisperHistoryReducer(state, {
+      type: 'event',
+      event: event(2, 'done', 'old slide coach', 'ambient', 'next-point'),
+      followNewest: false,
+      now: 2,
+    })
+    state = whisperHistoryReducer(state, { type: 'slide' })
+    expect(state.items.map((item) => item.suggestionId)).toEqual([1])
+    expect(state.items[0].streaming).toBe(true)
+    expect(state.selectedId).toBe(1)
+    state = whisperHistoryReducer(state, {
+      type: 'event',
+      event: event(1, 'done', 'answer after navigation', 'hotkey'),
+      followNewest: false,
+      now: 3,
+    })
+    expect(state.items[0].text).toBe('answer after navigation')
+  })
   it('appends and updates items by suggestion id', () => {
     let state = whisperHistoryReducer(EMPTY_WHISPER_HISTORY, {
       type: 'event',

@@ -601,3 +601,16 @@
 .glossary-notice {
   margin: 6px 0 0;
 }
+
+.presentation-editor fieldset {
+  border: 0;
+  min-width: 0;
+  padding: 0;
+}
+.presentation-editor textarea {
+  width: 100%;
+}
+.presentation-editor pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

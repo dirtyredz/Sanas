@@ -4,6 +4,7 @@ import { MeetingView } from './MeetingView'
 import { formatWhen } from '../../lib/format-time'
 import { errorText } from '../../lib/ipc-error'
 import { parseGlossaryInput } from '../../lib/glossary-input'
+import { PresentationEditor } from '../jobs/PresentationEditor'
 
 const PACK_FIELDS = [
   { key: 'companyInfo', label: 'Company info', hint: 'Who they are, org quirks, key people' },
@@ -163,6 +164,7 @@ export function JobDetail({
       </div>
 
       <div className="detail-columns">
+        <PresentationEditor key={jobId} jobId={jobId} />
         <section className="pack">
           <div>
             <span className="eyebrow">Context pack</span>

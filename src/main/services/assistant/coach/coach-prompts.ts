@@ -2,9 +2,9 @@ import {
   renderTranscriptWindow,
   type FormattableLine,
   type SpeakerNames,
-} from '../transcript-format'
-import { COMPACT_CONTRACT, NO_SUGGESTION, recentSuggestionsBlock } from './compact-contract'
-import { boundedExcerpt } from './excerpt'
+} from '../../transcript-format'
+import { COMPACT_CONTRACT, NO_SUGGESTION, recentSuggestionsBlock } from '../compact-contract'
+import { boundedExcerpt } from '../excerpt'
 import type { CoachReason } from './coach-policy'
 
 // "Next point" coaching while the user explains something. Its own profile, independent of

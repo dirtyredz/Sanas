@@ -33,6 +33,12 @@ const c = part({
   summary: 'Last stretch.',
 })
 
+it('refuses presentation snapshots before planning any mutations', () => {
+  expect(() => planMerge([{ ...a, hasPresentation: true }, b])).toThrow(
+    'Presentation meetings cannot be merged yet.',
+  )
+})
+
 describe('planMerge', () => {
   it('keeps the earliest meeting and offsets the rest by the real gap', () => {
     const plan = planMerge([c, a, b]) // deliberately out of order

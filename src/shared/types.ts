@@ -110,6 +110,7 @@ export interface TranscriptEvent {
 
 /** Streaming suggestion event pushed from main to windows. */
 export interface SuggestionEvent {
+  presentationRevision?: number
   suggestionId: number
   meetingId: number
   trigger: SuggestionTrigger
@@ -157,6 +158,8 @@ export interface Settings {
   whisperMode: WhisperMode
   overlayHotkey: string
   assistHotkey: string
+  presentationPrevHotkey: string
+  presentationNextHotkey: string
   audioDeviceId: string
   /** Save raw meeting audio to a local WAV file. */
   recordAudio: boolean

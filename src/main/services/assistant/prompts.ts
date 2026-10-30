@@ -145,8 +145,12 @@ export function buildHistoryPrompt(question: string, excerpts: string): string {
 }
 
 /** Post-meeting summary prompt — all prompt text lives here, not in the orchestrator. */
-export function buildSummaryPrompt(window: TranscriptLine[], names?: SpeakerNames): string {
-  const transcript = renderTranscriptWindow(window, SUMMARY_CHARS, names)
+export function buildSummaryPrompt(
+  window: TranscriptLine[],
+  names?: SpeakerNames,
+  recordedTranscript?: string,
+): string {
+  const transcript = recordedTranscript ?? renderTranscriptWindow(window, SUMMARY_CHARS, names)
   return `The meeting just ended. Here is the transcript ("Me" = the user; other speakers are
 named when known, otherwise S1/S2/…). Refer to people by name where the transcript does:
 

@@ -1,4 +1,5 @@
 import { ipcMain } from 'electron'
+import { registerPresentationIpc } from './presentation'
 import { IPC } from '@shared/ipc'
 import { loadSettings, saveSettings, toView } from '../config/settings'
 import {
@@ -54,6 +55,7 @@ import { broadcast } from '../windows/broadcast'
 // Thin handlers only — validate (./validate.ts) and delegate (see STRUCTURE.md).
 
 export function registerIpcHandlers(): void {
+  registerPresentationIpc()
   ipcMain.handle(IPC.SettingsGet, () => toView(loadSettings()))
 
   ipcMain.handle(IPC.SettingsSet, (_e, raw: unknown) => {

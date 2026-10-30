@@ -15,6 +15,7 @@ import { canStartSuggestion, type SuggestionInFlight } from './suggestion-in-fli
 // (that is why the hold exists); only buffered next points are cancellable.
 
 export interface SuggestionRequest {
+  presentationRevision?: number
   meetingId: number
   trigger: SuggestionTrigger
   purpose: SuggestionPurpose
@@ -93,6 +94,9 @@ export class SuggestionRunner {
         meetingId: req.meetingId,
         trigger: req.trigger,
         purpose: req.purpose,
+        ...(req.presentationRevision === undefined
+          ? {}
+          : { presentationRevision: req.presentationRevision }),
         kind,
         text,
       })

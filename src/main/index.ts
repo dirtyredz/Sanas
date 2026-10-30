@@ -1,5 +1,6 @@
 import { app, globalShortcut } from 'electron'
 import { join } from 'path'
+import { registerShortcuts } from './services/hotkeys/registration'
 
 // Pin the app name/userData path so dev and packaged builds share one data dir
 // (dev would otherwise default to %APPDATA%/Electron).
@@ -10,7 +11,7 @@ import { showOverlay, toggleOverlay } from './windows/overlay-window'
 import { openDb } from './db'
 import { loadSettings } from './config/settings'
 import { registerIpcHandlers } from './ipc'
-import { answerNow } from './services/meetings'
+import { answerNow, moveSlideShortcut } from './services/meetings'
 import { registerSystemAudioLoopback } from './system-audio'
 import { scheduleRetention } from './services/retention'
 import { closeDanglingMeetingsAtStartup } from './services/meetings/recovery/startup-recovery'
@@ -31,19 +32,20 @@ if (!app.requestSingleInstanceLock()) {
 }
 
 function registerHotkeys(): void {
-  const { overlayHotkey, assistHotkey } = loadSettings()
-  // Registration fails silently if another app owns the combo (see GOTCHAS.md).
-  if (!globalShortcut.register(overlayHotkey, () => toggleOverlay())) {
-    console.warn(`[sanas] global hotkey ${overlayHotkey} is taken by another app`)
-  }
-  if (
-    !globalShortcut.register(assistHotkey, () => {
-      showOverlay() // the answer lands in the overlay — make sure it's visible
-      answerNow()
-    })
-  ) {
-    console.warn(`[sanas] global hotkey ${assistHotkey} is taken by another app`)
-  }
+  registerShortcuts(
+    (accelerator, callback) => globalShortcut.register(accelerator, callback),
+    loadSettings(),
+    {
+      overlayHotkey: () => toggleOverlay(),
+      assistHotkey: () => {
+        showOverlay()
+        answerNow()
+      },
+      presentationPrevHotkey: () => moveSlideShortcut('prev'),
+      presentationNextHotkey: () => moveSlideShortcut('next'),
+    },
+    (error) => console.warn('[sanas] shortcut failed:', error),
+  )
 }
 
 app.on('second-instance', () => {

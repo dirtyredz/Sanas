@@ -1,4 +1,5 @@
 import { MATCH_CLOSE, MATCH_OPEN } from '@shared/search-markers'
+import { mockPresentation } from './mock-presentation'
 import type {
   GlossaryTerm,
   HistoryEvent,
@@ -227,6 +228,8 @@ let settings: SettingsView = {
   whisperMode: 'smart',
   overlayHotkey: 'CommandOrControl+Shift+Space',
   assistHotkey: 'CommandOrControl+Shift+Enter',
+  presentationPrevHotkey: 'CommandOrControl+Alt+PageUp',
+  presentationNextHotkey: 'CommandOrControl+Alt+PageDown',
   audioDeviceId: '',
   recordAudio: true,
   meetingSource: 'elsewhere',
@@ -372,6 +375,8 @@ const on =
   }
 
 const api: SanasApi = {
+  presentation: mockPresentation,
+  hotkeys: { getStatus: async () => [] },
   settings: {
     get: async () => settings,
     set: async (patch: Partial<Settings>) => {

@@ -490,3 +490,47 @@ body.overlay-body {
 .dot.paused {
   background: var(--warn);
 }
+
+.presentation-region {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.slide-tabs,
+.slide-controls {
+  flex-shrink: 0;
+  padding: 4px 8px;
+}
+.slide-tabs button,
+.slide-controls button {
+  -webkit-app-region: no-drag;
+  margin-right: 4px;
+}
+.slide-panel {
+  min-height: 0;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+.slide-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.slide-controls small {
+  width: 100%;
+  font-size: 10px;
+}
+.slide-script {
+  overflow: auto;
+  min-height: 0;
+  padding: 0 10px;
+  user-select: text;
+  -webkit-app-region: no-drag;
+  overflow-wrap: anywhere;
+}
+.slide-script p {
+  white-space: pre-wrap;
+}

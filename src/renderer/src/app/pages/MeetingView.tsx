@@ -6,6 +6,8 @@ import { formatClock, formatWhen } from '../../lib/format-time'
 import { errorText } from '../../lib/ipc-error'
 import { CompactSuggestion } from '../../lib/suggestions/CompactSuggestion'
 import { SummaryMarkdown } from '../../lib/SummaryMarkdown'
+import type { PresentationHistory } from '@shared/presentation/types'
+import { presentationTimeline, slideMarker } from '@shared/presentation/timeline'
 
 export function MeetingView({
   meeting,
@@ -15,6 +17,22 @@ export function MeetingView({
   onBack: () => void
 }): React.JSX.Element {
   const [segments, setSegments] = useState<Segment[]>([])
+  const [presentation, setPresentation] = useState<PresentationHistory>({ slides: [], events: [] })
+  useEffect(() => {
+    let active = true
+    setPresentation({ slides: [], events: [] })
+    window.sanas.presentation
+      .getHistory(meeting.id)
+      .then((history) => {
+        if (active) setPresentation(history)
+      })
+      .catch((e) => {
+        if (active) setNotice({ kind: 'warn', text: String(e) })
+      })
+    return () => {
+      active = false
+    }
+  }, [meeting.id])
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [names, setNames] = useState<Map<number, string>>(new Map())
   const [tab, setTab] = useState<'transcript' | 'suggestions'>('transcript')
@@ -231,13 +249,23 @@ export function MeetingView({
           )}
           <div className="transcript">
             {segments.length === 0 && <p className="empty">No transcript captured.</p>}
-            {segments.map((s) => (
-              <p key={s.id} className="line">
-                <span className="ts">{formatClock(s.tStartMs)}</span>
-                <span className={`who ${s.isUser ? 'me' : ''}`}>{label(s)}</span>
-                <span className="text">{s.text}</span>
-              </p>
-            ))}
+            {presentationTimeline(segments, presentation).map((row) => {
+              if (row.kind === 'slide')
+                return (
+                  <p className="slide-marker" key={`slide-${row.event.revision}`}>
+                    <span className="ts">{formatClock(row.tMs)}</span>{' '}
+                    {slideMarker(row.event, row.title)}
+                  </p>
+                )
+              const s = row.segment
+              return (
+                <p key={s.id} className="line">
+                  <span className="ts">{formatClock(s.tStartMs)}</span>
+                  <span className={`who ${s.isUser ? 'me' : ''}`}>{label(s)}</span>
+                  <span className="text">{s.text}</span>
+                </p>
+              )
+            })}
           </div>
         </>
       )}

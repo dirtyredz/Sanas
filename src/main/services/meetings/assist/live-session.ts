@@ -13,6 +13,10 @@ import { isLiveMeeting, liveMeetingId } from '../status/live-meeting'
 import { clearPostProcessing, markPostProcessing } from '../status/post-processing'
 import { LiveAssistance } from './live-assistance'
 import { SuggestionRunner } from './suggestion-runner'
+import type { PresentationState } from '@shared/presentation/types'
+import { getPresentationHistory } from '../../../db/repos/meeting-presentation'
+import { deckContext } from '../../assistant/presentation/prompts'
+import { PresentationEvidence } from './presentation-evidence'
 
 // The live-assist side of the running meeting, assembled in one place: the rolling
 // transcript window the prompts read, the headlines already shown (so automatic prompts do
@@ -28,9 +32,15 @@ export class LiveSession {
   private readonly window: TranscriptLine[] = []
   private readonly shownHeadlines: string[] = []
   private systemPrompt = '' // stable per meeting (cached by the provider)
+  private coachPrompt = ''
+  private readonly evidence = new PresentationEvidence()
+  private readonly coachHeadlines: string[] = []
 
   /** `clockMs` is the meeting's audio clock, so suggestions line up with the transcript. */
-  constructor(clockMs: () => number) {
+  constructor(
+    clockMs: () => number,
+    private readonly presentation: () => PresentationState,
+  ) {
     const runner = new SuggestionRunner({
       provider: claudeProvider,
       emit: (event) => broadcast(IPC.SuggestionEvent, event),
@@ -38,6 +48,8 @@ export class LiveSession {
         insertSuggestion(s)
         // a late answer from a meeting that has since ended must not leak into the next one
         if (isLiveMeeting(s.meetingId)) rememberHeadline(this.shownHeadlines, s.text)
+        if (isLiveMeeting(s.meetingId) && s.purpose === 'next-point')
+          rememberHeadline(this.coachHeadlines, s.text)
       },
       hold: markPostProcessing,
       release: clearPostProcessing,
@@ -66,6 +78,10 @@ export class LiveSession {
           window: [...this.window],
           names,
           recent: [...this.shownHeadlines],
+          presentation: this.presentation(),
+          coachSystem: this.coachPrompt,
+          coachEvidence: this.evidence.snapshot(),
+          coachRecent: [...this.coachHeadlines],
         }
       },
       log: (message) => console.warn(`[sanas] ${message}`),
@@ -77,15 +93,31 @@ export class LiveSession {
   begin(jobId: number): void {
     this.window.length = 0
     this.shownHeadlines.length = 0
+    this.coachHeadlines.length = 0
+    this.evidence.reset(0)
+    this.assistance.presentationChanged(0)
     this.assistance.start()
-    this.systemPrompt = buildSystemPrompt(getJob(jobId), listGlossary(jobId))
+    const slides = getPresentationHistory(liveMeetingId()!).slides
+    const job = getJob(jobId)
+    this.coachPrompt = buildSystemPrompt(
+      slides.length && job ? { ...job, talkingPoints: '' } : job,
+      listGlossary(jobId),
+    )
+    this.systemPrompt = this.coachPrompt + deckContext(slides)
   }
 
   /** One persisted-or-not final: into the prompt window, then to live assistance. */
   final(line: TranscriptLine, turn: TurnFinal): void {
+    this.evidence.final(turn)
     this.window.push(line)
     if (this.window.length > WINDOW_LINES) this.window.shift()
     this.assistance.final(turn)
+  }
+
+  presentationChanged(atMs: number): void {
+    this.evidence.reset(atMs)
+    this.coachHeadlines.length = 0
+    this.assistance.presentationChanged(atMs)
   }
 
   /** A voice was (un)pinned as the user: relabel the window so the next prompt agrees, and
@@ -97,6 +129,6 @@ export class LiveSession {
 
   /** What the post-stop summary reads: a copy of the window and the meeting's prompt. */
   closing(): { window: TranscriptLine[]; prompt: string } {
-    return { window: [...this.window], prompt: this.systemPrompt }
+    return { window: [...this.window], prompt: this.coachPrompt }
   }
 }

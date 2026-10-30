@@ -35,6 +35,11 @@ vi.mock('../../db/repos/meetings', () => ({
   endMeeting: vi.fn(),
   updateMeetingAudioPath: vi.fn(),
 }))
+vi.mock('../../db/repos/meeting-presentation', () => ({
+  createPresentationMeeting: () => 7,
+  getPresentationHistory: () => ({ slides: [], events: [] }),
+  insertSlideEvent: vi.fn(),
+}))
 vi.mock('../audio-store', () => ({
   discardRecording: vi.fn(),
   startRecording: vi.fn(),

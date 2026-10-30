@@ -4,12 +4,7 @@ import { loadSettings } from '../../config/settings'
 import { sttProvider } from '../stt'
 import type { SttSession, SttSignal, SttTranscript } from '../stt/types'
 import { ensureDefaultJob, getGlossaryTerms } from '../../db/repos/jobs'
-import {
-  clearMeetingAudioPath,
-  createMeeting,
-  endMeeting,
-  updateMeetingAudioPath,
-} from '../../db/repos/meetings'
+import { clearMeetingAudioPath, endMeeting, updateMeetingAudioPath } from '../../db/repos/meetings'
 import { discardRecording, startRecording, stopRecording, writeAudio } from '../audio-store'
 import { rediarizeMeeting } from './rediarize/rediarize'
 import { summarizeLines } from './summary/summarize'
@@ -21,6 +16,13 @@ import { CAPTURE_WARNING, CaptureHealth } from './capture/capture-health'
 import { LiveSession } from './assist/live-session'
 import { insertSegment, setSpeakerIsUser } from '../../db/repos/segments'
 import { broadcast } from '../../windows/broadcast'
+import {
+  createPresentationMeeting,
+  getPresentationHistory,
+  insertSlideEvent,
+} from '../../db/repos/meeting-presentation'
+import { PresentationSession } from './presentation/session'
+import type { PresentationState } from '@shared/presentation/types'
 
 // Orchestrates one live meeting at a time: STT session, persistence, event fan-out, and
 // lifecycle. Live assistance — the prompt window, shown headlines, system prompt and the
@@ -60,12 +62,20 @@ let persistFailed = false // one warning per meeting, not one per line
 const captureHealth = new CaptureHealth()
 let lastError: string | undefined // the error shown now, kept when only capture health changes
 
-const live = new LiveSession(() => audioMsReceived)
+const presentation = new PresentationSession(
+  insertSlideEvent,
+  (state) => broadcast(IPC.PresentationChanged, state),
+  (atMs) => live.presentationChanged(atMs),
+)
+const live = new LiveSession(
+  () => audioMsReceived,
+  () => presentation.state(),
+)
 const assistance = live.assistance
 
 /** One at a time: lifecycle calls mutate module state across awaits. */
 let lifecycle: Promise<unknown> = Promise.resolve()
-function serialized(fn: () => Promise<MeetingState>): Promise<MeetingState> {
+function serialized<T>(fn: () => Promise<T>): Promise<T> {
   const run = lifecycle.then(fn, fn)
   lifecycle = run.catch(() => undefined)
   return run
@@ -165,7 +175,13 @@ function handleTranscript(t: SttTranscript): void {
       reportPersistFailure(e)
     }
     live.final(
-      { speaker: ev.speaker, isUser: ev.isUser, text: t.text },
+      {
+        speaker: ev.speaker,
+        isUser: ev.isUser,
+        text: t.text,
+        tStartMs: t.tStartMs,
+        tEndMs: t.tEndMs,
+      },
       {
         channel: t.channel,
         speaker: who.speaker,
@@ -230,7 +246,7 @@ export function startMeeting(jobId?: number, channels: ChannelCount = 1): Promis
     }
 
     const job = jobId ?? ensureDefaultJob()
-    const id = createMeeting(job, `Meeting ${new Date().toLocaleString()}`)
+    const id = createPresentationMeeting(job, `Meeting ${new Date().toLocaleString()}`)
     setLiveMeeting(id)
     meetingJobId = job
     meetingChannels = channels
@@ -239,6 +255,7 @@ export function startMeeting(jobId?: number, channels: ChannelCount = 1): Promis
     persistFailed = false
     userSpeakers.clear()
     captureHealth.reset()
+    presentation.begin(id, getPresentationHistory(id).slides)
     live.begin(job) // window, headlines and prompt are per meeting; a resume keeps them
 
     // held back until the recording is open too: sendAudioChunk accepts nothing until the
@@ -252,6 +269,7 @@ export function startMeeting(jobId?: number, channels: ChannelCount = 1): Promis
       assistance.halt()
       endMeeting(id)
       setLiveMeeting(null)
+      presentation.clear()
       return setState({
         meetingId: null,
         status: 'error',
@@ -385,6 +403,7 @@ export function stopMeeting(): Promise<MeetingState> {
             }),
       ]).then(() => clearPostProcessing(endedId))
     }
+    presentation.clear()
     return setState({ meetingId: null, status: 'idle' })
   })
 }
@@ -394,6 +413,33 @@ export function stopMeeting(): Promise<MeetingState> {
 export function answerNow(): void {
   if (liveMeetingId() === null) return
   assistance.answerNow()
+}
+
+export function presentationState(): PresentationState {
+  return presentation.state()
+}
+
+export function moveSlide(
+  meetingId: number,
+  direction: 'prev' | 'next',
+): Promise<PresentationState> {
+  return serialized(async () => {
+    if (liveMeetingId() !== meetingId) throw new Error('This meeting is no longer active.')
+    return presentation.move(meetingId, direction, audioMsReceived)
+  })
+}
+
+export async function moveSlideShortcut(direction: 'prev' | 'next'): Promise<void> {
+  const state = presentation.state()
+  if (state.meetingId === null || !state.current) return
+  try {
+    await moveSlide(state.meetingId, direction)
+  } catch (e) {
+    broadcast(IPC.PresentationChanged, {
+      ...presentation.state(),
+      error: e instanceof Error ? e.message : String(e),
+    })
+  }
 }
 
 /** Settings were saved. Only assistance keys concern live assistance — an overlay resize

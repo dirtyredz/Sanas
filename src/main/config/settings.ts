@@ -18,6 +18,8 @@ const DEFAULTS: Settings = {
   whisperMode: 'smart',
   overlayHotkey: 'CommandOrControl+Shift+Space',
   assistHotkey: 'CommandOrControl+Shift+Enter',
+  presentationPrevHotkey: 'CommandOrControl+Alt+PageUp',
+  presentationNextHotkey: 'CommandOrControl+Alt+PageDown',
   audioDeviceId: '',
   recordAudio: true, // needed for post-meeting re-diarization
   // 'elsewhere' is the safe default: mono + diarization works anywhere, whereas

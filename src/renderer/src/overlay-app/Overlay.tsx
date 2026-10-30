@@ -16,6 +16,8 @@ import {
   whisperRatioFromHeight,
 } from './overlay-split'
 import { createOverlayOpacitySaver } from './overlay-opacity'
+import { usePresentationState } from '../lib/meeting/usePresentationState'
+import { SlidePanel } from './SlidePanel'
 
 type ResizeAxis = 'right' | 'bottom' | 'corner'
 
@@ -37,6 +39,9 @@ interface SplitSession {
 
 export function Overlay(): React.JSX.Element {
   const { lines, state } = useTranscript()
+  const presentation = usePresentationState(state.meetingId)
+  const [tab, setTab] = useState<'slide' | 'transcript'>('slide')
+  useEffect(() => setTab('slide'), [state.meetingId])
   const [ghost, setGhost] = useState(false)
   const [overlayOpacity, setOverlayOpacity] = useState(1)
   const [whisperRatio, setWhisperRatio] = useState(DEFAULT_WHISPER_RATIO)
@@ -236,21 +241,48 @@ export function Overlay(): React.JSX.Element {
         ref={contentRef}
         style={{ gridTemplateRows: splitRows }}
       >
-        <section className="overlay-transcript" ref={scrollRef}>
-          {state.captureWarning && <p className="warn capture-warning">{state.captureWarning}</p>}
-          {tail.length === 0 && (
-            <p className="muted">
-              {live ? 'Listening…' : paused ? 'Paused.' : 'Start a meeting in the Sanas window.'}
-            </p>
+        <section
+          className={presentation.current ? 'presentation-region' : 'overlay-transcript'}
+          ref={presentation.current ? undefined : scrollRef}
+        >
+          {presentation.current && (
+            <div className="slide-tabs">
+              <button onClick={() => setTab('slide')} aria-pressed={tab === 'slide'}>
+                Slide
+              </button>
+              <button onClick={() => setTab('transcript')} aria-pressed={tab === 'transcript'}>
+                Transcript
+              </button>
+            </div>
           )}
-          {tail.map((line, index) => (
-            <p key={index} className={`line ${line.interim ? 'interim' : ''}`}>
-              <span className={`who ${line.isUser ? 'me' : ''}`}>
-                {line.speaker >= 0 || line.isUser ? speakerDisplay(line.speaker, line.isUser) : ''}
-              </span>
-              <span className="text">{line.text}</span>
-            </p>
-          ))}
+          {presentation.current && tab === 'slide' ? (
+            <SlidePanel state={presentation} />
+          ) : (
+            <div className={presentation.current ? 'overlay-transcript' : undefined}>
+              {state.captureWarning && (
+                <p className="warn capture-warning">{state.captureWarning}</p>
+              )}
+              {tail.length === 0 && (
+                <p className="muted">
+                  {live
+                    ? 'Listening…'
+                    : paused
+                      ? 'Paused.'
+                      : 'Start a meeting in the Sanas window.'}
+                </p>
+              )}
+              {tail.map((line, index) => (
+                <p key={index} className={`line ${line.interim ? 'interim' : ''}`}>
+                  <span className={`who ${line.isUser ? 'me' : ''}`}>
+                    {line.speaker >= 0 || line.isUser
+                      ? speakerDisplay(line.speaker, line.isUser)
+                      : ''}
+                  </span>
+                  <span className="text">{line.text}</span>
+                </p>
+              ))}
+            </div>
+          )}
         </section>
         <div
           className="overlay-splitter"

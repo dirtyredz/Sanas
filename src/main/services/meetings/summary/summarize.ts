@@ -13,6 +13,9 @@ import {
   type TranscriptLine,
 } from '../../assistant/prompts'
 import { splitSummaryOutput } from './summary-output'
+import { getPresentationHistory } from '../../../db/repos/meeting-presentation'
+import { presentationTranscript, SLIDE_SUMMARY_INSTRUCTION } from '../presentation/history'
+import { SUMMARY_CHARS } from '../../assistant/prompts'
 
 // Post-meeting summary + action items. Two entry points share one Claude call:
 // the fire-and-forget pass on stop (live transcript window, no DB round-trip)
@@ -33,12 +36,21 @@ export async function summarizeLines(
   if (!anthropicApiKey) return false
 
   const names = speakerNameMap(meetingId)
+  const history = getPresentationHistory(meetingId)
   const text = await claudeProvider.complete({
     apiKey: anthropicApiKey,
     workspaceId: anthropicWorkspaceId || undefined,
     model: answerModel,
     system: systemPrompt,
-    userContent: buildSummaryPrompt(lines, names),
+    userContent: history.slides.length
+      ? buildSummaryPrompt(
+          lines,
+          names,
+          presentationTranscript(lines, history, SUMMARY_CHARS, names),
+        ) +
+        '\n\n' +
+        SLIDE_SUMMARY_INSTRUCTION
+      : buildSummaryPrompt(lines, names),
     maxTokens: summaryMaxTokens(lines, names),
     effort: 'medium',
     // generous: a long meeting's detailed summary is a large one-shot call
@@ -59,13 +71,20 @@ export async function summarizeStoredMeeting(meetingId: number): Promise<Meeting
     speaker: s.speaker,
     isUser: s.isUser,
     text: s.text,
+    tStartMs: s.tStartMs,
+    tEndMs: s.tEndMs,
   }))
   if (lines.length < MIN_LINES) {
     throw new Error(`Transcript too short to summarize (${lines.length} lines).`)
   }
   if (!loadSettings().anthropicApiKey) throw new Error('Anthropic API key is not set.')
   // same job context the live meeting would have had, rebuilt from the DB
-  const systemPrompt = buildSystemPrompt(getJob(meeting.jobId), listGlossary(meeting.jobId))
+  const job = getJob(meeting.jobId)
+  const presentation = getPresentationHistory(meetingId).slides.length > 0
+  const systemPrompt = buildSystemPrompt(
+    presentation && job ? { ...job, talkingPoints: '' } : job,
+    listGlossary(meeting.jobId),
+  )
   // marked while it runs: merge must not fold a meeting whose summary is still coming
   await whilePostProcessing(meetingId, () => summarizeLines(meetingId, lines, systemPrompt))
   return getMeeting(meetingId) ?? meeting

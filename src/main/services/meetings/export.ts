@@ -7,6 +7,8 @@ import { listSuggestions } from '../../db/repos/suggestions'
 import { getJob } from '../../db/repos/jobs'
 import { formatClockMs as fmt, speakerLabel } from '../transcript-format'
 import { speakerNameMap } from '../../db/repos/speakers'
+import { getPresentationHistory } from '../../db/repos/meeting-presentation'
+import { presentationTimeline, slideMarker } from '@shared/presentation/timeline'
 
 /** Builds a markdown export and prompts the user where to save it.
  *  Returns the saved path, or null if the user cancelled. */
@@ -33,7 +35,12 @@ export async function exportMeetingMarkdown(meetingId: number): Promise<string |
 
   lines.push('## Transcript', '')
   if (segments.length === 0) lines.push('_No transcript captured._', '')
-  for (const s of segments) {
+  for (const row of presentationTimeline(segments, getPresentationHistory(meetingId))) {
+    if (row.kind === 'slide') {
+      lines.push(`- \`${fmt(row.tMs)}\` **${slideMarker(row.event, row.title)}**`)
+      continue
+    }
+    const s = row.segment
     const who = speakerLabel(s, names)
     lines.push(`- \`${fmt(s.tStartMs)}\` **${who}:** ${s.text}`)
   }

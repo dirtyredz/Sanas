@@ -135,6 +135,36 @@ describe('live assistance: answers to completed turns', () => {
   })
   afterEach(() => vi.useRealTimers())
 
+  it('slide moves preserve a classifier and its answer, including an answer already streaming', async () => {
+    const t = setup()
+    t.window.push({ speaker: 1, isUser: false, text: 'What is the result?' })
+    await otherTurn(t.assist, 'What is the result?', 0, 1000)
+    expect(t.classifications).toHaveLength(1)
+    t.assist.presentationChanged(1000)
+    expect(t.classifications[0].req.signal?.aborted).toBe(false)
+    await t.classify(0, t.question)
+    expect(t.generations).toHaveLength(1)
+    t.assist.presentationChanged(2000)
+    expect(t.generations[0].req.signal?.aborted).toBe(false)
+    t.generations[0].d.resolve('Answer from another slide')
+    await vi.advanceTimersByTimeAsync(0)
+    expect(t.events.at(-1)?.kind).toBe('done')
+    t.assist.halt()
+  })
+
+  it('slide moves cancel coaching and require fresh speech thresholds', async () => {
+    const t = setup({ coachWhileTalking: true })
+    t.assist.final(me(words(45), 0, 21000))
+    expect(t.generations).toHaveLength(1)
+    t.assist.presentationChanged(22000)
+    expect(t.generations[0].req.signal?.aborted).toBe(true)
+    await vi.advanceTimersByTimeAsync(0)
+    t.assist.final(me(words(5), 22000, 23000))
+    expect(t.generations).toHaveLength(1)
+    expect(t.events).toHaveLength(0)
+    t.assist.halt()
+  })
+
   it('classifies the fragmented linked-list question once, then answers that turn', async () => {
     const t = setup()
     t.assist.final(them('How do you make', 0, 900))
