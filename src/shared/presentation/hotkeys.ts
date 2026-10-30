@@ -1,5 +1,9 @@
 export type HotkeyAction =
-  'overlayHotkey' | 'assistHotkey' | 'presentationPrevHotkey' | 'presentationNextHotkey'
+  | 'composeHotkey'
+  | 'overlayHotkey'
+  | 'assistHotkey'
+  | 'presentationPrevHotkey'
+  | 'presentationNextHotkey'
 export interface HotkeyStatus {
   action: HotkeyAction
   accelerator: string

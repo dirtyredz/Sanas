@@ -37,6 +37,8 @@ describe('settings defaults', () => {
 
     expect(settings.classifierModel).toBe('claude-haiku-5-5')
     expect(settings.coachWhileTalking).toBe(false)
+    expect(settings.answerEveryQuestion).toBe(false)
+    expect(settings.composeHotkey).toBe('Control+Shift+K')
   })
 
   it('keeps stored classifier and coaching values', () => {

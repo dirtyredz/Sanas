@@ -14,6 +14,8 @@ const DEFAULTS: Settings = {
   answerModel: 'claude-opus-5-5',
   classifierModel: 'claude-haiku-5-5', // fast and cheap: it only answers "does this need a reply?"
   nudgeCooldownSec: 5,
+  answerEveryQuestion: false,
+  composeHotkey: 'Control+Shift+K',
   coachWhileTalking: false, // opt-in: coaching while the user talks costs a call every ~30 s
   whisperMode: 'smart',
   overlayHotkey: 'CommandOrControl+Shift+Space',

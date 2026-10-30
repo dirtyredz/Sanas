@@ -1,3 +1,4 @@
+import { getMeetingContext } from '../../db/repos/meeting-context'
 import { dialog } from 'electron'
 import { suggestionLabel } from '@shared/suggestion-label'
 import { writeFileSync } from 'fs'
@@ -33,6 +34,14 @@ export async function exportMeetingMarkdown(meetingId: number): Promise<string |
     if (meeting.actionItems) lines.push('## Action items', '', meeting.actionItems, '')
   }
 
+  const context = getMeetingContext(meetingId)
+  if (context.text)
+    lines.push(
+      '## Meeting context (owner-supplied background, not spoken evidence)',
+      '',
+      context.text,
+      '',
+    )
   lines.push('## Transcript', '')
   if (segments.length === 0) lines.push('_No transcript captured._', '')
   for (const row of presentationTimeline(segments, getPresentationHistory(meetingId))) {
@@ -49,6 +58,12 @@ export async function exportMeetingMarkdown(meetingId: number): Promise<string |
   if (suggestions.length > 0) {
     lines.push('## AI suggestions', '')
     for (const s of suggestions) {
+      lines.push(`<a id="suggestion-${s.id}"></a>`, '')
+      if (s.requestText) lines.push('**Typed request:** ' + s.requestText, '')
+      if (s.sourceSuggestionId)
+        lines.push(`[Back to source](#suggestion-${s.sourceSuggestionId})`, '')
+      for (const child of suggestions.filter((child) => child.sourceSuggestionId === s.id))
+        lines.push(`[More detail](#suggestion-${child.id})`, '')
       lines.push(`### ${fmt(s.tMs)} — ${suggestionLabel(s)}`, '', s.text, '')
     }
   }

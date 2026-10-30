@@ -5,6 +5,7 @@ export class PresentationSession {
   private meetingId: number | null = null
   private ordinal = 0
   private revision = 0
+  private deckVersion = 0
 
   constructor(
     private readonly persist: (id: number, event: SlideEvent) => void,
@@ -16,6 +17,7 @@ export class PresentationSession {
     this.slides = slides.map((s) => ({ ...s }))
     this.meetingId = meetingId
     this.ordinal = 0
+    this.deckVersion = 0
     this.revision = slides.length ? 1 : 0
     this.publish(this.state())
   }
@@ -26,6 +28,7 @@ export class PresentationSession {
     return {
       meetingId: this.meetingId,
       revision: this.revision,
+      deckVersion: this.deckVersion,
       ordinal: this.ordinal,
       count: this.slides.length,
       current: current ? { ...current } : null,
@@ -37,7 +40,12 @@ export class PresentationSession {
     if (meetingId !== this.meetingId) throw new Error('This meeting is no longer active.')
     const ordinal = this.ordinal + (direction === 'next' ? 1 : -1)
     if (ordinal < 0 || ordinal >= this.slides.length) return this.state()
-    const event = { ordinal, revision: this.revision + 1, tMs: Math.round(atMs) }
+    const event = {
+      deckVersion: this.deckVersion,
+      ordinal,
+      revision: this.revision + 1,
+      tMs: Math.round(atMs),
+    }
     this.persist(meetingId, event)
     this.ordinal = ordinal
     this.revision = event.revision
@@ -45,6 +53,15 @@ export class PresentationSession {
     const state = this.state()
     this.publish(state)
     return state
+  }
+
+  apply(slides: Slide[], event: SlideEvent): void {
+    this.slides = slides.map((s) => ({ ...s }))
+    this.deckVersion = event.deckVersion ?? 0
+    this.ordinal = event.ordinal ?? 0
+    this.revision = event.revision
+    this.moved(event.tMs)
+    this.publish(this.state())
   }
 
   clear(): void {

@@ -7,15 +7,15 @@ export function hotkeyStatus(): HotkeyStatus[] {
 
 export function registerShortcuts(
   register: (accelerator: string, callback: () => void) => boolean,
-  settings: Record<HotkeyAction, string>,
-  callbacks: Record<HotkeyAction, () => void | Promise<void>>,
+  settings: Partial<Record<HotkeyAction, string>>,
+  callbacks: Partial<Record<HotkeyAction, () => void | Promise<void>>>,
   report: (error: unknown) => void,
   now: () => number = () => performance.now(),
 ): HotkeyStatus[] {
   const seen = new Set<string>()
   let lastMove = -Infinity
   statuses = (Object.keys(callbacks) as HotkeyAction[]).map((action) => {
-    const accelerator = settings[action]
+    const accelerator = settings[action] ?? ''
     try {
       const key = accelerator
         .toLowerCase()
@@ -32,7 +32,7 @@ export function registerShortcuts(
           lastMove = time
         }
         try {
-          Promise.resolve(callbacks[action]()).catch(report)
+          Promise.resolve(callbacks[action]?.()).catch(report)
         } catch (e) {
           report(e)
         }

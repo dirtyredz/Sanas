@@ -33,6 +33,9 @@ vi.mock('../../../db/repos/segments', () => ({
 }))
 vi.mock('../../../db/repos/jobs', () => ({ getJob: () => null, listGlossary: () => [] }))
 vi.mock('../../../db/repos/speakers', () => ({ speakerNameMap: () => new Map() }))
+vi.mock('../../../db/repos/meeting-context', () => ({
+  getMeetingContext: () => ({ text: 'OWNER_CORRECTION' }),
+}))
 vi.mock('../../../db/repos/meeting-presentation', () => ({
   getPresentationHistory: () => f.history,
 }))
@@ -54,5 +57,7 @@ it('regenerates using recorded titles and actual timestamped speech, never prepa
   expect(f.request?.userContent).toContain('Slide 1 — Recorded title')
   expect(f.request?.userContent).toContain('[0:04] Me: Actual statement 4')
   expect(f.request?.userContent).toContain('not spoken statements')
+  expect(f.request?.userContent).toContain('OWNER_CORRECTION')
+  expect(f.request?.userContent).toContain('not evidence that anyone said')
   expect((f.request?.system ?? '') + f.request?.userContent).not.toContain('UNSPOKEN_SCRIPT')
 })

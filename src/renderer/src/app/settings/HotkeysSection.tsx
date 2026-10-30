@@ -57,6 +57,13 @@ export function HotkeysSection({
           <input value={view[key]} onChange={(e) => onChange({ [key]: e.target.value })} />
         </label>
       ))}
+      <label className="field">
+        <span>Ask composer</span>
+        <input
+          value={view.composeHotkey}
+          onChange={(e) => onChange({ composeHotkey: e.target.value })}
+        />
+      </label>
       {status.map((s) => (
         <p key={s.action}>
           {s.action}: startup {hotkeyLabel(s.accelerator)} — {s.registered ? 'registered' : s.error}

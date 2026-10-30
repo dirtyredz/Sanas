@@ -2,6 +2,17 @@
 // Keep this the single source of truth for channel strings.
 
 export const IPC = {
+  MeetingContextGet: 'live-controls:MeetingContextGet',
+  MeetingContextUpdate: 'live-controls:MeetingContextUpdate',
+  MeetingContextChanged: 'live-controls:MeetingContextChanged',
+  AssistRequest: 'live-controls:AssistRequest',
+  AnswerEveryQuestionGet: 'live-controls:AnswerEveryQuestionGet',
+  AnswerEveryQuestionSet: 'live-controls:AnswerEveryQuestionSet',
+  AnswerEveryQuestionChanged: 'live-controls:AnswerEveryQuestionChanged',
+  ComposeActivate: 'live-controls:ComposeActivate',
+  ComposeReady: 'live-controls:ComposeReady',
+  ComposeRelease: 'live-controls:ComposeRelease',
+  ComposeFocus: 'live-controls:ComposeFocus',
   PresentationJobGet: 'presentation:job-get',
   PresentationJobReplace: 'presentation:job-replace',
   PresentationState: 'presentation:state',

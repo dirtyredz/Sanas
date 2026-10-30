@@ -59,6 +59,8 @@ export const SETTINGS_SCHEMA: { [K in keyof Settings]: Check<Settings[K]> } = {
   classifierModel: nonEmptyText(200),
   nudgeCooldownSec: num(0, 60, false),
   coachWhileTalking: bool,
+  answerEveryQuestion: bool,
+  composeHotkey: text(60),
   whisperMode,
   overlayHotkey: text(60),
   assistHotkey: text(60),

@@ -21,8 +21,8 @@ describe('presentation cursor', () => {
     expect(session.move(4, 'next', 100).revision).toBe(2)
     expect(session.move(4, 'prev', 100).revision).toBe(3)
     expect(persist.mock.calls.map((c) => c[1])).toEqual([
-      { ordinal: 1, revision: 2, tMs: 100 },
-      { ordinal: 0, revision: 3, tMs: 100 },
+      { deckVersion: 0, ordinal: 1, revision: 2, tMs: 100 },
+      { deckVersion: 0, ordinal: 0, revision: 3, tMs: 100 },
     ])
     session.clear()
     expect(session.state().current).toBeNull()

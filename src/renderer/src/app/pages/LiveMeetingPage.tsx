@@ -1,3 +1,4 @@
+import { MeetingContextEditor } from '../../lib/meeting/MeetingContextEditor'
 import { useEffect, useRef, useState } from 'react'
 import type { Job, MeetingSource } from '@shared/types'
 import { startCapture, type CaptureSession } from '../../audio/mic'
@@ -189,6 +190,12 @@ export function LiveMeetingPage(): React.JSX.Element {
 
   return (
     <div className="live-page">
+      {state.meetingId !== null && (
+        <details className="card">
+          <summary>Meeting context and slides</summary>
+          <MeetingContextEditor meetingId={state.meetingId} />
+        </details>
+      )}
       <div className="live-toolbar">
         <h2>Live</h2>
         <select

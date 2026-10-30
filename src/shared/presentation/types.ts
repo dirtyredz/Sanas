@@ -6,17 +6,20 @@ export interface Slide {
 }
 
 export interface SlideEvent {
+  deckVersion?: number
   revision: number
-  ordinal: number
+  ordinal: number | null
   tMs: number
 }
 
 export interface PresentationHistory {
+  versions?: Record<number, Slide[]>
   slides: Slide[]
   events: SlideEvent[]
 }
 
 export interface PresentationState {
+  deckVersion?: number
   meetingId: number | null
   revision: number
   count: number

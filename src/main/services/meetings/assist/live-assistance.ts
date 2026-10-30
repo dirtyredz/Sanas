@@ -59,7 +59,7 @@ interface Candidate {
   turn: CompletedTurn
   previous: CompletedTurn[]
   kind?: ResponseKind
-  addressee?: Exclude<Addressee, 'other'>
+  addressee?: Addressee
   abort?: AbortController
   dropped: boolean
 }
@@ -72,6 +72,13 @@ function words(text: string): number {
 }
 
 export class LiveAssistance {
+  private answerEveryQuestion = false
+  setAnswerEveryQuestion(on: boolean): void {
+    this.answerEveryQuestion = on
+  }
+  manualAdmitted(): void {
+    this.cancelCoach()
+  }
   private active = false
   private epoch = 0
   private assembler = new TurnAssembler()
@@ -299,7 +306,10 @@ export class LiveAssistance {
           this.suspendedUntil = this.deps.now() + CLASSIFIER_SUSPEND_MS
         }
         this.logFailure(`turn classifier ${outcome.reason}; failing closed`)
-      } else if (outcome.kind !== 'none' && outcome.addressee !== 'other') {
+      } else if (
+        outcome.kind !== 'none' &&
+        (outcome.addressee !== 'other' || this.answerEveryQuestion)
+      ) {
         // put to someone else: not Me's to answer. Me or the room: the prompt says which.
         c.kind = outcome.kind
         c.addressee = outcome.addressee
@@ -316,7 +326,11 @@ export class LiveAssistance {
     if (!c || !c.kind || !c.addressee) return
     const now = this.deps.now()
     const s = this.deps.settings()
-    if (this.expired(c, now) || !answerCooldownAllows(this.lastAnswerAt, now, s.nudgeCooldownSec)) {
+    if (
+      (c.addressee === 'other' && !this.answerEveryQuestion) ||
+      this.expired(c, now) ||
+      !answerCooldownAllows(this.lastAnswerAt, now, s.nudgeCooldownSec)
+    ) {
       this.ready = null
       return
     }
@@ -369,8 +383,15 @@ export class LiveAssistance {
     const epoch = this.epoch
     let handle: SuggestionHandle | null = null
     // the runner has already discarded the no-op; this is the "still current?" check
-    const accept = (): boolean =>
-      epoch === this.epoch && this.coachRun === handle && !this.candidatePending()
+    const accept = (): boolean => {
+      if (epoch !== this.epoch || this.coachRun !== handle || this.candidatePending()) return false
+      const current = this.deps.snapshot()
+      return (
+        !!current &&
+        current.contextRevision === snap.contextRevision &&
+        current.presentation?.revision === snap.presentation?.revision
+      )
+    }
     handle = this.deps.runner.start(
       coachRequest(snap, s, { excerpt: this.coach.excerpt(), reason }, accept),
     )

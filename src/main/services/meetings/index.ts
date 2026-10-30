@@ -1,3 +1,11 @@
+import type {
+  Admission,
+  ContextUpdate,
+  ManualRequest,
+  MeetingContext,
+} from '@shared/live-controls/types'
+import { getMeetingContext, saveMeetingContext } from '../../db/repos/meeting-context'
+import { applyContext } from './context/session'
 import { IPC } from '@shared/ipc'
 import type { ChannelCount, MeetingState, Settings, TranscriptEvent } from '@shared/types'
 import { loadSettings } from '../../config/settings'
@@ -55,6 +63,7 @@ let sessionGen = 0 // bumped whenever a session is opened or discarded
 let meetingJobId = 0 // remembered so a resume can re-send the job's keyterms
 let meetingChannels: ChannelCount = 1
 let paused = false
+let answerEveryQuestion = false
 let audioMsReceived = 0 // the meeting's clock: audio actually captured, in ms
 const userSpeakers = new Set<number>() // diarized indices pinned as "me"
 const lostRecordings = new Set<number>() // meetings whose WAV died while they were running
@@ -256,6 +265,7 @@ export function startMeeting(jobId?: number, channels: ChannelCount = 1): Promis
     userSpeakers.clear()
     captureHealth.reset()
     presentation.begin(id, getPresentationHistory(id).slides)
+    answerEveryQuestion = settings.answerEveryQuestion
     live.begin(job) // window, headlines and prompt are per meeting; a resume keeps them
 
     // held back until the recording is open too: sendAudioChunk accepts nothing until the
@@ -413,6 +423,41 @@ export function stopMeeting(): Promise<MeetingState> {
 export function answerNow(): void {
   if (liveMeetingId() === null) return
   assistance.answerNow()
+}
+
+export function updateMeetingContext(update: ContextUpdate): Promise<MeetingContext> {
+  return serialized(async () => {
+    if (!isLiveMeeting(update.meetingId)) throw new Error('This meeting is no longer active.')
+    return applyContext(
+      getMeetingContext(update.meetingId),
+      update,
+      presentation.state(),
+      Math.round(audioMsReceived),
+      saveMeetingContext,
+      (next, event) => {
+        live.applyContext(next)
+        if (event) presentation.apply(next.slides, event)
+        broadcast(IPC.MeetingContextChanged, next)
+      },
+    )
+  })
+}
+export function requestAssist(input: ManualRequest): Promise<Admission> {
+  return serialized(async () => {
+    if (!isLiveMeeting(input.meetingId)) throw new Error('This meeting is no longer active.')
+    return live.request(input)
+  })
+}
+export function answerEveryQuestionState(): { meetingId: number | null; enabled: boolean } {
+  return { meetingId: liveMeetingId(), enabled: answerEveryQuestion }
+}
+export function setAnswerEveryQuestion(meetingId: number, enabled: boolean): Promise<void> {
+  return serialized(async () => {
+    if (!isLiveMeeting(meetingId)) throw new Error('This meeting is no longer active.')
+    answerEveryQuestion = enabled
+    assistance.setAnswerEveryQuestion(enabled)
+    broadcast(IPC.AnswerEveryQuestionChanged, answerEveryQuestionState())
+  })
 }
 
 export function presentationState(): PresentationState {

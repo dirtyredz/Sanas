@@ -126,6 +126,16 @@ export function AssistantSection({
           Seconds between automatic answers to the room (0–60). Set to 0 for no cooldown.
         </small>
       </label>
+      <label className="field">
+        <span>
+          <input
+            type="checkbox"
+            checked={view.answerEveryQuestion}
+            onChange={(e) => onChange({ answerEveryQuestion: e.target.checked })}
+          />{' '}
+          Answer every question by default
+        </span>
+      </label>
     </SettingsSection>
   )
 }

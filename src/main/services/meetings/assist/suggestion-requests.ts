@@ -1,3 +1,4 @@
+import { meetingContextBlock } from '../../assistant/live-controls/prompts'
 import type { Settings } from '@shared/types'
 import type { PresentationState } from '@shared/presentation/types'
 import { presentationCoachContent, presentationHint } from '../../assistant/presentation/prompts'
@@ -23,6 +24,10 @@ import type { SuggestionRequest } from './suggestion-runner'
 
 /** The live meeting at the moment a request is built. */
 export interface AssistSnapshot {
+  cacheableContext?: string
+  meetingText?: string
+  contextRevision?: number
+  groundingContextId?: number
   presentation?: PresentationState
   coachSystem?: string
   coachEvidence?: { text: string; incomplete: boolean }
@@ -70,12 +75,17 @@ export function answerRequest(
     workspaceId: s.anthropicWorkspaceId || undefined,
     model: profile.useAnswerModel ? s.answerModel : s.nudgeModel,
     system: snap.system,
+    cacheableContext: snap.cacheableContext,
+    groundingContextId: snap.groundingContextId,
+    contextRevision: snap.contextRevision,
     userContent:
       buildUserContent(snap.window, trigger, s.whisperMode, {
         names: snap.names,
         turn,
         recent: automatic ? snap.recent : undefined,
-      }) + (snap.presentation ? presentationHint(snap.presentation) : ''),
+      }) +
+      (snap.presentation ? presentationHint(snap.presentation) : '') +
+      meetingContextBlock(snap.meetingText ?? ''),
     // points/smart ambient output stays terse; full mode and hotkey answers get code room
     maxTokens: profile.maxTokens,
     effort: profile.effort,
@@ -103,22 +113,25 @@ export function coachRequest(
     workspaceId: s.anthropicWorkspaceId || undefined,
     model: s.nudgeModel,
     system: snap.coachSystem ?? snap.system,
-    userContent: snap.presentation?.current
-      ? presentationCoachContent(
-          snap.presentation,
-          snap.coachEvidence?.text ?? '',
-          snap.coachEvidence?.incomplete ?? true,
-        ) +
-        '\n' +
-        recentSuggestionsBlock(snap.coachRecent ?? []) +
-        '\n' +
-        COMPACT_CONTRACT
-      : buildCoachUserContent({
-          ...input,
-          window: snap.window,
-          names: snap.names,
-          recent: snap.recent,
-        }),
+    contextRevision: snap.contextRevision,
+    userContent:
+      meetingContextBlock(snap.meetingText ?? '', true) +
+      (snap.presentation?.current
+        ? presentationCoachContent(
+            snap.presentation,
+            snap.coachEvidence?.text ?? '',
+            snap.coachEvidence?.incomplete ?? true,
+          ) +
+          '\n' +
+          recentSuggestionsBlock(snap.coachRecent ?? []) +
+          '\n' +
+          COMPACT_CONTRACT
+        : buildCoachUserContent({
+            ...input,
+            window: snap.window,
+            names: snap.names,
+            recent: snap.recent,
+          })),
     maxTokens: COACH_PROFILE.maxTokens,
     effort: COACH_PROFILE.effort,
     timeoutMs: suggestionTimeoutMs('ambient', false, 'next-point'),

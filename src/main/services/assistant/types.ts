@@ -7,6 +7,7 @@ export interface AssistRequest {
   workspaceId?: string
   /** Provider model ID, chosen per request by the owning feature. */
   model: string
+  cacheableContext?: string
   system: string
   userContent: string
   maxTokens: number

@@ -92,3 +92,16 @@ describe('Claude provider request options', () => {
     expect(sdk.clients[1].defaultHeaders).toBeUndefined()
   })
 })
+
+it('owns separate cache breakpoints for stable job and optional effective deck', async () => {
+  sdk.calls = []
+  await claudeProvider.complete({ ...base, cacheableContext: 'deck' })
+  await claudeProvider.complete(base)
+  expect(sdk.calls[0].body.system).toEqual([
+    { type: 'text', text: 'sys', cache_control: { type: 'ephemeral' } },
+    { type: 'text', text: 'deck', cache_control: { type: 'ephemeral' } },
+  ])
+  expect(sdk.calls[1].body.system).toEqual([
+    { type: 'text', text: 'sys', cache_control: { type: 'ephemeral' } },
+  ])
+})

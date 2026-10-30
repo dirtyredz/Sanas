@@ -16,6 +16,21 @@ vi.mock('../../../db/repos/jobs', () => ({ getJob: () => null, listGlossary: () 
 vi.mock('../../../db/repos/meeting-presentation', () => ({
   getPresentationHistory: () => ({ slides: f.deck, events: [] }),
 }))
+vi.mock('../../../db/repos/meeting-context', () => ({
+  getMeetingContext: () => ({
+    meetingId: 1,
+    revision: 0,
+    deckVersion: 0,
+    text: '',
+    slides: f.deck,
+    initialSlides: f.deck,
+  }),
+}))
+vi.mock('../../../db/repos/suggestion-grounding', () => ({
+  saveGrounding: () => 1,
+  detailSource: vi.fn(),
+  existingDetail: () => undefined,
+}))
 vi.mock('../../../db/repos/suggestions', () => ({ insertSuggestion: vi.fn() }))
 vi.mock('../../../db/repos/speakers', () => ({ speakerNameMap: () => new Map() }))
 vi.mock('../../../windows/broadcast', () => ({ broadcast: vi.fn() }))
@@ -54,7 +69,7 @@ it('allows pre-speech answers and keeps the full cached deck invariant across na
   session.begin(1)
   session.assistance.answerNow()
   await new Promise((resolve) => setTimeout(resolve, 0))
-  expect(f.requests[0].system).toContain('LATER script')
+  expect(f.requests[0].cacheableContext).toContain('LATER script')
   session.final(
     { speaker: 0, isUser: true, text: 'prior words', tStartMs: 0, tEndMs: 10 },
     { channel: 0, speaker: 0, role: 'user', text: 'prior words', tStartMs: 0, tEndMs: 10 },
@@ -68,4 +83,45 @@ it('allows pre-speech answers and keeps the full cached deck invariant across na
   expect(session.closing().window[0].text).toBe('prior words')
   expect(session.closing().prompt).not.toContain('LATER script')
   session.assistance.halt()
+})
+
+it('admits typed requests while paused, rejects busy/wrong-meeting and avoids audience calls without speech', async () => {
+  const session = new LiveSession(
+    () => 100,
+    () => ({ meetingId: 1, revision: 0, count: 0, ordinal: 0, current: null, next: null }),
+  )
+  session.begin(1)
+  session.assistance.halt()
+  expect(session.request({ meetingId: 1, kind: 'audience' })).toMatchObject({
+    accepted: false,
+    reason: 'no-evidence',
+  })
+  expect(f.requests).toHaveLength(0)
+  expect(() => session.request({ meetingId: 2, kind: 'typed', text: 'hello' })).toThrow(
+    'no longer active',
+  )
+  expect(session.request({ meetingId: 1, kind: 'typed', text: 'hello' })).toEqual({
+    accepted: true,
+  })
+  expect(session.request({ meetingId: 1, kind: 'typed', text: 'again' })).toMatchObject({
+    accepted: false,
+    reason: 'busy',
+  })
+  session.applyContext({
+    meetingId: 1,
+    revision: 1,
+    deckVersion: 1,
+    text: 'later correction',
+    slides: [],
+    initialSlides: f.deck,
+  })
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  expect(f.requests[0].userContent).not.toContain('later correction')
+  expect(f.requests[0].cacheableContext).toContain('LATER script')
+  expect(session.request({ meetingId: 1, kind: 'typed', text: 'after edit' })).toEqual({
+    accepted: true,
+  })
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  expect(f.requests[1].userContent).toContain('later correction')
+  expect(f.requests[1].cacheableContext).toBe('')
 })

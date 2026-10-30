@@ -17,7 +17,11 @@ export function presentationTimeline<T extends { tStartMs?: number }>(
     ...history.events.map((event) => ({
       kind: 'slide' as const,
       event,
-      title: history.slides[event.ordinal]?.title ?? '',
+      title:
+        event.ordinal === null
+          ? 'Slides cleared'
+          : ((history.versions?.[event.deckVersion ?? 0] ?? history.slides)[event.ordinal]?.title ??
+            ''),
       tMs: event.tMs,
     })),
   )
@@ -35,5 +39,6 @@ export function presentationTimeline<T extends { tStartMs?: number }>(
 }
 
 export function slideMarker(event: SlideEvent, title: string): string {
+  if (event.ordinal === null) return 'Slides cleared'
   return `Slide ${event.ordinal + 1} — ${title}`
 }

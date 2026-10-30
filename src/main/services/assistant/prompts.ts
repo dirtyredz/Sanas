@@ -86,7 +86,7 @@ export interface TriggeringTurn {
   text: string
   kind: ResponseKind
   /** Who it was put to: Me specifically, or the room (an open floor). */
-  addressee: 'me' | 'room'
+  addressee: 'me' | 'room' | 'other'
 }
 
 export interface UserContentOptions {
@@ -104,7 +104,9 @@ function focusBlock(turn: TriggeringTurn): string {
       ? `It was put to the room, not to Me specifically. Only suggest something if there is a
 genuinely useful, non-repeated contribution or question for Me to raise; otherwise output
 exactly ${NO_SUGGESTION}.`
-      : 'It was put to Me.'
+      : turn.addressee === 'other'
+        ? 'It was put to another participant. The owner has enabled answering every question; provide an answer for the owner’s reference.'
+        : 'It was put to Me.'
   return `Respond to this completed turn (a ${turn.kind}):
 ${turn.speaker}: ${boundedExcerpt(turn.text, TURN_CHARS)}
 Answer THAT turn, about the topic being discussed now. ${who}`

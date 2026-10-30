@@ -37,6 +37,10 @@ vi.mock('../../db/repos/meetings', () => ({
   endMeeting: vi.fn(),
   updateMeetingAudioPath: vi.fn(),
 }))
+vi.mock('../../db/repos/meeting-context', () => ({
+  getMeetingContext: vi.fn(),
+  saveMeetingContext: vi.fn(),
+}))
 vi.mock('../../db/repos/meeting-presentation', () => ({
   createPresentationMeeting: () => 7,
   getPresentationHistory: () => ({ slides: fakes.slides, events: [] }),
@@ -128,8 +132,8 @@ describe('meeting capture health', () => {
     sendAudioChunk(silentLoopbackWithMicSpeech(1000)) // paused: ignored
     await moveSlide(7, 'prev')
     expect(fakes.slideEvents.mock.calls.map((call) => call[1])).toEqual([
-      { ordinal: 1, revision: 2, tMs: 1000 },
-      { ordinal: 0, revision: 3, tMs: 1000 },
+      { deckVersion: 0, ordinal: 1, revision: 2, tMs: 1000 },
+      { deckVersion: 0, ordinal: 0, revision: 3, tMs: 1000 },
     ])
     await resumeMeeting(2)
     expect(presentationState().revision).toBe(3)

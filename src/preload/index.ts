@@ -1,3 +1,9 @@
+import type {
+  Admission,
+  ContextUpdate,
+  ManualRequest,
+  MeetingContext,
+} from '../shared/live-controls/types'
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC } from '../shared/ipc'
 import type { Slide, PresentationState, PresentationHistory } from '../shared/presentation/types'
@@ -23,7 +29,19 @@ import type {
 } from '../shared/types'
 
 // The whole renderer-facing API surface. Keep it explicit — no generic invoke passthrough.
+function subscribe<T>(channel: string, cb: (value: T) => void): () => void {
+  const listener = (_e: unknown, value: T): void => cb(value)
+  ipcRenderer.on(channel, listener)
+  return () => ipcRenderer.removeListener(channel, listener)
+}
 const api = {
+  meetingContext: {
+    get: (id: number): Promise<MeetingContext> => ipcRenderer.invoke(IPC.MeetingContextGet, id),
+    update: (request: ContextUpdate): Promise<MeetingContext> =>
+      ipcRenderer.invoke(IPC.MeetingContextUpdate, request),
+    onChanged: (cb: (context: MeetingContext) => void): (() => void) =>
+      subscribe(IPC.MeetingContextChanged, cb),
+  },
   hotkeys: { getStatus: (): Promise<HotkeyStatus[]> => ipcRenderer.invoke(IPC.HotkeysStatus) },
   presentation: {
     getJobSlides: (id: number): Promise<Slide[]> => ipcRenderer.invoke(IPC.PresentationJobGet, id),
@@ -53,6 +71,10 @@ const api = {
     },
   },
   overlay: {
+    activateComposer: (): Promise<void> => ipcRenderer.invoke(IPC.ComposeActivate),
+    composerReady: (): Promise<void> => ipcRenderer.invoke(IPC.ComposeReady),
+    releaseFocus: (): Promise<void> => ipcRenderer.invoke(IPC.ComposeRelease),
+    onCompose: (cb: () => void): (() => void) => subscribe(IPC.ComposeFocus, cb),
     toggle: (): Promise<void> => ipcRenderer.invoke(IPC.OverlayToggle),
     resize: (request: OverlayResizeRequest): Promise<void> =>
       ipcRenderer.invoke(IPC.OverlayResize, request),
@@ -89,6 +111,15 @@ const api = {
     },
   },
   assist: {
+    request: (request: ManualRequest): Promise<Admission> =>
+      ipcRenderer.invoke(IPC.AssistRequest, request),
+    getAnswerEveryQuestion: (): Promise<{ meetingId: number | null; enabled: boolean }> =>
+      ipcRenderer.invoke(IPC.AnswerEveryQuestionGet),
+    setAnswerEveryQuestion: (id: number, enabled: boolean): Promise<void> =>
+      ipcRenderer.invoke(IPC.AnswerEveryQuestionSet, id, enabled),
+    onAnswerEveryQuestion: (
+      cb: (state: { meetingId: number | null; enabled: boolean }) => void,
+    ): (() => void) => subscribe(IPC.AnswerEveryQuestionChanged, cb),
     now: (): Promise<void> => ipcRenderer.invoke(IPC.AssistNow),
     onSuggestion: (cb: (ev: SuggestionEvent) => void): (() => void) => {
       const listener = (_e: unknown, ev: SuggestionEvent): void => cb(ev)

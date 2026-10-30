@@ -118,3 +118,9 @@ describe('planMerge', () => {
     expect(() => planMerge([recovered, overlapping])).toThrow('overlap')
   })
 })
+
+it('refuses applied context even when the latest deck and text are empty', () => {
+  expect(() => planMerge([{ ...a, hasAppliedContext: true, hasPresentation: false }, b])).toThrow(
+    'applied context',
+  )
+})

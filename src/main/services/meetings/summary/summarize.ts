@@ -1,3 +1,5 @@
+import { getMeetingContext } from '../../../db/repos/meeting-context'
+import { meetingContextBlock } from '../../assistant/live-controls/prompts'
 import type { Meeting } from '@shared/types'
 import { loadSettings } from '../../../config/settings'
 import { getMeeting, updateMeetingSummary } from '../../../db/repos/meetings'
@@ -42,15 +44,17 @@ export async function summarizeLines(
     workspaceId: anthropicWorkspaceId || undefined,
     model: answerModel,
     system: systemPrompt,
-    userContent: history.slides.length
-      ? buildSummaryPrompt(
-          lines,
-          names,
-          presentationTranscript(lines, history, SUMMARY_CHARS, names),
-        ) +
-        '\n\n' +
-        SLIDE_SUMMARY_INSTRUCTION
-      : buildSummaryPrompt(lines, names),
+    userContent:
+      meetingContextBlock(getMeetingContext(meetingId).text) +
+      (history.events.length
+        ? buildSummaryPrompt(
+            lines,
+            names,
+            presentationTranscript(lines, history, SUMMARY_CHARS, names),
+          ) +
+          '\n\n' +
+          SLIDE_SUMMARY_INSTRUCTION
+        : buildSummaryPrompt(lines, names)),
     maxTokens: summaryMaxTokens(lines, names),
     effort: 'medium',
     // generous: a long meeting's detailed summary is a large one-shot call

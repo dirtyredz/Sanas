@@ -5,11 +5,14 @@ import type { OverlayResizeRequest } from '@shared/types'
 import { loadSettings, saveSettings } from '../config/settings'
 
 let overlay: BrowserWindow | null = null
+let rendererReady = false
+let pendingCompose = false
 let saveBoundsTimer: ReturnType<typeof setTimeout> | null = null
 const MIN_WIDTH = 280
 const MIN_HEIGHT = 230
 
 function createOverlay(): BrowserWindow {
+  rendererReady = false
   const { width } = screen.getPrimaryDisplay().workAreaSize
   const saved = loadSettings().overlayBounds
   overlay = new BrowserWindow({
@@ -104,24 +107,46 @@ export function setClickThrough(on: boolean): void {
 
 export function toggleOverlay(): void {
   if (!overlay || overlay.isDestroyed()) {
-    createOverlay().once('ready-to-show', () => overlay?.show())
+    createOverlay().once('ready-to-show', () => overlay?.showInactive())
     return
   }
   // ghost mode active → the hotkey un-ghosts instead of hiding (the only way
   // back, since the window itself no longer receives clicks)
   if (clickThrough) {
     setClickThrough(false)
-    overlay.show()
+    overlay.showInactive()
     return
   }
   if (overlay.isVisible()) overlay.hide()
-  else overlay.show()
+  else overlay.showInactive()
 }
 
 export function showOverlay(): void {
   if (!overlay || overlay.isDestroyed()) {
-    createOverlay().once('ready-to-show', () => overlay?.show())
+    createOverlay().once('ready-to-show', () => overlay?.showInactive())
     return
   }
-  if (!overlay.isVisible()) overlay.show()
+  if (!overlay.isVisible()) overlay.showInactive()
+}
+
+/** Explicit typing is the only display path that takes foreground focus. */
+export function activateComposer(): void {
+  pendingCompose = true
+  if (!overlay || overlay.isDestroyed()) createOverlay()
+  setClickThrough(false)
+  overlay!.show()
+  overlay!.focus()
+  deliverCompose()
+}
+function deliverCompose(): void {
+  if (!pendingCompose || !rendererReady || !overlay || overlay.isDestroyed()) return
+  pendingCompose = false
+  overlay.webContents.send(IPC.ComposeFocus)
+}
+export function composerReady(): void {
+  rendererReady = true
+  deliverCompose()
+}
+export function releaseOverlayFocus(): void {
+  overlay?.blur()
 }

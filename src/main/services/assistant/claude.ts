@@ -42,7 +42,13 @@ export const claudeProvider: AssistantProvider = {
         max_tokens: req.maxTokens,
         ...(supportsEffort(req.model) ? { output_config: { effort: req.effort } } : {}),
         // job context pack is stable for the whole meeting — cache it
-        system: [{ type: 'text', text: req.system, cache_control: { type: 'ephemeral' } }],
+        system: [req.system, ...(req.cacheableContext ? [req.cacheableContext] : [])].map(
+          (text) => ({
+            type: 'text' as const,
+            text,
+            cache_control: { type: 'ephemeral' as const },
+          }),
+        ),
         messages: [{ role: 'user', content: req.userContent }],
       },
       requestOptions(req),

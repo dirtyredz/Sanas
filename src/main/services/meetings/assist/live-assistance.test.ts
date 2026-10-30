@@ -314,6 +314,20 @@ describe('live assistance: answers to completed turns', () => {
     }
   })
 
+  it('answers other addressees only when enabled, retaining cooldown', async () => {
+    const t = setup()
+    t.assist.setAnswerEveryQuestion(true)
+    await otherTurn(t.assist, 'Sarah, can you share the numbers?', 0, 1000)
+    await t.classify(0, { status: 'classified', kind: 'request', addressee: 'other' })
+    expect(t.generations).toHaveLength(1)
+    expect(t.generations[0].req.userContent).toContain('another participant')
+    t.generations[0].d.resolve('Answer')
+    await vi.advanceTimersByTimeAsync(0)
+    await otherTurn(t.assist, 'What about the cost?', 1200, 2000)
+    expect(t.classifications).toHaveLength(1)
+    t.assist.setAnswerEveryQuestion(false)
+  })
+
   it('does not answer a turn put to another participant', async () => {
     const t = setup()
     await otherTurn(t.assist, 'Sarah, can you share the numbers?', 0, 1_000)

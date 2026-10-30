@@ -1,3 +1,4 @@
+import type { SuggestionMetadata } from '@shared/live-controls/types'
 import type { SuggestionEvent, SuggestionPurpose, SuggestionTrigger } from '@shared/types'
 import type { AssistantProvider } from '../../assistant/types'
 import { couldBeNoSuggestion, isNoSuggestion } from '../../assistant/compact-contract'
@@ -14,7 +15,8 @@ import { canStartSuggestion, type SuggestionInFlight } from './suggestion-in-fli
 // release the newer owner. An answer that started before Stop still finishes and persists
 // (that is why the hold exists); only buffered next points are cancellable.
 
-export interface SuggestionRequest {
+export interface SuggestionRequest extends SuggestionMetadata {
+  cacheableContext?: string
   presentationRevision?: number
   meetingId: number
   trigger: SuggestionTrigger
@@ -49,7 +51,7 @@ export interface SuggestionHandle {
   cancel(): void
 }
 
-export interface StoredSuggestion {
+export interface StoredSuggestion extends SuggestionMetadata {
   meetingId: number
   tMs: number
   trigger: SuggestionTrigger
@@ -61,7 +63,7 @@ export interface StoredSuggestion {
 export interface SuggestionRunnerDeps {
   provider: AssistantProvider
   emit: (event: SuggestionEvent) => void
-  persist: (s: StoredSuggestion) => void
+  persist: (s: StoredSuggestion) => number | void
   hold: (meetingId: number) => void
   release: (meetingId: number) => void
   log: (message: string) => void
@@ -88,8 +90,18 @@ export class SuggestionRunner {
     const req = { ...request } // the snapshot this run uses, whatever the caller does next
     if (!this.canStart(req.trigger)) return null
     const sid = ++this.seq
+    let storedSuggestionId: number | undefined
+    const metadata = {
+      contextRevision: req.contextRevision,
+      groundingContextId: req.groundingContextId,
+      sourceSuggestionId: req.sourceSuggestionId,
+      manualKind: req.manualKind,
+      requestText: req.requestText,
+    }
     const emit = (kind: SuggestionEvent['kind'], text: string): void =>
       this.deps.emit({
+        ...metadata,
+        ...(storedSuggestionId === undefined ? {} : { storedSuggestionId }),
         suggestionId: sid,
         meetingId: req.meetingId,
         trigger: req.trigger,
@@ -139,6 +151,7 @@ export class SuggestionRunner {
           workspaceId: req.workspaceId,
           model: req.model,
           system: req.system,
+          cacheableContext: req.cacheableContext,
           userContent: req.userContent,
           maxTokens: req.maxTokens,
           effort: req.effort,
@@ -151,7 +164,8 @@ export class SuggestionRunner {
         // declined: nothing displayed, nothing persisted; the lane frees in `finally`
         if (req.allowNoop && !shown && isNoSuggestion(text)) return 'noop'
         if (!streamed && !(req.accept?.(text) ?? true)) return 'noop'
-        this.deps.persist({
+        const stored = this.deps.persist({
+          ...metadata,
           meetingId: req.meetingId,
           tMs: req.atMs,
           trigger: req.trigger,
@@ -159,6 +173,7 @@ export class SuggestionRunner {
           promptWindow: req.userContent,
           text,
         })
+        storedSuggestionId = typeof stored === 'number' ? stored : undefined
         if (!shown) emit('start', '') // buffered, or a short answer still being held
         emit('done', text)
         return 'done'

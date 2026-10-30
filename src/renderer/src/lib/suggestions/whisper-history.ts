@@ -1,6 +1,7 @@
+import type { SuggestionMetadata } from '@shared/live-controls/types'
 import type { SuggestionEvent, SuggestionPurpose } from '@shared/types'
 
-export interface SuggestionView {
+export interface SuggestionView extends SuggestionMetadata {
   suggestionId: number
   meetingId: number
   trigger: 'ambient' | 'hotkey'
@@ -74,6 +75,12 @@ export function whisperHistoryReducer(
   const index = base.items.findIndex((item) => item.suggestionId === event.suggestionId)
   const previous = index >= 0 ? base.items[index] : null
   const item: SuggestionView = {
+    contextRevision: event.contextRevision,
+    manualKind: event.manualKind,
+    requestText: event.requestText,
+    sourceSuggestionId: event.sourceSuggestionId,
+    groundingContextId: event.groundingContextId,
+    storedSuggestionId: event.storedSuggestionId ?? previous?.storedSuggestionId,
     suggestionId: event.suggestionId,
     meetingId: event.meetingId,
     trigger: event.trigger,

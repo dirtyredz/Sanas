@@ -1,84 +1,36 @@
 import { useEffect, useRef, useState } from 'react'
-import type { OverlayResizeRequest } from '@shared/types'
-import { suggestionArrivalLabel, suggestionLabel } from '@shared/suggestion-label'
-import { CompactSuggestion } from '../lib/suggestions/CompactSuggestion'
 import { speakerDisplay } from '../lib/speaker-label'
-import {
-  useSuggestionHistory,
-  type WhisperReadingState,
-} from '../lib/suggestions/useSuggestionHistory'
+import { OverlaySuggestions } from './OverlaySuggestions'
+import { MeetingContextEditor } from '../lib/meeting/MeetingContextEditor'
+import { AnswerEveryQuestion } from './AnswerEveryQuestion'
 import { useTranscript } from '../lib/meeting/useTranscript'
-import {
-  DEFAULT_WHISPER_RATIO,
-  MAXIMIZED_TRANSCRIPT_HEIGHT,
-  SPLITTER_HEIGHT,
-  overlaySplit,
-  whisperRatioFromHeight,
-} from './overlay-split'
-import { createOverlayOpacitySaver } from './overlay-opacity'
+import { MAXIMIZED_TRANSCRIPT_HEIGHT, SPLITTER_HEIGHT, overlaySplit } from './overlay-split'
+import { useOverlaySettings } from './useOverlaySettings'
+import { useOverlayResize } from './useOverlayResize'
+import { useSplitDrag } from './useSplitDrag'
 import { usePresentationState } from '../lib/meeting/usePresentationState'
 import { SlidePanel } from './SlidePanel'
-
-type ResizeAxis = 'right' | 'bottom' | 'corner'
-
-interface ResizeSession {
-  pointerId: number
-  axis: ResizeAxis
-  screenX: number
-  screenY: number
-  width: number
-  height: number
-}
-
-interface SplitSession {
-  pointerId: number
-  screenY: number
-  whisperHeight: number
-  containerHeight: number
-}
 
 export function Overlay(): React.JSX.Element {
   const { lines, state } = useTranscript()
   const presentation = usePresentationState(state.meetingId)
-  const [tab, setTab] = useState<'slide' | 'transcript'>('slide')
+  const [tab, setTab] = useState<'slide' | 'transcript' | 'context'>('slide')
   useEffect(() => setTab('slide'), [state.meetingId])
   const [ghost, setGhost] = useState(false)
-  const [overlayOpacity, setOverlayOpacity] = useState(1)
-  const [whisperRatio, setWhisperRatio] = useState(DEFAULT_WHISPER_RATIO)
+  const {
+    overlayOpacity,
+    setOverlayOpacity,
+    whisperRatio,
+    setWhisperRatio,
+    persistSplit,
+    opacitySaverRef,
+  } = useOverlaySettings()
+  const { startResize, continueResize, stopResize } = useOverlayResize()
   const [whisperMaximized, setWhisperMaximized] = useState(false)
   const [contentHeight, setContentHeight] = useState(0)
   const scrollRef = useRef<HTMLDivElement>(null)
-  const suggestionScrollRef = useRef<HTMLDivElement>(null)
-  const readingRef = useRef<WhisperReadingState>({ scrolled: false })
-  const [history, selectSuggestion] = useSuggestionHistory(state.meetingId, readingRef)
   const contentRef = useRef<HTMLDivElement>(null)
-  const resizeRef = useRef<ResizeSession | null>(null)
-  const splitRef = useRef<SplitSession | null>(null)
-  const saveSplitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const opacitySaverRef = useRef(
-    createOverlayOpacitySaver((opacity) => window.sanas.settings.set({ overlayOpacity: opacity })),
-  )
-
   useEffect(() => window.sanas.overlay.onGhostState(setGhost), [])
-
-  useEffect(() => {
-    let active = true
-    void window.sanas.settings.get().then((settings) => {
-      if (active) {
-        setWhisperRatio(settings.overlayWhisperRatio)
-        setOverlayOpacity(settings.overlayOpacity)
-      }
-    })
-    const removeSettingsListener = window.sanas.settings.onChanged((settings) => {
-      setOverlayOpacity(settings.overlayOpacity)
-    })
-    return () => {
-      active = false
-      removeSettingsListener()
-      opacitySaverRef.current.dispose()
-      if (saveSplitTimerRef.current) clearTimeout(saveSplitTimerRef.current)
-    }
-  }, [])
 
   useEffect(() => {
     const content = contentRef.current
@@ -94,19 +46,9 @@ export function Overlay(): React.JSX.Element {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
   }, [lines])
 
-  useEffect(() => {
-    readingRef.current.scrolled = false
-    suggestionScrollRef.current?.scrollTo({ top: 0 })
-  }, [history.selectedId])
-
   const live = state.status === 'live'
   const paused = state.status === 'paused'
   const tail = lines.slice(-12)
-  const selectedIndex = history.items.findIndex((item) => item.suggestionId === history.selectedId)
-  const suggestion = selectedIndex >= 0 ? history.items[selectedIndex] : null
-  const latest = history.items[history.items.length - 1] ?? null
-  const hasNewAnswer = latest !== null && latest.suggestionId !== history.selectedId
-  const hotkeyInFlight = history.items.some((item) => item.trigger === 'hotkey' && item.streaming)
   const split = overlaySplit(contentHeight, whisperRatio)
   const transcriptHeight = whisperMaximized
     ? Math.min(MAXIMIZED_TRANSCRIPT_HEIGHT, Math.max(0, contentHeight - SPLITTER_HEIGHT))
@@ -115,85 +57,13 @@ export function Overlay(): React.JSX.Element {
   const splitRows =
     contentHeight > 0 ? `${transcriptHeight}px ${SPLITTER_HEIGHT}px ${whisperHeight}px` : undefined
 
-  const persistSplit = (ratio: number): void => {
-    if (saveSplitTimerRef.current) clearTimeout(saveSplitTimerRef.current)
-    saveSplitTimerRef.current = setTimeout(() => {
-      saveSplitTimerRef.current = null
-      void window.sanas.settings
-        .set({ overlayWhisperRatio: ratio })
-        .catch((error) => console.warn('[sanas] could not save the overlay split:', error))
-    }, 400)
-  }
-
-  const startResize = (axis: ResizeAxis, event: React.PointerEvent<HTMLDivElement>): void => {
-    if (event.button !== 0) return
-    event.preventDefault()
-    event.currentTarget.setPointerCapture(event.pointerId)
-    resizeRef.current = {
-      pointerId: event.pointerId,
-      axis,
-      screenX: event.screenX,
-      screenY: event.screenY,
-      width: window.innerWidth,
-      height: window.innerHeight,
-    }
-  }
-
-  const continueResize = (event: React.PointerEvent<HTMLDivElement>): void => {
-    const session = resizeRef.current
-    if (!session || session.pointerId !== event.pointerId) return
-    const request: OverlayResizeRequest = {}
-    if (session.axis !== 'bottom') {
-      request.width = Math.round(session.width + event.screenX - session.screenX)
-    }
-    if (session.axis !== 'right') {
-      request.height = Math.round(session.height + event.screenY - session.screenY)
-    }
-    if ((request.width ?? 1) > 0 && (request.height ?? 1) > 0) {
-      void window.sanas.overlay.resize(request)
-    }
-  }
-
-  const stopResize = (event: React.PointerEvent<HTMLDivElement>): void => {
-    if (resizeRef.current?.pointerId !== event.pointerId) return
-    resizeRef.current = null
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId)
-    }
-  }
-
-  const startSplit = (event: React.PointerEvent<HTMLDivElement>): void => {
-    if (event.button !== 0 || contentHeight <= SPLITTER_HEIGHT) return
-    event.preventDefault()
-    event.currentTarget.setPointerCapture(event.pointerId)
-    splitRef.current = {
-      pointerId: event.pointerId,
-      screenY: event.screenY,
-      whisperHeight,
-      containerHeight: contentHeight,
-    }
-  }
-
-  const continueSplit = (event: React.PointerEvent<HTMLDivElement>): void => {
-    const session = splitRef.current
-    if (!session || session.pointerId !== event.pointerId) return
-    if (Math.abs(session.screenY - event.screenY) < 3) return
-    const ratio = whisperRatioFromHeight(
-      session.containerHeight,
-      session.whisperHeight + session.screenY - event.screenY,
-    )
-    setWhisperMaximized(false)
-    setWhisperRatio(ratio)
-    persistSplit(ratio)
-  }
-
-  const stopSplit = (event: React.PointerEvent<HTMLDivElement>): void => {
-    if (splitRef.current?.pointerId !== event.pointerId) return
-    splitRef.current = null
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId)
-    }
-  }
+  const { startSplit, continueSplit, stopSplit } = useSplitDrag(
+    contentHeight,
+    whisperHeight,
+    setWhisperMaximized,
+    setWhisperRatio,
+    persistSplit,
+  )
 
   return (
     <div className="overlay-panel">
@@ -236,6 +106,8 @@ export function Overlay(): React.JSX.Element {
           👻
         </button>
       </header>
+      {state.captureWarning && <p className="warn capture-warning">{state.captureWarning}</p>}
+      <AnswerEveryQuestion meetingId={state.meetingId} />
       <div
         className={`overlay-content ${whisperMaximized ? 'whisper-maximized' : ''}`}
         ref={contentRef}
@@ -245,8 +117,11 @@ export function Overlay(): React.JSX.Element {
           className={presentation.current ? 'presentation-region' : 'overlay-transcript'}
           ref={presentation.current ? undefined : scrollRef}
         >
-          {presentation.current && (
+          {state.meetingId !== null && (
             <div className="slide-tabs">
+              <button onClick={() => setTab('context')} aria-pressed={tab === 'context'}>
+                Context
+              </button>
               <button onClick={() => setTab('slide')} aria-pressed={tab === 'slide'}>
                 Slide
               </button>
@@ -255,13 +130,12 @@ export function Overlay(): React.JSX.Element {
               </button>
             </div>
           )}
-          {presentation.current && tab === 'slide' ? (
+          {tab === 'context' && state.meetingId !== null ? (
+            <MeetingContextEditor meetingId={state.meetingId} />
+          ) : presentation.current && tab === 'slide' ? (
             <SlidePanel state={presentation} />
           ) : (
             <div className={presentation.current ? 'overlay-transcript' : undefined}>
-              {state.captureWarning && (
-                <p className="warn capture-warning">{state.captureWarning}</p>
-              )}
               {tail.length === 0 && (
                 <p className="muted">
                   {live
@@ -296,71 +170,7 @@ export function Overlay(): React.JSX.Element {
           onPointerUp={stopSplit}
           onPointerCancel={stopSplit}
         />
-        <section className="overlay-suggestion">
-          <div className="suggestion-bar">
-            <span className="label">
-              {suggestion ? suggestionLabel(suggestion) : 'Whisper'}
-              {suggestion?.streaming && <span className="cursor">▍</span>}
-            </span>
-            {history.items.length > 0 && (
-              <span className="suggestion-nav" aria-label="Whisper history">
-                <button
-                  aria-label="Previous answer"
-                  disabled={selectedIndex <= 0}
-                  onClick={() => selectSuggestion(history.items[selectedIndex - 1].suggestionId)}
-                >
-                  ‹
-                </button>
-                <span>
-                  {selectedIndex + 1}/{history.items.length}
-                </span>
-                <button
-                  aria-label="Next answer"
-                  disabled={selectedIndex < 0 || selectedIndex >= history.items.length - 1}
-                  onClick={() => selectSuggestion(history.items[selectedIndex + 1].suggestionId)}
-                >
-                  ›
-                </button>
-                <button
-                  className="latest"
-                  disabled={!hasNewAnswer}
-                  onClick={() => latest && selectSuggestion(latest.suggestionId)}
-                >
-                  Latest
-                </button>
-              </span>
-            )}
-            <button
-              className="answer-now"
-              disabled={!live || hotkeyInFlight}
-              onClick={() => window.sanas.assist.now()}
-            >
-              Answer now
-            </button>
-          </div>
-          {hasNewAnswer && (
-            <button className="new-answer" onClick={() => selectSuggestion(latest.suggestionId)}>
-              {suggestionArrivalLabel(latest)} ›
-            </button>
-          )}
-          <div
-            className="suggestion-content"
-            ref={suggestionScrollRef}
-            onScroll={(event) => {
-              readingRef.current.scrolled = event.currentTarget.scrollTop > 4
-            }}
-          >
-            {suggestion?.error && <p className="warn">{suggestion.error}</p>}
-            {suggestion && !suggestion.error && <CompactSuggestion text={suggestion.text} />}
-            {!suggestion && (
-              <p className="muted">
-                {live
-                  ? 'Listening for key moments — or press the hotkey for an answer.'
-                  : 'Suggestions appear here during a meeting.'}
-              </p>
-            )}
-          </div>
-        </section>
+        <OverlaySuggestions meetingId={state.meetingId} live={live || paused} />
       </div>
       {(['right', 'bottom', 'corner'] as const).map((axis) => (
         <div

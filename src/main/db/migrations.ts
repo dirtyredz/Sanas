@@ -1,4 +1,5 @@
 import type { Database } from 'better-sqlite3'
+import { liveControlsSchema } from './repos/live-controls-schema'
 import { presentationSchema } from './repos/presentation-schema'
 
 // Append-only list; each entry runs once, tracked via user_version pragma.
@@ -85,6 +86,7 @@ const migrations: string[] = [
   `ALTER TABLE suggestions ADD COLUMN purpose TEXT NOT NULL DEFAULT 'answer'
      CHECK (purpose IN ('answer','next-point'));`,
   presentationSchema,
+  liveControlsSchema,
 ]
 
 export function runMigrations(db: Database): void {

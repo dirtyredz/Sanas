@@ -1,3 +1,8 @@
+import type { Admission, ManualRequest, MeetingContext } from '@shared/live-controls/types'
+import type { AssistSnapshot } from './suggestion-requests'
+import { manualRequest } from './manual-requests'
+import { getMeetingContext } from '../../../db/repos/meeting-context'
+import { detailSource, existingDetail, saveGrounding } from '../../../db/repos/suggestion-grounding'
 import { IPC } from '@shared/ipc'
 import { loadSettings } from '../../../config/settings'
 import { getJob, listGlossary } from '../../../db/repos/jobs'
@@ -14,7 +19,6 @@ import { clearPostProcessing, markPostProcessing } from '../status/post-processi
 import { LiveAssistance } from './live-assistance'
 import { SuggestionRunner } from './suggestion-runner'
 import type { PresentationState } from '@shared/presentation/types'
-import { getPresentationHistory } from '../../../db/repos/meeting-presentation'
 import { deckContext } from '../../assistant/presentation/prompts'
 import { PresentationEvidence } from './presentation-evidence'
 
@@ -33,6 +37,12 @@ export class LiveSession {
   private readonly shownHeadlines: string[] = []
   private systemPrompt = '' // stable per meeting (cached by the provider)
   private coachPrompt = ''
+  private ordinaryPrompt = ''
+  private presentationPrompt = ''
+  private context: MeetingContext | null = null
+  private cacheableContext = ''
+  private readonly runner: SuggestionRunner
+  private snapshot: () => AssistSnapshot | null = () => null
   private readonly evidence = new PresentationEvidence()
   private readonly coachHeadlines: string[] = []
 
@@ -41,20 +51,21 @@ export class LiveSession {
     private readonly clockMs: () => number,
     private readonly presentation: () => PresentationState,
   ) {
-    const runner = new SuggestionRunner({
+    const runner = (this.runner = new SuggestionRunner({
       provider: claudeProvider,
       emit: (event) => broadcast(IPC.SuggestionEvent, event),
       persist: (s) => {
-        insertSuggestion(s)
+        const id = insertSuggestion(s)
         // a late answer from a meeting that has since ended must not leak into the next one
         if (isLiveMeeting(s.meetingId)) rememberHeadline(this.shownHeadlines, s.text)
         if (isLiveMeeting(s.meetingId) && s.purpose === 'next-point')
           rememberHeadline(this.coachHeadlines, s.text)
+        return id
       },
       hold: markPostProcessing,
       release: clearPostProcessing,
       log: (message) => console.warn(`[sanas] ${message}`),
-    })
+    }))
     this.assistance = new LiveAssistance({
       now: () => performance.now(),
       setTimer: (fn, ms) => setTimeout(fn, ms),
@@ -62,7 +73,7 @@ export class LiveSession {
       settings: loadSettings,
       classify: (req) => classifyTurn(claudeProvider, req),
       runner,
-      snapshot: () => {
+      snapshot: (this.snapshot = () => {
         const meetingId = liveMeetingId()
         if (meetingId === null) return null
         let names: ReadonlyMap<number, string> | undefined
@@ -75,6 +86,15 @@ export class LiveSession {
           meetingId,
           atMs: Math.round(clockMs()),
           system: this.systemPrompt,
+          cacheableContext: this.cacheableContext,
+          groundingContextId: saveGrounding(
+            meetingId,
+            this.context?.deckVersion ?? 0,
+            this.systemPrompt,
+            this.cacheableContext,
+          ),
+          contextRevision: this.context?.revision,
+          meetingText: this.context?.text,
           window: [...this.window],
           names,
           recent: [...this.shownHeadlines],
@@ -83,7 +103,7 @@ export class LiveSession {
           coachEvidence: this.evidence.snapshot(),
           coachRecent: [...this.coachHeadlines],
         }
-      },
+      }),
       log: (message) => console.warn(`[sanas] ${message}`),
     })
   }
@@ -97,13 +117,53 @@ export class LiveSession {
     this.evidence.reset(0)
     this.assistance.presentationChanged(0)
     this.assistance.start()
-    const slides = getPresentationHistory(liveMeetingId()!).slides
-    const job = getJob(jobId)
-    this.coachPrompt = buildSystemPrompt(
-      slides.length && job ? { ...job, talkingPoints: '' } : job,
-      listGlossary(jobId),
-    )
-    this.systemPrompt = this.coachPrompt + deckContext(slides)
+    const job = getJob(jobId),
+      glossary = listGlossary(jobId)
+    this.ordinaryPrompt = buildSystemPrompt(job, glossary)
+    this.presentationPrompt = buildSystemPrompt(job ? { ...job, talkingPoints: '' } : job, glossary)
+    this.applyContext(getMeetingContext(liveMeetingId()!))
+    this.assistance.setAnswerEveryQuestion(loadSettings().answerEveryQuestion)
+  }
+
+  applyContext(context: MeetingContext): void {
+    this.context = context
+    this.systemPrompt = this.coachPrompt = context.slides.length
+      ? this.presentationPrompt
+      : this.ordinaryPrompt
+    this.cacheableContext = deckContext(context.slides)
+    this.presentationChanged(this.clockMs())
+  }
+
+  request(input: ManualRequest): Admission {
+    if (!this.runner.canStart('hotkey'))
+      return { accepted: false, reason: 'busy', message: 'A requested answer is already running.' }
+    const snap = this.snapshot()
+    if (!snap || snap.meetingId !== input.meetingId)
+      throw new Error('This meeting is no longer active.')
+    if (input.kind === 'audience' && !snap.window.some((l) => l.text.trim()))
+      return {
+        accepted: false,
+        reason: 'no-evidence',
+        message: 'No recent discussion to base a question on yet.',
+      }
+    const source =
+      input.kind === 'detail' ? detailSource(input.meetingId, input.sourceSuggestionId) : undefined
+    const req = manualRequest(snap, loadSettings(), input, source)
+    if (input.kind === 'detail') {
+      const existing = existingDetail(input.meetingId, input.sourceSuggestionId)
+      if (existing) return { accepted: true, storedSuggestionId: existing }
+    }
+    if (!req.apiKey)
+      return {
+        accepted: false,
+        reason: 'unavailable',
+        message: 'No Anthropic API key set — add it in Settings.',
+      }
+    this.assistance.manualAdmitted()
+    const handle = this.runner.start(req)
+    return handle
+      ? { accepted: true }
+      : { accepted: false, reason: 'busy', message: 'A requested answer is already running.' }
   }
 
   /** One persisted-or-not final: into the prompt window, then to live assistance. */

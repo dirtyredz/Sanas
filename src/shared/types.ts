@@ -1,3 +1,5 @@
+import type { SuggestionMetadata } from './live-controls/types'
+
 // Domain types shared between main and renderer.
 
 export interface Job {
@@ -48,7 +50,7 @@ export type SuggestionTrigger = 'ambient' | 'hotkey'
 /** What a suggestion is for: an answer to the room, or the next point while the user talks. */
 export type SuggestionPurpose = 'answer' | 'next-point'
 
-export interface Suggestion {
+export interface Suggestion extends SuggestionMetadata {
   id: number
   meetingId: number
   tMs: number
@@ -109,7 +111,7 @@ export interface TranscriptEvent {
 }
 
 /** Streaming suggestion event pushed from main to windows. */
-export interface SuggestionEvent {
+export interface SuggestionEvent extends SuggestionMetadata {
   presentationRevision?: number
   suggestionId: number
   meetingId: number
@@ -154,6 +156,8 @@ export interface Settings {
   nudgeCooldownSec: number
   /** Suggest the next point while the user is explaining something (off by default). */
   coachWhileTalking: boolean
+  answerEveryQuestion: boolean
+  composeHotkey: string
   /** Shape of ambient suggestions. The assist hotkey is always a full answer. */
   whisperMode: WhisperMode
   overlayHotkey: string

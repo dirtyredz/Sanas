@@ -4,7 +4,8 @@ import { suggestionLabel, suggestionOrigin } from '@shared/suggestion-label'
 import { speakerDisplay } from '../../lib/speaker-label'
 import { formatClock, formatWhen } from '../../lib/format-time'
 import { errorText } from '../../lib/ipc-error'
-import { CompactSuggestion } from '../../lib/suggestions/CompactSuggestion'
+import { SuggestionContent } from '../../lib/suggestions/SuggestionContent'
+import { useMeetingContext } from '../../lib/meeting/useMeetingContext'
 import { SummaryMarkdown } from '../../lib/SummaryMarkdown'
 import type { PresentationHistory } from '@shared/presentation/types'
 import { presentationTimeline, slideMarker } from '@shared/presentation/timeline'
@@ -16,6 +17,7 @@ export function MeetingView({
   meeting: Meeting
   onBack: () => void
 }): React.JSX.Element {
+  const { context } = useMeetingContext(meeting.id)
   const [segments, setSegments] = useState<Segment[]>([])
   const [presentation, setPresentation] = useState<PresentationHistory>({ slides: [], events: [] })
   useEffect(() => {
@@ -270,18 +272,35 @@ export function MeetingView({
         </>
       )}
 
+      {context?.text && (
+        <section className="card">
+          <h2>Meeting context (owner background)</h2>
+          <p style={{ whiteSpace: 'pre-wrap' }}>{context.text}</p>
+        </section>
+      )}
       {tab === 'suggestions' && (
         <div className="transcript">
           {suggestions.length === 0 && <p className="empty">No suggestions were generated.</p>}
           {suggestions.map((s) => (
-            <div key={s.id} className="suggestion-entry">
+            <div key={s.id} id={`suggestion-${s.id}`} className="suggestion-entry">
               <p className="line">
                 <span className="ts">{formatClock(s.tMs)}</span>
                 <span className="who">{suggestionLabel(s)}</span>
                 <span className="text muted">{suggestionOrigin(s)}</span>
               </p>
               <div className="suggestion-body">
-                <CompactSuggestion text={s.text} />
+                {s.requestText && <p>Request: {s.requestText}</p>}
+                {s.sourceSuggestionId && (
+                  <a href={`#suggestion-${s.sourceSuggestionId}`}>Back to source</a>
+                )}
+                {suggestions
+                  .filter((child) => child.sourceSuggestionId === s.id)
+                  .map((child) => (
+                    <a key={child.id} href={`#suggestion-${child.id}`}>
+                      More detail
+                    </a>
+                  ))}
+                <SuggestionContent text={s.text} manualKind={s.manualKind} />
               </div>
             </div>
           ))}

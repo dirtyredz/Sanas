@@ -534,3 +534,45 @@ body.overlay-body {
 .slide-script p {
   white-space: pre-wrap;
 }
+
+/* Live controls share the content area; inputs never belong to the drag handle. */
+.overlay-composer,
+.manual-actions,
+.answer-every-question,
+.meeting-context-editor {
+  -webkit-app-region: no-drag;
+}
+.overlay-composer textarea,
+.meeting-context-editor textarea {
+  width: 100%;
+  box-sizing: border-box;
+  color: inherit;
+  background: rgba(0, 0, 0, 0.2);
+}
+.manual-actions,
+.suggestion-bar {
+  flex-wrap: wrap;
+}
+.meeting-context-editor {
+  overflow: auto;
+  max-height: 100%;
+  padding: 8px;
+}
+.meeting-context-editor label {
+  display: block;
+}
+.meeting-context-editor select {
+  max-width: 100%;
+}
+.detailed-suggestion pre {
+  overflow: auto;
+  white-space: pre;
+}
+.answer-every-question,
+.overlay-composer {
+  padding: 4px 8px;
+}
+.overlay-panel > .capture-warning {
+  margin: 0;
+  padding: 4px 8px;
+}

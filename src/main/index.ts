@@ -7,7 +7,7 @@ import { registerShortcuts } from './services/hotkeys/registration'
 app.setName('sanas')
 app.setPath('userData', join(app.getPath('appData'), 'sanas'))
 import { createMainWindow } from './windows/main-window'
-import { showOverlay, toggleOverlay } from './windows/overlay-window'
+import { activateComposer, showOverlay, toggleOverlay } from './windows/overlay-window'
 import { openDb } from './db'
 import { loadSettings } from './config/settings'
 import { registerIpcHandlers } from './ipc'
@@ -36,6 +36,7 @@ function registerHotkeys(): void {
     (accelerator, callback) => globalShortcut.register(accelerator, callback),
     loadSettings(),
     {
+      composeHotkey: activateComposer,
       overlayHotkey: () => toggleOverlay(),
       assistHotkey: () => {
         showOverlay()

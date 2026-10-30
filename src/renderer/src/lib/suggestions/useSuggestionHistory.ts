@@ -19,6 +19,7 @@ export function useSuggestionHistory(
   const stateRef = useRef(state)
   const meetingIdRef = useRef(meetingId)
   const revisionRef = useRef<number | null>(null)
+  const contextRevisionRef = useRef<number | null>(null)
   stateRef.current = state
   meetingIdRef.current = meetingId
 
@@ -48,6 +49,30 @@ export function useSuggestionHistory(
       remove()
     }
   }, [meetingId])
+  useEffect(() => {
+    let active = true
+    contextRevisionRef.current = null
+    if (meetingId === null) return
+    const apply = (context: { meetingId: number; revision: number }): void => {
+      if (
+        !active ||
+        context.meetingId !== meetingIdRef.current ||
+        (contextRevisionRef.current !== null && context.revision < contextRevisionRef.current)
+      )
+        return
+      if (contextRevisionRef.current !== context.revision) dispatch({ type: 'slide' })
+      contextRevisionRef.current = context.revision
+    }
+    const remove = window.sanas.meetingContext.onChanged(apply)
+    window.sanas.meetingContext
+      .get(meetingId)
+      .then(apply)
+      .catch(() => {})
+    return () => {
+      active = false
+      remove()
+    }
+  }, [meetingId])
   useEffect(
     () =>
       window.sanas.assist.onSuggestion((event: SuggestionEvent) => {
@@ -58,6 +83,12 @@ export function useSuggestionHistory(
           event.purpose === 'next-point' &&
           event.presentationRevision !== undefined &&
           event.presentationRevision !== revisionRef.current
+        )
+          return
+        if (
+          event.purpose === 'next-point' &&
+          event.contextRevision != null &&
+          event.contextRevision !== contextRevisionRef.current
         )
           return
         const now = Date.now()

@@ -179,3 +179,45 @@ describe('whisper history', () => {
     expect(state.selectedId).toBe(2)
   })
 })
+
+it('preserves persisted sources and linked detail metadata across selection and context invalidation', () => {
+  let state = whisperHistoryReducer(EMPTY_WHISPER_HISTORY, {
+    type: 'event',
+    event: {
+      ...event(1, 'done', 'source'),
+      storedSuggestionId: 101,
+      groundingContextId: 7,
+      contextRevision: 0,
+    },
+    followNewest: true,
+    now: 1,
+  })
+  state = whisperHistoryReducer(state, {
+    type: 'event',
+    event: {
+      ...event(2, 'done', 'detail', 'hotkey'),
+      storedSuggestionId: 102,
+      sourceSuggestionId: 101,
+      manualKind: 'detail',
+      contextRevision: 0,
+    },
+    followNewest: false,
+    now: 2,
+  })
+  expect(state.selectedId).toBe(2)
+  expect(state.items[1]).toMatchObject({
+    storedSuggestionId: 102,
+    sourceSuggestionId: 101,
+    manualKind: 'detail',
+    contextRevision: 0,
+  })
+  state = whisperHistoryReducer(state, {
+    type: 'select',
+    suggestionId: state.items.find(
+      (i) => i.storedSuggestionId === state.items[1].sourceSuggestionId,
+    )!.suggestionId,
+  })
+  state = whisperHistoryReducer(state, { type: 'slide' })
+  expect(state.selectedId).toBe(1)
+  expect(state.items).toHaveLength(2)
+})

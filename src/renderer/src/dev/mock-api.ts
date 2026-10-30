@@ -1,5 +1,5 @@
 import { MATCH_CLOSE, MATCH_OPEN } from '@shared/search-markers'
-import { mockPresentation } from './mock-presentation'
+import { beginMockPresentation, endMockPresentation, mockPresentation } from './mock-presentation'
 import type {
   GlossaryTerm,
   HistoryEvent,
@@ -24,6 +24,7 @@ import type {
 // false, so a broken preload in Electron dev still fails loudly instead of being masked.
 // Typed against SanasApi (via the global Window augmentation) so it cannot drift.
 
+import { mockLiveControls } from './mock-live-controls'
 type SanasApi = Window['sanas']
 
 const jobs: Job[] = [
@@ -223,6 +224,8 @@ let settings: SettingsView = {
   nudgeModel: 'claude-sonnet-5-5',
   answerModel: 'claude-opus-5-5',
   classifierModel: 'claude-haiku-5-5',
+  answerEveryQuestion: false,
+  composeHotkey: 'Control+Shift+K',
   coachWhileTalking: false,
   nudgeCooldownSec: 5,
   whisperMode: 'smart',
@@ -374,7 +377,12 @@ const on =
     return () => set.delete(cb)
   }
 
+const controls = mockLiveControls(
+  () => state.meetingId,
+  (event) => suggestionListeners.forEach((cb) => cb(event)),
+)
 const api: SanasApi = {
+  meetingContext: controls.meetingContext,
   presentation: mockPresentation,
   hotkeys: { getStatus: async () => [] },
   settings: {
@@ -394,6 +402,7 @@ const api: SanasApi = {
     onChanged: on(settingsListeners),
   },
   overlay: {
+    ...controls.overlay,
     toggle: async () => {
       window.open('/overlay.html', 'sanas-overlay', 'width=380,height=460')
     },
@@ -406,6 +415,8 @@ const api: SanasApi = {
     start: async (_jobId, channels) => {
       liveChannels = channels ?? 1
       pinned.clear()
+      beginMockPresentation(99, _jobId ?? jobs[0].id)
+      controls.reset(99, settings.answerEveryQuestion)
       setState({ meetingId: 99, status: 'live' })
       scriptAt = 0
       scriptTimeMs = 0
@@ -425,6 +436,7 @@ const api: SanasApi = {
     },
     stop: async () => {
       if (liveTimer) clearTimeout(liveTimer)
+      endMockPresentation()
       setState({ meetingId: null, status: 'idle' })
       return state
     },
@@ -437,6 +449,7 @@ const api: SanasApi = {
     onState: on(stateListeners),
   },
   assist: {
+    ...controls.assist,
     now: async () => streamSuggestion('hotkey'),
     onSuggestion: on(suggestionListeners),
   },

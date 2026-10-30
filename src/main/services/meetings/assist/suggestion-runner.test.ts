@@ -30,6 +30,7 @@ function harness(opts: { persistThrows?: boolean } = {}) {
     persist: (s) => {
       if (opts.persistThrows) throw new Error('disk full')
       stored.push(s)
+      return 123
     },
     hold: (id) => holds.set(id, (holds.get(id) ?? 0) + 1),
     release: (id) => holds.set(id, (holds.get(id) ?? 0) - 1),
@@ -91,6 +92,7 @@ describe('suggestion runner', () => {
       trigger: 'ambient',
       purpose: 'answer',
     })
+    expect(events.find((e) => e.kind === 'done')?.storedSuggestionId).toBe(123)
     expect(holds.get(7)).toBe(0)
     expect(runner.canStart('ambient')).toBe(true)
   })
@@ -176,6 +178,7 @@ describe('suggestion runner', () => {
     expect(events.every((e) => e.purpose === 'answer')).toBe(true)
     pending[1].resolve('answer')
     await fresh.done
+    expect(events.find((e) => e.kind === 'done')?.storedSuggestionId).toBe(123)
     expect(holds.get(7)).toBe(0)
   })
 

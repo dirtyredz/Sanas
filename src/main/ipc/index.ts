@@ -1,4 +1,5 @@
 import { ipcMain } from 'electron'
+import { registerLiveControlsIpc } from './live-controls'
 import { registerPresentationIpc } from './presentation'
 import { IPC } from '@shared/ipc'
 import { loadSettings, saveSettings, toView } from '../config/settings'
@@ -56,6 +57,7 @@ import { broadcast } from '../windows/broadcast'
 
 export function registerIpcHandlers(): void {
   registerPresentationIpc()
+  registerLiveControlsIpc()
   ipcMain.handle(IPC.SettingsGet, () => toView(loadSettings()))
 
   ipcMain.handle(IPC.SettingsSet, (_e, raw: unknown) => {

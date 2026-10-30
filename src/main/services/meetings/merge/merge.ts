@@ -7,6 +7,7 @@ import { reassignSpeakerNames } from '../../../db/repos/speakers'
 import { isPostProcessing } from '../status/post-processing'
 import { removeAudioFile } from '../remove'
 import { planMerge, type MergePart } from './merge-plan'
+import { hasAppliedContext } from '../../../db/repos/meeting-context'
 import { hasPresentation } from '../../../db/repos/meeting-presentation'
 
 // Folds several meeting rows into one — the repair for a conversation that a dropped
@@ -23,6 +24,7 @@ function toPart(m: Meeting): MergePart {
   return {
     id: m.id,
     hasPresentation: hasPresentation(m.id),
+    hasAppliedContext: hasAppliedContext(m.id),
     jobId: m.jobId,
     startedAt: m.startedAt,
     endedAt: m.endedAt,

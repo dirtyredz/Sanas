@@ -14,6 +14,7 @@ import { parseSqliteDateTime } from '../../../db/sqlite-time'
 
 export interface MergePart {
   hasPresentation?: boolean
+  hasAppliedContext?: boolean
   id: number
   jobId: number
   startedAt: string
@@ -41,6 +42,8 @@ export interface MergePlan {
 
 /** Works out what moves where, or throws a readable reason why it should not. */
 export function planMerge(parts: MergePart[]): MergePlan {
+  if (parts.some((p) => p.hasAppliedContext))
+    throw new Error('Meetings with applied context cannot be merged yet.')
   if (parts.some((p) => p.hasPresentation))
     throw new Error('Presentation meetings cannot be merged yet.')
   if (parts.length < 2) throw new Error('Pick at least two meetings to merge.')

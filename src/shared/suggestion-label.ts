@@ -5,12 +5,17 @@ import type { SuggestionPurpose, SuggestionTrigger } from './types'
 // rows keep their labels: requested answers are "Answer", automatic answers "Whisper".
 
 export interface LabelledSuggestion {
+  manualKind?: 'typed' | 'detail' | 'audience' | null
   trigger: SuggestionTrigger
   purpose: SuggestionPurpose
 }
 
 /** The suggestion's name: "Next point" | "Answer" | "Whisper". */
 export function suggestionLabel(s: LabelledSuggestion): string {
+  if (s.manualKind)
+    return { typed: 'Typed answer', detail: 'More detail', audience: 'Ask the audience' }[
+      s.manualKind
+    ]
   if (s.purpose === 'next-point') return 'Next point'
   return s.trigger === 'hotkey' ? 'Answer' : 'Whisper'
 }
