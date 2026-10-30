@@ -1,4 +1,5 @@
 import type { Database } from 'better-sqlite3'
+import { presentationSchema } from './repos/presentation-schema'
 
 // Append-only list; each entry runs once, tracked via user_version pragma.
 const migrations: string[] = [
@@ -83,6 +84,7 @@ const migrations: string[] = [
   // coaching while the user talks rides the ambient lane as purpose 'next-point'.
   `ALTER TABLE suggestions ADD COLUMN purpose TEXT NOT NULL DEFAULT 'answer'
      CHECK (purpose IN ('answer','next-point'));`,
+  presentationSchema,
 ]
 
 export function runMigrations(db: Database): void {
