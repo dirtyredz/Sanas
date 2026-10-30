@@ -28,6 +28,8 @@ describe('settings defaults', () => {
     expect(settings.whisperMode).toBe('smart')
     expect(settings.overlayWhisperRatio).toBe(0.27)
     expect(settings.overlayHotkey).toBe('Control+Space')
+    expect(settings.presentationPrevHotkey).toBe('CommandOrControl+Alt+PageUp')
+    expect(settings.presentationNextHotkey).toBe('CommandOrControl+Alt+PageDown')
   })
 
   it('gives a legacy settings file the turn-detection and coaching defaults', () => {

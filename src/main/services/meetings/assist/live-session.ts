@@ -38,7 +38,7 @@ export class LiveSession {
 
   /** `clockMs` is the meeting's audio clock, so suggestions line up with the transcript. */
   constructor(
-    clockMs: () => number,
+    private readonly clockMs: () => number,
     private readonly presentation: () => PresentationState,
   ) {
     const runner = new SuggestionRunner({
@@ -125,6 +125,8 @@ export class LiveSession {
   relabel(speaker: number, isUser: boolean): void {
     for (const line of this.window) if (line.speaker === speaker) line.isUser = isUser
     this.assistance.identityChanged()
+    this.evidence.identityChanged(this.clockMs())
+    this.coachHeadlines.length = 0
   }
 
   /** What the post-stop summary reads: a copy of the window and the meeting's prompt. */

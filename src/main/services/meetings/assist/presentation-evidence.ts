@@ -12,7 +12,11 @@ export class PresentationEvidence {
   }
 
   final(turn: TurnFinal): void {
-    if (turn.role !== 'user' || turn.tStartMs < this.start) return
+    if (turn.role !== 'user') return
+    if (turn.tStartMs < this.start) {
+      if (turn.tEndMs > this.start) this.incomplete = true
+      return
+    }
     this.lines.push(`Me: ${turn.text}`)
     while (this.lines.join('\n').length > 12000) {
       this.lines.shift()
@@ -22,5 +26,10 @@ export class PresentationEvidence {
 
   snapshot(): { text: string; incomplete: boolean } {
     return { text: this.lines.join('\n'), incomplete: this.incomplete }
+  }
+
+  identityChanged(atMs: number): void {
+    this.reset(atMs)
+    this.incomplete = true
   }
 }

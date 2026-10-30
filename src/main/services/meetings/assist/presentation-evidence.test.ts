@@ -15,7 +15,7 @@ it('resets visits, excludes delayed/crossing finals and unknown speech, and boun
   evidence.reset(100)
   final(99, 'crosses move')
   final(100, 'new visit')
-  expect(evidence.snapshot()).toEqual({ text: 'Me: new visit', incomplete: false })
+  expect(evidence.snapshot()).toEqual({ text: 'Me: new visit', incomplete: true })
   final(200, 'x'.repeat(11990))
   expect(evidence.snapshot().incomplete).toBe(true)
   expect(evidence.snapshot().text).not.toContain('new visit')

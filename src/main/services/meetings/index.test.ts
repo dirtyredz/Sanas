@@ -5,6 +5,8 @@ const fakes = vi.hoisted(() => ({
   currentMeetingId: null as number | null,
   onTranscript: null as null | ((transcript: Record<string, unknown>) => void),
   liveFinal: vi.fn(),
+  slides: [] as { title: string; talkingPoint: string; script: string; keyFacts: string }[],
+  slideEvents: vi.fn(),
 }))
 
 vi.mock('@shared/ipc', () => ({
@@ -37,8 +39,8 @@ vi.mock('../../db/repos/meetings', () => ({
 }))
 vi.mock('../../db/repos/meeting-presentation', () => ({
   createPresentationMeeting: () => 7,
-  getPresentationHistory: () => ({ slides: [], events: [] }),
-  insertSlideEvent: vi.fn(),
+  getPresentationHistory: () => ({ slides: fakes.slides, events: [] }),
+  insertSlideEvent: fakes.slideEvents,
 }))
 vi.mock('../audio-store', () => ({
   discardRecording: vi.fn(),
@@ -46,8 +48,8 @@ vi.mock('../audio-store', () => ({
   stopRecording: vi.fn(),
   writeAudio: vi.fn(),
 }))
-vi.mock('./rediarize/rediarize', () => ({ rediarizeMeeting: vi.fn() }))
-vi.mock('./summary/summarize', () => ({ summarizeLines: vi.fn() }))
+vi.mock('./rediarize/rediarize', () => ({ rediarizeMeeting: vi.fn(async () => false) }))
+vi.mock('./summary/summarize', () => ({ summarizeLines: vi.fn(async () => false) }))
 vi.mock('./summary/summary-email', () => ({ autoEmailSummary: vi.fn() }))
 vi.mock('./status/post-processing', () => ({
   clearPostProcessing: vi.fn(),
@@ -76,6 +78,7 @@ vi.mock('./assist/live-session', () => ({
     closing = vi.fn(() => ({ window: [], prompt: '' }))
     final = fakes.liveFinal
     relabel = vi.fn()
+    presentationChanged = vi.fn()
   },
 }))
 vi.mock('../../db/repos/segments', () => ({
@@ -84,7 +87,16 @@ vi.mock('../../db/repos/segments', () => ({
 }))
 vi.mock('../../windows/broadcast', () => ({ broadcast: vi.fn() }))
 
-import { currentState, sendAudioChunk, startMeeting } from './index'
+import {
+  currentState,
+  sendAudioChunk,
+  startMeeting,
+  pauseMeeting,
+  resumeMeeting,
+  moveSlide,
+  presentationState,
+  stopMeeting,
+} from './index'
 
 function silentLoopbackWithMicSpeech(ms: number): Buffer {
   const frames = Math.round((ms / 1_000) * 16_000)
@@ -98,6 +110,32 @@ describe('meeting capture health', () => {
     fakes.currentMeetingId = null
     fakes.onTranscript = null
     fakes.liveFinal.mockClear()
+    fakes.slides = []
+    fakes.slideEvents.mockClear()
+  })
+
+  it('records moves against accepted audio and preserves the cursor across pause/resume', async () => {
+    fakes.slides = ['one', 'two'].map((title) => ({
+      title,
+      talkingPoint: title,
+      script: '',
+      keyFacts: '',
+    }))
+    await startMeeting(undefined, 2)
+    sendAudioChunk(silentLoopbackWithMicSpeech(1000))
+    await pauseMeeting()
+    await moveSlide(7, 'next')
+    sendAudioChunk(silentLoopbackWithMicSpeech(1000)) // paused: ignored
+    await moveSlide(7, 'prev')
+    expect(fakes.slideEvents.mock.calls.map((call) => call[1])).toEqual([
+      { ordinal: 1, revision: 2, tMs: 1000 },
+      { ordinal: 0, revision: 3, tMs: 1000 },
+    ])
+    await resumeMeeting(2)
+    expect(presentationState().revision).toBe(3)
+    await expect(moveSlide(99, 'next')).rejects.toThrow('no longer active')
+    await stopMeeting()
+    expect(presentationState().current).toBeNull()
   })
 
   it('keeps coaching fed while the capture warning is active', async () => {

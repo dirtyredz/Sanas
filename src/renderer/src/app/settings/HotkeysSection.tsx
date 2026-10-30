@@ -13,11 +13,13 @@ export function HotkeysSection({
 }): React.JSX.Element {
   const [status, setStatus] = useState<HotkeyStatus[]>([])
   const [error, setError] = useState('')
+  const [saved, setSaved] = useState(view)
   useEffect(() => {
     window.sanas.hotkeys
       .getStatus()
       .then(setStatus)
       .catch((e) => setError(String(e)))
+    return window.sanas.settings.onChanged(setSaved)
   }, [])
   return (
     <SettingsSection
@@ -58,9 +60,8 @@ export function HotkeysSection({
       {status.map((s) => (
         <p key={s.action}>
           {s.action}: startup {hotkeyLabel(s.accelerator)} — {s.registered ? 'registered' : s.error}
-          .{' '}
-          {view[s.action] !== s.accelerator &&
-            'Changed value takes effect after saving and restarting.'}
+          . {saved[s.action] !== s.accelerator && 'Saved value awaits restart. '}
+          {view[s.action] !== saved[s.action] && 'Unsaved change.'}
         </p>
       ))}
       {error && <p role="alert">{error}</p>}
