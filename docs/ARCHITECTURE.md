@@ -223,3 +223,15 @@ Typed presentation IPC validates deck replacement and expected meeting/direction
 Answers cache the complete snapshot deck with job notes/glossary. The current title is a short user-message hint. Classification and answer streams survive moves. Coaching has a separate stable context without the full deck; its user content contains the complete current slide, title/talking point of the next slide, current-visit finalized Me evidence and coach headlines only. Moves cancel buffered coaching and reset eligibility; delayed/crossing finals do not count for the new visit.
 
 Historical transcript views, exports and summaries combine immutable events with segments by audio time, markers first at ties. Summary excerpts retain the active marker and never treat prepared scripts as speech. Regeneration reads the recorded snapshot, not the edited job deck.
+
+## Live context and manual assistance (v7)
+
+Deck versions are immutable; the active version can change. Context revisions increment on text/deck Apply, deck versions only on content changes, and presentation revisions on navigation/replacement/clear. Revision zero records the meeting-start deck and empty text, including ordinary meetings. v7 copies v6 events and slides into version zero before dropping old tables, with foreign keys enabled.
+
+Apply validates expected context/navigation revisions in the lifecycle queue, then commits context, optional deck and navigation event in one transaction. In-memory prompts, cursor and broadcasts follow commit. Identical content is a no-op. Job notes and decks are never written by meeting controls. Clear records a null ordinal; history resolves markers by version and ordinal, with markers first and revisions ordered at equal audio times.
+
+At meeting start both ordinary and presentation job/persona/glossary bases are captured. Answers use the selected base plus the complete effective deck as a separate cacheable provider block. Meeting text and the current-location hint stay in user content. Coaching has no full-deck block and accepts only its original context/presentation revisions. Edits reset coaching evidence; classifiers and started answers survive.
+
+Typed, detail and audience requests reuse the requested lane while live or paused. Admission snapshots grounding and returns before generation completes. Detail loads the persisted source ID, original system/deck context and prompt window; current speech/edits never replace that grounding. Successful completion events retain their transient reducer ID and add the stored SQLite ID. Linked detail cards do not overwrite sources.
+
+Saved context is owner background in summaries and exports, never transcript evidence or FTS content. Summary regeneration still rebuilds job context from current job data; only detail guarantees replay of the original job prompt. Contextual/presentation merges are refused even after clearing content. Ordinary merges reassign/deduplicate grounding before deleting source meetings.

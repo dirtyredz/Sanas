@@ -291,3 +291,15 @@ A nonempty job deck enables a manual teleprompter for new meetings, beside the o
 Owner ruling: answers remain whole-job/whole-deck and survive navigation. Only the Next point coach is slide-scoped and cancellable on a move. Give coaching a separate stable system context without the full deck to prevent cached later-slide leakage. Its evidence is confirmed-user speech from this visit, bounded to whole lines; incomplete evidence cannot prove omission. Scripts are prepared wording, never evidence of delivery.
 
 Reject presentation merges until multi-deck remapping exists. Manual navigation never controls external slides; speech-driven advancement and external-app reconciliation are deferred.
+
+## 2026-10-30 — Live meeting controls and immutable answer grounding
+
+Use versioned meeting decks and explicit Apply so corrections can follow a live presentation without altering the job default or rewriting historical titles. Meeting text lives in the variable user prompt, preserving the stable job cache; deck edits replace only the independently cached deck block. Capture both job prompt variants at meeting start so adding/clearing slides does not reread edited job data.
+
+More detail replays the source's immutable job/deck prompt, original request window and completed answer. The original answer is fallible context, not evidence. Store rendered grounding once per deck/prompt combination, accepting modest duplication with structured slides to make replay deterministic. Keep manual variants on the requested lane and existing answer purpose rather than rebuilding lane/purpose semantics.
+
+Passive overlay reveal uses showInactive. Only explicit Ask activation takes focus, clears ghost mode and delivers a pending composer intent after renderer readiness. Escape blurs the overlay; restoring a particular external application is not promised.
+
+The per-meeting Answer every question switch is initialized from a new setting, default OFF. When enabled, classifier verdicts addressed to another participant may produce reference answers for the owner. This supports group presentations where useful questions are directed to somebody else. It changes only addressee admission: prefilter, classifier, freshness, cooldown and spacing remain intact. Turning it off restores existing behavior and suppresses queued other-addressee generation. A meeting override does not change the saved default.
+
+Contextual merges are deferred: silently dropping or combining incompatible revisions is worse than refusing the merge. Post-meeting follow-up generation and revision browsing remain phase 2.

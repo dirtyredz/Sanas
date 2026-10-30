@@ -68,3 +68,11 @@ New meetings snapshot the deck. The overlay offers Slide/Transcript tabs, a scro
 Answers continue to use all job context and slides; Next point alone coaches the current slide against finalized user speech. Adding a deck does not turn on coaching. Navigation keeps answers and clears old coach cards. No-slide meetings retain their existing behavior.
 
 Meeting history, exports and summaries show timestamped slide markers. Presentation merges are not supported.
+
+## Live presentation controls
+
+During a live or paused meeting, open Context in the overlay (or the Live page editor) to edit meeting-only background and slides, then Apply to this meeting. Continue from slide is explicit; Restore meeting-start slides uses the original meeting snapshot. Edits reset Next point coaching but answers already started finish against their captured context.
+
+Ask? or Ctrl+Shift+K opens the typed composer. Enter submits, Shift+Enter adds a line, IME Enter remains composition, and Escape closes/releases focus while keeping the draft. Rejected requests keep their drafts. Ask the audience suggests one question grounded in recent finalized discussion; without speech it reports that there is no discussion yet. More detail creates/selects a linked expansion using the source answer's original grounding, with Back to source navigation.
+
+Answer every question is a meeting toggle, defaulting OFF from Settings. It includes classifier verdicts directed to other participants while preserving automatic pacing. The capture warning remains visible outside tabs. Saved meeting history and exports retain context, typed requests and source/detail relationships; older live cards indicate when they use earlier context.

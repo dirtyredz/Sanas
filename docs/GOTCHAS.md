@@ -327,8 +327,16 @@ _Non-obvious traps. Read before touching the related area._
 
 ## Presentation mode
 
-- Editing/saving/clearing a job deck applies to the next meeting only. The meeting snapshot is immutable, including after moving the meeting to another job.
+- Editing/saving/clearing a job deck applies to the next meeting only. Deck versions are immutable; the active version can change through meeting Apply, independently of the job.
 - Slide moves cancel only buffered Next point coaching, clear only coach cards and reset coach thresholds. Never invalidate classifiers or streaming answers on a slide move. Ordinary Stop still permits answers to finish.
 - New-visit coaching excludes finalized speech starting before a navigation boundary. Provider timestamps can drift relative to captured audio after reconnect; coverage remains advisory.
 - Shortcut Settings shows attempted startup accelerators and registration failures. Saved changes need restart; duplicates, unavailable combinations and invalid accelerators are visible. Slide shortcuts do not focus the overlay and work while paused/ghosted.
 - Presentation meetings cannot be merged yet. Recorded slide markers survive re-diarization; scripts do not count as transcript evidence.
+
+## Live-control boundaries
+
+- Transient suggestion IDs key streaming cards; only storedSuggestionId from successful completion can identify a source for More detail. Failed, coach, audience and detail cards cannot be sources. Legacy rows without saved grounding cannot be expanded.
+- CompactSuggestion deliberately drops extra prose. Detail must use SuggestionContent/DetailedSuggestion in both overlay and history; model output remains React text, never HTML.
+- Typed requests work without capture or transcript and while paused. Busy/rejected admission must retain the draft. Current-window finalized speech is required for audience questions.
+- Composer activation may precede renderer startup: retain the intent until readiness. Passive reveals and streaming/context/navigation events never focus the window. Native Windows focus behavior still requires owner acceptance.
+- v7 migration and repository behavior need disposable Electron-ABI checks; mocked unit tests do not establish SQLite foreign-key/rollback guarantees. See the live-controls plan for native acceptance assertions.

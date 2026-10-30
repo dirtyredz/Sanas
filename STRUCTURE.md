@@ -206,3 +206,14 @@ SQLite datetime text centralised in `db/sqlite-time.ts`.)
 - Renderer `app/jobs/`: presentation editor and forgiving paste preview; `overlay-app/SlidePanel.tsx`: teleprompter; `lib/meeting/`: presentation hydration/revision checks.
 
 Presentation tests are colocated with these modules. The browser mock is isolated in `dev/mock-presentation.ts`.
+
+## Live controls (2026-10-30)
+
+- `shared/live-controls/types.ts` owns meeting-context and manual-admission contracts and suggestion metadata.
+- `db/repos/live-controls-schema.ts` appends v7; `meeting-context.ts` owns atomic revision/deck/event writes; `suggestion-grounding.ts` owns immutable cached prompt snapshots and source lookup.
+- `meetings/context/session.ts` prepares Apply and publishes only after commit. The lifecycle queue serializes Apply and manual admission; provider completion does not occupy it.
+- `meetings/assist/manual-requests.ts` builds typed/detail/audience requests; the existing runner retains lanes, timeouts, persistence and post-processing holds. `assistant/live-controls/prompts.ts` owns their instructions.
+- `ipc/live-controls*.ts` validates and delegates through the typed preload bridge.
+- `lib/presentation/SlideListEditor.tsx` and the moved import component/parser serve job and meeting editors. `lib/meeting/MeetingContextEditor.tsx` owns drafts; its hook/reducer reject stale hydration.
+- Overlay settings, resize and split wiring now live in `useOverlaySettings`, `useOverlayResize`, `useSplitDrag`; `OverlaySuggestions` owns history and manual actions, `OverlayComposer` owns keyboard/draft state.
+- `SuggestionContent` dispatches compact or full text-safe `DetailedSuggestion` rendering in both windows. Preview live controls live in `dev/mock-live-controls.ts`.
