@@ -58,3 +58,13 @@ _Capability inventory. Status: ✅ done · 🔨 in progress · 📋 planned · �
 | Ask-your-history ("what did we decide about X?")                         | ✅     | Ask page: FTS5 retrieval + cited, streamed answer; job scope (2026-09-09)                                                          |
 | Visual identity (tokens, control vocabulary, transcript gutter)          | ✅     | dark by design; teal = room/app, sand = your voice; slim dark scrollbars                                                           |
 | Browser preview with a typed mock bridge (`npm run dev:web`)             | ✅     | dev only; scripted live meeting, `overlay.html?demo=live`                                                                          |
+
+## Presentation mode
+
+Jobs can save up to 100 ordered slides with title, talking point, optional script and key facts. Add/edit/reorder/remove, or paste headings/labelled fields and inspect the import preview before appending or replacing the draft. Save is separate from import.
+
+New meetings snapshot the deck. The overlay offers Slide/Transcript tabs, a scrolling plain-text teleprompter and Previous/Next controls. Configurable defaults: CommandOrControl+Alt+PageUp / PageDown. Navigation is manual, recorded, and independent of the owner's presentation app.
+
+Answers continue to use all job context and slides; Next point alone coaches the current slide against finalized user speech. Adding a deck does not turn on coaching. Navigation keeps answers and clears old coach cards. No-slide meetings retain their existing behavior.
+
+Meeting history, exports and summaries show timestamped slide markers. Presentation merges are not supported.

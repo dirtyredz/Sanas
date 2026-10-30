@@ -195,3 +195,14 @@ on-demand path was added. 2026-10-29: live-assist state + wiring extracted from
 `meetings/index.ts` into `meetings/assist/live-session.ts`; `meetings/` and renderer `lib/`
 grouped into responsibility subfolders; `IdentityRole` moved into `turns/types.ts`;
 SQLite datetime text centralised in `db/sqlite-time.ts`.)
+
+## Presentation mode (2026-10-30)
+
+- `shared/presentation/`: deck contracts and limits, historical timeline ordering, shortcut status types.
+- `db/repos/job-slides.ts`, `meeting-presentation.ts`, `presentation-schema.ts`: atomic deck replacement, immutable snapshots/events, v6 DDL. Existing v1?v5 SQL remains in migrations.ts; new SQL stays in repos.
+- `assistant/coach/`: moved coach policy/prompts and tests; `assistant/presentation/`: deck context, current-location hint, restricted coach prompt.
+- `meetings/presentation/`: cursor with persistence-before-publication and recorded transcript formatting; `assist/presentation-evidence.ts`: independent visit evidence.
+- `services/hotkeys/`: registration/status, callback errors and repeat suppression.
+- Renderer `app/jobs/`: presentation editor and forgiving paste preview; `overlay-app/SlidePanel.tsx`: teleprompter; `lib/meeting/`: presentation hydration/revision checks.
+
+Presentation tests are colocated with these modules. The browser mock is isolated in `dev/mock-presentation.ts`.

@@ -4,3 +4,7 @@ Work items now live in `docs/items/` (one Markdown file each). Use `dk list`, `d
 do not edit them by hand.
 
 Moved into Docket on 2026-10-05: 51 items (todo 12, wip 0, done 39, dropped 0).
+
+## Presentation phase 2
+
+Speech-driven auto-advance, presentation-aware merges with snapshot/event remapping, and explicit reconciliation with an external presentation application. Live deck replacement and coverage scoring remain deferred.

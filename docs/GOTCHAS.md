@@ -324,3 +324,11 @@ _Non-obvious traps. Read before touching the related area._
   WAV are unaffected — this is display only.
 - Visual QA in the real Electron window — the browser preview cannot show the frameless
   overlay at 380×460, transparency, or the Windows title bar
+
+## Presentation mode
+
+- Editing/saving/clearing a job deck applies to the next meeting only. The meeting snapshot is immutable, including after moving the meeting to another job.
+- Slide moves cancel only buffered Next point coaching, clear only coach cards and reset coach thresholds. Never invalidate classifiers or streaming answers on a slide move. Ordinary Stop still permits answers to finish.
+- New-visit coaching excludes finalized speech starting before a navigation boundary. Provider timestamps can drift relative to captured audio after reconnect; coverage remains advisory.
+- Shortcut Settings shows attempted startup accelerators and registration failures. Saved changes need restart; duplicates, unavailable combinations and invalid accelerators are visible. Slide shortcuts do not focus the overlay and work while paused/ghosted.
+- Presentation meetings cannot be merged yet. Recorded slide markers survive re-diarization; scripts do not count as transcript evidence.

@@ -283,3 +283,11 @@ to trigger, loses the copilot feel).
 
 `better-sqlite3` in main process; audio under app data. Single-device by choice.
 Rejected: cloud backend (D1/R2) — no multi-device need; can be revisited if that changes.
+
+## 2026-10-30 ? Presentation teleprompter and independent assistance lanes
+
+A nonempty job deck enables a manual teleprompter for new meetings, beside the owner's presentation app. Snapshot each deck at meeting creation: editing a job must never rewrite an active or historical presentation. Record navigation against captured audio time, including silence and paused revisits.
+
+Owner ruling: answers remain whole-job/whole-deck and survive navigation. Only the Next point coach is slide-scoped and cancellable on a move. Give coaching a separate stable system context without the full deck to prevent cached later-slide leakage. Its evidence is confirmed-user speech from this visit, bounded to whole lines; incomplete evidence cannot prove omission. Scripts are prepared wording, never evidence of delivery.
+
+Reject presentation merges until multi-deck remapping exists. Manual navigation never controls external slides; speech-driven advancement and external-app reconciliation are deferred.

@@ -213,3 +213,13 @@ On meeting end, two fire-and-forget passes:
    Batch re-numbers the voices, so "that's me" pins (mono) and speaker names are carried
    over by time overlap (`meetings/rediarize/speaker-carryover.ts`); names/merges stay user-editable
    per meeting in the transcript view.
+
+## Presentation mode
+
+Schema v6 adds ordered job_slides, immutable meeting_slides, and meeting_slide_events (meeting/revision, ordinal, audio time). Meeting creation copies the deck and records revision one in one transaction. Foreign keys cascade deletion; re-diarization only replaces segments.
+
+Typed presentation IPC validates deck replacement and expected meeting/direction. Main serializes navigation with lifecycle operations, persists the audio-clock event before changing the cursor, then resets only coaching and broadcasts. Boundaries do nothing; paused moves retain the audio timestamp and increase revision.
+
+Answers cache the complete snapshot deck with job notes/glossary. The current title is a short user-message hint. Classification and answer streams survive moves. Coaching has a separate stable context without the full deck; its user content contains the complete current slide, title/talking point of the next slide, current-visit finalized Me evidence and coach headlines only. Moves cancel buffered coaching and reset eligibility; delayed/crossing finals do not count for the new visit.
+
+Historical transcript views, exports and summaries combine immutable events with segments by audio time, markers first at ties. Summary excerpts retain the active marker and never treat prepared scripts as speech. Regeneration reads the recorded snapshot, not the edited job deck.
