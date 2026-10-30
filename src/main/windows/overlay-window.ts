@@ -38,6 +38,7 @@ function createOverlay(): BrowserWindow {
     },
   })
 
+  overlay.setContentProtection(true)
   // 'screen-saver' level floats above most fullscreen apps on Windows (see GOTCHAS.md).
   overlay.setAlwaysOnTop(true, 'screen-saver')
   overlay.setOpacity(clampOpacity(loadSettings().overlayOpacity))

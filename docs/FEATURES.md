@@ -20,6 +20,7 @@ _Capability inventory. Status: ✅ done · 🔨 in progress · 📋 planned · �
 | Live whisper history                             | ✅     | Per-meeting history with previous/next/Latest; follows new answers unless reading an older/scrolled item          |
 | On-demand full answer (global hotkey)            | ✅     | Ctrl+Shift+Enter or "Answer now"; runs beside an ambient nudge, opens its answer, 60 s timeout                    |
 | Always-on-top overlay window                     | ✅     | frameless, position/size memory, resize grips; requests current meeting state when opened                         |
+| Overlay hidden from screen capture               | ✅     | always excluded from screen shares, screenshots and recordings; no toggle                                         |
 | Deepgram auto-reconnect                          | ✅     | backoff, monotonic timestamps across reconnects                                                                   |
 | System-audio loopback capture                    | ✅     | same-PC meetings; ch0=me ch1=them via multichannel                                                                |
 | Post-meeting batch re-diarization                | ✅     | stable speaker labels; needs recordAudio (default on)                                                             |

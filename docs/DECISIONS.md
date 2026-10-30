@@ -2,6 +2,15 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-10-30 — Overlay hidden from screen capture
+
+The overlay is always excluded from screen capture because it carries the owner's private presenter
+notes and suggestions for their own client work while they share a screen. This applies only to the
+overlay window; the main window remains capturable. The trade-off is that the overlay is also blank
+in the owner's own screenshots and recordings. There is no toggle, by owner choice. This privacy
+boundary does not shift the product toward interview use; the ground rule in `CLAUDE.md` still
+applies.
+
 ## 2026-10-29 — A meeting summary is a knowledge extract, not a recap
 
 Post-meeting output is meant to be useful weeks later, so the summary now preserves durable

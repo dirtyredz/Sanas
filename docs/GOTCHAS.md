@@ -55,6 +55,9 @@ _Non-obvious traps. Read before touching the related area._
   main process. `contextIsolation: true`, `nodeIntegration: false`, no exceptions.
 - **Always-on-top overlays vs fullscreen apps:** `setAlwaysOnTop(true, 'screen-saver')`
   level needed to float above some fullscreen windows on Windows.
+- **The overlay is always capture-protected.** On Windows, Electron uses
+  `SetWindowDisplayAffinity(WDA_EXCLUDEFROMCAPTURE)` for `setContentProtection(true)`. Some capture
+  tools and older Windows versions show a black box where the overlay is instead of omitting it.
 - **Transparent windows have no native resize affordance.** Electron documents transparent
   windows as non-resizable, so `resizable: true` does not give the frameless overlay a usable
   Windows border. Keep its renderer-owned right/bottom/corner handles wired through validated

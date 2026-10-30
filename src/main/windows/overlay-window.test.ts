@@ -5,6 +5,7 @@ const f = vi.hoisted(() => ({
   focus: vi.fn(),
   send: vi.fn(),
   ignore: vi.fn(),
+  protect: vi.fn(),
   blur: vi.fn(),
   ready: null as (() => void) | null,
   closed: null as (() => void) | null,
@@ -13,6 +14,7 @@ vi.mock('electron', () => ({
   screen: { getPrimaryDisplay: () => ({ workAreaSize: { width: 1000 } }) },
   BrowserWindow: class {
     webContents = { send: f.send }
+    setContentProtection = f.protect
     setAlwaysOnTop() {}
     setOpacity() {}
     loadFile() {}
@@ -51,6 +53,11 @@ import {
 beforeEach(() => {
   f.closed?.()
   vi.clearAllMocks()
+})
+it('always excludes the overlay from screen capture', () => {
+  showOverlay()
+  expect(f.protect).toHaveBeenCalledOnce()
+  expect(f.protect).toHaveBeenCalledWith(true)
 })
 it('passive reveal never focuses', () => {
   showOverlay()
