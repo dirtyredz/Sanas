@@ -346,6 +346,10 @@ starts this logger or writes there.
 - CompactSuggestion deliberately drops extra prose. Detail must use SuggestionContent/DetailedSuggestion in both overlay and history; model output remains React text, never HTML.
 - Typed requests work without capture or transcript and while paused. Busy/rejected admission must retain the draft. Current-window finalized speech is required for audience questions.
 - Composer activation may precede renderer startup: retain the intent until readiness. Passive reveals and streaming/context/navigation events never focus the window. Native Windows focus behavior still requires owner acceptance.
+- Screen capture: bounds are DIP (negative on monitors left/above the primary); encoding limits apply to the returned image's actual pixels, since Electron does not guarantee the requested thumbnail size. Match displays by `display_id`, never by source order. Windows can return an empty or black capture (locked desktop, protected content, remote session) while reporting access as granted: surface the failure, never disable overlay content protection as a workaround.
+- Dense 4K screens can be unreadable at the 1,568 px limit; the prompt asks the owner to enlarge and recapture instead of guessing.
+- A screen answer is stored as `manual_kind = 'typed'` with a `[Screen capture]` request-text marker (no schema change). Only `db/repos/` encodes/decodes it via `shared/live-controls/capture.ts`; a raw SQL reader sees "typed".
+- Capture admission is checked before acquisition only. A requested answer that starts while a capture is being taken wins; the capture then reports busy. A composer send with a stale draft token is refused (`attachment-expired`), never sent as text alone.
 - v7 migration and repository behavior need disposable Electron-ABI checks; mocked unit tests do not establish SQLite foreign-key/rollback guarantees. See the live-controls plan for native acceptance assertions.
 
 ## Releases, upgrades and recovery

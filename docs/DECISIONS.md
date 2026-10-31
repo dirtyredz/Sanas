@@ -2,6 +2,28 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-10-31 — Screen capture is an explicit, unsaved still sent once
+
+During a client or team meeting the owner can press **Capture screen** (overlay button or
+Ctrl+Shift+S) or **Attach screen** in the Ctrl+Shift+K composer. Each is one explicit still, never
+continuous capture. The display is the one under the overlay (its bounds, even when hidden), or the
+one under the cursor when there is no overlay window yet; identity is the display ID matched to the
+capture source's `display_id`, never source order or names. A display that vanished is a retry
+message, not a silent capture of another monitor. The image is bounded to a 1,568 px long edge and
+1.15 MP, PNG first, JPEG 85/75 and a bounded downscale under 2 MiB, never upscaled, within a 5 s
+acquisition deadline. The overlay keeps unconditional content protection.
+
+**Owner scope cut:** images are **not persisted**. The bytes live in main memory for one provider
+call (or as the one composer draft per meeting) and are discarded after; only the answer text is
+saved. The provider gets one call per explicit action, with automatic retries off. More detail on a
+screen answer works from the saved answer text only. Because the `suggestions` CHECK constraint has
+no `capture` kind, a screen answer is stored as `typed` with a `[Screen capture]` request-text marker
+that the repositories map back; there is no schema change. Admission is the existing requested-lane
+check plus one "capture preparing" flag. Rejected for now: saved thumbnails and capture files,
+schema v8, lane reservation across the asynchronous capture, image replay for More detail, window
+or region pickers, OCR and multiple attachments (`docs/plans/screen-capture.md` §1–7 keep the full
+design if they are wanted later).
+
 ## 2026-10-31 — Main-process output is kept in a local, redacted log file
 
 The installed app has no console, so a failure left no trace. Normal startup now writes main-process

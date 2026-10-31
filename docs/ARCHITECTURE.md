@@ -236,6 +236,21 @@ Typed, detail and audience requests reuse the requested lane while live or pause
 
 Saved context is owner background in summaries and exports, never transcript evidence or FTS content. Summary regeneration still rebuilds job context from current job data; only detail guarantees replay of the original job prompt. Contextual/presentation merges are refused even after clearing content. Ordinary merges reassign/deduplicate grounding before deleting source meetings.
 
+### Screen capture (no persistence)
+
+Capture screen (IPC or the global shortcut) and Attach screen enter `meetings/assist/capture-requests.ts`.
+It checks the live meeting, the requested lane, the API key and a single "preparing" flag, then
+captures OUTSIDE the lifecycle queue (`services/screen-capture/`: display under the overlay →
+`desktopCapturer` source by `display_id` → bounded PNG/JPEG + thumbnail, 5 s deadline) so Pause and
+Stop never wait. The result re-enters the queue and is admitted against the same meeting through
+`admitManual` as a `capture` request: `AssistRequest.image` carries the base64 image, which
+`claude.ts` alone maps to an image block before the text, with retries off. Cached system/deck
+blocks and `prompt_window` never contain it. Attach screen instead stores one main-memory draft per
+meeting and returns only a bounded thumbnail data URL and a UUID token; a typed request naming the
+token sends that exact image and consumes the draft on acceptance. Drafts drop on meeting start/stop
+and renderer destruction. Status (`capturing`/`analyzing`/`failed`) is broadcast and also fetched on
+overlay mount. Screen answers persist as typed answers with a request-text marker (no schema change).
+
 ## Release and update boundary
 
 Only packaged normal startup initializes electron-updater after database initialization. Main talks

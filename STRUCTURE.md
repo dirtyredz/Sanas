@@ -47,6 +47,7 @@ sanas/
 │   │   │   ├── retention/                  # scheduled/on-demand recording and meeting cleanup
 │   │   │   ├── history/                    # grounded ask-your-history retrieval and answers
 │   │   │   ├── audio-store/                # WAV recording of accepted capture audio
+│   │   │   ├── screen-capture/             # display choice, one-shot screenshot, encoding, in-memory drafts
 │   │   │   └── transcript-format.ts        # canonical main-side transcript formatting/windowing
 │   │   ├── db/                             # async open/backup/migrations and SQLite helpers
 │   │   │   └── repos/                      # entity repositories and all SQL strings
@@ -61,6 +62,7 @@ sanas/
 │   │       │   ├── settings/               # one component per Settings section
 │   │       │   └── styles/                 # tokens → controls → shell → transcript → pages
 │   │       ├── overlay-app/                # separate small overlay bundle
+│   │       │   └── capture/                # Capture screen action and composer attachment state
 │   │       ├── audio/                      # mic/loopback capture and worklet bridge
 │   │       ├── lib/                        # pure shared renderer helpers
 │   │       │   ├── meeting/                # meeting/context/presentation state and hooks
@@ -69,8 +71,9 @@ sanas/
 │   │       ├── dev/                        # typed browser-preview bridge mocks
 │   │       └── env.d.ts                    # Vite client types
 │   └── shared/                              # cross-process IPC and domain contracts
-│       ├── presentation/                   # deck, timeline and shortcut contracts
-│       ├── live-controls/                  # context, admission and suggestion metadata contracts
+│       ├── presentation/                   # deck and timeline contracts
+│       ├── live-controls/                  # context, admission, suggestion metadata and capture contracts
+│       ├── hotkeys/                        # global shortcut actions and registration status
 │       └── updates/                        # sanitized updater snapshots
 ├── scripts/                                # repository, release and owner-operation tooling
 │   ├── release/                            # version, package, publish, install and smoke tooling
@@ -95,10 +98,10 @@ sanas/
 - `src/main/services/assistant/` — the swappable assistant seam and shared answer/classification logic
 - `src/main/services/assistant/coach/` — next-point eligibility policy and coach prompt construction
 - `src/main/services/assistant/presentation/` — presentation answer context, current-location hints and scoped coaching prompts
-- `src/main/services/assistant/live-controls/` — typed, detail and audience request instructions
+- `src/main/services/assistant/live-controls/` — typed, detail, audience and screen-capture request instructions
 - `src/main/services/meetings/` — meeting lifecycle/STT/audio orchestration plus meeting-level facades
-- `src/main/services/meetings/assist/` — per-meeting prompt/grounding state, manual admission, automatic coordination and suggestion execution
-- `src/main/services/meetings/capture/` — capture-side identity and capture-health policy
+- `src/main/services/meetings/assist/` — per-meeting prompt/grounding state, manual and screen-capture admission, automatic coordination and suggestion execution
+- `src/main/services/meetings/capture/` — AUDIO capture-side identity and capture-health policy (screen capture lives in `services/screen-capture/`)
 - `src/main/services/meetings/context/` — pure preparation followed by commit/publication of live context changes
 - `src/main/services/meetings/presentation/` — current cursor state and historical slide-marker formatting
 - `src/main/services/meetings/status/` — live-meeting identity and post-processing guards
@@ -112,6 +115,7 @@ sanas/
 - `src/main/services/retention/` — recording/meeting cleanup timers, preview and execution
 - `src/main/services/history/` — FTS retrieval and grounded ask-your-history answers
 - `src/main/services/audio-store/` — WAV recording for accepted capture audio
+- `src/main/services/screen-capture/` — display selection, one-shot desktop capture, image sizing/encoding and in-memory composer drafts; no meeting or provider policy
 - `src/main/db/` — database connection lifecycle, consistent pre-upgrade backup, migrations and SQLite helpers
 - `src/main/db/repos/` — per-entity repositories; the only place SQL strings live
 - `src/main/config/` — settings/secrets persistence and exhaustive settings validation
@@ -122,6 +126,7 @@ sanas/
 - `src/renderer/src/app/settings/` — one component per Settings section, including independent update state
 - `src/renderer/src/app/styles/` — layered shared stylesheet; no per-page stylesheets
 - `src/renderer/src/overlay-app/` — deliberately small, separate overlay bundle
+- `src/renderer/src/overlay-app/capture/` — Capture screen action/status and the composer's screen-attachment state
 - `src/renderer/src/audio/` — renderer capture and AudioWorklet downsampling
 - `src/renderer/src/lib/` — pure presentation helpers shared across renderer pages and bundles
 - `src/renderer/src/lib/meeting/` — meeting, context and presentation reducers/hooks
@@ -130,8 +135,9 @@ sanas/
 - `src/renderer/src/dev/` — browser-preview implementation of the typed preload bridge
 - `src/renderer/public/` — AudioWorklet processors and other unbundled assets
 - `src/shared/` — types shared by main, preload and renderer
-- `src/shared/presentation/` — deck, historical timeline and shortcut status contracts
-- `src/shared/live-controls/` — meeting-context, manual-admission and suggestion metadata contracts
+- `src/shared/presentation/` — deck and historical timeline contracts
+- `src/shared/hotkeys/` — global shortcut action and registration-status contracts
+- `src/shared/live-controls/` — meeting-context, manual-admission, suggestion metadata and screen-capture contracts (incl. the capture-answer storage codec)
 - `src/shared/updates/` — renderer-safe update state and operation contracts
 - `scripts/` — repository tooling plus release and owner-operation entry points
 - `scripts/release/` — versioning, asset/package checks, publication, installation and packaged smoke
@@ -179,6 +185,12 @@ New main-process code belongs in a responsibility folder above, not beside `inde
   styles remain one layered vocabulary under `app/styles/`.
 
 ## Structural debt
+
+- `services/` now has 12 entries with `screen-capture/` (placed there by the screen-capture plan so
+  it stays separate from audio capture); relieving that breadth is tracked by dk-bd2e1ebf.
+- Screen answers are stored as `typed` plus a `[Screen capture]` request-text marker because the
+  `suggestions` CHECK constraint has no `capture` kind. A real `capture` kind needs a table rebuild
+  migration; the codec in `shared/live-controls/capture.ts` is the only place to change.
 
 - `windows/main-window.ts` and `overlay-window.ts` share webPreferences/load-URL boilerplate. Extract a
   `createAppWindow(opts)` helper only if a third window appears.
