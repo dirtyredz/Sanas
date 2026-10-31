@@ -23,6 +23,10 @@ export function isPostProcessing(meetingId: number): boolean {
   return working.has(meetingId)
 }
 
+export function postProcessingCount(): number {
+  return [...working.values()].reduce((sum, count) => sum + count, 0)
+}
+
 /** Runs `work`, keeping the meeting marked until it settles. */
 export async function whilePostProcessing<T>(
   meetingId: number,

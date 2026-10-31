@@ -1,3 +1,4 @@
+import type { UpdateState } from '../shared/updates/types'
 import type {
   Admission,
   ContextUpdate,
@@ -35,6 +36,13 @@ function subscribe<T>(channel: string, cb: (value: T) => void): () => void {
   return () => ipcRenderer.removeListener(channel, listener)
 }
 const api = {
+  updates: {
+    get: (): Promise<UpdateState> => ipcRenderer.invoke(IPC.UpdatesGet),
+    check: (): Promise<UpdateState> => ipcRenderer.invoke(IPC.UpdatesCheck),
+    restart: (): Promise<UpdateState> => ipcRenderer.invoke(IPC.UpdatesRestart),
+    onChanged: (cb: (state: UpdateState) => void): (() => void) =>
+      subscribe(IPC.UpdatesChanged, cb),
+  },
   meetingContext: {
     get: (id: number): Promise<MeetingContext> => ipcRenderer.invoke(IPC.MeetingContextGet, id),
     update: (request: ContextUpdate): Promise<MeetingContext> =>

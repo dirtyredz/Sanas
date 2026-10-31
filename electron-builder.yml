@@ -7,7 +7,13 @@ files:
   - package.json
 asarUnpack:
   - '**/*.node' # better-sqlite3 native binding
+artifactName: Sanas-${version}-x64-Setup.${ext}
+publish:
+  provider: github
+  owner: dirtyredz
+  repo: Sanas
 win:
+  verifyUpdateCodeSignature: false
   target:
     - target: nsis
       arch: [x64]
@@ -16,3 +22,5 @@ nsis:
   deleteAppDataOnUninstall: false
 electronLanguages: [en-US]
 npmRebuild: true
+# Reuse the Electron binary installed by npm ci; do not independently fetch it at packaging time.
+electronDist: node_modules/electron/dist

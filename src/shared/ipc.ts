@@ -2,6 +2,10 @@
 // Keep this the single source of truth for channel strings.
 
 export const IPC = {
+  UpdatesGet: 'updates:get',
+  UpdatesCheck: 'updates:check',
+  UpdatesRestart: 'updates:restart',
+  UpdatesChanged: 'updates:changed',
   MeetingContextGet: 'live-controls:MeetingContextGet',
   MeetingContextUpdate: 'live-controls:MeetingContextUpdate',
   MeetingContextChanged: 'live-controls:MeetingContextChanged',

@@ -1,3 +1,4 @@
+import { UpdatesSection } from '../settings/UpdatesSection'
 import { useEffect, useState } from 'react'
 import type { Settings, SettingsView } from '@shared/types'
 import { ApiKeysSection } from '../settings/ApiKeysSection'
@@ -83,6 +84,7 @@ export function SettingsPage(): React.JSX.Element {
       <OverlaySection view={view} onChange={onChange} />
       <EmailSection view={view} secrets={secrets} onChange={onChange} onSecret={onSecret} />
       <RetentionSection view={view} savedAt={savedAt} onChange={onChange} />
+      <UpdatesSection />
       <div className="save-bar">
         <button className="btn btn-primary" onClick={save}>
           Save

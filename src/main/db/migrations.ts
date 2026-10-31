@@ -89,6 +89,8 @@ const migrations: string[] = [
   liveControlsSchema,
 ]
 
+export const schemaVersion = migrations.length
+
 export function runMigrations(db: Database): void {
   const current = db.pragma('user_version', { simple: true }) as number
   for (let v = current; v < migrations.length; v++) {

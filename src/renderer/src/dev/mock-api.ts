@@ -1,3 +1,4 @@
+import { mockUpdates } from './mock-updates'
 import { MATCH_CLOSE, MATCH_OPEN } from '@shared/search-markers'
 import { beginMockPresentation, endMockPresentation, mockPresentation } from './mock-presentation'
 import type {
@@ -382,6 +383,7 @@ const controls = mockLiveControls(
   (event) => suggestionListeners.forEach((cb) => cb(event)),
 )
 const api: SanasApi = {
+  updates: mockUpdates,
   meetingContext: controls.meetingContext,
   presentation: mockPresentation,
   hotkeys: { getStatus: async () => [] },

@@ -10,7 +10,7 @@
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
-    "dist": "electron-vite build && electron-builder --config electron-builder.yml",
+    "dist": "electron-vite build && electron-builder --config electron-builder.yml --publish never",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "rebuild": "electron-rebuild -f -w better-sqlite3",
     "postinstall": "electron-rebuild -f -w better-sqlite3",
@@ -25,6 +25,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.122.0",
     "better-sqlite3": "^12.2.0",
+    "electron-updater": "6.8.3",
     "nodemailer": "^10.0.1"
   },
   "devDependencies": {
