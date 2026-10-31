@@ -48,3 +48,50 @@ npm run dist       # Windows installer → release/
 Audio is processed by cloud APIs (Deepgram, Anthropic) but **stored only locally**.
 Recording conversations may require consent depending on your jurisdiction — Sanas has an
 explicit start/stop and never records without you initiating it.
+
+## Windows releases and updates
+
+Use Node 22, PowerShell (7 recommended; Windows PowerShell also supported) and authenticated GitHub CLI for the owner scripts. Dependencies must
+already be installed. After merging/pushing an approved change, run:
+
+```powershell
+pwsh -NoProfile -File scripts/release/start.ps1 -DryRun
+pwsh -NoProfile -File scripts/release/start.ps1
+```
+
+The main-only manual workflow stamps a disposable build, verifies, builds unsigned x64 NSIS,
+checks the package and isolated SQLite smoke, then uploads three assets to a draft and publishes.
+The dispatch script records the intended SHA and uniquely identified run URL. It never merges or
+pushes. Owner logs are under .tmp/owner-runs. Inspect Actions and Releases before retrying any
+uncertain failure. Failed draft cleanup requires manual inspection; never delete a published
+release to reuse its version. The updater feed is public dirtyredz/Sanas, without a client token.
+
+For first installation, exit both dev and installed Sanas, then run:
+
+```powershell
+pwsh -NoProfile -File scripts/release/install-latest.ps1 -DryRun
+pwsh -NoProfile -File scripts/release/install-latest.ps1
+```
+
+The script verifies installer hashes/metadata, cold-copies the complete APPDATA/sanas directory
+(including settings, recordings and WAL/SHM) into a unique APPDATA/sanas-backups directory, verifies
+its hash manifest, installs and checks the executable version. Dry runs only write logs. Launch
+Sanas and confirm existing jobs, meetings, transcripts and playable recordings; no import is needed.
+Unsigned installers may show SmartScreen warnings. Do not share backups: they contain private data.
+
+Settings ? Updates checks/downloads automatically and offers Restart to update after downloads.
+Stop even paused meetings and wait for background processing first. Ordinary quit never installs.
+Before database schema upgrades, consistent backups are also saved under APPDATA/sanas/backups.
+On startup failure, keep the current data and backup, exit all Sanas instances, and recover manually
+from a verified backup (including deliberate handling of WAL/SHM); never restore over a live DB.
+Do not launch an older dev build against a newer schema.
+
+Local acceptance: npm run typecheck, npm run lint, npm test, npm run format:check, then npm run dist,
+node scripts/release/package-check.mjs and pwsh -NoProfile -File scripts/release/smoke.ps1. Dist
+never publishes. Smoke creates no window and uses disposable data. Native migration fixture suites
+and remote readback were excluded from the trimmed plan. The first real update after a subsequent
+release remains the installed-upgrade acceptance check.
+
+Manual checklist per release: overlay excluded during screen sharing; microphone and This-PC
+system audio capture; real Deepgram/Anthropic meeting calls; Settings states and safe restart;
+retained jobs, transcripts and playable recordings after installation.

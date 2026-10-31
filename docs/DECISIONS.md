@@ -312,3 +312,30 @@ Passive overlay reveal uses showInactive. Only explicit Ask activation takes foc
 The per-meeting Answer every question switch is initialized from a new setting, default OFF. When enabled, classifier verdicts addressed to another participant may produce reference answers for the owner. This supports group presentations where useful questions are directed to somebody else. It changes only addressee admission: prefilter, classifier, freshness, cooldown and spacing remain intact. Turning it off restores existing behavior and suppresses queued other-addressee generation. A meeting override does not change the saved default.
 
 Contextual merges are deferred: silently dropping or combining incompatible revisions is worse than refusing the merge. Post-meeting follow-up generation and revision browsing remain phase 2.
+
+## 2026-10-31 ? Manual unsigned releases and explicit update installation
+
+A manual main-only workflow allocates the next numeric version from all published canonical
+release tags (including releases marked prerelease), starting at 0.1.1. Only the disposable build
+checkout is stamped; the tag targets the tested source commit. Verification and Windows packaging
+precede a draft, three asset uploads, and stable publication. Failed uploads clean up only this
+attempt?s still-unpublished draft; failed cleanup leaves it for owner inspection. Published versions are never reused; failed unpublished allocations may be.
+Remote byte readback and ambiguous-publish reconciliation are deliberately out of scope: inspect
+GitHub before retrying an uncertain publish response, and remove only an unpublished failed draft.
+
+Use electron-updater with the public dirtyredz/Sanas GitHub provider, without client credentials.
+Packaged launches and six-hour checks download stable updates automatically. Ordinary quit never
+installs; Restart to update is the sole install action, synchronously checking a downloaded update,
+no live/paused meeting, and zero aggregate background meeting writes. Per the owner scope cut,
+there is no lifecycle queue guard or admission latch: a queued start or new background operation
+can race the deferred restart. This is a conscious limitation, not atomic shutdown admission.
+
+Releases are unsigned; SmartScreen warnings are expected. Hash verification detects altered bytes
+but does not establish Authenticode publisher identity. Signature checking is explicitly disabled
+in builder configuration; generated updater metadata omits publisherName. Future signing must happen before final blockmap/metadata
+generation and validation; secrets do not belong in ordinary CI or the renderer.
+
+Existing data stays in APPDATA/sanas. Before an existing older schema is upgraded, SQLite creates
+a consistent unique backup; failure aborts startup. Future schemas are rejected. Migrations remain
+transactional per version, so earlier completed migrations survive a later failure. Recovery is
+manual from the pre-upgrade backup, never an automatic overwrite of owner data.

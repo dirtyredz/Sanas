@@ -3,7 +3,7 @@ dist/
 out/
 .structure-review-pending*
 .structure-review-paused
-release/
+/release/
 *.tsbuildinfo
 .claude/settings.local.json
 .docket/

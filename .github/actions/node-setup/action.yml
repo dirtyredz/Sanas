@@ -1,0 +1,26 @@
+name: Node and download caches
+description: Set up Node 22 and dependency downloads only
+inputs:
+  electron:
+    description: Cache Electron and builder downloads
+    default: 'false'
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      with:
+        node-version: 22
+        cache: npm
+    - if: inputs.electron == 'true'
+      shell: pwsh
+      run: |
+        "ELECTRON_CACHE=$env:RUNNER_TEMP/electron-cache" >> $env:GITHUB_ENV
+        "electron_config_cache=$env:RUNNER_TEMP/electron-builder-cache" >> $env:GITHUB_ENV
+        "ELECTRON_BUILDER_CACHE=$env:RUNNER_TEMP/electron-builder-cache" >> $env:GITHUB_ENV
+    - if: inputs.electron == 'true'
+      uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+      with:
+        path: |
+          ${{ runner.temp }}/electron-cache
+          ${{ runner.temp }}/electron-builder-cache
+        key: downloads-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json', 'electron-builder.yml') }}

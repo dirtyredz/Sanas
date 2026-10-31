@@ -1,0 +1,111 @@
+name: Release
+run-name: Release ${{ inputs.request_id || github.run_id }}
+on:
+  workflow_dispatch:
+    inputs:
+      request_id:
+        description: Owner dispatch correlation ID
+        required: false
+        type: string
+      expected_sha:
+        description: Expected main SHA (optional race guard)
+        required: false
+        type: string
+permissions: {}
+concurrency:
+  group: release
+  cancel-in-progress: false
+jobs:
+  version:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/node-setup
+      - name: Confirm dispatch SHA
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: test -z "$EXPECTED_SHA" || test "$EXPECTED_SHA" = "$GITHUB_SHA"
+      - id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/release/version.mjs
+  verify:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/node-setup
+      - run: npm ci --ignore-scripts
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run lint
+      - run: npm run format:check
+  build:
+    needs: version
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    outputs:
+      artifact_id: ${{ steps.candidate.outputs.artifact-id }}
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      RELEASE_VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/node-setup
+        with:
+          electron: 'true'
+      - run: npm ci
+      - run: node scripts/release/version.mjs --stamp "$env:RELEASE_VERSION"
+      - run: npm run dist
+      # Signing must precede final blockmap/metadata generation and validation.
+      - run: node scripts/release/package-check.mjs
+      - run: pwsh -NoProfile -File scripts/release/smoke.ps1
+      - id: candidate
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-candidate
+          if-no-files-found: error
+          path: |
+            release/*.exe
+            release/*.exe.blockmap
+            release/latest.yml
+  publish:
+    needs: [version, verify, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SOURCE_SHA: ${{ github.sha }}
+      RELEASE_VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/node-setup
+      - run: npm ci --ignore-scripts
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          artifact-ids: ${{ needs.build.outputs.artifact_id }}
+          merge-multiple: true
+          path: candidate
+      - run: node scripts/release/publish.mjs candidate

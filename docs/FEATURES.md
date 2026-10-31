@@ -46,7 +46,7 @@ _Capability inventory. Status: ✅ done · 🔨 in progress · 📋 planned · �
 | Feature                                                                  | Status | Notes                                                                                                                              |
 | ------------------------------------------------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------- |
 | Settings: API keys, assistant mode/models/cooldown, hotkeys, audio, SMTP | ✅     | Smart/Full/Points; nudge/answer/question-detection models; answer cooldown; "Next point while I'm talking"; secrets stay main-only |
-| SQLite storage + v1 schema + migrations                                  | ✅     | %APPDATA%/sanas/sanas.db, WAL                                                                                                      |
+| SQLite storage + v7 schema + migrations                                  | ✅     | %APPDATA%/sanas/sanas.db, WAL                                                                                                      |
 | Startup recovery for unfinished meetings                                 | ✅     | Closes crash/reload leftovers at their last persisted segment                                                                      |
 | Retention controls                                                       | ✅     | audio after N days / whole meetings after N days; timer + Clean up now                                                             |
 | Overlay ghost mode (click-through)                                       | ✅     | 👻 button; overlay hotkey restores                                                                                                 |
@@ -77,3 +77,15 @@ During a live or paused meeting, open Context in the overlay (or the Live page e
 Ask? or Ctrl+Shift+K opens the typed composer. Enter submits, Shift+Enter adds a line, IME Enter remains composition, and Escape closes/releases focus while keeping the draft. Rejected requests keep their drafts. Ask the audience suggests one question grounded in recent finalized discussion; without speech it reports that there is no discussion yet. More detail creates/selects a linked expansion using the source answer's original grounding, with Back to source navigation.
 
 Answer every question is a meeting toggle, defaulting OFF from Settings. It includes classifier verdicts directed to other participants while preserving automatic pacing. The capture warning remains visible outside tabs. Saved meeting history and exports retain context, typed requests and source/detail relationships; older live cards indicate when they use earlier context.
+
+## Releases and updates
+
+Windows x64 one-click NSIS installers are built by manual GitHub Actions dispatch. Packaged Sanas
+checks the public GitHub release feed on launch and every six hours, downloads stable updates, and
+shows installed/available versions, progress and recoverable errors in Settings ? Updates. Restart
+to update is explicit and disabled during live/paused meetings and background meeting writes.
+Development and packaged smoke perform no update checks. Ordinary quit installs nothing.
+
+Storage is schema v7: v6 presentation snapshots/events plus v7 immutable context/deck revisions and
+saved assistance grounding. Startup backs up existing older databases before migration and rejects
+newer schemas without opening the application.

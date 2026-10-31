@@ -13,3 +13,6 @@ screenshots/
 # Lockfiles are the package manager's, not ours.
 package-lock.json
 docs/items/
+
+/release/
+.tmp/

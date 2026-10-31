@@ -343,3 +343,24 @@ _Non-obvious traps. Read before touching the related area._
 - Typed requests work without capture or transcript and while paused. Busy/rejected admission must retain the draft. Current-window finalized speech is required for audience questions.
 - Composer activation may precede renderer startup: retain the intent until readiness. Passive reveals and streaming/context/navigation events never focus the window. Native Windows focus behavior still requires owner acceptance.
 - v7 migration and repository behavior need disposable Electron-ABI checks; mocked unit tests do not establish SQLite foreign-key/rollback guarantees. See the live-controls plan for native acceptance assertions.
+
+## Releases, upgrades and recovery
+
+- Dev and installed Sanas share APPDATA/sanas. Close both before owner installation/backup; never run
+  an older schema build after an upgrade. Future-schema startup fails instead of replacing data.
+- Before migration, backups go under APPDATA/sanas/backups with unique names. SQLite backup includes
+  committed WAL data. A failed backup aborts migration; a failed later migration can leave earlier
+  versions committed. Exit all Sanas processes and preserve the current directory before deliberately
+  restoring a backup. Do not copy an old database over live WAL/SHM files.
+- A native binding existing on disk is insufficient: package-check checks unpacking/metadata; packaged
+  --smoke really opens SQLite, probes a row and checks integrity in a unique temporary userData. It
+  skips the instance lock, windows, settings, providers, audio, retention and updater. Only its temp
+  directory is removed; reports remain under the worktree .tmp/smoke directory.
+- Unsigned installers can trigger SmartScreen. Update SHA-512 integrity is not publisher identity;
+  win.verifyUpdateCodeSignature is false explicitly. No tokens ship in the public updater feed.
+- Restart is explicit and blocked by live/paused meetings or any background meeting write. Ordinary
+  quit never installs. The trimmed design does not guard queued lifecycle work or prevent new work
+  after the synchronous click-time check; avoid starting work while restarting.
+- npm prepare assumes .git is a directory and fails with ENOTDIR in linked worktrees. Use
+  --ignore-scripts for local installs and rebuild native dependencies separately when needed. This
+  branch does not change hook installation. Hosted full checkouts run npm ci with lifecycle scripts.

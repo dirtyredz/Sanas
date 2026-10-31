@@ -217,3 +217,17 @@ Presentation tests are colocated with these modules. The browser mock is isolate
 - `lib/presentation/SlideListEditor.tsx` and the moved import component/parser serve job and meeting editors. `lib/meeting/MeetingContextEditor.tsx` owns drafts; its hook/reducer reject stale hydration.
 - Overlay settings, resize and split wiring now live in `useOverlaySettings`, `useOverlayResize`, `useSplitDrag`; `OverlaySuggestions` owns history and manual actions, `OverlayComposer` owns keyboard/draft state.
 - `SuggestionContent` dispatches compact or full text-safe `DetailedSuggestion` rendering in both windows. Preview live controls live in `dev/mock-live-controls.ts`.
+
+## Release and startup homes
+
+- main/lifecycle owns userData identity and normal startup; main/index.ts selects diagnostics before
+  importing normal services. main/diagnostics owns isolated headless smoke, with probe SQL in db/repos.
+- main/db/backup.ts owns consistent pre-upgrade backups; db/index.ts publishes the connection only
+  after asynchronous initialization succeeds and closes it on final shutdown.
+- main/services/updates owns electron-updater and click-time restart checks; shared/updates carries
+  sanitized snapshots. ipc/updates and preload expose only get/check/restart/change.
+- renderer app/settings/UpdatesSection owns independent update state; dev/mock-updates supplies the
+  typed offline preview. post-processing retains its per-meeting counts and exposes an aggregate.
+- scripts/release owns versioning, local asset/package checks, draft publication, packaged smoke and
+  owner dispatch/install commands. scripts/owner owns redacted operation logs. .github/actions owns
+  shared Node/download-cache setup. Tests are colocated with these modules, including release scripts.

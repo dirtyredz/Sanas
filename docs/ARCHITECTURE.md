@@ -134,7 +134,7 @@ objection | none`. It **fails closed**: timeout, cancel, malformed output or pro
   after launch and every 6 h; Settings shows what is past its limit and can run it now.
   Live meetings are never touched. Deleting a meeting by hand goes through the same
   `removeMeeting` (file + row).
-- Schema (current: v1 base, v2 `speakers`, v3 `jobs.summary_email`, v4 `segments_fts`, v5 `suggestions.purpose`):
+- Schema (current v7: v1 base, v2 `speakers`, v3 `jobs.summary_email`, v4 `segments_fts`, v5 `suggestions.purpose`, v6 presentation, v7 live context/grounding; later tables described below):
 
 ```
 jobs        (id, name, company_info, project_scope, notes,
@@ -235,3 +235,16 @@ At meeting start both ordinary and presentation job/persona/glossary bases are c
 Typed, detail and audience requests reuse the requested lane while live or paused. Admission snapshots grounding and returns before generation completes. Detail loads the persisted source ID, original system/deck context and prompt window; current speech/edits never replace that grounding. Successful completion events retain their transient reducer ID and add the stored SQLite ID. Linked detail cards do not overwrite sources.
 
 Saved context is owner background in summaries and exports, never transcript evidence or FTS content. Summary regeneration still rebuilds job context from current job data; only detail guarantees replay of the original job prompt. Contextual/presentation merges are refused even after clearing content. Ordinary merges reassign/deduplicate grounding before deleting source meetings.
+
+## Release and update boundary
+
+Only packaged normal startup initializes electron-updater after database initialization. Main talks
+to GitHub for release metadata and installer downloads; renderer receives sanitized typed snapshots
+and parameterless get/check/restart operations. No meeting data or API keys enter this traffic.
+The snapshot revision prevents stale initial replies replacing newer events. Settings update state
+is separate from persisted settings. Main rechecks restart eligibility on every click.
+
+The entry point configures userData before readiness and dynamically loads normal startup or smoke.
+Database initialization keeps its candidate connection private while awaiting a consistent backup
+for an existing older schema; windows, IPC and services start only after successful migration.
+Final shutdown closes the connection. Smoke never imports normal startup and uses disposable data.
