@@ -1,13 +1,17 @@
-param([int]$TimeoutSeconds = 180)
+param([int]$TimeoutSeconds = 60)
 $ErrorActionPreference = 'Stop'
 $root = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
 $exe = Join-Path $root 'release/win-unpacked/Sanas.exe'
 $folder = Join-Path $root ('.tmp/smoke/' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $folder -Force | Out-Null
 $report = Join-Path $folder 'report.json'
+$userData = Join-Path $folder 'user-data'
+$resolvedFolder = [IO.Path]::GetFullPath($folder).TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
+$resolvedUserData = [IO.Path]::GetFullPath($userData)
+if (-not $resolvedUserData.StartsWith($resolvedFolder, [StringComparison]::OrdinalIgnoreCase)) { throw 'Invalid smoke userData path' }
 $process = New-Object System.Diagnostics.Process
 $process.StartInfo.FileName = $exe
-$process.StartInfo.Arguments = '--smoke --smoke-report="' + $report + '"'
+$process.StartInfo.Arguments = '--smoke --smoke-report="' + $report + '" --smoke-user-data="' + $userData + '"'
 $process.StartInfo.UseShellExecute = $false
 $process.StartInfo.CreateNoWindow = $true
 $process.StartInfo.WindowStyle = [Diagnostics.ProcessWindowStyle]::Hidden
@@ -32,4 +36,6 @@ try {
 } finally {
   if ($started -and -not $process.HasExited) { $process.Kill(); $process.WaitForExit() }
   $process.Dispose()
+  # Electron must be stopped before its active Chromium profile is removed.
+  if (Test-Path -LiteralPath $resolvedUserData) { Remove-Item -LiteralPath $resolvedUserData -Recurse -Force }
 }

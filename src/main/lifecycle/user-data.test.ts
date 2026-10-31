@@ -14,6 +14,7 @@ it('preserves dev/installed identity and isolates smoke', () => {
   expect(configureUserData(false)).toBe(join('/appdata', 'sanas'))
   expect(mock.mkdtemp).not.toHaveBeenCalled()
   expect(configureUserData(true)).toBe('/temp/sanas-smoke-unique')
+  expect(configureUserData(true, ['--smoke-user-data=/owned/smoke'])).toBe('/owned/smoke')
   expect(mock.setName).toHaveBeenCalledWith('sanas')
-  expect(mock.setPath).toHaveBeenLastCalledWith('userData', '/temp/sanas-smoke-unique')
+  expect(mock.setPath).toHaveBeenLastCalledWith('userData', '/owned/smoke')
 })

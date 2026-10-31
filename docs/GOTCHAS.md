@@ -366,6 +366,8 @@ _Non-obvious traps. Read before touching the related area._
   branch does not change hook installation. Hosted full checkouts run npm ci with lifecycle scripts.
 
 - Packaged smoke uses an explicit .NET process object to retain a reliable GUI exit code in Windows
-  PowerShell. This machine can take over 60 seconds to finish native shutdown after writing the
-  report, so the wrapper allows 180 seconds, then kills only its own process and fails. A successful
+  PowerShell. Schedule `app.exit` after the readiness continuation returns, and do not remove
+  Electron's active userData while it is running: either teardown ordering mistake can leave its
+  Network Service child holding the main process open. The wrapper owns and removes the isolated
+  directory after exit, allows 60 seconds, then kills only its own process and fails. A successful
   report alone is never a pass: the executable must also exit successfully before the timeout.

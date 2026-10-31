@@ -1,9 +1,9 @@
 import { app } from 'electron'
-import { writeFileSync, rmSync } from 'node:fs'
+import { writeFileSync } from 'node:fs'
 import { openDb, closeDb } from '../db'
 import { diagnosticProbe } from '../db/repos/diagnostics'
 
-export async function runSmoke(userData: string): Promise<void> {
+export async function runSmoke(): Promise<void> {
   const reportPath = process.argv
     .find((arg) => arg.startsWith('--smoke-report='))
     ?.slice('--smoke-report='.length)
@@ -33,7 +33,6 @@ export async function runSmoke(userData: string): Promise<void> {
   } finally {
     try {
       closeDb()
-      rmSync(userData, { recursive: true, force: true })
     } catch {
       code = 1
       report.result = 'failed'
@@ -43,6 +42,7 @@ export async function runSmoke(userData: string): Promise<void> {
     } catch {
       code = 1
     }
-    app.exit(code)
+    // Let the readiness continuation return before forcing Chromium's services to stop.
+    setImmediate(() => app.exit(code))
   }
 }
