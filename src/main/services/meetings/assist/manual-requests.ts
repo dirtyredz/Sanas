@@ -1,5 +1,5 @@
-import type { ManualRequest } from '@shared/live-controls/types'
-import type { Suggestion } from '@shared/types'
+import type { Admission, ManualRequest } from '@shared/live-controls/types'
+import type { SuggestionGroundingRow } from '../../../db/repos/suggestion-grounding'
 import { COMPACT_CONTRACT } from '../../assistant/compact-contract'
 import {
   AUDIENCE_INSTRUCTION,
@@ -10,18 +10,22 @@ import {
 import { renderTranscriptWindow } from '../../transcript-format'
 import { presentationHint } from '../../assistant/presentation/prompts'
 import { answerRequest, type AssistSettings, type AssistSnapshot } from './suggestion-requests'
-import type { SuggestionRequest } from './suggestion-runner'
+import type { SuggestionHandle, SuggestionRequest } from './suggestion-runner'
 
-export interface DetailSource extends Suggestion {
-  system: string
-  cacheableContext: string
-  promptWindow: string
+export interface ManualAdmissionDeps {
+  canStart(): boolean
+  settings(): AssistSettings
+  detailSource(meetingId: number, sourceSuggestionId: number): SuggestionGroundingRow
+  existingDetail(meetingId: number, sourceSuggestionId: number): number | undefined
+  admitted(): void
+  start(request: SuggestionRequest): SuggestionHandle | null
 }
+
 export function manualRequest(
   snap: AssistSnapshot,
   settings: AssistSettings,
   input: ManualRequest,
-  source?: DetailSource,
+  source?: SuggestionGroundingRow,
 ): SuggestionRequest {
   const base = answerRequest(snap, settings, 'hotkey')
   base.manualKind = input.kind
@@ -82,4 +86,40 @@ export function manualRequest(
       '\n</typed-request>\n' +
       COMPACT_CONTRACT,
   }
+}
+
+export function admitManual(
+  deps: ManualAdmissionDeps,
+  snap: AssistSnapshot | null,
+  input: ManualRequest,
+): Admission {
+  if (!deps.canStart())
+    return { accepted: false, reason: 'busy', message: 'A requested answer is already running.' }
+  if (!snap || snap.meetingId !== input.meetingId)
+    throw new Error('This meeting is no longer active.')
+  if (input.kind === 'audience' && !snap.window.some((line) => line.text.trim()))
+    return {
+      accepted: false,
+      reason: 'no-evidence',
+      message: 'No recent discussion to base a question on yet.',
+    }
+  const source =
+    input.kind === 'detail'
+      ? deps.detailSource(input.meetingId, input.sourceSuggestionId)
+      : undefined
+  const request = manualRequest(snap, deps.settings(), input, source)
+  if (input.kind === 'detail') {
+    const existing = deps.existingDetail(input.meetingId, input.sourceSuggestionId)
+    if (existing) return { accepted: true, storedSuggestionId: existing }
+  }
+  if (!request.apiKey)
+    return {
+      accepted: false,
+      reason: 'unavailable',
+      message: 'No Anthropic API key set â€” add it in Settings.',
+    }
+  deps.admitted()
+  return deps.start(request)
+    ? { accepted: true }
+    : { accepted: false, reason: 'busy', message: 'A requested answer is already running.' }
 }

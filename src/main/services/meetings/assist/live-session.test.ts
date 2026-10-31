@@ -2,6 +2,7 @@ import { afterEach, expect, it, vi } from 'vitest'
 import type { AssistRequest } from '../../assistant/types'
 const f = vi.hoisted(() => ({
   requests: [] as AssistRequest[],
+  saveGrounding: vi.fn(() => 1),
   deck: ['FIRST', 'LATER'].map((title) => ({
     title,
     talkingPoint: title,
@@ -27,7 +28,7 @@ vi.mock('../../../db/repos/meeting-context', () => ({
   }),
 }))
 vi.mock('../../../db/repos/suggestion-grounding', () => ({
-  saveGrounding: () => 1,
+  saveGrounding: f.saveGrounding,
   detailSource: vi.fn(),
   existingDetail: () => undefined,
 }))
@@ -52,6 +53,7 @@ import { LiveSession } from './live-session'
 
 afterEach(() => {
   f.requests.length = 0
+  f.saveGrounding.mockClear()
 })
 it('allows pre-speech answers and keeps the full cached deck invariant across navigation, with independent summary evidence', async () => {
   let ordinal = 0
@@ -124,4 +126,38 @@ it('admits typed requests while paused, rejects busy/wrong-meeting and avoids au
   await new Promise((resolve) => setTimeout(resolve, 0))
   expect(f.requests[1].userContent).toContain('later correction')
   expect(f.requests[1].cacheableContext).toBe('')
+})
+
+it('resolves grounding on context changes while snapshots only read the cached id', async () => {
+  const session = new LiveSession(
+    () => 100,
+    () => ({ meetingId: 1, revision: 0, count: 0, ordinal: 0, current: null, next: null }),
+  )
+  session.begin(1)
+  expect(f.saveGrounding).toHaveBeenCalledTimes(1)
+
+  session.assistance.answerNow()
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  expect(f.saveGrounding).toHaveBeenCalledTimes(1)
+  expect(session.request({ meetingId: 1, kind: 'audience' })).toMatchObject({
+    accepted: false,
+    reason: 'no-evidence',
+  })
+  expect(f.saveGrounding).toHaveBeenCalledTimes(1)
+
+  session.applyContext({
+    meetingId: 1,
+    revision: 1,
+    deckVersion: 1,
+    text: 'new context',
+    slides: [],
+    initialSlides: f.deck,
+  })
+  expect(f.saveGrounding).toHaveBeenCalledTimes(2)
+  expect(f.saveGrounding).toHaveBeenLastCalledWith(1, 1, expect.any(String), '')
+
+  expect(session.request({ meetingId: 1, kind: 'typed', text: 'cached' })).toEqual({
+    accepted: true,
+  })
+  expect(f.saveGrounding).toHaveBeenCalledTimes(2)
 })

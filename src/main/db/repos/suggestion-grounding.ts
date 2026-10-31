@@ -1,5 +1,11 @@
 import { getDb } from '../index'
-import type { DetailSource } from '../../services/meetings/assist/manual-requests'
+import type { Suggestion } from '@shared/types'
+
+export interface SuggestionGroundingRow extends Suggestion {
+  system: string
+  cacheableContext: string
+  promptWindow: string
+}
 
 export function saveGrounding(
   meetingId: number,
@@ -19,7 +25,7 @@ export function saveGrounding(
       .get(meetingId, deckVersion, system, deckContext) as { id: number }
   ).id
 }
-export function detailSource(meetingId: number, id: number): DetailSource {
+export function detailSource(meetingId: number, id: number): SuggestionGroundingRow {
   const row = getDb()
     .prepare(
       `SELECT s.id, s.meeting_id AS meetingId, s.t_ms AS tMs, s.trigger, s.purpose, s.text,
@@ -28,7 +34,7 @@ export function detailSource(meetingId: number, id: number): DetailSource {
     FROM suggestions s JOIN suggestion_grounding_contexts g ON g.id = s.grounding_context_id
     WHERE s.id = ? AND s.meeting_id = ? AND g.meeting_id = s.meeting_id`,
     )
-    .get(id, meetingId) as DetailSource | undefined
+    .get(id, meetingId) as SuggestionGroundingRow | undefined
   if (!row) throw new Error('Source answer not found or has no saved grounding.')
   return row
 }

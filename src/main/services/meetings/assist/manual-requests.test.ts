@@ -1,5 +1,6 @@
-import { expect, it } from 'vitest'
-import { manualRequest, type DetailSource } from './manual-requests'
+import { expect, it, vi } from 'vitest'
+import type { SuggestionGroundingRow } from '../../../db/repos/suggestion-grounding'
+import { admitManual, manualRequest, type ManualAdmissionDeps } from './manual-requests'
 import {
   answerRequest,
   coachRequest,
@@ -57,7 +58,7 @@ it('keeps job/deck cache blocks independent of text edits and excludes the deck 
   )
 })
 it('expands only eligible sources and replays immutable grounding rather than current speech', () => {
-  const source: DetailSource = {
+  const source: SuggestionGroundingRow = {
     id: 9,
     meetingId: 1,
     tMs: 0,
@@ -106,4 +107,40 @@ it('audience prompts request one question and use their bounded profile', () => 
   const req = manualRequest(snap, settings, { meetingId: 1, kind: 'audience' })
   expect(req).toMatchObject({ maxTokens: 200, effort: 'low', timeoutMs: 25000 })
   expect(req.userContent).toContain('exactly one short, speakable question')
+})
+
+it('preserves manual admission ordering and outcomes', () => {
+  const admitted = vi.fn()
+  const start = vi.fn(() => ({ done: Promise.resolve('done' as const), cancel: vi.fn() }))
+  const deps: ManualAdmissionDeps = {
+    canStart: () => true,
+    settings: () => settings,
+    detailSource: vi.fn(),
+    existingDetail: vi.fn(),
+    admitted,
+    start,
+  }
+
+  expect(
+    admitManual({ ...deps, canStart: () => false }, null, { meetingId: 2, kind: 'audience' }),
+  ).toMatchObject({ accepted: false, reason: 'busy' })
+  expect(() => admitManual(deps, snap, { meetingId: 2, kind: 'typed', text: 'wrong' })).toThrow(
+    'no longer active',
+  )
+  expect(admitManual(deps, snap, { meetingId: 1, kind: 'audience' })).toMatchObject({
+    accepted: false,
+    reason: 'no-evidence',
+  })
+  expect(
+    admitManual({ ...deps, settings: () => ({ ...settings, anthropicApiKey: '' }) }, snap, {
+      meetingId: 1,
+      kind: 'typed',
+      text: 'unavailable',
+    }),
+  ).toMatchObject({ accepted: false, reason: 'unavailable' })
+  expect(admitManual(deps, snap, { meetingId: 1, kind: 'typed', text: 'go' })).toEqual({
+    accepted: true,
+  })
+  expect(admitted).toHaveBeenCalledOnce()
+  expect(start).toHaveBeenCalledOnce()
 })

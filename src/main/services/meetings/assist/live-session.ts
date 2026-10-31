@@ -1,17 +1,16 @@
 import type { Admission, ManualRequest, MeetingContext } from '@shared/live-controls/types'
 import type { AssistSnapshot } from './suggestion-requests'
-import { manualRequest } from './manual-requests'
+import { admitManual } from './manual-requests'
 import { getMeetingContext } from '../../../db/repos/meeting-context'
-import { detailSource, existingDetail, saveGrounding } from '../../../db/repos/suggestion-grounding'
+import { detailSource, existingDetail } from '../../../db/repos/suggestion-grounding'
 import { IPC } from '@shared/ipc'
 import { loadSettings } from '../../../config/settings'
-import { getJob, listGlossary } from '../../../db/repos/jobs'
 import { insertSuggestion } from '../../../db/repos/suggestions'
 import { speakerNameMap } from '../../../db/repos/speakers'
 import { claudeProvider } from '../../assistant/claude'
 import { classifyTurn } from '../../assistant/classifier'
 import { rememberHeadline } from '../../assistant/compact-contract'
-import { buildSystemPrompt, type TranscriptLine } from '../../assistant/prompts'
+import type { TranscriptLine } from '../../assistant/prompts'
 import type { TurnFinal } from '../../turns/types'
 import { broadcast } from '../../../windows/broadcast'
 import { isLiveMeeting, liveMeetingId } from '../status/live-meeting'
@@ -19,8 +18,8 @@ import { clearPostProcessing, markPostProcessing } from '../status/post-processi
 import { LiveAssistance } from './live-assistance'
 import { SuggestionRunner } from './suggestion-runner'
 import type { PresentationState } from '@shared/presentation/types'
-import { deckContext } from '../../assistant/presentation/prompts'
 import { PresentationEvidence } from './presentation-evidence'
+import { MeetingPrompts } from './meeting-prompts'
 
 // The live-assist side of the running meeting, assembled in one place: the rolling
 // transcript window the prompts read, the headlines already shown (so automatic prompts do
@@ -35,16 +34,11 @@ export class LiveSession {
   readonly assistance: LiveAssistance
   private readonly window: TranscriptLine[] = []
   private readonly shownHeadlines: string[] = []
-  private systemPrompt = '' // stable per meeting (cached by the provider)
-  private coachPrompt = ''
-  private ordinaryPrompt = ''
-  private presentationPrompt = ''
-  private context: MeetingContext | null = null
-  private cacheableContext = ''
   private readonly runner: SuggestionRunner
   private snapshot: () => AssistSnapshot | null = () => null
   private readonly evidence = new PresentationEvidence()
   private readonly coachHeadlines: string[] = []
+  private readonly prompts = new MeetingPrompts()
 
   /** `clockMs` is the meeting's audio clock, so suggestions line up with the transcript. */
   constructor(
@@ -83,23 +77,13 @@ export class LiveSession {
           console.warn('[sanas] could not read speaker names:', e) // labels fall back to S1/S2
         }
         return {
+          ...this.prompts.snapshot(),
           meetingId,
           atMs: Math.round(clockMs()),
-          system: this.systemPrompt,
-          cacheableContext: this.cacheableContext,
-          groundingContextId: saveGrounding(
-            meetingId,
-            this.context?.deckVersion ?? 0,
-            this.systemPrompt,
-            this.cacheableContext,
-          ),
-          contextRevision: this.context?.revision,
-          meetingText: this.context?.text,
           window: [...this.window],
           names,
           recent: [...this.shownHeadlines],
           presentation: this.presentation(),
-          coachSystem: this.coachPrompt,
           coachEvidence: this.evidence.snapshot(),
           coachRecent: [...this.coachHeadlines],
         }
@@ -117,53 +101,29 @@ export class LiveSession {
     this.evidence.reset(0)
     this.assistance.presentationChanged(0)
     this.assistance.start()
-    const job = getJob(jobId),
-      glossary = listGlossary(jobId)
-    this.ordinaryPrompt = buildSystemPrompt(job, glossary)
-    this.presentationPrompt = buildSystemPrompt(job ? { ...job, talkingPoints: '' } : job, glossary)
-    this.applyContext(getMeetingContext(liveMeetingId()!))
+    this.prompts.begin(jobId, getMeetingContext(liveMeetingId()!))
+    this.presentationChanged(this.clockMs())
     this.assistance.setAnswerEveryQuestion(loadSettings().answerEveryQuestion)
   }
 
   applyContext(context: MeetingContext): void {
-    this.context = context
-    this.systemPrompt = this.coachPrompt = context.slides.length
-      ? this.presentationPrompt
-      : this.ordinaryPrompt
-    this.cacheableContext = deckContext(context.slides)
+    this.prompts.applyContext(context)
     this.presentationChanged(this.clockMs())
   }
 
   request(input: ManualRequest): Admission {
-    if (!this.runner.canStart('hotkey'))
-      return { accepted: false, reason: 'busy', message: 'A requested answer is already running.' }
-    const snap = this.snapshot()
-    if (!snap || snap.meetingId !== input.meetingId)
-      throw new Error('This meeting is no longer active.')
-    if (input.kind === 'audience' && !snap.window.some((l) => l.text.trim()))
-      return {
-        accepted: false,
-        reason: 'no-evidence',
-        message: 'No recent discussion to base a question on yet.',
-      }
-    const source =
-      input.kind === 'detail' ? detailSource(input.meetingId, input.sourceSuggestionId) : undefined
-    const req = manualRequest(snap, loadSettings(), input, source)
-    if (input.kind === 'detail') {
-      const existing = existingDetail(input.meetingId, input.sourceSuggestionId)
-      if (existing) return { accepted: true, storedSuggestionId: existing }
-    }
-    if (!req.apiKey)
-      return {
-        accepted: false,
-        reason: 'unavailable',
-        message: 'No Anthropic API key set — add it in Settings.',
-      }
-    this.assistance.manualAdmitted()
-    const handle = this.runner.start(req)
-    return handle
-      ? { accepted: true }
-      : { accepted: false, reason: 'busy', message: 'A requested answer is already running.' }
+    return admitManual(
+      {
+        canStart: () => this.runner.canStart('hotkey'),
+        settings: loadSettings,
+        detailSource,
+        existingDetail,
+        admitted: () => this.assistance.manualAdmitted(),
+        start: (request) => this.runner.start(request),
+      },
+      this.snapshot(),
+      input,
+    )
   }
 
   /** One persisted-or-not final: into the prompt window, then to live assistance. */
@@ -191,6 +151,6 @@ export class LiveSession {
 
   /** What the post-stop summary reads: a copy of the window and the meeting's prompt. */
   closing(): { window: TranscriptLine[]; prompt: string } {
-    return { window: [...this.window], prompt: this.coachPrompt }
+    return { window: [...this.window], prompt: this.prompts.closingPrompt() }
   }
 }
