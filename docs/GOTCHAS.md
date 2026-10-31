@@ -2,6 +2,10 @@
 
 _Non-obvious traps. Read before touching the related area._
 
+The normal main process writes `sanas-main.log` (plus one rotated `.1` file) under Electron's
+`app.getPath('logs')`; on Windows this is normally `%APPDATA%\sanas\logs`. Packaged smoke never
+starts this logger or writes there.
+
 ## Audio
 
 - **Windows mic exclusivity/quality:** some conferencing apps grab the mic with

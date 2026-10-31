@@ -17,7 +17,7 @@ sanas/
 ├── src/
 │   ├── main/                              # Electron main process
 │   │   ├── index.ts                       # mode dispatch: normal startup vs --smoke diagnostics
-│   │   ├── lifecycle/                     # userData identity and normal application startup
+│   │   ├── lifecycle/                     # userData identity, capped main log and normal application startup
 │   │   ├── diagnostics/                   # isolated packaged smoke diagnostics
 │   │   ├── windows/                       # BrowserWindow builders and main → all-windows broadcast
 │   │   ├── ipc/                           # validated typed IPC handlers; delegate only
@@ -85,7 +85,7 @@ sanas/
 
 **Enforced homes:**
 
-- `src/main/lifecycle/` — userData identity and normal startup wiring; normal startup is not loaded by smoke
+- `src/main/lifecycle/` — userData identity, capped/redacted main logging and normal startup wiring; normal startup is not loaded by smoke
 - `src/main/diagnostics/` — isolated, headless packaged diagnostics used by `--smoke`
 - `src/main/windows/` — BrowserWindow builders and the main → all-windows broadcast
 - `src/main/ipc/` — typed IPC handlers; validate ingress and delegate, with no business logic

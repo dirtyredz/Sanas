@@ -86,6 +86,9 @@ On startup failure, keep the current data and backup, exit all Sanas instances, 
 from a verified backup (including deliberate handling of WAL/SHM); never restore over a live DB.
 Do not launch an older dev build against a newer schema.
 
+For main-process startup or runtime failures, inspect `%APPDATA%\sanas\logs\sanas-main.log` (and
+`sanas-main.log.1` for the previous capped file). API-key-shaped values are redacted.
+
 Local acceptance: npm run typecheck, npm run lint, npm test, npm run format:check, then npm run dist,
 node scripts/release/package-check.mjs and pwsh -NoProfile -File scripts/release/smoke.ps1. Dist
 never publishes. Smoke creates no window and uses disposable data. Native migration fixture suites

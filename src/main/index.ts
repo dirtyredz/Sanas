@@ -6,5 +6,13 @@ configureUserData(smoke)
 if (smoke) {
   void import('./diagnostics/smoke').then(({ runSmoke }) => runSmoke())
 } else {
-  void import('./lifecycle/start').catch(() => app.exit(1))
+  void import('./lifecycle/main-log')
+    .then(({ installMainLogger }) => {
+      installMainLogger(app.getPath('logs'))
+      return import('./lifecycle/start')
+    })
+    .catch((error) => {
+      console.error('[sanas] main startup failed:', error)
+      app.exit(1)
+    })
 }

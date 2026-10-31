@@ -2,8 +2,8 @@
 id: dk-c3d7a38b
 type: task
 created: 2026-10-05
-status: todo
-since: 2026-10-05
+status: done
+since: 2026-10-31
 area: post-v1-ideas
 priority: P2
 rank: zzzzzzzy
