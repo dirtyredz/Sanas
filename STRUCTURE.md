@@ -15,219 +15,178 @@ Layout below reflects what exists.
 ```
 sanas/
 ├── src/
-│   ├── main/                    # Electron main process
-│   │   ├── index.ts             # app lifecycle, hotkeys, userData pinning
-│   │   ├── windows/             # main-window + overlay-window builders, broadcast (main → all windows)
-│   │   ├── ipc/                 # typed IPC channel handlers (thin — delegate) + validate.ts (ingress checks)
-│   │   ├── system-audio.ts      # display-media loopback handler (same-PC meeting audio)
+│   ├── main/                              # Electron main process
+│   │   ├── index.ts                       # mode dispatch: normal startup vs --smoke diagnostics
+│   │   ├── lifecycle/                     # userData identity and normal application startup
+│   │   ├── diagnostics/                   # isolated packaged smoke diagnostics
+│   │   ├── windows/                       # BrowserWindow builders and main → all-windows broadcast
+│   │   ├── ipc/                           # validated typed IPC handlers; delegate only
+│   │   ├── system-audio.ts                # display-media loopback handler
 │   │   ├── services/
-│   │   │   ├── stt/             # SttProvider seam + DeepgramSession (reconnect, splits, batch)
-│   │   │   │                    #   + deepgram-events (pure message normalization → finals + signals)
-│   │   │   ├── turns/           # turn-assembler: finals + boundaries → completed turns (pure)
-│   │   │   ├── assistant/       # AssistantProvider seam + claude.ts, prompts.ts, triggers (prefilter),
-│   │   │   │                    #   classifier, coach-policy + coach-prompts, compact-contract, excerpt
-│   │   │   ├── meetings/        # index (meeting/audio lifecycle, STT wiring, per-final persistence),
-│   │   │   │                    #   export, remove (audio file + row — the one delete path)
-│   │   │   │   ├── assist/      # live-session (window + shown headlines + prompt + runner/coordinator
-│   │   │   │   │                #   assembly), live-assistance (coordinator), suggestion-runner,
-│   │   │   │   │                #   suggestion-requests, suggestion-in-flight (lane policy)
-│   │   │   │   ├── capture/     # channel-identity (ch0=user, one place), capture-health
-│   │   │   │   ├── status/      # live-meeting (which meeting main is running), post-processing
-│   │   │   │   │                #   (what is still being rewritten after stop)
-│   │   │   │   ├── summary/     # summarize (post-stop + on-demand), summary-email (compose + send)
-│   │   │   │   ├── rediarize/   # rediarize (batch pass after stop), speaker-carryover (pins + names)
-│   │   │   │   ├── merge/       # merge + merge-plan (fold split recordings into one meeting)
-│   │   │   │   └── recovery/    # startup-recovery (close rows stranded by an earlier process)
-│   │   │   ├── email/           # EmailProvider seam + smtp.ts (nodemailer transport)
-│   │   │   ├── retention/       # age-based clean-up of recordings / whole meetings (timer + on demand)
-│   │   │   ├── history/         # ask-your-history: FTS5 retrieval + grounded, streamed answer
-│   │   │   ├── transcript-format.ts # canonical main-side line formatting/windowing
-│   │   │   └── audio-store/     # WAV recording of the capture stream (default on)
-│   │   ├── db/                  # better-sqlite3 open + migrations, fts-query (text → safe FTS5 MATCH),
-│   │   │                        #   sqlite-time (the one SQLite UTC datetime text format)
-│   │   │   └── repos/           # jobs+glossary, meetings+segments, suggestions (SQL lives here only)
-│   │   └── config/              # settings + API key storage, settings-schema (one check per key)
-│   ├── preload/                 # contextBridge API surface (typed)
-│   ├── renderer/                # vite root: index.html (library) + overlay.html
-│   │   ├── public/              # AudioWorklet processor served as a static asset (not bundled)
+│   │   │   ├── stt/                       # SttProvider seam, Deepgram sessions and event normalization
+│   │   │   ├── turns/                     # pure completed-turn assembly
+│   │   │   ├── assistant/                 # AssistantProvider seam, Claude, prompts, classifier, triggers
+│   │   │   │   ├── coach/                 # next-point policy and prompts
+│   │   │   │   ├── presentation/          # deck context, location hints and restricted coach prompt
+│   │   │   │   └── live-controls/         # typed/detail/audience prompt instructions
+│   │   │   ├── meetings/                  # live lifecycle/STT/audio orchestrator, export and removal
+│   │   │   │   ├── index.ts               # lifecycle, STT wiring, audio and final persistence
+│   │   │   │   ├── live-controls.ts       # context/manual/answer-mode/slide control facade
+│   │   │   │   ├── assist/                # assembly, prompt state, admission, coordinator and runner
+│   │   │   │   ├── capture/               # channel identity and capture health
+│   │   │   │   ├── context/               # prepare/commit/publish meeting-context changes
+│   │   │   │   ├── presentation/          # live cursor and historical marker formatting
+│   │   │   │   ├── status/                # live meeting and post-processing guards
+│   │   │   │   ├── summary/               # summary generation, output parsing and email
+│   │   │   │   ├── rediarize/             # batch pass and speaker carry-over
+│   │   │   │   ├── merge/                 # pure merge planning and DB apply
+│   │   │   │   └── recovery/              # close rows stranded by an earlier process
+│   │   │   ├── hotkeys/                   # registration/status, repeat suppression and callback errors
+│   │   │   ├── updates/                    # updater service and meeting-aware restart checks
+│   │   │   ├── email/                      # EmailProvider seam and SMTP transport
+│   │   │   ├── retention/                  # scheduled/on-demand recording and meeting cleanup
+│   │   │   ├── history/                    # grounded ask-your-history retrieval and answers
+│   │   │   ├── audio-store/                # WAV recording of accepted capture audio
+│   │   │   └── transcript-format.ts        # canonical main-side transcript formatting/windowing
+│   │   ├── db/                             # async open/backup/migrations and SQLite helpers
+│   │   │   └── repos/                      # entity repositories and all SQL strings
+│   │   └── config/                         # settings, secrets and exhaustive settings schema
+│   ├── preload/                            # typed contextBridge API
+│   ├── renderer/
+│   │   ├── public/                         # unbundled AudioWorklet and static assets
 │   │   └── src/
-│   │       ├── app/             # library UI (React): App + entry, pages/, settings/ (one file per
-│   │       │                    #   Settings section), styles/ (tokens → controls → shell → transcript → pages)
-│   │       ├── overlay-app/     # overlay UI (React, separate tiny bundle)
-│   │       ├── audio/           # (Phase 1) mic capture + AudioWorklet downsample
-│   │       ├── lib/             # pure presentation helpers shared across pages (speaker label, hotkey
-│   │       │   │                #   label, clock/date formatting, icons, IPC error text, glossary input)
-│   │       │   ├── meeting/     # meeting-state reducer + useMeetingState, useTranscript
-│   │       │   └── suggestions/ # CompactSuggestion (safe renderer), whisper-history + useSuggestionHistory
-│   │       ├── dev/             # browser-preview mock of the preload bridge (dev only, never bundled)
-│   │       └── env.d.ts         # Vite client types (import.meta.env)
-│   └── shared/                  # IPC channel types, domain types (Job, Meeting, Segment…),
-│                                #   suggestion-label (one label mapping: overlay/history/export)
-├── scripts/                     # repo tooling (git-hook install, pre-commit)
-├── .github/workflows/           # CI
-├── docs/                        # living docs (this set)
-├── vite.renderer.config.ts      # renderer-only Vite for the browser preview (npm run dev:web)
+│   │       ├── app/                        # library React application
+│   │       │   ├── pages/                  # route/page components
+│   │       │   ├── jobs/                   # job presentation editor
+│   │       │   ├── settings/               # one component per Settings section
+│   │       │   └── styles/                 # tokens → controls → shell → transcript → pages
+│   │       ├── overlay-app/                # separate small overlay bundle
+│   │       ├── audio/                      # mic/loopback capture and worklet bridge
+│   │       ├── lib/                        # pure shared renderer helpers
+│   │       │   ├── meeting/                # meeting/context/presentation state and hooks
+│   │       │   ├── presentation/           # slide editor and forgiving import
+│   │       │   └── suggestions/            # safe suggestion rendering and history reducer
+│   │       ├── dev/                        # typed browser-preview bridge mocks
+│   │       └── env.d.ts                    # Vite client types
+│   └── shared/                              # cross-process IPC and domain contracts
+│       ├── presentation/                   # deck, timeline and shortcut contracts
+│       ├── live-controls/                  # context, admission and suggestion metadata contracts
+│       └── updates/                        # sanitized updater snapshots
+├── scripts/                                # repository, release and owner-operation tooling
+│   ├── release/                            # version, package, publish, install and smoke tooling
+│   └── owner/                              # redacted owner operation dispatch/logging
+├── .github/
+│   ├── workflows/                          # CI and manual release workflows
+│   └── actions/                            # shared local actions (Node/download-cache setup)
+├── docs/                                   # living docs and Docket items
+├── vite.renderer.config.ts                 # browser-only renderer preview
 └── STRUCTURE.md
 ```
 
 **Enforced homes:**
 
-- `src/main/windows/` — BrowserWindow builders (library window, overlay window) and the
-  main → all-windows broadcast
-- `src/main/ipc/` — typed IPC channel handlers; validate (`validate.ts`: ids, free text, the
-  job and settings payloads) + delegate, no business logic
-- `src/main/services/` — main-process services and provider seams: `stt/`, `turns/`, `assistant/`,
-  `email/`, `meetings/`, `audio-store/`, `retention/`, `history/`, plus main-side transcript
-  formatting
-- `src/main/services/turns/` — pure turn assembly (`turn-assembler.ts`, `types.ts`, which also owns
-  `IdentityRole`); no I/O, no timers
-- `src/main/services/meetings/` — the live meeting orchestrator (`index.ts`: lifecycle, STT wiring,
-  per-final persistence), export and the one delete path (`remove.ts`)
-- `src/main/services/meetings/assist/` — live assistance: the per-meeting assembly
-  (`live-session.ts`: prompt window, shown headlines, system prompt, runner + coordinator
-  wiring), coordinator, suggestion runner, request building, lane policy
-- `src/main/services/meetings/capture/` — capture-side identity (`channel-identity.ts`) and
-  capture health (`capture-health.ts`)
-- `src/main/services/meetings/status/` — which meeting is live and which are still being
-  rewritten after stop (the guards delete and merge consult)
-- `src/main/services/meetings/summary/` — meeting summaries (post-stop, on demand) and the
-  summary email
-- `src/main/services/meetings/rediarize/` — the batch re-diarization pass and the pin/name
-  carry-over it applies
-- `src/main/services/meetings/merge/` — merging split recordings (pure plan + DB apply)
-- `src/main/services/meetings/recovery/` — startup repair of meetings an earlier process left open
-- `src/main/db/` — better-sqlite3 connection, schema migrations, the text → FTS5 MATCH
-  builder (`fts-query.ts`, the only source of `FtsMatch`), and `sqlite-time.ts` (pure: the one
-  builder/parser of SQLite's UTC datetime text, used by retention and startup recovery)
+- `src/main/lifecycle/` — userData identity and normal startup wiring; normal startup is not loaded by smoke
+- `src/main/diagnostics/` — isolated, headless packaged diagnostics used by `--smoke`
+- `src/main/windows/` — BrowserWindow builders and the main → all-windows broadcast
+- `src/main/ipc/` — typed IPC handlers; validate ingress and delegate, with no business logic
+- `src/main/services/` — main-process services and provider seams
+- `src/main/services/stt/` — the swappable STT seam, Deepgram implementation and message normalization
+- `src/main/services/turns/` — pure turn assembly and identity-role types; no I/O or timers
+- `src/main/services/assistant/` — the swappable assistant seam and shared answer/classification logic
+- `src/main/services/assistant/coach/` — next-point eligibility policy and coach prompt construction
+- `src/main/services/assistant/presentation/` — presentation answer context, current-location hints and scoped coaching prompts
+- `src/main/services/assistant/live-controls/` — typed, detail and audience request instructions
+- `src/main/services/meetings/` — meeting lifecycle/STT/audio orchestration plus meeting-level facades
+- `src/main/services/meetings/assist/` — per-meeting prompt/grounding state, manual admission, automatic coordination and suggestion execution
+- `src/main/services/meetings/capture/` — capture-side identity and capture-health policy
+- `src/main/services/meetings/context/` — pure preparation followed by commit/publication of live context changes
+- `src/main/services/meetings/presentation/` — current cursor state and historical slide-marker formatting
+- `src/main/services/meetings/status/` — live-meeting identity and post-processing guards
+- `src/main/services/meetings/summary/` — meeting summaries, structured output handling and summary email
+- `src/main/services/meetings/rediarize/` — batch re-diarization and speaker identity/name carry-over
+- `src/main/services/meetings/merge/` — split-recording merge planning and application
+- `src/main/services/meetings/recovery/` — startup repair of meetings left open by an earlier process
+- `src/main/services/hotkeys/` — global shortcut registration/status, repeat suppression and callback containment
+- `src/main/services/updates/` — electron-updater integration and restart eligibility checks
+- `src/main/services/email/` — the email provider seam and SMTP implementation
+- `src/main/services/retention/` — recording/meeting cleanup timers, preview and execution
+- `src/main/services/history/` — FTS retrieval and grounded ask-your-history answers
+- `src/main/services/audio-store/` — WAV recording for accepted capture audio
+- `src/main/db/` — database connection lifecycle, consistent pre-upgrade backup, migrations and SQLite helpers
 - `src/main/db/repos/` — per-entity repositories; the only place SQL strings live
-- `src/main/config/` — settings persistence + API key storage, and the exhaustive per-key
-  settings schema (`settings-schema.ts`) that IPC validation consumes
-- `src/preload/` — contextBridge API surface exposed to the renderers, and its type declaration
-- `src/renderer/src/app/` — library UI React app: root component and entry point
-- `src/renderer/src/app/pages/` — one React component per library UI route/page
-- `src/renderer/src/app/settings/` — sections of the Settings page, one component each
-- `src/renderer/src/app/styles/` — the layered stylesheet (base → controls → shell → transcript →
-  pages) and the shared control vocabulary; no per-page stylesheets
-- `src/renderer/src/overlay-app/` — overlay UI React app (separate, deliberately tiny bundle)
-- `src/renderer/src/audio/` — renderer-side mic capture + AudioWorklet downsampling
-- `src/renderer/src/lib/` — pure presentation helpers shared across pages and both bundles
-- `src/renderer/src/lib/meeting/` — the meeting-state reducer and the meeting/transcript hooks
-- `src/renderer/src/lib/suggestions/` — the safe compact-suggestion parser/renderer used by both
-  renderer bundles, and the live whisper-history reducer/follow policy + its hook
-- `src/renderer/src/dev/` — the browser-preview mock of `window.sanas` (typed as
-  `Window['sanas']`; installed by both renderer entry points only when the build-time
-  `__SANAS_WEB_PREVIEW__` is true — set by `vite.renderer.config.ts`, false in the Electron build).
-  `src/renderer/src/env.d.ts` is the one file beside these folders: Vite client types.
-- `src/renderer/public/` — AudioWorklet processors and other assets served unbundled
-- `src/shared/` — types shared by main, preload and renderer (IPC channels, domain models),
-  suggestion labels, and the constrained knowledge-summary Markdown parser used by the meeting
-  view and summary email
-- `scripts/` — repo tooling scripts (git-hook installation, pre-commit)
+- `src/main/config/` — settings/secrets persistence and exhaustive settings validation
+- `src/preload/` — typed contextBridge surface exposed to renderers
+- `src/renderer/src/app/` — library UI root and entry point
+- `src/renderer/src/app/pages/` — one component per library route/page
+- `src/renderer/src/app/jobs/` — job-specific editors, currently the presentation deck editor
+- `src/renderer/src/app/settings/` — one component per Settings section, including independent update state
+- `src/renderer/src/app/styles/` — layered shared stylesheet; no per-page stylesheets
+- `src/renderer/src/overlay-app/` — deliberately small, separate overlay bundle
+- `src/renderer/src/audio/` — renderer capture and AudioWorklet downsampling
+- `src/renderer/src/lib/` — pure presentation helpers shared across renderer pages and bundles
+- `src/renderer/src/lib/meeting/` — meeting, context and presentation reducers/hooks
+- `src/renderer/src/lib/presentation/` — reusable slide editing and import UI/helpers
+- `src/renderer/src/lib/suggestions/` — text-safe compact/detail renderers and live history state
+- `src/renderer/src/dev/` — browser-preview implementation of the typed preload bridge
+- `src/renderer/public/` — AudioWorklet processors and other unbundled assets
+- `src/shared/` — types shared by main, preload and renderer
+- `src/shared/presentation/` — deck, historical timeline and shortcut status contracts
+- `src/shared/live-controls/` — meeting-context, manual-admission and suggestion metadata contracts
+- `src/shared/updates/` — renderer-safe update state and operation contracts
+- `scripts/` — repository tooling plus release and owner-operation entry points
+- `scripts/release/` — versioning, asset/package checks, publication, installation and packaged smoke
+- `scripts/owner/` — redacted logs and owner-only release operation dispatch
+- `.github/workflows/` — CI and manual release workflows
+- `.github/actions/` — shared local workflow actions, including Node/download-cache setup
 
-Tests are colocated `*.test.ts` files (vitest, `npm test`) beside the module they cover:
-`services/turns/turn-assembler`, `services/stt/deepgram-events` and `deepgram`;
-`services/assistant/` triggers, classifier, coach-policy, coach-prompts, prompts, claude and
-completion-result; `services/meetings/assist/` live-assistance, suggestion-runner and
-suggestion-in-flight; `services/meetings/capture/` capture-health and channel-identity;
-`services/meetings/` `rediarize/speaker-carryover`, `merge/merge-plan`, `status/post-processing`
-and `recovery/startup-recovery`; `meetings/summary/summary-output`;
-`services/assistant/compact-contract`; `config/settings`,
-`db/fts-query`, `db/sqlite-time`, `ipc/validate`, `shared/search-markers`,
-`shared/suggestion-label`, `shared/summary-markdown`, and the renderer helpers (`lib/glossary-input`,
-`lib/meeting/meeting-state`, `lib/suggestions/` CompactSuggestion + whisper-history,
-`overlay-app/` overlay-split).
-Services that read settings are tested by mocking electron/fs (`config/settings.test.ts`).
-DB-bound code (repos, migrations) has none — better-sqlite3 is built for Electron's ABI, so
-vitest cannot load it.
+Tests are colocated `*.test.ts`/`*.test.tsx` files (Vitest, `npm test`) beside the modules they
+cover. Coverage includes provider normalization, turn/assistant policy, presentation and live-control
+state/admission/grounding, meeting lifecycle and post-processing, startup/backup/smoke/update wiring,
+IPC validation, renderer reducers/renderers, shared timeline/format helpers, window behavior, and
+release scripts. Repository SQL remains exercised through Electron-ABI diagnostics rather than
+ordinary Vitest loading of `better-sqlite3`.
 
-Deliberately _not_ homes: the repo root (config + docs only), `src/main/` itself and
-`src/renderer/src/` itself. New main-process code belongs in a responsibility folder above,
-not beside `index.ts` / `system-audio.ts`.
+Deliberately _not_ homes: the repository root, `src/main/` itself, and `src/renderer/src/` itself.
+New main-process code belongs in a responsibility folder above, not beside `index.ts` or
+`system-audio.ts`.
 
 ## Responsibility boundaries (the seams that matter)
 
-- **Providers are interfaces** — `SttProvider`, `AssistantProvider` and `EmailProvider`
-  isolate Deepgram, Claude and SMTP so any can be swapped without touching orchestration or UI.
-- **`ipc/` stays thin** — handlers validate + delegate to `services/`; no business logic
-  in IPC glue. Renderer never talks to APIs or the DB directly.
-- **Turn detection, classification and coaching are their own modules.** `stt/deepgram-events`
-  normalizes provider messages, `turns/turn-assembler` closes turns, and `assistant/triggers`
-  (prefilter), `classifier` and `coach-policy` decide — all pure or behind the provider seam.
-  `meetings/assist/live-assistance` is only the coordinator (turn assembly, timers, admission,
-  freshness, cancellation; no SQL or SDK imports); `suggestion-runner` owns generation and
-  persistence. Keep all of it out of the Claude client.
-- **Repos own SQL** — no SQL strings outside `db/repos/`. FTS5 MATCH expressions are built
-  only by `db/fts-query.ts` from user text (every token quoted), never concatenated elsewhere.
-- **Overlay is a separate bundle** from the main renderer — it must stay tiny and fast.
-- **Settings sections are components** — `app/settings/` holds one file per section;
-  `SettingsPage` owns the draft and the save, nothing else.
-- **Styles are layered, not per page** — `app/styles/` is tokens → base → controls → shell →
-  transcript → pages. Page markup uses the shared vocabulary (`.btn`, `.field`, `.card`,
-  `.chip`, `.line`); a page-specific rule goes in `pages.css`, never a per-page stylesheet.
-  State modifiers are bare classes (`live`, `active`, `me`); page roots are `*-page`.
+- **Startup modes stay isolated.** `main/index.ts` selects `--smoke` before importing normal startup;
+  diagnostics use disposable userData and never initialize windows, IPC, providers, audio, retention,
+  or updates.
+- **Providers are interfaces.** `SttProvider`, `AssistantProvider` and `EmailProvider` isolate
+  Deepgram, Claude and SMTP so any can be swapped without changing orchestration or UI.
+- **`ipc/` stays thin.** Handlers validate and delegate to `services/`; renderers never access APIs,
+  secrets or the database directly.
+- **Meeting lifecycle and live controls are separate.** `meetings/index.ts` owns lifecycle, STT, audio
+  and final persistence. `meetings/live-controls.ts` serializes context, manual request, answer-mode and
+  slide actions against injected lifecycle state.
+- **Assistance policy stays split.** `turns/turn-assembler` closes turns; assistant triggers,
+  classifier and coach policy decide; `meetings/assist/manual-requests` admits explicit requests;
+  `live-assistance` coordinates automatic work; `suggestion-runner` owns generation and persistence.
+- **Prompt snapshots are synchronous and read-only.** `meetings/assist/meeting-prompts.ts` resolves and
+  caches immutable grounding when context changes; request snapshots perform no database writes.
+- **Presentation/context publication follows persistence.** Meeting context and slide cursor state are
+  published only after their repository writes succeed; historical views use immutable deck versions
+  and recorded events.
+- **Repos own SQL.** No SQL strings live outside `db/repos/`; FTS5 expressions come only from
+  `db/fts-query.ts`, and repository row types do not depend on service modules.
+- **Updates expose sanitized state only.** Packaged normal startup owns updater network traffic and
+  restart checks; renderer IPC is limited to typed snapshots and get/check/restart operations.
+- **Overlay is a separate bundle.** It remains small and receives all privileged data through preload.
+- **Settings and styles have fixed homes.** Settings sections are components under `app/settings/`;
+  styles remain one layered vocabulary under `app/styles/`.
 
 ## Structural debt
 
-- `windows/main-window.ts` + `overlay-window.ts` share webPreferences/load-URL
-  boilerplate — extract a `createAppWindow(opts)` helper if a third window appears
-  (deliberately not abstracted at two call sites).
-- `AssistRequest.model`, `AssistRequest.effort` and `AssistRequest.workspaceId` on the
-  provider seam map closely to Anthropic-specific knobs (Claude model IDs, output effort,
-  and the `anthropic-workspace-id` header). A second provider would need its own model-ID
-  settings and interpretation of low/medium/high, and likely no workspace concept at all.
-- `services/meetings/index.ts` reaches STT through the `stt/index.ts` seam but still imports
-  `claudeProvider` concretely (no DI/composition root) — deliberate while there is exactly one
-  of each; the swap point is one import line (`services/email/index.ts` and
-  `services/history/index.ts` follow the same pattern).
-  Revisit only when a second provider actually exists.
-- SMTP password sits in plain `settings.json` next to the API keys — same trust model,
-  same debt; `safeStorage` encryption for all three is one change if it ever matters.
-- `EmailProvider.send(config, mail)` takes an SMTP-shaped `SmtpConfig` (host/port/user/pass),
-  so a REST transport (Resend/SendGrid — rejected in DECISIONS.md) would change the seam's
-  signature and its one caller, not just add an implementation. Deliberate while SMTP is the
-  chosen design. A second builder of that config (none planned) is the point to extract
-  `smtpConfigFromSettings()`, not before.
-
-(2026-08-27 review: transcript formatting/windowing extracted to
-`services/transcript-format.ts`; summary prompt moved into `assistant/prompts.ts`.
-2026-09-08: summary split out of the orchestrator into `meetings/summarize.ts` when the
-on-demand path was added. 2026-10-29: live-assist state + wiring extracted from
-`meetings/index.ts` into `meetings/assist/live-session.ts`; `meetings/` and renderer `lib/`
-grouped into responsibility subfolders; `IdentityRole` moved into `turns/types.ts`;
-SQLite datetime text centralised in `db/sqlite-time.ts`.)
-
-## Presentation mode (2026-10-30)
-
-- `shared/presentation/`: deck contracts and limits, historical timeline ordering, shortcut status types.
-- `db/repos/job-slides.ts`, `meeting-presentation.ts`, `presentation-schema.ts`: atomic deck replacement, immutable snapshots/events, v6 DDL. Existing v1?v5 SQL remains in migrations.ts; new SQL stays in repos.
-- `assistant/coach/`: moved coach policy/prompts and tests; `assistant/presentation/`: deck context, current-location hint, restricted coach prompt.
-- `meetings/presentation/`: cursor with persistence-before-publication and recorded transcript formatting; `assist/presentation-evidence.ts`: independent visit evidence.
-- `services/hotkeys/`: registration/status, callback errors and repeat suppression.
-- Renderer `app/jobs/`: presentation editor and forgiving paste preview; `overlay-app/SlidePanel.tsx`: teleprompter; `lib/meeting/`: presentation hydration/revision checks.
-
-Presentation tests are colocated with these modules. The browser mock is isolated in `dev/mock-presentation.ts`.
-
-## Live controls (2026-10-30)
-
-- `shared/live-controls/types.ts` owns meeting-context and manual-admission contracts and suggestion metadata.
-- `db/repos/live-controls-schema.ts` appends v7; `meeting-context.ts` owns atomic revision/deck/event writes; `suggestion-grounding.ts` owns immutable cached prompt snapshots and source lookup.
-- `meetings/context/session.ts` prepares Apply and publishes only after commit. The lifecycle queue serializes Apply and manual admission; provider completion does not occupy it.
-- `meetings/assist/manual-requests.ts` builds typed/detail/audience requests; the existing runner retains lanes, timeouts, persistence and post-processing holds. `assistant/live-controls/prompts.ts` owns their instructions.
-- `ipc/live-controls*.ts` validates and delegates through the typed preload bridge.
-- `lib/presentation/SlideListEditor.tsx` and the moved import component/parser serve job and meeting editors. `lib/meeting/MeetingContextEditor.tsx` owns drafts; its hook/reducer reject stale hydration.
-- Overlay settings, resize and split wiring now live in `useOverlaySettings`, `useOverlayResize`, `useSplitDrag`; `OverlaySuggestions` owns history and manual actions, `OverlayComposer` owns keyboard/draft state.
-- `SuggestionContent` dispatches compact or full text-safe `DetailedSuggestion` rendering in both windows. Preview live controls live in `dev/mock-live-controls.ts`.
-
-## Release and startup homes
-
-- main/lifecycle owns userData identity and normal startup; main/index.ts selects diagnostics before
-  importing normal services. main/diagnostics owns isolated headless smoke, with probe SQL in db/repos.
-- main/db/backup.ts owns consistent pre-upgrade backups; db/index.ts publishes the connection only
-  after asynchronous initialization succeeds and closes it on final shutdown.
-- main/services/updates owns electron-updater and click-time restart checks; shared/updates carries
-  sanitized snapshots. ipc/updates and preload expose only get/check/restart/change.
-- renderer app/settings/UpdatesSection owns independent update state; dev/mock-updates supplies the
-  typed offline preview. post-processing retains its per-meeting counts and exposes an aggregate.
-- scripts/release owns versioning, local asset/package checks, draft publication, packaged smoke and
-  owner dispatch/install commands. scripts/owner owns redacted operation logs. .github/actions owns
-  shared Node/download-cache setup. Tests are colocated with these modules, including release scripts.
+- `windows/main-window.ts` and `overlay-window.ts` share webPreferences/load-URL boilerplate. Extract a
+  `createAppWindow(opts)` helper only if a third window appears.
+- `AssistRequest.model`, `AssistRequest.effort` and `AssistRequest.workspaceId` map closely to
+  Anthropic-specific knobs. A second provider will need its own model settings and interpretation.
+- `services/meetings/assist/live-session.ts` imports `claudeProvider` concretely. This is deliberate
+  while there is one assistant provider; the swap point remains one import line.
+- SMTP credentials use the same plain local-settings trust model as API keys. `safeStorage` encryption
+  for all secrets should be one future change if required.
+- `EmailProvider.send(config, mail)` takes an SMTP-shaped configuration. A non-SMTP transport would
+  change the seam and its caller; do not abstract it before a second transport exists.
