@@ -249,6 +249,8 @@ starts this logger or writes there.
   mono the user must pin their voice or coaching never starts. Unknown identity never coaches,
   and `pinSpeaker` throws for stereo meetings.
 
+- **Vitest in CI has no Electron binary** (`npm ci --ignore-scripts`): main-process tests must mock any module that imports `electron` (directly or transitively), or they fail on Linux while passing on Windows. Check with `node_modules/electron/path.txt` temporarily renamed.
+
 ## Running it
 
 - `npm run dev` needs a real terminal. Driven from a non-interactive shell (an agent, a

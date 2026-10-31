@@ -90,6 +90,10 @@ vi.mock('../../db/repos/segments', () => ({
   setSpeakerIsUser: vi.fn(),
 }))
 vi.mock('../../windows/broadcast', () => ({ broadcast: vi.fn() }))
+vi.mock('../screen-capture', () => ({
+  createScreenCapture: () => ({ target: vi.fn(), acquire: vi.fn() }),
+}))
+vi.mock('../../windows/overlay-window', () => ({ overlayBounds: vi.fn(() => null) }))
 
 import {
   currentState,
