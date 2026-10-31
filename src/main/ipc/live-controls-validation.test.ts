@@ -26,3 +26,17 @@ it('validates text bounds, identities, revisions and selected slides without tru
     text: 'hello',
   })
 })
+it('accepts only a main-issued token for an attached screen, never a capture kind or image', () => {
+  const token = '123e4567-e89b-42d3-a456-426614174000'
+  expect(
+    requireManualRequest({ meetingId: 1, kind: 'typed', text: 'why?', captureToken: token }),
+  ).toEqual({ meetingId: 1, kind: 'typed', text: 'why?', captureToken: token })
+  for (const captureToken of ['C:\\Users\\x.png', 'data:image/png;base64,AAAA', 42, ''])
+    expect(() =>
+      requireManualRequest({ meetingId: 1, kind: 'typed', text: 'why?', captureToken }),
+    ).toThrow('Invalid screen attachment')
+  // a renderer cannot ask for an image request directly
+  expect(() =>
+    requireManualRequest({ meetingId: 1, kind: 'capture', image: { base64: 'AAAA' } }),
+  ).toThrow('Invalid manual request kind')
+})

@@ -71,6 +71,19 @@ describe('suggestion runner', () => {
     expect(runner.inFlight()).toEqual({ ambient: true, hotkey: true })
   })
 
+  it('forwards a screenshot to the provider but persists only the text prompt', async () => {
+    const { runner, pending, stored, events } = harness()
+    const image = { mediaType: 'image/png' as const, base64: 'cGl4ZWxz' }
+    runner.start(answer({ trigger: 'hotkey', manualKind: 'capture', image }))
+    expect(pending[0].req.image).toEqual(image)
+    pending[0].resolve('**Fix**')
+    await vi.runAllTimersAsync()
+    expect(stored[0].promptWindow).toBe('window')
+    expect(JSON.stringify(stored[0])).not.toContain('cGl4ZWxz')
+    expect(JSON.stringify(events)).not.toContain('cGl4ZWxz')
+    expect(events.at(-1)).toMatchObject({ kind: 'done', manualKind: 'capture' })
+  })
+
   it('streams an answer and persists the request snapshot it was given', async () => {
     const { runner, pending, events, stored, holds } = harness()
     const req = answer()

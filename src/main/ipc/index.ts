@@ -1,6 +1,7 @@
 import { registerUpdatesIpc } from './updates'
 import { ipcMain } from 'electron'
 import { registerLiveControlsIpc } from './live-controls'
+import { registerScreenCaptureIpc } from './screen-capture'
 import { registerPresentationIpc } from './presentation'
 import { IPC } from '@shared/ipc'
 import { loadSettings, saveSettings, toView } from '../config/settings'
@@ -60,6 +61,7 @@ export function registerIpcHandlers(): void {
   registerUpdatesIpc()
   registerPresentationIpc()
   registerLiveControlsIpc()
+  registerScreenCaptureIpc()
   ipcMain.handle(IPC.SettingsGet, () => toView(loadSettings()))
 
   ipcMain.handle(IPC.SettingsSet, (_e, raw: unknown) => {

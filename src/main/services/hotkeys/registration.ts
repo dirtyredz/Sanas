@@ -1,4 +1,4 @@
-import type { HotkeyAction, HotkeyStatus } from '@shared/presentation/hotkeys'
+import type { HotkeyAction, HotkeyStatus } from '@shared/hotkeys/types'
 
 let statuses: HotkeyStatus[] = []
 export function hotkeyStatus(): HotkeyStatus[] {
@@ -14,6 +14,7 @@ export function registerShortcuts(
 ): HotkeyStatus[] {
   const seen = new Set<string>()
   let lastMove = -Infinity
+  let lastCapture = -Infinity
   statuses = (Object.keys(callbacks) as HotkeyAction[]).map((action) => {
     const accelerator = settings[action] ?? ''
     try {
@@ -30,6 +31,12 @@ export function registerShortcuts(
           const time = now()
           if (time - lastMove < 200) return
           lastMove = time
+        }
+        // a held capture shortcut auto-repeats: one capture per deliberate press
+        if (action === 'captureHotkey') {
+          const time = now()
+          if (time - lastCapture < 1000) return
+          lastCapture = time
         }
         try {
           Promise.resolve(callbacks[action]?.()).catch(report)

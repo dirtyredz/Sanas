@@ -9,6 +9,7 @@ import type { PresentationState } from '@shared/presentation/types'
 import { getMeetingContext, saveMeetingContext } from '../../db/repos/meeting-context'
 import { broadcast } from '../../windows/broadcast'
 import type { LiveSession } from './assist/live-session'
+import type { CaptureRequests } from './assist/capture-requests'
 import { applyContext } from './context/session'
 import type { PresentationSession } from './presentation/session'
 import { isLiveMeeting, liveMeetingId } from './status/live-meeting'
@@ -17,6 +18,7 @@ interface LiveControlsDeps {
   serialize<T>(fn: () => Promise<T>): Promise<T>
   clockMs(): number
   live: LiveSession
+  captures: Pick<CaptureRequests<unknown>, 'sendWithDraft'>
   presentation: PresentationSession
 }
 
@@ -61,6 +63,9 @@ export function createLiveControls(deps: LiveControlsDeps): {
     requestAssist: (input) =>
       deps.serialize(async () => {
         if (!isLiveMeeting(input.meetingId)) throw new Error('This meeting is no longer active.')
+        // a typed question with an attached screen sends the main-owned draft, never text alone
+        if (input.kind === 'typed' && input.captureToken)
+          return deps.captures.sendWithDraft(input, input.captureToken)
         return deps.live.request(input)
       }),
     answerEveryQuestionState,

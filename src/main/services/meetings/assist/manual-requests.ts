@@ -7,10 +7,28 @@ import {
   TYPED_INSTRUCTION,
   meetingContextBlock,
 } from '../../assistant/live-controls/prompts'
+import {
+  CAPTURE_DETAIL_NOTE,
+  CAPTURE_INSTRUCTION,
+  CAPTURE_MAX_TOKENS,
+  TYPED_CAPTURE_INSTRUCTION,
+} from '../../assistant/live-controls/capture-prompts'
+import type { AssistImage } from '../../assistant/types'
 import { renderTranscriptWindow } from '../../transcript-format'
 import { presentationHint } from '../../assistant/presentation/prompts'
 import { answerRequest, type AssistSettings, type AssistSnapshot } from './suggestion-requests'
 import type { SuggestionHandle, SuggestionRequest } from './suggestion-runner'
+
+/** A request that carries a screenshot. Built only in main, from a fresh capture or a
+ *  main-owned composer draft — never from renderer input directly. */
+export interface CaptureInput {
+  meetingId: number
+  kind: 'capture'
+  /** The typed question when the screen was attached in the composer. */
+  text?: string
+  image: AssistImage
+}
+export type AssistInput = ManualRequest | CaptureInput
 
 export interface ManualAdmissionDeps {
   canStart(): boolean
@@ -24,7 +42,7 @@ export interface ManualAdmissionDeps {
 export function manualRequest(
   snap: AssistSnapshot,
   settings: AssistSettings,
-  input: ManualRequest,
+  input: AssistInput,
   source?: SuggestionGroundingRow,
 ): SuggestionRequest {
   const base = answerRequest(snap, settings, 'hotkey')
@@ -38,7 +56,7 @@ export function manualRequest(
       !source ||
       source.meetingId !== input.meetingId ||
       source.purpose !== 'answer' ||
-      (source.manualKind && source.manualKind !== 'typed') ||
+      (source.manualKind && source.manualKind !== 'typed' && source.manualKind !== 'capture') ||
       !source.groundingContextId
     )
       throw new Error('This answer cannot be expanded.')
@@ -56,8 +74,24 @@ export function manualRequest(
         source.promptWindow +
         '\n</original-request>\n<source-answer>\n' +
         source.text +
-        '\n</source-answer>',
+        '\n</source-answer>' +
+        (source.manualKind === 'capture' ? '\n' + CAPTURE_DETAIL_NOTE : ''),
       maxTokens: 2400,
+    }
+  }
+  if (input.kind === 'capture') {
+    const question = input.text?.trim()
+    return {
+      ...base,
+      image: input.image,
+      requestText: question || undefined,
+      maxTokens: CAPTURE_MAX_TOKENS,
+      maxRetries: 0, // one explicit action, one provider call
+      userContent:
+        (question ? TYPED_CAPTURE_INSTRUCTION : CAPTURE_INSTRUCTION) +
+        '\n' +
+        context +
+        (question ? '\n<typed-request>\n' + question + '\n</typed-request>' : ''),
     }
   }
   if (input.kind === 'audience')
@@ -91,7 +125,7 @@ export function manualRequest(
 export function admitManual(
   deps: ManualAdmissionDeps,
   snap: AssistSnapshot | null,
-  input: ManualRequest,
+  input: AssistInput,
 ): Admission {
   if (!deps.canStart())
     return { accepted: false, reason: 'busy', message: 'A requested answer is already running.' }
@@ -116,7 +150,7 @@ export function admitManual(
     return {
       accepted: false,
       reason: 'unavailable',
-      message: 'No Anthropic API key set â€” add it in Settings.',
+      message: 'No Anthropic API key set — add it in Settings.',
     }
   deps.admitted()
   return deps.start(request)

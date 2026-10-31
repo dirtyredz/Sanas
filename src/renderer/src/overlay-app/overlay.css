@@ -576,3 +576,33 @@ body.overlay-body {
   margin: 0;
   padding: 4px 8px;
 }
+/* screen capture: status line and the composer's attached-screen thumbnail */
+.capture-status {
+  flex-basis: 100%;
+  margin: 2px 0 0;
+  font-size: 12px;
+}
+.composer-attachment {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 4px 0;
+}
+.composer-attachment figure {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  flex-basis: 100%;
+}
+.composer-attachment img {
+  max-width: 96px;
+  max-height: 64px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 3px;
+}
+.composer-attachment figcaption {
+  font-size: 11px;
+  opacity: 0.8;
+}

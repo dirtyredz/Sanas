@@ -8,7 +8,8 @@ export function SuggestionContent({
   text: string
   manualKind?: ManualKind | null
 }): React.JSX.Element {
-  return manualKind === 'detail' ? (
+  // detail and screen answers carry prose plus a fix block: the compact renderer would drop it
+  return manualKind === 'detail' || manualKind === 'capture' ? (
     <DetailedSuggestion text={text} />
   ) : (
     <CompactSuggestion text={text} />

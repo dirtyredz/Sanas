@@ -162,6 +162,8 @@ export interface Settings {
   whisperMode: WhisperMode
   overlayHotkey: string
   assistHotkey: string
+  /** Capture the screen under the overlay and explain it (Capture screen). */
+  captureHotkey: string
   presentationPrevHotkey: string
   presentationNextHotkey: string
   audioDeviceId: string

@@ -1,6 +1,7 @@
 import type { ContextUpdate, ManualRequest } from '@shared/live-controls/types'
 import { validateSlides } from '../../shared/presentation/types'
 import { requireId } from './validate'
+import { requireCaptureToken } from './screen-capture-validation'
 
 function object(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value))
@@ -51,7 +52,9 @@ export function requireManualRequest(raw: unknown): ManualRequest {
   if (r.kind === 'typed') {
     const value = text(r.text, 4000)
     if (!value.trim()) throw new Error('Enter a question or instruction.')
-    return { meetingId, kind: r.kind, text: value }
+    return r.captureToken === undefined
+      ? { meetingId, kind: r.kind, text: value }
+      : { meetingId, kind: r.kind, text: value, captureToken: requireCaptureToken(r.captureToken) }
   }
   throw new Error('Invalid manual request kind.')
 }

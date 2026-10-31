@@ -26,6 +26,7 @@ import type {
 // Typed against SanasApi (via the global Window augmentation) so it cannot drift.
 
 import { mockLiveControls } from './mock-live-controls'
+import { mockScreenCapture } from './mock-screen-capture'
 type SanasApi = Window['sanas']
 
 const jobs: Job[] = [
@@ -232,6 +233,7 @@ let settings: SettingsView = {
   whisperMode: 'smart',
   overlayHotkey: 'CommandOrControl+Shift+Space',
   assistHotkey: 'CommandOrControl+Shift+Enter',
+  captureHotkey: 'Control+Shift+S',
   presentationPrevHotkey: 'CommandOrControl+Alt+PageUp',
   presentationNextHotkey: 'CommandOrControl+Alt+PageDown',
   audioDeviceId: '',
@@ -386,6 +388,10 @@ const api: SanasApi = {
   updates: mockUpdates,
   meetingContext: controls.meetingContext,
   presentation: mockPresentation,
+  screenCapture: mockScreenCapture(
+    () => state.meetingId,
+    (event) => suggestionListeners.forEach((cb) => cb(event)),
+  ),
   hotkeys: { getStatus: async () => [] },
   settings: {
     get: async () => settings,

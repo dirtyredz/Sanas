@@ -60,3 +60,27 @@ it('suppresses repeats and contains synchronous and asynchronous callback failur
   await Promise.resolve()
   expect(report).toHaveBeenCalledTimes(2)
 })
+it('fires one screen capture per deliberate press of a held shortcut', () => {
+  const registered: (() => void)[] = []
+  let now = 0
+  const capture = vi.fn()
+  const status = registerShortcuts(
+    (_key, cb) => {
+      registered.push(cb)
+      return true
+    },
+    { captureHotkey: 'Control+Shift+S' },
+    { captureHotkey: capture },
+    vi.fn(),
+    () => now,
+  )
+  expect(status).toEqual([
+    { action: 'captureHotkey', accelerator: 'Control+Shift+S', registered: true },
+  ])
+  registered[0]()
+  now = 300
+  registered[0]() // auto-repeat
+  now = 1200
+  registered[0]()
+  expect(capture).toHaveBeenCalledTimes(2)
+})

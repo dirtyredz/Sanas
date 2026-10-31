@@ -1,5 +1,15 @@
 import { expect, it } from 'vitest'
-import { composerAction, composerReducer } from './OverlayComposer'
+import { attachmentAfterSend, composerAction, composerReducer } from './OverlayComposer'
+it('clears the attached screen only when it was sent or has expired in main', () => {
+  expect(attachmentAfterSend({ accepted: true })).toBe('clear')
+  expect(
+    attachmentAfterSend({ accepted: false, reason: 'attachment-expired', message: 'gone' }),
+  ).toBe('clear')
+  expect(attachmentAfterSend({ accepted: false, reason: 'busy', message: 'busy' })).toBe('keep')
+  expect(attachmentAfterSend({ accepted: false, reason: 'unavailable', message: 'no key' })).toBe(
+    'keep',
+  )
+})
 it('submits Enter, preserves Shift+Enter and IME, and closes on Escape', () => {
   expect(composerAction('Enter', false, false)).toBe('submit')
   expect(composerAction('Enter', true, false)).toBeNull()

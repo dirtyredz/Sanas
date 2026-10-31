@@ -1,6 +1,6 @@
 import type { SettingsView } from '@shared/types'
 import { useEffect, useState } from 'react'
-import type { HotkeyStatus } from '@shared/presentation/hotkeys'
+import type { HotkeyStatus } from '@shared/hotkeys/types'
 import { hotkeyLabel } from '../../lib/hotkey-label'
 import { SettingsSection } from './SettingsSection'
 
@@ -50,6 +50,21 @@ export function HotkeysSection({
           onChange={(e) => onChange({ assistHotkey: e.target.value })}
         />
         <small>Pops the overlay and streams a full answer to the current moment.</small>
+      </label>
+      <label className="field">
+        <span className="label">
+          Capture screen <span className="kbd">{hotkeyLabel(view.captureHotkey)}</span>
+        </span>
+        <input
+          type="text"
+          className="mono"
+          value={view.captureHotkey}
+          onChange={(e) => onChange({ captureHotkey: e.target.value })}
+        />
+        <small>
+          Captures the screen under the overlay and explains it — for code, the error, likely cause
+          and a minimal fix. The image is sent once and not saved.
+        </small>
       </label>
       {(['presentationPrevHotkey', 'presentationNextHotkey'] as const).map((key, i) => (
         <label className="field" key={key}>

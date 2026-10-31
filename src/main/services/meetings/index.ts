@@ -1,4 +1,6 @@
 import { IPC } from '@shared/ipc'
+import type { Admission } from '@shared/live-controls/types'
+import type { CaptureAttachResult, CaptureStatus } from '@shared/live-controls/capture'
 import type { ChannelCount, MeetingState, Settings, TranscriptEvent } from '@shared/types'
 import { loadSettings } from '../../config/settings'
 import { sttProvider } from '../stt'
@@ -23,6 +25,10 @@ import {
 } from '../../db/repos/meeting-presentation'
 import { PresentationSession } from './presentation/session'
 import { createLiveControls } from './live-controls'
+import { CaptureRequests } from './assist/capture-requests'
+import { createScreenCapture } from '../screen-capture'
+import { CaptureDrafts } from '../screen-capture/drafts'
+import { overlayBounds } from '../../windows/overlay-window'
 
 // Orchestrates one live meeting at a time: STT session, persistence, event fan-out, and
 // lifecycle. Live assistance — the prompt window, shown headlines, system prompt and the
@@ -81,10 +87,24 @@ function serialized<T>(fn: () => Promise<T>): Promise<T> {
   return run
 }
 
+const screenCapture = createScreenCapture(overlayBounds)
+const captures = new CaptureRequests({
+  serialize: serialized,
+  liveMeetingId,
+  canRequest: () => live.canRequest(),
+  apiKeySet: () => loadSettings().anthropicApiKey.length > 0,
+  target: screenCapture.target,
+  acquire: screenCapture.acquire,
+  request: (input) => live.request(input),
+  status: (status) => broadcast(IPC.ScreenCaptureStatus, status),
+  drafts: new CaptureDrafts(),
+})
+
 const liveControls = createLiveControls({
   serialize: serialized,
   clockMs: () => audioMsReceived,
   live,
+  captures,
   presentation,
 })
 
@@ -254,6 +274,7 @@ export function startMeeting(jobId?: number, channels: ChannelCount = 1): Promis
 
     const job = jobId ?? ensureDefaultJob()
     const id = createPresentationMeeting(job, `Meeting ${new Date().toLocaleString()}`)
+    captures.meetingChanged() // drafts and feedback belong to one meeting
     setLiveMeeting(id)
     meetingJobId = job
     meetingChannels = channels
@@ -382,6 +403,7 @@ export function stopMeeting(): Promise<MeetingState> {
     const endedId = liveMeetingId()
     if (endedId !== null) {
       setLiveMeeting(null) // released first: a failure below must not strand the lifecycle
+      captures.meetingChanged() // composer drafts go with the meeting; a capture in flight is dropped
       try {
         endMeeting(endedId)
       } catch (e) {
@@ -421,6 +443,17 @@ export function answerNow(): void {
   if (liveMeetingId() === null) return
   assistance.answerNow()
 }
+
+/** Capture screen (overlay button or shortcut). The display is chosen synchronously inside
+ *  this call, so the shortcut calls it BEFORE revealing the overlay. */
+export const captureScreen = (meetingId: number | null = null): Promise<Admission> =>
+  captures.capture(meetingId)
+export const attachScreen = (meetingId: number): Promise<CaptureAttachResult> =>
+  captures.attach(meetingId)
+export const discardScreen = (meetingId: number, token: string): void =>
+  captures.discard(meetingId, token)
+export const captureStatus = (): CaptureStatus => captures.status()
+export const screenRendererGone = (): void => captures.rendererGone()
 
 export const updateMeetingContext = liveControls.updateMeetingContext
 export const requestAssist = liveControls.requestAssist

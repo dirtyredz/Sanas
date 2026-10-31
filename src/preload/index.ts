@@ -5,10 +5,11 @@ import type {
   ManualRequest,
   MeetingContext,
 } from '../shared/live-controls/types'
+import type { CaptureAttachResult, CaptureStatus } from '../shared/live-controls/capture'
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC } from '../shared/ipc'
 import type { Slide, PresentationState, PresentationHistory } from '../shared/presentation/types'
-import type { HotkeyStatus } from '../shared/presentation/hotkeys'
+import type { HotkeyStatus } from '../shared/hotkeys/types'
 import type {
   GlossaryTerm,
   HistoryEvent,
@@ -49,6 +50,19 @@ const api = {
       ipcRenderer.invoke(IPC.MeetingContextUpdate, request),
     onChanged: (cb: (context: MeetingContext) => void): (() => void) =>
       subscribe(IPC.MeetingContextChanged, cb),
+  },
+  screenCapture: {
+    /** Capture screen: captures the display under the overlay and asks for an answer. */
+    capture: (meetingId: number): Promise<Admission> =>
+      ipcRenderer.invoke(IPC.ScreenCapture, meetingId),
+    /** Attach screen: a main-owned draft for the composer; resolves with its thumbnail. */
+    attach: (meetingId: number): Promise<CaptureAttachResult> =>
+      ipcRenderer.invoke(IPC.ScreenCaptureAttach, meetingId),
+    discard: (meetingId: number, token: string): Promise<void> =>
+      ipcRenderer.invoke(IPC.ScreenCaptureDiscard, meetingId, token),
+    getStatus: (): Promise<CaptureStatus> => ipcRenderer.invoke(IPC.ScreenCaptureStatusGet),
+    onStatus: (cb: (status: CaptureStatus) => void): (() => void) =>
+      subscribe(IPC.ScreenCaptureStatus, cb),
   },
   hotkeys: { getStatus: (): Promise<HotkeyStatus[]> => ipcRenderer.invoke(IPC.HotkeysStatus) },
   presentation: {

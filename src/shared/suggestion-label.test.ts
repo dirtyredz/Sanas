@@ -16,6 +16,13 @@ describe('suggestion labels', () => {
     expect(suggestionArrivalLabel(coach)).toBe('New next point')
   })
 
+  it('names every manual kind, including screen answers', () => {
+    const base = { trigger: 'hotkey', purpose: 'answer' } as const
+    expect(suggestionLabel({ ...base, manualKind: 'typed' })).toBe('Typed answer')
+    expect(suggestionLabel({ ...base, manualKind: 'capture' })).toBe('Screen answer')
+    expect(suggestionLabel({ ...base, manualKind: 'detail' })).toBe('More detail')
+  })
+
   it('keeps the existing arrival notice for answers', () => {
     expect(suggestionArrivalLabel({ trigger: 'ambient', purpose: 'answer' })).toBe('New answer')
     expect(suggestionArrivalLabel({ trigger: 'hotkey', purpose: 'answer' })).toBe('New answer')

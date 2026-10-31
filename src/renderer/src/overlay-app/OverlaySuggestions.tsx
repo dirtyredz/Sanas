@@ -7,6 +7,7 @@ import {
 } from '../lib/suggestions/useSuggestionHistory'
 import { useMeetingContext } from '../lib/meeting/useMeetingContext'
 import { OverlayComposer } from './OverlayComposer'
+import { OverlayCaptureAction } from './capture/OverlayCaptureAction'
 export function OverlaySuggestions({
   meetingId,
   live,
@@ -98,6 +99,7 @@ export function OverlaySuggestions({
       </div>
       <OverlayComposer key={meetingId} meetingId={meetingId} busy={hotkeyInFlight || pending} />
       <div className="manual-actions">
+        <OverlayCaptureAction meetingId={meetingId} live={live} answering={hotkeyInFlight} />
         <button
           disabled={!live || hotkeyInFlight || pending}
           onClick={() => void request('audience')}
@@ -109,7 +111,9 @@ export function OverlaySuggestions({
           suggestion.purpose === 'answer' &&
           !suggestion.streaming &&
           !suggestion.error &&
-          (!suggestion.manualKind || suggestion.manualKind === 'typed') && (
+          (!suggestion.manualKind ||
+            suggestion.manualKind === 'typed' ||
+            suggestion.manualKind === 'capture') && (
             <button
               disabled={!live || hotkeyInFlight || pending}
               onClick={() => void request('detail')}

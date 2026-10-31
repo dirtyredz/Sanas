@@ -1,3 +1,4 @@
+import { readManualKind } from '@shared/live-controls/capture'
 import { getDb } from '../index'
 import type { Suggestion } from '@shared/types'
 
@@ -36,7 +37,7 @@ export function detailSource(meetingId: number, id: number): SuggestionGrounding
     )
     .get(id, meetingId) as SuggestionGroundingRow | undefined
   if (!row) throw new Error('Source answer not found or has no saved grounding.')
-  return row
+  return { ...row, ...readManualKind(row.manualKind, row.requestText) }
 }
 export function existingDetail(meetingId: number, sourceId: number): number | undefined {
   return (

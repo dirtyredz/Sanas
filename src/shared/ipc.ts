@@ -17,6 +17,12 @@ export const IPC = {
   ComposeReady: 'live-controls:ComposeReady',
   ComposeRelease: 'live-controls:ComposeRelease',
   ComposeFocus: 'live-controls:ComposeFocus',
+  // screen capture (renderer → main; images stay in main, renderer gets bounded previews)
+  ScreenCapture: 'screen-capture:capture',
+  ScreenCaptureAttach: 'screen-capture:attach',
+  ScreenCaptureDiscard: 'screen-capture:discard',
+  ScreenCaptureStatusGet: 'screen-capture:status-get',
+  ScreenCaptureStatus: 'screen-capture:status',
   PresentationJobGet: 'presentation:job-get',
   PresentationJobReplace: 'presentation:job-replace',
   PresentationState: 'presentation:state',

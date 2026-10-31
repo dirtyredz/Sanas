@@ -105,3 +105,30 @@ it('owns separate cache breakpoints for stable job and optional effective deck',
     { type: 'text', text: 'sys', cache_control: { type: 'ephemeral' } },
   ])
 })
+
+describe('image input', () => {
+  const image = { mediaType: 'image/png' as const, base64: 'aGVsbG8=' }
+
+  it('sends the image before the text and never retries it', async () => {
+    sdk.calls = []
+    await claudeProvider.complete({ ...base, image, maxRetries: 3, cacheableContext: 'deck' })
+    expect(sdk.calls[0].body.messages).toEqual([
+      {
+        role: 'user',
+        content: [
+          { type: 'image', source: { type: 'base64', media_type: 'image/png', data: 'aGVsbG8=' } },
+          { type: 'text', text: 'turn' },
+        ],
+      },
+    ])
+    expect(sdk.calls[0].options.maxRetries).toBe(0)
+    // the image never enters the cached system blocks
+    expect(JSON.stringify(sdk.calls[0].body.system)).not.toContain('aGVsbG8=')
+  })
+
+  it('keeps text-only requests in their existing shape', async () => {
+    sdk.calls = []
+    await claudeProvider.complete(base)
+    expect(sdk.calls[0].body.messages).toEqual([{ role: 'user', content: 'turn' }])
+  })
+})

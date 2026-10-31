@@ -1,15 +1,17 @@
 import type { SuggestionMetadata } from '@shared/live-controls/types'
+import { readManualKind, storedManualKind } from '@shared/live-controls/capture'
 import { saveGrounding } from './suggestion-grounding'
 import { getDb } from '../index'
 import type { Suggestion, SuggestionPurpose, SuggestionTrigger } from '@shared/types'
 
 export function listSuggestions(meetingId: number): Suggestion[] {
-  return getDb()
+  const rows = getDb()
     .prepare(
       `SELECT id, meeting_id AS meetingId, t_ms AS tMs, trigger, purpose, text, grounding_context_id AS groundingContextId, context_revision AS contextRevision, source_suggestion_id AS sourceSuggestionId, request_text AS requestText, manual_kind AS manualKind
        FROM suggestions WHERE meeting_id = ? ORDER BY t_ms`,
     )
     .all(meetingId) as Suggestion[]
+  return rows.map((row) => ({ ...row, ...readManualKind(row.manualKind, row.requestText) }))
 }
 
 /** Moves one meeting's suggestions onto another, shifting their time (merge). */
@@ -46,6 +48,7 @@ export function insertSuggestion(
     text: string
   } & SuggestionMetadata,
 ): number {
+  const stored = storedManualKind(s.manualKind, s.requestText) // capture → typed + marker
   const res = getDb()
     .prepare(
       `INSERT INTO suggestions (meeting_id, t_ms, trigger, purpose, prompt_window, text, grounding_context_id, context_revision, source_suggestion_id, request_text, manual_kind)
@@ -61,8 +64,8 @@ export function insertSuggestion(
       s.groundingContextId ?? null,
       s.contextRevision ?? null,
       s.sourceSuggestionId ?? null,
-      s.requestText ?? null,
-      s.manualKind ?? null,
+      stored.requestText,
+      stored.manualKind,
     )
   return Number(res.lastInsertRowid)
 }

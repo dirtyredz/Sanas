@@ -68,7 +68,8 @@ export function mockLiveControls(
         meetingId: input.meetingId,
         trigger: 'hotkey' as const,
         purpose: 'answer' as const,
-        manualKind: input.kind,
+        manualKind:
+          input.kind === 'typed' && input.captureToken ? ('capture' as const) : input.kind,
         contextRevision: context.revision,
         groundingContextId: 1,
         ...(input.kind === 'typed' ? { requestText: input.text } : {}),

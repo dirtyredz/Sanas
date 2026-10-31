@@ -26,7 +26,23 @@ export function requestOptions(req: AssistRequest): SdkRequestOptions {
   if (req.maxRetries !== undefined && Number.isInteger(req.maxRetries) && req.maxRetries >= 0) {
     opts.maxRetries = req.maxRetries
   }
+  // a screenshot is sent once per explicit action: never resend it behind the owner's back
+  if (req.image) opts.maxRetries = 0
   return opts
+}
+
+/** The user turn: text only, or the image followed by the text. */
+export function userMessageContent(
+  req: AssistRequest,
+): string | (Anthropic.ImageBlockParam | Anthropic.TextBlockParam)[] {
+  if (!req.image) return req.userContent
+  return [
+    {
+      type: 'image',
+      source: { type: 'base64', media_type: req.image.mediaType, data: req.image.base64 },
+    },
+    { type: 'text', text: req.userContent },
+  ]
 }
 
 export const claudeProvider: AssistantProvider = {
@@ -49,7 +65,7 @@ export const claudeProvider: AssistantProvider = {
             cache_control: { type: 'ephemeral' as const },
           }),
         ),
-        messages: [{ role: 'user', content: req.userContent }],
+        messages: [{ role: 'user', content: userMessageContent(req) }],
       },
       requestOptions(req),
     )

@@ -1,3 +1,4 @@
+import type { ManualKind } from './live-controls/types'
 import type { SuggestionPurpose, SuggestionTrigger } from './types'
 
 // One label vocabulary for suggestions, shared by the overlay, the meeting history and the
@@ -5,17 +6,21 @@ import type { SuggestionPurpose, SuggestionTrigger } from './types'
 // rows keep their labels: requested answers are "Answer", automatic answers "Whisper".
 
 export interface LabelledSuggestion {
-  manualKind?: 'typed' | 'detail' | 'audience' | null
+  manualKind?: ManualKind | null
   trigger: SuggestionTrigger
   purpose: SuggestionPurpose
 }
 
-/** The suggestion's name: "Next point" | "Answer" | "Whisper". */
+const MANUAL_LABELS: Record<ManualKind, string> = {
+  typed: 'Typed answer',
+  detail: 'More detail',
+  audience: 'Ask the audience',
+  capture: 'Screen answer',
+}
+
+/** The suggestion's name: "Next point" | "Answer" | "Whisper" | the manual action's name. */
 export function suggestionLabel(s: LabelledSuggestion): string {
-  if (s.manualKind)
-    return { typed: 'Typed answer', detail: 'More detail', audience: 'Ask the audience' }[
-      s.manualKind
-    ]
+  if (s.manualKind) return MANUAL_LABELS[s.manualKind]
   if (s.purpose === 'next-point') return 'Next point'
   return s.trigger === 'hotkey' ? 'Answer' : 'Whisper'
 }

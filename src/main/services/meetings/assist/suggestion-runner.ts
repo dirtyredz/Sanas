@@ -1,6 +1,6 @@
 import type { SuggestionMetadata } from '@shared/live-controls/types'
 import type { SuggestionEvent, SuggestionPurpose, SuggestionTrigger } from '@shared/types'
-import type { AssistantProvider } from '../../assistant/types'
+import type { AssistantProvider, AssistImage } from '../../assistant/types'
 import { couldBeNoSuggestion, isNoSuggestion } from '../../assistant/compact-contract'
 import { canStartSuggestion, type SuggestionInFlight } from './suggestion-in-flight'
 
@@ -28,6 +28,9 @@ export interface SuggestionRequest extends SuggestionMetadata {
   model: string
   system: string
   userContent: string
+  /** A screenshot held in memory for this one call; never persisted (promptWindow is the
+   *  text only). Released with the request once it settles. */
+  image?: AssistImage
   maxTokens: number
   effort: 'low' | 'medium' | 'high'
   timeoutMs: number
@@ -153,6 +156,7 @@ export class SuggestionRunner {
           system: req.system,
           cacheableContext: req.cacheableContext,
           userContent: req.userContent,
+          image: req.image,
           maxTokens: req.maxTokens,
           effort: req.effort,
           signal: controller.signal,

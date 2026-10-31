@@ -1,4 +1,4 @@
-import { BrowserWindow, screen } from 'electron'
+import { BrowserWindow, screen, type Rectangle } from 'electron'
 import { join } from 'path'
 import { IPC } from '@shared/ipc'
 import type { OverlayResizeRequest } from '@shared/types'
@@ -71,6 +71,12 @@ function createOverlay(): BrowserWindow {
 
 function clampOpacity(o: number): number {
   return Math.min(1, Math.max(0.4, Number.isFinite(o) ? o : 1))
+}
+
+/** Where the overlay sits, even while hidden or ghosted; null when it has no window. Screen
+ *  capture uses it to pick the display under the overlay. */
+export function overlayBounds(): Rectangle | null {
+  return overlay && !overlay.isDestroyed() ? overlay.getBounds() : null
 }
 
 /** Live-applies opacity when settings change (no-op if overlay not open). */

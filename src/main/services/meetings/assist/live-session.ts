@@ -1,6 +1,6 @@
-import type { Admission, ManualRequest, MeetingContext } from '@shared/live-controls/types'
+import type { Admission, MeetingContext } from '@shared/live-controls/types'
 import type { AssistSnapshot } from './suggestion-requests'
-import { admitManual } from './manual-requests'
+import { admitManual, type AssistInput } from './manual-requests'
 import { getMeetingContext } from '../../../db/repos/meeting-context'
 import { detailSource, existingDetail } from '../../../db/repos/suggestion-grounding'
 import { IPC } from '@shared/ipc'
@@ -111,7 +111,12 @@ export class LiveSession {
     this.presentationChanged(this.clockMs())
   }
 
-  request(input: ManualRequest): Admission {
+  /** True while no requested answer holds the hotkey lane (checked before a capture). */
+  canRequest(): boolean {
+    return this.runner.canStart('hotkey')
+  }
+
+  request(input: AssistInput): Admission {
     return admitManual(
       {
         canStart: () => this.runner.canStart('hotkey'),

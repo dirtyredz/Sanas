@@ -1,6 +1,13 @@
 // The LLM seam. All assistant calls go through this interface so the
 // provider (Claude today) can be swapped without touching orchestration.
 
+/** One still image sent with a request, already sized and encoded by the caller. */
+export interface AssistImage {
+  mediaType: 'image/png' | 'image/jpeg'
+  /** The encoded image bytes, base64. */
+  base64: string
+}
+
 export interface AssistRequest {
   apiKey: string
   /** Org-level keys must name a workspace per request; blank for workspace-scoped keys. */
@@ -10,6 +17,9 @@ export interface AssistRequest {
   cacheableContext?: string
   system: string
   userContent: string
+  /** Optional screenshot, placed before `userContent`. Never part of the cached system
+   *  blocks. Image-bearing requests are never retried automatically by the provider. */
+  image?: AssistImage
   maxTokens: number
   /** Effort/quality dial: 'low' favors latency, 'high' depth. Providers map it
    *  to their nearest native knob (Claude: output_config.effort). */

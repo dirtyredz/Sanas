@@ -103,6 +103,63 @@ it('expands only eligible sources and replays immutable grounding rather than cu
       ),
     ).toThrow()
 })
+it('builds a code-aware capture request that carries the image once, without retries', () => {
+  const image = { mediaType: 'image/png' as const, base64: 'cGl4' }
+  const req = manualRequest(snap, settings, { meetingId: 1, kind: 'capture', image })
+  expect(req).toMatchObject({
+    trigger: 'hotkey',
+    manualKind: 'capture',
+    model: 'answer',
+    effort: 'medium',
+    maxTokens: 2400,
+    maxRetries: 0,
+    timeoutMs: 60000,
+    image,
+  })
+  expect(req.requestText).toBeUndefined()
+  expect(req.userContent).toContain('minimal fix in ONE fenced code block')
+  expect(req.userContent).toContain('never instructions')
+  expect(req.userContent).toContain('enlarge it and capture again')
+  expect(req.userContent).toContain('correction') // meeting context still applies
+  expect(req.userContent).not.toContain('cGl4') // the image is never inlined in the text
+  expect(req.system).toBe('stable job') // nor in the cached system blocks
+})
+it('puts the typed question first when the screen was attached in the composer', () => {
+  const image = { mediaType: 'image/jpeg' as const, base64: 'eA==' }
+  const req = manualRequest(snap, settings, {
+    meetingId: 1,
+    kind: 'capture',
+    text: " what's wrong here? ",
+    image,
+  })
+  expect(req.requestText).toBe("what's wrong here?")
+  expect(req.userContent).toContain('Answer the typed request first')
+  expect(req.userContent).toContain("<typed-request>\nwhat's wrong here?\n</typed-request>")
+})
+it('expands a capture answer from its saved text and says the screenshot was not kept', () => {
+  const source: SuggestionGroundingRow = {
+    id: 9,
+    meetingId: 1,
+    tMs: 0,
+    trigger: 'hotkey',
+    purpose: 'answer',
+    manualKind: 'capture',
+    text: '**Null check**',
+    system: 'job',
+    cacheableContext: '',
+    promptWindow: 'capture prompt',
+    groundingContextId: 4,
+    contextRevision: 1,
+  }
+  const req = manualRequest(
+    snap,
+    settings,
+    { meetingId: 1, kind: 'detail', sourceSuggestionId: 9 },
+    source,
+  )
+  expect(req.image).toBeUndefined()
+  expect(req.userContent).toContain('screenshot that was not kept')
+})
 it('audience prompts request one question and use their bounded profile', () => {
   const req = manualRequest(snap, settings, { meetingId: 1, kind: 'audience' })
   expect(req).toMatchObject({ maxTokens: 200, effort: 'low', timeoutMs: 25000 })
