@@ -5,8 +5,8 @@ created: 2026-10-29
 status: todo
 since: 2026-10-29
 area: assistant
-priority: P2
-rank: zzzzzzzzzzzw
+priority: P3
+rank: zzw
 parent:
 fixes: []
 blocked_by: []

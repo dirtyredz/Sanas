@@ -5,8 +5,8 @@ created: 2026-10-05
 status: todo
 since: 2026-10-05
 area: post-v1-ideas
-priority: P2
-rank: zzzzzzzzy
+priority: P3
+rank: zt
 parent:
 fixes: []
 blocked_by: []
