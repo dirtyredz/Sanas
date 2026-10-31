@@ -1,5 +1,6 @@
 param([switch]$DryRun)
 . (Join-Path $PSScriptRoot '../owner/owner-run.ps1')
+. (Join-Path $PSScriptRoot 'install-version.ps1')
 function Assert-SanasExited {
   $active = @(Get-CimInstance Win32_Process | Where-Object {
     $_.Name -ieq 'Sanas.exe' -or
@@ -52,6 +53,7 @@ Invoke-OwnerRun 'install-latest' {
   if ($process.ExitCode -ne 0) { throw 'Installer failed.' }
   $installed = Join-Path $env:LOCALAPPDATA 'Programs/sanas/Sanas.exe'
   if (-not (Test-Path -LiteralPath $installed)) { throw 'Installed executable not found at expected per-user path.' }
-  if ((Get-Item -LiteralPath $installed).VersionInfo.ProductVersion -ne $version) { throw 'Installed version mismatch.' }
+  $installedVersion = (Get-Item -LiteralPath $installed).VersionInfo.ProductVersion
+  if (-not (Test-SanasInstalledVersion -InstalledVersion $installedVersion -ReleaseVersion $version)) { throw 'Installed version mismatch.' }
   Write-OwnerLog "Installed $version. Launch Sanas and confirm existing jobs, meetings, transcripts and recordings."
 }
