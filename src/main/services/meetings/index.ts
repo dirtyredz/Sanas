@@ -1,11 +1,3 @@
-import type {
-  Admission,
-  ContextUpdate,
-  ManualRequest,
-  MeetingContext,
-} from '@shared/live-controls/types'
-import { getMeetingContext, saveMeetingContext } from '../../db/repos/meeting-context'
-import { applyContext } from './context/session'
 import { IPC } from '@shared/ipc'
 import type { ChannelCount, MeetingState, Settings, TranscriptEvent } from '@shared/types'
 import { loadSettings } from '../../config/settings'
@@ -30,7 +22,7 @@ import {
   insertSlideEvent,
 } from '../../db/repos/meeting-presentation'
 import { PresentationSession } from './presentation/session'
-import type { PresentationState } from '@shared/presentation/types'
+import { createLiveControls } from './live-controls'
 
 // Orchestrates one live meeting at a time: STT session, persistence, event fan-out, and
 // lifecycle. Live assistance — the prompt window, shown headlines, system prompt and the
@@ -63,7 +55,6 @@ let sessionGen = 0 // bumped whenever a session is opened or discarded
 let meetingJobId = 0 // remembered so a resume can re-send the job's keyterms
 let meetingChannels: ChannelCount = 1
 let paused = false
-let answerEveryQuestion = false
 let audioMsReceived = 0 // the meeting's clock: audio actually captured, in ms
 const userSpeakers = new Set<number>() // diarized indices pinned as "me"
 const lostRecordings = new Set<number>() // meetings whose WAV died while they were running
@@ -89,6 +80,13 @@ function serialized<T>(fn: () => Promise<T>): Promise<T> {
   lifecycle = run.catch(() => undefined)
   return run
 }
+
+const liveControls = createLiveControls({
+  serialize: serialized,
+  clockMs: () => audioMsReceived,
+  live,
+  presentation,
+})
 
 export function currentState(): MeetingState {
   const meetingId = liveMeetingId()
@@ -265,7 +263,6 @@ export function startMeeting(jobId?: number, channels: ChannelCount = 1): Promis
     userSpeakers.clear()
     captureHealth.reset()
     presentation.begin(id, getPresentationHistory(id).slides)
-    answerEveryQuestion = settings.answerEveryQuestion
     live.begin(job) // window, headlines and prompt are per meeting; a resume keeps them
 
     // held back until the recording is open too: sendAudioChunk accepts nothing until the
@@ -425,67 +422,13 @@ export function answerNow(): void {
   assistance.answerNow()
 }
 
-export function updateMeetingContext(update: ContextUpdate): Promise<MeetingContext> {
-  return serialized(async () => {
-    if (!isLiveMeeting(update.meetingId)) throw new Error('This meeting is no longer active.')
-    return applyContext(
-      getMeetingContext(update.meetingId),
-      update,
-      presentation.state(),
-      Math.round(audioMsReceived),
-      saveMeetingContext,
-      (next, event) => {
-        live.applyContext(next)
-        if (event) presentation.apply(next.slides, event)
-        broadcast(IPC.MeetingContextChanged, next)
-      },
-    )
-  })
-}
-export function requestAssist(input: ManualRequest): Promise<Admission> {
-  return serialized(async () => {
-    if (!isLiveMeeting(input.meetingId)) throw new Error('This meeting is no longer active.')
-    return live.request(input)
-  })
-}
-export function answerEveryQuestionState(): { meetingId: number | null; enabled: boolean } {
-  return { meetingId: liveMeetingId(), enabled: answerEveryQuestion }
-}
-export function setAnswerEveryQuestion(meetingId: number, enabled: boolean): Promise<void> {
-  return serialized(async () => {
-    if (!isLiveMeeting(meetingId)) throw new Error('This meeting is no longer active.')
-    answerEveryQuestion = enabled
-    assistance.setAnswerEveryQuestion(enabled)
-    broadcast(IPC.AnswerEveryQuestionChanged, answerEveryQuestionState())
-  })
-}
-
-export function presentationState(): PresentationState {
-  return presentation.state()
-}
-
-export function moveSlide(
-  meetingId: number,
-  direction: 'prev' | 'next',
-): Promise<PresentationState> {
-  return serialized(async () => {
-    if (liveMeetingId() !== meetingId) throw new Error('This meeting is no longer active.')
-    return presentation.move(meetingId, direction, audioMsReceived)
-  })
-}
-
-export async function moveSlideShortcut(direction: 'prev' | 'next'): Promise<void> {
-  const state = presentation.state()
-  if (state.meetingId === null || !state.current) return
-  try {
-    await moveSlide(state.meetingId, direction)
-  } catch (e) {
-    broadcast(IPC.PresentationChanged, {
-      ...presentation.state(),
-      error: e instanceof Error ? e.message : String(e),
-    })
-  }
-}
+export const updateMeetingContext = liveControls.updateMeetingContext
+export const requestAssist = liveControls.requestAssist
+export const answerEveryQuestionState = liveControls.answerEveryQuestionState
+export const setAnswerEveryQuestion = liveControls.setAnswerEveryQuestion
+export const presentationState = liveControls.presentationState
+export const moveSlide = liveControls.moveSlide
+export const moveSlideShortcut = liveControls.moveSlideShortcut
 
 /** Settings were saved. Only assistance keys concern live assistance — an overlay resize
  *  also saves settings and must not reset anything. */

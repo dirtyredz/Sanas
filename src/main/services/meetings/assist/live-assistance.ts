@@ -76,6 +76,10 @@ export class LiveAssistance {
   setAnswerEveryQuestion(on: boolean): void {
     this.answerEveryQuestion = on
   }
+
+  answerEveryQuestionEnabled(): boolean {
+    return this.answerEveryQuestion
+  }
   manualAdmitted(): void {
     this.cancelCoach()
   }
