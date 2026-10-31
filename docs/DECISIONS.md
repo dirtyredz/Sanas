@@ -2,6 +2,16 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-10-31 — Main-process output is kept in a local, redacted log file
+
+The installed app has no console, so a failure left no trace. Normal startup now writes main-process
+console output, uncaught exceptions and unhandled rejections to `sanas-main.log` under Electron's
+logs directory (`%APPDATA%\sanas\logs`). The file rotates once at 5 MB, so at most two capped files
+exist. It stays local like all other Sanas data and is never uploaded. Values with secret-like names,
+provider-token-shaped strings and settings payloads are redacted before they are written: API keys
+must never reach disk outside the settings store. `--smoke` runs never install the logger. Rejected:
+a logging library, which is more dependency than a single-process, single-user app needs.
+
 ## 2026-10-30 — Overlay hidden from screen capture
 
 The overlay is always excluded from screen capture because it carries the owner's private presenter
