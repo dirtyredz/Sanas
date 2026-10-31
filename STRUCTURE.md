@@ -47,7 +47,7 @@ sanas/
 │   │   │   ├── retention/                  # scheduled/on-demand recording and meeting cleanup
 │   │   │   ├── history/                    # grounded ask-your-history retrieval and answers
 │   │   │   ├── audio-store/                # WAV recording of accepted capture audio
-│   │   │   ├── screen-capture/             # display choice, one-shot screenshot, encoding, in-memory drafts
+│   │   │   ├── screen-capture/             # display choice, one-shot screenshot and encoding
 │   │   │   └── transcript-format.ts        # canonical main-side transcript formatting/windowing
 │   │   ├── db/                             # async open/backup/migrations and SQLite helpers
 │   │   │   └── repos/                      # entity repositories and all SQL strings
@@ -62,6 +62,7 @@ sanas/
 │   │       │   ├── settings/               # one component per Settings section
 │   │       │   └── styles/                 # tokens → controls → shell → transcript → pages
 │   │       ├── overlay-app/                # separate small overlay bundle
+│   │       │   ├── layout/                 # opacity, split ratio, resize/split-drag hooks
 │   │       │   └── capture/                # Capture screen action and composer attachment state
 │   │       ├── audio/                      # mic/loopback capture and worklet bridge
 │   │       ├── lib/                        # pure shared renderer helpers
@@ -92,6 +93,7 @@ sanas/
 - `src/main/diagnostics/` — isolated, headless packaged diagnostics used by `--smoke`
 - `src/main/windows/` — BrowserWindow builders and the main → all-windows broadcast
 - `src/main/ipc/` — typed IPC handlers; validate ingress and delegate, with no business logic
+- `src/main/` — process entry (`index.ts`, normal vs `--smoke` dispatch) and the display-media loopback handler (`system-audio.ts`)
 - `src/main/services/` — main-process services and provider seams
 - `src/main/services/stt/` — the swappable STT seam, Deepgram implementation and message normalization
 - `src/main/services/turns/` — pure turn assembly and identity-role types; no I/O or timers
@@ -100,7 +102,7 @@ sanas/
 - `src/main/services/assistant/presentation/` — presentation answer context, current-location hints and scoped coaching prompts
 - `src/main/services/assistant/live-controls/` — typed, detail, audience and screen-capture request instructions
 - `src/main/services/meetings/` — meeting lifecycle/STT/audio orchestration plus meeting-level facades
-- `src/main/services/meetings/assist/` — per-meeting prompt/grounding state, manual and screen-capture admission, automatic coordination and suggestion execution
+- `src/main/services/meetings/assist/` — per-meeting prompt/grounding state, manual and screen-capture admission, in-memory composer screen drafts (`capture-drafts.ts`), automatic coordination and suggestion execution
 - `src/main/services/meetings/capture/` — AUDIO capture-side identity and capture-health policy (screen capture lives in `services/screen-capture/`)
 - `src/main/services/meetings/context/` — pure preparation followed by commit/publication of live context changes
 - `src/main/services/meetings/presentation/` — current cursor state and historical slide-marker formatting
@@ -115,9 +117,9 @@ sanas/
 - `src/main/services/retention/` — recording/meeting cleanup timers, preview and execution
 - `src/main/services/history/` — FTS retrieval and grounded ask-your-history answers
 - `src/main/services/audio-store/` — WAV recording for accepted capture audio
-- `src/main/services/screen-capture/` — display selection, one-shot desktop capture, image sizing/encoding and in-memory composer drafts; no meeting or provider policy
+- `src/main/services/screen-capture/` — display selection, one-shot desktop capture, image sizing/encoding; no meeting or provider policy
 - `src/main/db/` — database connection lifecycle, consistent pre-upgrade backup, migrations and SQLite helpers
-- `src/main/db/repos/` — per-entity repositories; the only place SQL strings live
+- `src/main/db/repos/` — per-entity repositories (incl. the screen-answer storage codec `manual-kind.ts`); the only place SQL strings live
 - `src/main/config/` — settings/secrets persistence and exhaustive settings validation
 - `src/preload/` — typed contextBridge surface exposed to renderers
 - `src/renderer/src/app/` — library UI root and entry point
@@ -126,6 +128,7 @@ sanas/
 - `src/renderer/src/app/settings/` — one component per Settings section, including independent update state
 - `src/renderer/src/app/styles/` — layered shared stylesheet; no per-page stylesheets
 - `src/renderer/src/overlay-app/` — deliberately small, separate overlay bundle
+- `src/renderer/src/overlay-app/layout/` — overlay opacity/split-ratio persistence and window resize / split-drag hooks with their pure helpers
 - `src/renderer/src/overlay-app/capture/` — Capture screen action/status and the composer's screen-attachment state
 - `src/renderer/src/audio/` — renderer capture and AudioWorklet downsampling
 - `src/renderer/src/lib/` — pure presentation helpers shared across renderer pages and bundles
@@ -137,7 +140,7 @@ sanas/
 - `src/shared/` — types shared by main, preload and renderer
 - `src/shared/presentation/` — deck and historical timeline contracts
 - `src/shared/hotkeys/` — global shortcut action and registration-status contracts
-- `src/shared/live-controls/` — meeting-context, manual-admission, suggestion metadata and screen-capture contracts (incl. the capture-answer storage codec)
+- `src/shared/live-controls/` — meeting-context, manual-admission, suggestion metadata and screen-capture contracts
 - `src/shared/updates/` — renderer-safe update state and operation contracts
 - `scripts/` — repository tooling plus release and owner-operation entry points
 - `scripts/release/` — versioning, asset/package checks, publication, installation and packaged smoke
@@ -190,7 +193,7 @@ New main-process code belongs in a responsibility folder above, not beside `inde
   it stays separate from audio capture); relieving that breadth is tracked by dk-bd2e1ebf.
 - Screen answers are stored as `typed` plus a `[Screen capture]` request-text marker because the
   `suggestions` CHECK constraint has no `capture` kind. A real `capture` kind needs a table rebuild
-  migration; the codec in `shared/live-controls/capture.ts` is the only place to change.
+  migration; the codec in `db/repos/manual-kind.ts` is the only place to change.
 
 - `windows/main-window.ts` and `overlay-window.ts` share webPreferences/load-URL boilerplate. Extract a
   `createAppWindow(opts)` helper only if a third window appears.

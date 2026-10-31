@@ -1,4 +1,4 @@
-import { readManualKind } from '@shared/live-controls/capture'
+import { readManualKind } from './manual-kind'
 import { getDb } from '../index'
 import type { Suggestion } from '@shared/types'
 

@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto'
 import type { CaptureDraftView } from '@shared/live-controls/capture'
-import type { AssistImage } from '../assistant/types'
+import type { AssistImage } from '../../assistant/types'
 
 // Composer attachments (Attach screen) held in main memory only: at most one per meeting,
 // addressed by a main-issued token. Nothing is written to disk; dropping the draft drops the

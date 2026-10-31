@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CAPTURE_REQUEST_MARKER, readManualKind, storedManualKind } from './capture'
+import { CAPTURE_REQUEST_MARKER, readManualKind, storedManualKind } from './manual-kind'
 
 describe('capture answer storage without a schema change', () => {
   it('stores a direct capture as typed with the marker and reads it back', () => {

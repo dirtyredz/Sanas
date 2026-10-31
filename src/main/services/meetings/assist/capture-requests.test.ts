@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { Admission } from '@shared/live-controls/types'
 import type { CaptureStatus } from '@shared/live-controls/capture'
-import { CaptureDrafts } from '../../screen-capture/drafts'
+import { CaptureDrafts } from './capture-drafts'
 import { CaptureRequests, type AcquiredCapture, type CaptureRequestDeps } from './capture-requests'
 import type { AssistInput } from './manual-requests'
 

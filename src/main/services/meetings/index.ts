@@ -27,7 +27,7 @@ import { PresentationSession } from './presentation/session'
 import { createLiveControls } from './live-controls'
 import { CaptureRequests } from './assist/capture-requests'
 import { createScreenCapture } from '../screen-capture'
-import { CaptureDrafts } from '../screen-capture/drafts'
+import { CaptureDrafts } from './assist/capture-drafts'
 import { overlayBounds } from '../../windows/overlay-window'
 
 // Orchestrates one live meeting at a time: STT session, persistence, event fan-out, and

@@ -1,5 +1,5 @@
 import type { SuggestionMetadata } from '@shared/live-controls/types'
-import { readManualKind, storedManualKind } from '@shared/live-controls/capture'
+import { readManualKind, storedManualKind } from './manual-kind'
 import { saveGrounding } from './suggestion-grounding'
 import { getDb } from '../index'
 import type { Suggestion, SuggestionPurpose, SuggestionTrigger } from '@shared/types'

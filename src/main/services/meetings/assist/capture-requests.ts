@@ -5,7 +5,7 @@ import type {
   CaptureStatus,
 } from '@shared/live-controls/capture'
 import type { AcquiredCapture } from '../../screen-capture'
-import type { CaptureDrafts } from '../../screen-capture/drafts'
+import type { CaptureDrafts } from './capture-drafts'
 import type { AssistInput } from './manual-requests'
 
 // Coordinates screen captures for the running meeting: Capture screen (capture → one
