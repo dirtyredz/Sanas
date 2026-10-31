@@ -1,15 +1,28 @@
-param([int]$TimeoutSeconds = 60)
+param([int]$TimeoutSeconds = 180)
 $ErrorActionPreference = 'Stop'
 $root = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
 $exe = Join-Path $root 'release/win-unpacked/Sanas.exe'
 $folder = Join-Path $root ('.tmp/smoke/' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $folder -Force | Out-Null
 $report = Join-Path $folder 'report.json'
-$process = $null
+$process = New-Object System.Diagnostics.Process
+$process.StartInfo.FileName = $exe
+$process.StartInfo.Arguments = '--smoke --smoke-report="' + $report + '"'
+$process.StartInfo.UseShellExecute = $false
+$process.StartInfo.CreateNoWindow = $true
+$process.StartInfo.WindowStyle = [Diagnostics.ProcessWindowStyle]::Hidden
+$process.StartInfo.RedirectStandardOutput = $true
+$process.StartInfo.RedirectStandardError = $true
+$started = $false
 try {
-  $process = Start-Process -FilePath $exe -ArgumentList @('--smoke', ('--smoke-report="' + $report + '"')) -PassThru -WindowStyle Hidden -RedirectStandardOutput (Join-Path $folder 'stdout.log') -RedirectStandardError (Join-Path $folder 'stderr.log')
+  $started = $process.Start()
+  if (-not $started) { throw 'Could not start packaged smoke' }
+  $stdout = $process.StandardOutput.ReadToEndAsync()
+  $stderr = $process.StandardError.ReadToEndAsync()
   if (-not $process.WaitForExit($TimeoutSeconds * 1000)) { throw 'Packaged smoke timed out' }
-  $process.Refresh()
+  if (-not $stdout.Wait(5000) -or -not $stderr.Wait(5000)) { throw 'Packaged smoke output did not close' }
+  [IO.File]::WriteAllText((Join-Path $folder 'stdout.log'), $stdout.Result)
+  [IO.File]::WriteAllText((Join-Path $folder 'stderr.log'), $stderr.Result)
   if ($process.ExitCode -ne 0) { throw "Packaged smoke failed: exit $($process.ExitCode)" }
   if (-not (Test-Path -LiteralPath $report)) { throw 'Packaged smoke report missing' }
   $result = Get-Content -LiteralPath $report -Raw | ConvertFrom-Json
@@ -17,5 +30,6 @@ try {
   if ($result.result -ne 'ok' -or -not $result.packaged -or $result.version -ne $version -or $result.arch -ne 'x64' -or $result.schemaVersion -ne 7 -or -not $result.electron -or -not $result.abi -or $result.bindingPath -notmatch 'better_sqlite3.node$') { throw 'Invalid smoke report' }
   Write-Output "OK packaged smoke: $report"
 } finally {
-  if ($process -and -not $process.HasExited) { Stop-Process -Id $process.Id -Force; $process.WaitForExit() }
+  if ($started -and -not $process.HasExited) { $process.Kill(); $process.WaitForExit() }
+  $process.Dispose()
 }

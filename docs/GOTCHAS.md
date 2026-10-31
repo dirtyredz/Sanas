@@ -364,3 +364,8 @@ _Non-obvious traps. Read before touching the related area._
 - npm prepare assumes .git is a directory and fails with ENOTDIR in linked worktrees. Use
   --ignore-scripts for local installs and rebuild native dependencies separately when needed. This
   branch does not change hook installation. Hosted full checkouts run npm ci with lifecycle scripts.
+
+- Packaged smoke uses an explicit .NET process object to retain a reliable GUI exit code in Windows
+  PowerShell. This machine can take over 60 seconds to finish native shutdown after writing the
+  report, so the wrapper allows 180 seconds, then kills only its own process and fails. A successful
+  report alone is never a pass: the executable must also exit successfully before the timeout.
