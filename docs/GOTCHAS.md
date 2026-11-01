@@ -66,6 +66,19 @@ starts this logger or writes there.
   a rebuild; CI/packaging must not skip it.
 - **API keys never in the renderer.** All Deepgram/Anthropic traffic goes through the
   main process. `contextIsolation: true`, `nodeIntegration: false`, no exceptions.
+- **The main window's header is its title bar** (`titleBarStyle: 'hidden'` + `titleBarOverlay`).
+  Anything inside `.app-header` that should take clicks must be `-webkit-app-region: no-drag` —
+  a drag region swallows mouse input, so a new header control that isn't a `button`/`a`/`input`/
+  `select`/`[tabindex]` silently stops working (`shell/title-bar.test.ts` guards the rules, not
+  each element). Content stays clear of the caption buttons via `env(titlebar-area-*)`; don't
+  replace that with a fixed width. The caption buttons are drawn by Windows from
+  `main/windows/window-chrome.ts`, not CSS: change `--panel`/`--text`/`--bg`/`--app-header-h` in
+  `tokens.css` and that file together (`window-chrome.test.ts` fails otherwise). The overlay
+  height is header height − 1 so the header's bottom border shows under the buttons.
+- **Screenshots of the main window need `PrintWindow`, not CDP.** `Page.captureScreenshot`
+  shows only web contents (no caption buttons), and `SetForegroundWindow` from a script is
+  usually refused, so `CopyFromScreen` grabs whatever covers the window. `PrintWindow(hwnd, dc,
+PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
 - **Always-on-top overlays vs fullscreen apps:** `setAlwaysOnTop(true, 'screen-saver')`
   level needed to float above some fullscreen windows on Windows.
 - **The overlay is always capture-protected.** On Windows, Electron uses

@@ -63,7 +63,7 @@ sanas/
 │   │       │   ├── jobs/                   # job presentation editor
 │   │       │   ├── settings/
 │   │       │   │   ├── sections/           # one component per Settings section (+ pure hotkey/update status)
-│   │       │   │   └── frame/              # section list, index + scroll-spy, card, useSettingsDraft + patch/validation, save bar
+│   │       │   │   └── frame/              # section list, index, pager + page direction, pane, card, useSettingsDraft + patch/validation, save bar
 │   │       │   └── styles/                 # tokens → base/controls → shell/transcript/pages/settings; overlay-* layers
 │   │       ├── overlay-app/                # separate small overlay bundle
 │   │       │   ├── shell/                  # session composition, layout, header, status, preferences
@@ -101,7 +101,7 @@ sanas/
 
 - `src/main/lifecycle/` — userData identity, capped/redacted main logging and normal startup wiring; normal startup is not loaded by smoke
 - `src/main/diagnostics/` — isolated, headless packaged diagnostics used by `--smoke`
-- `src/main/windows/` — BrowserWindow builders and the main → all-windows broadcast (`overlay-bounds.ts`: pure on-screen fitting of saved overlay bounds; `main-window.ts`: create or reveal — restore/show/focus, never reload)
+- `src/main/windows/` — BrowserWindow builders and the main → all-windows broadcast (`overlay-bounds.ts`: pure on-screen fitting of saved overlay bounds; `main-window.ts`: create or reveal — restore/show/focus, never reload; `window-chrome.ts`: the hidden title bar + caption-button colours mirrored from tokens.css)
 - `src/main/ipc/` — typed IPC handlers; validate ingress and delegate, with no business logic (`windows.ts`: overlay toggle/resize/ghost, compose handshake and the parameterless Open Sanas)
 - `src/main/` — process entry (`index.ts`, normal vs `--smoke` dispatch) and the display-media loopback handler (`system-audio.ts`)
 - `src/main/services/` — main-process services and provider seams
@@ -133,12 +133,12 @@ sanas/
 - `src/main/config/` — settings/secrets persistence and exhaustive settings validation
 - `src/preload/` — typed contextBridge surface exposed to renderers
 - `src/renderer/src/app/` — library UI root and entry point
-- `src/renderer/src/app/shell/` — the library window frame: `AppHeader`, the `Page` union + `NAV` table (`pages.ts`) and the pure meeting-status wording
+- `src/renderer/src/app/shell/` — the library window frame: `AppHeader` (also the window title bar — drag region, see GOTCHAS), the `Page` union + `NAV` table (`pages.ts`) and the pure meeting-status wording
 - `src/renderer/src/app/controls/` — small shared library controls (`Switch`, `FieldRow`, `Badge`, `KeyBadge`); styles live in `styles/controls.css`
 - `src/renderer/src/app/pages/` — one component per library route/page; `SettingsPage` is layout and wiring only (its state is `useSettingsDraft`)
 - `src/renderer/src/app/jobs/` — job-specific editors, currently the presentation deck editor
 - `src/renderer/src/app/settings/sections/` — one component per Settings section, including independent update state, plus pure status wording (`hotkey-status.ts`, `update-status.ts`)
-- `src/renderer/src/app/settings/frame/` — what every section shares: the section list (`settings-sections.ts`), card (`SettingsSection`), index + scroll-spy, the draft state (`useSettingsDraft`: load, externally changed keys, save state machine), the pure patch/dirty/validation logic and page-ownership lists (`settings-draft.ts`) and the save bar; `settings/SettingsSections.tsx` renders the cards in index order
+- `src/renderer/src/app/settings/frame/` — what every section shares: the section list (`settings-sections.ts`), card (`SettingsSection`), the index (`SettingsNav`, Up/Down), the pager (`useSettingsPager` + pure `page-direction.ts`) and the animated scrolling pane (`SettingsPane`), the draft state (`useSettingsDraft`: load, externally changed keys, save state machine), the pure patch/dirty/validation logic and page-ownership lists (`settings-draft.ts`) and the save bar; `settings/SettingsSectionPage.tsx` renders the selected section
 - `src/renderer/src/app/styles/` — layered shared stylesheet; no per-page stylesheets. `tokens.css` is shared by both windows; the library imports `index.css` (base → controls → shell → transcript → pages → settings), the overlay imports `overlay-app/overlay.css` (tokens → controls → `overlay-controls` → `overlay-shell` → `overlay-panels` → `overlay-suggestions`)
 - `src/renderer/src/overlay-app/` — deliberately small, separate overlay bundle
 - `src/renderer/src/overlay-app/shell/` — `OverlaySession` (composes every controller once), `OverlayShell` layout, header, persistent status, preferences popover, window state, Answer every question

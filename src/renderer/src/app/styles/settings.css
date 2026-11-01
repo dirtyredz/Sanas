@@ -258,7 +258,8 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  margin-top: var(--space-2);
+  /* inset to the pane's padding so the bar lines up with the cards above it */
+  margin: var(--space-2) 6px 0 2px;
   padding: 10px 12px 10px 16px;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-lg);

@@ -2,6 +2,33 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-11-01 — Main window without a native title bar; Settings paged, not scrolled
+
+Owner feedback on the v0.1.6 face-lift: the default Windows title bar still sat above the new
+header, and Settings "just scrolls to sections".
+
+- **The app header is the title bar** (Command Deck's pattern, dk-2ed6dd39 there). The main
+  window uses `titleBarStyle: 'hidden'` + `titleBarOverlay`: Windows still draws the real
+  min/max/close buttons (so Snap Layouts on maximize keep working) at the right end of the
+  header, in the header's own colour (`--panel`) and at its height (51 px, so the header's 1 px
+  bottom border runs under them). `.app-header` is `-webkit-app-region: drag` (double-click
+  maximizes, drag-to-edge snaps) and every control in it is `no-drag`; its right padding is
+  computed from `env(titlebar-area-x/width)` rather than a measured constant, so it follows the
+  real caption-button width at any DPI and gives no reserve in the browser preview.
+  Colours/height have one source, `tokens.css`; `main/windows/window-chrome.ts` mirrors them for
+  the BrowserWindow and a test fails when they drift. Rejected: `frame: false` with drawn
+  buttons (loses Snap Layouts and native hover/accessibility); a separate 32 px strip above the
+  header (exactly the extra band the owner objected to). The overlay window is unchanged.
+- **Settings shows one section per page.** This supersedes "anchored groups on one page"
+  below. The original worry — sub-pages hide unsaved edits in other sections — is answered by
+  keeping the one page-wide draft (`useSettingsDraft`) above the pager, so edits survive page
+  switches, and by keeping the Save/Discard bar under the pane on every page. The index selects
+  a page (Up/Down move between them); each page scrolls on its own. The incoming page slides and
+  fades in for 200 ms in the direction of travel (down the index = rises; back = drops; sideways
+  in the narrow strip), only the entrance animates, and reduced motion gets a 120 ms cross-fade.
+  The scroll-spy (`useSectionSpy`, `activeSectionId`) is gone: one navigation model. Trade-off:
+  Ctrl+F no longer finds a setting on another page.
+
 ## 2026-11-01 — Shared controls layer, scoped library CSS, and who owns what Save sends
 
 Follow-up to the main-window face-lift, from its structure review.
@@ -40,7 +67,8 @@ without scrolling.
   overlay header and gives every page the full window width. Narrow windows drop tab labels to
   icons first. Rejected: keeping the sidebar and adding a header (two chrome surfaces, and a
   Settings index would be a third column).
-- **Settings is anchored groups on one page, not sub-pages.** Save is page-wide (one draft
+- **Settings is anchored groups on one page, not sub-pages.** _(Superseded the same day: paged
+  Settings, above.)_ Save is page-wide (one draft
   across all sections), so splitting sections into separate views would hide unsaved edits in
   other sections. A sticky index with scroll-spy gives sub-page navigation without that;
   Ctrl+F still finds any setting.
