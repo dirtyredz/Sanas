@@ -2,6 +2,26 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-11-01 — Shared controls layer, scoped library CSS, and who owns what Save sends
+
+Follow-up to the main-window face-lift, from its structure review.
+
+- **Layering.** `tokens.css` and `controls.css` are imported by both windows; the library-only
+  rules in `controls.css` are class-scoped (`.field-row-*`, `.switch`, `.badge`) or `.app`-prefixed
+  so they never restyle the overlay (GOTCHAS). The library's small shared components live in
+  `app/controls/` (one component each, styled only from `controls.css`); the overlay keeps its own
+  `overlay-app/controls/`. Rejected: one shared component package for both windows (the overlay's
+  controls are deliberately different and tiny).
+- **Save-patch ownership.** Settings is one page-wide draft, but some keys are written elsewhere
+  (overlay bounds/split, meeting source) or travel as typed secrets. `settings-draft.ts` declares
+  `PAGE_OWNED` and `NOT_PAGE_OWNED`; the types force them to cover `keyof Settings`, so a new setting
+  must be classified before it builds, and Save sends only page-owned keys (a stale copy of a
+  key another surface wrote can never overwrite it). Keys that change under the page while it is
+  open (`overlayOpacity`) are named in `useSettingsDraft` and update draft and baseline together.
+- **One set of limits.** The Save gate's checks (model required, cooldown range) read
+  `src/shared/settings-limits.ts`, the same constants main's schema uses, so the page cannot
+  accept what main would silently drop.
+
 ## 2026-11-01 — Library window: a top app bar and a two-pane Settings with one gated Save
 
 The main window looked unfinished next to the redesigned overlay: a sidebar holding the nav,

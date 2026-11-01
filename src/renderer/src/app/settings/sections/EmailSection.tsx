@@ -1,7 +1,8 @@
 import type { SettingsView } from '@shared/types'
 import { FieldRow } from '../../controls/FieldRow'
 import { Switch } from '../../controls/Switch'
-import { KeyBadge, SettingsSection } from '../frame/SettingsSection'
+import { KeyBadge } from '../../controls/KeyBadge'
+import { SettingsSection } from '../frame/SettingsSection'
 import type { SecretKey } from '../frame/settings-draft'
 
 export function EmailSection({

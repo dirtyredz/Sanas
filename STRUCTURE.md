@@ -58,12 +58,12 @@ sanas/
 │   │   └── src/
 │   │       ├── app/                        # library React application
 │   │       │   ├── shell/                  # app header (identity, page tabs, meeting status, overlay toggle)
-│   │       │   ├── controls/               # Switch, FieldRow, Badge — the library's small control components
+│   │       │   ├── controls/               # Switch, FieldRow, Badge, KeyBadge — the library's small control components
 │   │       │   ├── pages/                  # route/page components
 │   │       │   ├── jobs/                   # job presentation editor
 │   │       │   ├── settings/
 │   │       │   │   ├── sections/           # one component per Settings section (+ pure hotkey/update status)
-│   │       │   │   └── frame/              # section list, index + scroll-spy, card, draft/patch/validation, save bar
+│   │       │   │   └── frame/              # section list, index + scroll-spy, card, useSettingsDraft + patch/validation, save bar
 │   │       │   └── styles/                 # tokens → base/controls → shell/transcript/pages/settings; overlay-* layers
 │   │       ├── overlay-app/                # separate small overlay bundle
 │   │       │   ├── shell/                  # session composition, layout, header, status, preferences
@@ -132,12 +132,12 @@ sanas/
 - `src/main/config/` — settings/secrets persistence and exhaustive settings validation
 - `src/preload/` — typed contextBridge surface exposed to renderers
 - `src/renderer/src/app/` — library UI root and entry point
-- `src/renderer/src/app/shell/` — the library window frame: `AppHeader` and the pure meeting-status wording
-- `src/renderer/src/app/controls/` — small shared library controls (`Switch`, `FieldRow`, `Badge`); styles live in `styles/controls.css`
-- `src/renderer/src/app/pages/` — one component per library route/page
+- `src/renderer/src/app/shell/` — the library window frame: `AppHeader`, the `Page` union + `NAV` table (`pages.ts`) and the pure meeting-status wording
+- `src/renderer/src/app/controls/` — small shared library controls (`Switch`, `FieldRow`, `Badge`, `KeyBadge`); styles live in `styles/controls.css`
+- `src/renderer/src/app/pages/` — one component per library route/page; `SettingsPage` is layout and wiring only (its state is `useSettingsDraft`)
 - `src/renderer/src/app/jobs/` — job-specific editors, currently the presentation deck editor
 - `src/renderer/src/app/settings/sections/` — one component per Settings section, including independent update state, plus pure status wording (`hotkey-status.ts`, `update-status.ts`)
-- `src/renderer/src/app/settings/frame/` — what every section shares: the section list (`settings-sections.ts`), card (`SettingsSection`), index + scroll-spy, the draft → patch/dirty/validation logic (`settings-draft.ts`) and the save bar
+- `src/renderer/src/app/settings/frame/` — what every section shares: the section list (`settings-sections.ts`), card (`SettingsSection`), index + scroll-spy, the draft state (`useSettingsDraft`: load, externally changed keys, save state machine), the pure patch/dirty/validation logic and page-ownership lists (`settings-draft.ts`) and the save bar; `settings/SettingsSections.tsx` renders the cards in index order
 - `src/renderer/src/app/styles/` — layered shared stylesheet; no per-page stylesheets. `tokens.css` is shared by both windows; the library imports `index.css` (base → controls → shell → transcript → pages → settings), the overlay imports `overlay-app/overlay.css` (tokens → controls → `overlay-controls` → `overlay-shell` → `overlay-panels` → `overlay-suggestions`)
 - `src/renderer/src/overlay-app/` — deliberately small, separate overlay bundle
 - `src/renderer/src/overlay-app/shell/` — `OverlaySession` (composes every controller once), `OverlayShell` layout, header, persistent status, preferences popover, window state, Answer every question
@@ -172,9 +172,9 @@ IPC validation, renderer reducers/renderers, shared timeline/format helpers, win
 release scripts. Repository SQL remains exercised through Electron-ABI diagnostics rather than
 ordinary Vitest loading of `better-sqlite3`.
 
-Deliberately _not_ homes: the repository root, `src/main/` itself, and `src/renderer/src/` itself.
-New main-process code belongs in a responsibility folder above, not beside `index.ts` or
-`system-audio.ts`.
+Deliberately _not_ homes: the repository root and `src/renderer/src/` itself. `src/main/` is a home
+only for the process entry (`index.ts`) and the display-media handler (`system-audio.ts`); new
+main-process code belongs in a responsibility folder above, not beside them.
 
 ## Responsibility boundaries (the seams that matter)
 

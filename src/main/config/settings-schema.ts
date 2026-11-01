@@ -1,3 +1,4 @@
+import { SETTINGS_LIMITS } from '@shared/settings-limits'
 import type { MeetingSource, Settings, WhisperMode } from '@shared/types'
 
 // One runtime check per Settings key, exhaustive by construction: adding a key to the
@@ -54,10 +55,14 @@ export const SETTINGS_SCHEMA: { [K in keyof Settings]: Check<Settings[K]> } = {
   deepgramApiKey: text(500),
   anthropicApiKey: text(500),
   anthropicWorkspaceId: text(200),
-  nudgeModel: nonEmptyText(200),
-  answerModel: nonEmptyText(200),
-  classifierModel: nonEmptyText(200),
-  nudgeCooldownSec: num(0, 60, false),
+  nudgeModel: nonEmptyText(SETTINGS_LIMITS.modelId.maxLength),
+  answerModel: nonEmptyText(SETTINGS_LIMITS.modelId.maxLength),
+  classifierModel: nonEmptyText(SETTINGS_LIMITS.modelId.maxLength),
+  nudgeCooldownSec: num(
+    SETTINGS_LIMITS.nudgeCooldownSec.min,
+    SETTINGS_LIMITS.nudgeCooldownSec.max,
+    false,
+  ),
   coachWhileTalking: bool,
   answerEveryQuestion: bool,
   composeHotkey: text(60),

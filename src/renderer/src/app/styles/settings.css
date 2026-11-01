@@ -129,31 +129,6 @@
   padding-bottom: 4px;
 }
 
-.field-row-optional,
-.field-row-value {
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 400;
-}
-
-.field-row-value {
-  font-family: var(--mono);
-  color: var(--accent);
-}
-
-.field-row-note {
-  display: block;
-  margin-top: 2px;
-}
-
-.field-row-note.warn {
-  color: var(--warn);
-}
-
-.input-number {
-  max-width: 96px;
-}
-
 .settings-callout {
   padding: 10px 12px;
   border: 1px solid var(--line);

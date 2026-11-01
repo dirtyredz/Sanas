@@ -1,16 +1,7 @@
 import type { MeetingState } from '@shared/types'
-import { IconAsk, IconJobs, IconLive, IconOverlay, IconSearch, IconSettings } from '../../lib/icons'
+import { IconOverlay } from '../../lib/icons'
 import { describeMeetingStatus } from './meeting-status'
-
-export type Page = 'live' | 'jobs' | 'search' | 'ask' | 'settings'
-
-const NAV: { page: Page; label: string; icon: () => React.JSX.Element }[] = [
-  { page: 'live', label: 'Live', icon: IconLive },
-  { page: 'jobs', label: 'Jobs', icon: IconJobs },
-  { page: 'search', label: 'Search', icon: IconSearch },
-  { page: 'ask', label: 'Ask', icon: IconAsk },
-  { page: 'settings', label: 'Settings', icon: IconSettings },
-]
+import { NAV, type Page } from './pages'
 
 /** Three teal bars: a quiet voice level, the app's mark. */
 function BrandMark(): React.JSX.Element {

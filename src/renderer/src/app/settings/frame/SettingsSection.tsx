@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react'
-import { Badge } from '../../controls/Badge'
 import { sectionAnchor, sectionTitle, type SettingsSectionId } from './settings-sections'
 
 /** One card of the Settings page: its title (from the section list), one line of what it
@@ -28,9 +27,4 @@ export function SettingsSection({
       <div className="settings-section-body">{children}</div>
     </section>
   )
-}
-
-/** Whether a stored secret exists; the value itself never reaches the renderer. */
-export function KeyBadge({ set }: { set: boolean }): React.JSX.Element {
-  return set ? <Badge tone="ok">Saved</Badge> : <Badge tone="warn">Not set</Badge>
 }

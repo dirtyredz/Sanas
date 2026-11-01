@@ -3,7 +3,9 @@ import type { SettingsView } from '@shared/types'
 import { sampleSettings } from '../../../dev/mock-fixtures'
 import {
   hasUnsavedChanges,
+  NOT_PAGE_OWNED,
   NO_SECRETS,
+  PAGE_OWNED,
   problemFor,
   settingsPatch,
   settingsProblems,
@@ -79,5 +81,18 @@ describe('settingsProblems', () => {
     expect(
       problemFor(settingsProblems(edit({ nudgeCooldownSec: Number.NaN })), 'nudgeCooldownSec'),
     ).toBeDefined()
+  })
+})
+
+describe('page ownership', () => {
+  // The types force the two lists to cover keyof Settings; this checks the runtime lists agree
+  // with a real settings object and do not overlap.
+  it('partitions every Settings key: owned by the page or not, never both, none missing', () => {
+    const listed = [...PAGE_OWNED, ...NOT_PAGE_OWNED] as string[]
+    expect(new Set(listed).size).toBe(listed.length)
+    const secretsMasked = ['deepgramKeySet', 'anthropicKeySet', 'smtpPassSet']
+    const viewKeys = Object.keys(saved).filter((k) => !secretsMasked.includes(k))
+    const secretKeys = Object.keys(NO_SECRETS)
+    expect([...viewKeys, ...secretKeys].sort()).toEqual([...listed].sort())
   })
 })

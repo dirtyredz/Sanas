@@ -1,19 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { sampleSettings } from '../../../dev/mock-fixtures'
-import { AppHeader } from '../../shell/AppHeader'
-import { ApiKeysSection } from '../sections/ApiKeysSection'
-import { AssistantSection } from '../sections/AssistantSection'
-import { EmailSection } from '../sections/EmailSection'
-import { HotkeysSection } from '../sections/HotkeysSection'
-import { MicrophoneSection } from '../sections/MicrophoneSection'
-import { OverlaySection } from '../sections/OverlaySection'
-import { RetentionSection } from '../sections/RetentionSection'
-import { UpdatesSection } from '../sections/UpdatesSection'
-import { NO_SECRETS } from './settings-draft'
-import { SettingsNav } from './SettingsNav'
-import { SettingsSaveBar } from './SettingsSaveBar'
-import { SETTINGS_SECTIONS } from './settings-sections'
+import { sampleSettings } from '../../dev/mock-fixtures'
+import { AppHeader } from '../shell/AppHeader'
+import { NO_SECRETS } from './frame/settings-draft'
+import { SettingsNav } from './frame/SettingsNav'
+import { SettingsSaveBar } from './frame/SettingsSaveBar'
+import { SETTINGS_SECTIONS } from './frame/settings-sections'
+import { SettingsSections } from './SettingsSections'
 
 const noop = (): void => {}
 const view = { ...sampleSettings, deepgramKeySet: false }
@@ -30,14 +23,14 @@ function renderAll(): string {
         onToggleOverlay={noop}
       />
       <SettingsNav active="assistant" attention={new Set(['api-keys'])} onJump={noop} />
-      <ApiKeysSection view={view} secrets={NO_SECRETS} onChange={noop} onSecret={noop} />
-      <AssistantSection view={{ ...view, nudgeModel: 'my-model' }} problems={[]} onChange={noop} />
-      <HotkeysSection view={view} onChange={noop} />
-      <MicrophoneSection view={view} onChange={noop} />
-      <OverlaySection view={view} onChange={noop} />
-      <EmailSection view={view} secrets={NO_SECRETS} onChange={noop} onSecret={noop} />
-      <RetentionSection view={view} savedAt={0} onChange={noop} />
-      <UpdatesSection />
+      <SettingsSections
+        view={{ ...view, nudgeModel: 'my-model' }}
+        secrets={NO_SECRETS}
+        problems={[]}
+        savedAt={0}
+        onChange={noop}
+        onSecret={noop}
+      />
       <SettingsSaveBar
         dirty
         problemCount={0}
@@ -78,7 +71,7 @@ describe('Settings and the app header use the library controls', () => {
     }
   })
 
-  it('renders one card per indexed section, in index order', () => {
+  it('renders one card per indexed section, in index order (as SettingsSections renders them)', () => {
     const anchors = [...html.matchAll(/<section id="settings-([a-z-]+)"/g)].map((m) => m[1])
     expect(anchors).toEqual(SETTINGS_SECTIONS.map((s) => s.id))
   })
