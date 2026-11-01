@@ -36,4 +36,7 @@
   --control-h: 30px;
   --control-h-sm: 26px;
   --focus-ring: 2px solid var(--accent);
+  /* The library header is the main window's title bar. main/windows/window-chrome.ts mirrors
+     this height and --bg/--panel/--text for the native caption buttons (a test keeps them equal). */
+  --app-header-h: 52px;
 }

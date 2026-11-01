@@ -6,7 +6,7 @@ import { NO_SECRETS } from './frame/settings-draft'
 import { SettingsNav } from './frame/SettingsNav'
 import { SettingsSaveBar } from './frame/SettingsSaveBar'
 import { SETTINGS_SECTIONS } from './frame/settings-sections'
-import { SettingsSections } from './SettingsSections'
+import { SettingsSectionPage } from './SettingsSectionPage'
 
 const noop = (): void => {}
 const view = { ...sampleSettings, deepgramKeySet: false }
@@ -22,15 +22,19 @@ function renderAll(): string {
         overlayHotkey="Ctrl+Shift+Space"
         onToggleOverlay={noop}
       />
-      <SettingsNav active="assistant" attention={new Set(['api-keys'])} onJump={noop} />
-      <SettingsSections
-        view={{ ...view, nudgeModel: 'my-model' }}
-        secrets={NO_SECRETS}
-        problems={[]}
-        savedAt={0}
-        onChange={noop}
-        onSecret={noop}
-      />
+      <SettingsNav active="assistant" attention={new Set(['api-keys'])} onSelect={noop} />
+      {SETTINGS_SECTIONS.map(({ id }) => (
+        <SettingsSectionPage
+          key={id}
+          id={id}
+          view={{ ...view, nudgeModel: 'my-model' }}
+          secrets={NO_SECRETS}
+          problems={[]}
+          savedAt={0}
+          onChange={noop}
+          onSecret={noop}
+        />
+      ))}
       <SettingsSaveBar
         dirty
         problemCount={0}
@@ -69,11 +73,6 @@ describe('Settings and the app header use the library controls', () => {
         control.includes('aria-label=') || (id !== undefined && html.includes(`for="${id}"`))
       expect(labelled, control).toBe(true)
     }
-  })
-
-  it('renders one card per indexed section, in index order (as SettingsSections renders them)', () => {
-    const anchors = [...html.matchAll(/<section id="settings-([a-z-]+)"/g)].map((m) => m[1])
-    expect(anchors).toEqual(SETTINGS_SECTIONS.map((s) => s.id))
   })
 
   it('flags a missing key in the index and on the field', () => {

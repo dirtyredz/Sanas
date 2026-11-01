@@ -1,5 +1,6 @@
 import { BrowserWindow } from 'electron'
 import { join } from 'path'
+import { mainWindowChromeOptions } from './window-chrome'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -23,6 +24,7 @@ export function createMainWindow(): BrowserWindow {
     show: false,
     autoHideMenuBar: true,
     title: 'Sanas',
+    ...mainWindowChromeOptions(),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,

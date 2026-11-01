@@ -1,35 +1,38 @@
-import { useRef } from 'react'
 import { SettingsNav } from '../settings/frame/SettingsNav'
+import { SettingsPane } from '../settings/frame/SettingsPane'
 import { SettingsSaveBar } from '../settings/frame/SettingsSaveBar'
-import { useSectionSpy } from '../settings/frame/useSectionSpy'
 import { useSettingsDraft } from '../settings/frame/useSettingsDraft'
-import { SettingsSections } from '../settings/SettingsSections'
+import { useSettingsPager } from '../settings/frame/useSettingsPager'
+import { SettingsSectionPage } from '../settings/SettingsSectionPage'
 
-/** Layout and wiring: the draft lives in useSettingsDraft, each section renders one concern. */
+/** Layout and wiring: the index picks one page, the pane shows it, and the draft (with its
+ *  Save bar) sits above both so edits carry across pages. */
 export function SettingsPage(): React.JSX.Element {
   const draft = useSettingsDraft()
-  const rootRef = useRef<HTMLDivElement>(null)
-  const [active, jumpTo] = useSectionSpy(rootRef, draft.view !== null)
+  const [pager, select] = useSettingsPager()
 
   if (!draft.view || !draft.saved) return <p className="muted">Loading…</p>
 
   return (
-    <div className="settings-page" ref={rootRef}>
+    <div className="settings-page">
       <div className="page-head settings-head">
         <h2>Settings</h2>
         <p>Stored on this computer. Changes apply when you save.</p>
       </div>
       <div className="settings-layout">
-        <SettingsNav active={active} attention={draft.attention} onJump={jumpTo} />
-        <div className="settings-sections">
-          <SettingsSections
-            view={draft.view}
-            secrets={draft.secrets}
-            problems={draft.problems}
-            savedAt={draft.savedAt}
-            onChange={draft.onChange}
-            onSecret={draft.onSecret}
-          />
+        <SettingsNav active={pager.active} attention={draft.attention} onSelect={select} />
+        <div className="settings-main">
+          <SettingsPane key={pager.active} page={pager.active} direction={pager.direction}>
+            <SettingsSectionPage
+              id={pager.active}
+              view={draft.view}
+              secrets={draft.secrets}
+              problems={draft.problems}
+              savedAt={draft.savedAt}
+              onChange={draft.onChange}
+              onSecret={draft.onSecret}
+            />
+          </SettingsPane>
           <SettingsSaveBar
             dirty={draft.dirty}
             problemCount={draft.problems.length}
