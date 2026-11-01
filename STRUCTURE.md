@@ -57,10 +57,14 @@ sanas/
 │   │   ├── public/                         # unbundled AudioWorklet and static assets
 │   │   └── src/
 │   │       ├── app/                        # library React application
+│   │       │   ├── shell/                  # app header (identity, page tabs, meeting status, overlay toggle)
+│   │       │   ├── controls/               # Switch, FieldRow, Badge — the library's small control components
 │   │       │   ├── pages/                  # route/page components
 │   │       │   ├── jobs/                   # job presentation editor
-│   │       │   ├── settings/               # one component per Settings section
-│   │       │   └── styles/                 # tokens → base/controls → shell/transcript/pages; overlay-* layers
+│   │       │   ├── settings/
+│   │       │   │   ├── sections/           # one component per Settings section (+ pure hotkey/update status)
+│   │       │   │   └── frame/              # section list, index + scroll-spy, card, draft/patch/validation, save bar
+│   │       │   └── styles/                 # tokens → base/controls → shell/transcript/pages/settings; overlay-* layers
 │   │       ├── overlay-app/                # separate small overlay bundle
 │   │       │   ├── shell/                  # session composition, layout, header, status, preferences
 │   │       │   │   └── navigation/         # workspace reducer, local shortcuts, rail, compose handshake
@@ -128,10 +132,13 @@ sanas/
 - `src/main/config/` — settings/secrets persistence and exhaustive settings validation
 - `src/preload/` — typed contextBridge surface exposed to renderers
 - `src/renderer/src/app/` — library UI root and entry point
+- `src/renderer/src/app/shell/` — the library window frame: `AppHeader` and the pure meeting-status wording
+- `src/renderer/src/app/controls/` — small shared library controls (`Switch`, `FieldRow`, `Badge`); styles live in `styles/controls.css`
 - `src/renderer/src/app/pages/` — one component per library route/page
 - `src/renderer/src/app/jobs/` — job-specific editors, currently the presentation deck editor
-- `src/renderer/src/app/settings/` — one component per Settings section, including independent update state
-- `src/renderer/src/app/styles/` — layered shared stylesheet; no per-page stylesheets. `tokens.css` is shared by both windows; the library imports `index.css` (base → controls → shell → transcript → pages), the overlay imports `overlay-app/overlay.css` (tokens → controls → `overlay-controls` → `overlay-shell` → `overlay-panels` → `overlay-suggestions`)
+- `src/renderer/src/app/settings/sections/` — one component per Settings section, including independent update state, plus pure status wording (`hotkey-status.ts`, `update-status.ts`)
+- `src/renderer/src/app/settings/frame/` — what every section shares: the section list (`settings-sections.ts`), card (`SettingsSection`), index + scroll-spy, the draft → patch/dirty/validation logic (`settings-draft.ts`) and the save bar
+- `src/renderer/src/app/styles/` — layered shared stylesheet; no per-page stylesheets. `tokens.css` is shared by both windows; the library imports `index.css` (base → controls → shell → transcript → pages → settings), the overlay imports `overlay-app/overlay.css` (tokens → controls → `overlay-controls` → `overlay-shell` → `overlay-panels` → `overlay-suggestions`)
 - `src/renderer/src/overlay-app/` — deliberately small, separate overlay bundle
 - `src/renderer/src/overlay-app/shell/` — `OverlaySession` (composes every controller once), `OverlayShell` layout, header, persistent status, preferences popover, window state, Answer every question
 - `src/renderer/src/overlay-app/shell/navigation/` — pure workspace reducer, local shortcut table/dispatch, the rail, and the compose readiness/focus handshake

@@ -49,6 +49,15 @@ starts this logger or writes there.
   sidebar's "listening" modifier, which stretched the status dot into a full-height bar. Page
   roots are `*-page`; modifiers (`live`, `active`, `me`, `interim`) stay bare and never carry
   layout.
+- **`controls.css` is imported by both windows.** Anything added there reaches the overlay too, so
+  library-only rules are class-scoped (`.switch`, `.field-row`, `.badge`, `input.range`) or
+  prefixed with `.app` (hover/disabled/invalid states, the drawn checkbox). A bare element
+  selector added there restyles the overlay.
+- **A new Settings field must be in `settingsPatch`** (`app/settings/frame/settings-draft.ts`).
+  Settings saves one patch; a field edited on the page but missing from it looks saved and is
+  silently dropped. Capture screen, Ask composer and Answer every question were lost this way
+  until 2026-11-01; `settings-draft.test.ts` and the dirty check (which compares that patch)
+  now catch it.
 
 ## Electron
 

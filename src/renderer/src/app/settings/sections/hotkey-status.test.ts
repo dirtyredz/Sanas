@@ -26,7 +26,7 @@ describe('describeHotkey', () => {
       action: 'overlayHotkey',
       accelerator: 'Control+Space',
       registered: false,
-      error: 'already in use',
+      error: 'already in use.',
     })
     expect(state.badge).toEqual({ tone: 'warn', text: 'Not registered' })
     expect(state.notes).toEqual([{ tone: 'warn', text: 'Ctrl+Space: already in use.' }])

@@ -24,7 +24,8 @@ export function describeHotkey(
       : { tone: 'warn', text: 'Not registered' }
     if (!status.registered) {
       const keys = hotkeyLabel(status.accelerator) || 'This shortcut'
-      notes.push({ tone: 'warn', text: `${keys}: ${status.error ?? 'could not be registered'}.` })
+      const reason = (status.error ?? 'could not be registered').replace(/\.+$/, '')
+      notes.push({ tone: 'warn', text: `${keys}: ${reason}.` })
     }
     if (saved[action] !== status.accelerator) {
       badge = { tone: 'accent', text: 'Restart to apply' }

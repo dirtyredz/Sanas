@@ -2,6 +2,40 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-11-01 — Library window: a top app bar and a two-pane Settings with one gated Save
+
+The main window looked unfinished next to the redesigned overlay: a sidebar holding the nav,
+a loose status line and the overlay hotkey at the bottom-left, and a Settings page that was
+one long column of cards with raw checkboxes, unlabelled hotkey rows, a bare "idle" update
+status and a Save button that never said whether anything was unsaved.
+
+Benchmarked against VS Code, Linear and Raycast settings: all three keep a section index
+always visible beside a scrolling list of rows (label and help left, control right), use
+switches for booleans, and make unsaved/saved state obvious. Felt target: any setting one
+click from the index, nothing browser-default, and the save state readable at a glance
+without scrolling.
+
+- **Top app bar replaces the sidebar** (`app/shell/AppHeader.tsx`): mark + name, page tabs,
+  a meeting status pill that opens Live, and the Overlay toggle with its hotkey. It mirrors the
+  overlay header and gives every page the full window width. Narrow windows drop tab labels to
+  icons first. Rejected: keeping the sidebar and adding a header (two chrome surfaces, and a
+  Settings index would be a third column).
+- **Settings is anchored groups on one page, not sub-pages.** Save is page-wide (one draft
+  across all sections), so splitting sections into separate views would hide unsaved edits in
+  other sections. A sticky index with scroll-spy gives sub-page navigation without that;
+  Ctrl+F still finds any setting.
+- **Save is gated, not best-effort.** The bar appears only when there is something to say:
+  unsaved changes (with Discard), fields Save would refuse, saving, saved, or a failure. Values
+  the main schema would silently drop (empty custom model, cooldown outside 0–60) block Save
+  with the field marked, instead of saving the rest and reverting that field.
+- **Controls are shared, small and library-scoped** (`app/controls/`: Switch, FieldRow,
+  Badge), styled in `controls.css` next to `.btn`. The overlay keeps its own `ov-*`
+  vocabulary for now; unifying its switch with `Switch` is follow-up work.
+- **Settings layout gets its own layer** (`styles/settings.css`). This refines the 2026-09-09
+  "no per-page stylesheets" rule: control vocabulary still lives in one shared place; a page
+  whose layout alone is ~300 lines gets a layer rather than pushing `pages.css` past the size
+  cap.
+
 ## 2026-11-01 — Answer-first overlay: a rail of workspaces, a kept divider, no auto-switching
 
 The overlay had grown into a stack (status, toggle, tabs, transcript, splitter, answer bar,

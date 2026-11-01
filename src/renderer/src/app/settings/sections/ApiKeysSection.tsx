@@ -22,7 +22,7 @@ export function ApiKeysSection({
       <FieldRow
         label="Deepgram"
         badge={<KeyBadge set={view.deepgramKeySet} />}
-        help="Live transcription. Type a new key to replace the saved one."
+        help="Live transcription. A new key replaces the saved one."
       >
         <input
           type="password"

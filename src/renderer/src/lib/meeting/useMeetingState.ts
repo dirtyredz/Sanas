@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { MeetingState } from '@shared/types'
 import { mergeMeetingState, type MeetingStateSnapshot } from './meeting-state'
 
-/** Just the live/idle state — for chrome (the sidebar status) that needs no transcript. */
+/** Just the live/idle state — for chrome (the app header status) that needs no transcript. */
 export function useMeetingState(): MeetingState {
   const initial: MeetingStateSnapshot = {
     state: { meetingId: null, status: 'idle' },
