@@ -62,8 +62,9 @@ sanas/
 │   │       │   ├── pages/                  # route/page components
 │   │       │   ├── jobs/                   # job presentation editor
 │   │       │   ├── settings/
-│   │       │   │   ├── sections/           # one component per Settings section (+ pure hotkey/update status)
-│   │       │   │   └── frame/              # section list, index, pager + page direction, pane, card, useSettingsDraft + patch/validation, save bar
+│   │       │   │   ├── sections/           # one component per Settings section + section index (+ pure hotkey/update status)
+│   │       │   │   └── frame/              # section list, index, pane, card, useSettingsDraft + patch/validation, save bar
+│   │       │   │       └── paging/         # pure page order + useSettingsPager
 │   │       │   └── styles/                 # tokens → base/controls → shell/transcript/pages/settings; overlay-* layers
 │   │       ├── overlay-app/                # separate small overlay bundle
 │   │       │   ├── shell/                  # session composition, layout, header, status, preferences
@@ -137,8 +138,10 @@ sanas/
 - `src/renderer/src/app/controls/` — small shared library controls (`Switch`, `FieldRow`, `Badge`, `KeyBadge`); styles live in `styles/controls.css`
 - `src/renderer/src/app/pages/` — one component per library route/page; `SettingsPage` is layout and wiring only (its state is `useSettingsDraft`)
 - `src/renderer/src/app/jobs/` — job-specific editors, currently the presentation deck editor
-- `src/renderer/src/app/settings/sections/` — one component per Settings section, including independent update state, plus pure status wording (`hotkey-status.ts`, `update-status.ts`)
-- `src/renderer/src/app/settings/frame/` — what every section shares: the section list (`settings-sections.ts`), card (`SettingsSection`), the index (`SettingsNav`, Up/Down), the pager (`useSettingsPager` + pure `page-direction.ts`) and the animated scrolling pane (`SettingsPane`), the draft state (`useSettingsDraft`: load, externally changed keys, save state machine), the pure patch/dirty/validation logic and page-ownership lists (`settings-draft.ts`) and the save bar; `settings/SettingsSectionPage.tsx` renders the selected section
+- `src/renderer/src/app/settings/` — only the cross-section tests (`settings-pages.test.tsx`, `settings-controls.test.tsx`); everything else is in the folders below
+- `src/renderer/src/app/settings/sections/` — one component per Settings section, including independent update state, plus pure status wording (`hotkey-status.ts`, `update-status.ts`); `SettingsSectionPage.tsx` is the section index that renders the selected section
+- `src/renderer/src/app/settings/frame/` — what every section shares: the section list (`settings-sections.ts`), card (`SettingsSection`), the index (`SettingsNav`, Up/Down), the animated scrolling pane (`SettingsPane`, owner of `SETTINGS_PANE_ID`), the draft state (`useSettingsDraft`: load, externally changed keys, save state machine), the pure patch/dirty/validation logic and page-ownership lists (`settings-draft.ts`) and the save bar
+- `src/renderer/src/app/settings/frame/paging/` — the pager: pure page order (`page-order.ts`: `ORDER`, `selectPage`, `stepPage`, `pageDirection`) and the thin React state wrapper `useSettingsPager`
 - `src/renderer/src/app/styles/` — layered shared stylesheet; no per-page stylesheets. `tokens.css` is shared by both windows; the library imports `index.css` (base → controls → shell → transcript → pages → settings), the overlay imports `overlay-app/overlay.css` (tokens → controls → `overlay-controls` → `overlay-shell` → `overlay-panels` → `overlay-suggestions`)
 - `src/renderer/src/overlay-app/` — deliberately small, separate overlay bundle
 - `src/renderer/src/overlay-app/shell/` — `OverlaySession` (composes every controller once), `OverlayShell` layout, header, persistent status, preferences popover, window state, Answer every question

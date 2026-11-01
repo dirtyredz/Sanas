@@ -1,9 +1,7 @@
 import type { KeyboardEvent } from 'react'
 import { SETTINGS_SECTIONS, type SettingsSectionId } from './settings-sections'
-import { stepPage } from './useSettingsPager'
-
-/** DOM id of the scrolling pane that shows the selected page. */
-export const SETTINGS_PANE_ID = 'settings-pane'
+import { stepPage } from './paging/page-order'
+import { SETTINGS_PANE_ID } from './SettingsPane'
 
 const STEP_KEYS: Readonly<Record<string, number>> = {
   ArrowDown: 1,

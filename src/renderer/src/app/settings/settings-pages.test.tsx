@@ -6,8 +6,8 @@ import { NO_SECRETS } from './frame/settings-draft'
 import { SettingsNav } from './frame/SettingsNav'
 import { SettingsPane } from './frame/SettingsPane'
 import { SETTINGS_SECTIONS, type SettingsSectionId } from './frame/settings-sections'
-import { INITIAL_PAGER, selectPage, type PagerState } from './frame/useSettingsPager'
-import { SettingsSectionPage } from './SettingsSectionPage'
+import { INITIAL_PAGER, selectPage, type PagerState } from './frame/paging/page-order'
+import { SettingsSectionPage } from './sections/SettingsSectionPage'
 
 const noop = (): void => {}
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { pageDirection } from './page-direction'
+import { pageDirection } from './page-order'
 
 const order = ['a', 'b', 'c', 'd'] as const
 

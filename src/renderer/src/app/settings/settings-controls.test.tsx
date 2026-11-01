@@ -6,7 +6,7 @@ import { NO_SECRETS } from './frame/settings-draft'
 import { SettingsNav } from './frame/SettingsNav'
 import { SettingsSaveBar } from './frame/SettingsSaveBar'
 import { SETTINGS_SECTIONS } from './frame/settings-sections'
-import { SettingsSectionPage } from './SettingsSectionPage'
+import { SettingsSectionPage } from './sections/SettingsSectionPage'
 
 const noop = (): void => {}
 const view = { ...sampleSettings, deepgramKeySet: false }

@@ -2,8 +2,8 @@ import { SettingsNav } from '../settings/frame/SettingsNav'
 import { SettingsPane } from '../settings/frame/SettingsPane'
 import { SettingsSaveBar } from '../settings/frame/SettingsSaveBar'
 import { useSettingsDraft } from '../settings/frame/useSettingsDraft'
-import { useSettingsPager } from '../settings/frame/useSettingsPager'
-import { SettingsSectionPage } from '../settings/SettingsSectionPage'
+import { useSettingsPager } from '../settings/frame/paging/useSettingsPager'
+import { SettingsSectionPage } from '../settings/sections/SettingsSectionPage'
 
 /** Layout and wiring: the index picks one page, the pane shows it, and the draft (with its
  *  Save bar) sits above both so edits carry across pages. */

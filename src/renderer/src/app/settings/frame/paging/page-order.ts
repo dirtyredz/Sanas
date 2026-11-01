@@ -1,6 +1,17 @@
-import { useCallback, useState } from 'react'
-import { pageDirection, type PageDirection } from './page-direction'
-import { SETTINGS_SECTIONS, type SettingsSectionId } from './settings-sections'
+import { SETTINGS_SECTIONS, type SettingsSectionId } from '../settings-sections'
+
+/** Which way a page change moves through an ordered list of pages: further down the list is
+ *  'forward', back up it is 'back', and staying put (or an id not in the list) is 'none'.
+ *  Settings animates the incoming page from this: forward slides up (left in the narrow strip),
+ *  back reverses, none does not animate. */
+export type PageDirection = 'forward' | 'back' | 'none'
+
+export function pageDirection<T>(order: readonly T[], from: T, to: T): PageDirection {
+  const a = order.indexOf(from)
+  const b = order.indexOf(to)
+  if (a < 0 || b < 0 || a === b) return 'none'
+  return b > a ? 'forward' : 'back'
+}
 
 const ORDER: readonly SettingsSectionId[] = SETTINGS_SECTIONS.map((s) => s.id)
 
@@ -23,12 +34,4 @@ export function selectPage(state: PagerState, id: SettingsSectionId): PagerState
 export function stepPage(id: SettingsSectionId, delta: number): SettingsSectionId {
   const index = Math.min(ORDER.length - 1, Math.max(0, ORDER.indexOf(id) + delta))
   return ORDER[index]
-}
-
-/** Settings shows one section at a time. Only the page changes here; the draft lives above
- *  it (useSettingsDraft), so unsaved edits survive moving between pages. */
-export function useSettingsPager(): [PagerState, (id: SettingsSectionId) => void] {
-  const [state, setState] = useState(INITIAL_PAGER)
-  const select = useCallback((id: SettingsSectionId) => setState((s) => selectPage(s, id)), [])
-  return [state, select]
 }

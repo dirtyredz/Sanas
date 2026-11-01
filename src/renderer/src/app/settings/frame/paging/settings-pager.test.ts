@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { SETTINGS_SECTIONS } from './settings-sections'
-import { INITIAL_PAGER, selectPage, stepPage } from './useSettingsPager'
+import { SETTINGS_SECTIONS } from '../settings-sections'
+import { INITIAL_PAGER, selectPage, stepPage } from './page-order'
 
 describe('the Settings pager', () => {
   it('opens on the first section without animating', () => {
