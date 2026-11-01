@@ -1,4 +1,4 @@
-// Inline 16px stroke icons for the shell and toolbars. Kept tiny and local: four
+// Inline 16px stroke icons for the shell and toolbars. Kept tiny and local: a handful of
 // nav glyphs and two capture-source glyphs are not worth an icon dependency.
 
 const base = {
@@ -73,6 +73,15 @@ export function IconPeople(): React.JSX.Element {
       <path d="M2 13c0-2.2 1.8-3.75 4-3.75s4 1.55 4 3.75" />
       <circle cx="11.5" cy="6" r="1.75" />
       <path d="M11 9.75c1.8 0 3 1.3 3 3" />
+    </svg>
+  )
+}
+
+export function IconOverlay(): React.JSX.Element {
+  return (
+    <svg {...base}>
+      <rect x="1.75" y="2.75" width="12.5" height="10.5" rx="1.5" />
+      <rect x="8" y="5" width="4.25" height="3.5" rx="0.75" />
     </svg>
   )
 }
