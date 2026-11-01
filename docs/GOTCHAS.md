@@ -264,6 +264,21 @@ starts this logger or writes there.
 - **One instance at a time** (`app.requestSingleInstanceLock`). A second launch focuses the
   first and exits, so a leftover process from an earlier attempt looks exactly like a
   crash. Check for a running `electron.exe` before concluding anything.
+- **Native checks without touching the owner's data:** an unpackaged run accepts
+  `--dev-user-data=<dir>` (ignored when packaged), e.g.
+  `electron.exe out/main/index.js --dev-user-data=.tmp/native/profile --remote-debugging-port=9333`.
+  A different userData also means a separate single-instance lock, so it can run beside the
+  installed app — but its global shortcuts then fail to register (the installed app owns them).
+- **You cannot screenshot the overlay from the OS:** content protection omits it (a
+  `CopyFromScreen` of its rectangle shows what is underneath). Use CDP
+  `Page.captureScreenshot` on the `overlay.html` target. Electron's CDP has no `Browser`
+  domain, so window state (minimize/restore) needs Win32 (`ShowWindow`/`IsIconic`) scoped to
+  your own process id — the installed Sanas also has a window titled "Sanas".
+- **Overlay preview scenarios:** `npm run dev:web`, then `overlay.html?scenario=<name>`
+  (idle, listening, answer, history, code, streaming, detail, warning, paused, error, deck,
+  capturing, capture-failed, rejected). They set state directly through `mockDriver` and must
+  wait for the overlay to render the meeting before emitting answers or transcript, or the
+  overlay drops them as another meeting's.
 
 ## APIs
 

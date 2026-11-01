@@ -417,3 +417,17 @@ details.ov-status > p {
 .ov-status-action {
   padding: 0 0 4px 14px;
 }
+
+.overlay-panel details.ov-status[open] > summary::before {
+  transform: none;
+}
+
+@media (max-height: 300px) {
+  .overlay-rail {
+    padding-block: 2px;
+  }
+
+  .overlay-rail [role='tablist'] {
+    gap: 0;
+  }
+}

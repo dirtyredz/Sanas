@@ -25,6 +25,13 @@ if (!id) return
 
 Verify: reload the page and confirm the error is gone from the console.`
 
+let pushStatus: ((next: Omit<CaptureStatus, 'seq'>) => void) | null = null
+
+/** Preview scenarios: put the capture status into a fixed phase. */
+export function setMockCaptureStatus(next: Omit<CaptureStatus, 'seq'>): void {
+  pushStatus?.(next)
+}
+
 export function mockScreenCapture(
   getMeetingId: () => number | null,
   emit: Parameters<SanasApi['assist']['onSuggestion']>[0],
@@ -37,6 +44,7 @@ export function mockScreenCapture(
     status = { ...next, seq: status.seq + 1 }
     listeners.forEach((cb) => cb(status))
   }
+  pushStatus = set
   return {
     capture: async (meetingId) => {
       if (meetingId !== getMeetingId()) {

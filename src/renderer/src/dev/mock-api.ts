@@ -644,6 +644,19 @@ const api: SanasApi = {
   },
 }
 
+/** Puts the preview into a fixed state for dev/overlay-scenarios.ts: no scripted meeting runs,
+ *  so every scenario renders the same way each time. */
+export const mockDriver = {
+  api,
+  meeting(next: MeetingState): void {
+    if (liveTimer) clearTimeout(liveTimer)
+    setState(next)
+  },
+  transcript: (event: TranscriptEvent): void => emit(event),
+  suggestion: (event: SuggestionEvent): void => suggestionListeners.forEach((cb) => cb(event)),
+  reset: (meetingId: number): void => controls.reset(meetingId, false),
+}
+
 /** Installs the mock as window.sanas, plus a silent microphone so "Start listening"
  *  works in a browser tab: getUserMedia yields an empty stream and getDisplayMedia
  *  fails (no loopback), so This PC falls back to mono with its notice. Dev only. */
@@ -659,5 +672,12 @@ export function installMockApi(): void {
   if (new URLSearchParams(location.search).get('demo') === 'live') {
     setTimeout(() => void api.meeting.start(undefined, 1), 600)
   }
+  // overlay.html?scenario=<name>: a fixed preview state (see overlay-scenarios.ts)
+  const scenario = new URLSearchParams(location.search).get('scenario')
+  if (scenario)
+    setTimeout(
+      () => void import('./overlay-scenarios').then(({ applyScenario }) => applyScenario(scenario)),
+      400,
+    )
   console.info('[sanas] browser preview: mock API installed (no Electron)')
 }

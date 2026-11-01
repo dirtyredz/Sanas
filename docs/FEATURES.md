@@ -60,7 +60,7 @@ _Capability inventory. Status: ✅ done · 🔨 in progress · 📋 planned · �
 | Overlay opacity slider                                                   | ✅     | Overlay preferences (⋯ button, Ctrl+,) + Settings, live-applied and kept in sync                                                   |
 | Ask-your-history ("what did we decide about X?")                         | ✅     | Ask page: FTS5 retrieval + cited, streamed answer; job scope (2026-09-09)                                                          |
 | Visual identity (tokens, control vocabulary, transcript gutter)          | ✅     | dark by design; teal = room/app, sand = your voice; slim dark scrollbars                                                           |
-| Browser preview with a typed mock bridge (`npm run dev:web`)             | ✅     | dev only; scripted live meeting, `overlay.html?demo=live`                                                                          |
+| Browser preview with a typed mock bridge (`npm run dev:web`)             | ✅     | dev only; scripted live meeting, `overlay.html?demo=live`; fixed overlay states via `overlay.html?scenario=<name>`                 |
 
 ## Presentation mode
 

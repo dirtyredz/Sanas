@@ -31,10 +31,7 @@ export function OverlayCapturePanel({
         failed={capture.notice?.failed ?? false}
       />
       {capture.notice && (
-        <p
-          className={`ov-message ${capture.notice.failed ? 'ov-message--error' : ''}`}
-          role="status"
-        >
+        <p className={`ov-message ${capture.notice.failed ? 'ov-message--error' : ''}`}>
           {capture.notice.text}
         </p>
       )}

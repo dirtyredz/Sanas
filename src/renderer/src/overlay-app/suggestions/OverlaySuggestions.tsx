@@ -1,3 +1,4 @@
+import type { MeetingState } from '@shared/types'
 import { suggestionArrivalLabel, suggestionLabel } from '@shared/suggestion-label'
 import { SuggestionContent } from '../../lib/suggestions/SuggestionContent'
 import { OverlayButton } from '../controls/OverlayButton'
@@ -15,15 +16,15 @@ export function OverlaySuggestions({
   model,
   manual,
   live,
-  paused = false,
+  status = 'idle',
   mode = 'full',
   onReadFull,
 }: {
   model: OverlaySuggestionsModel
   manual: ManualRequestsModel
   live: boolean
-  /** The meeting is paused (still `live` for requests). */
-  paused?: boolean
+  /** The meeting's status, for the empty-state copy. */
+  status?: MeetingState['status']
   mode?: 'full' | 'preview'
   onReadFull?: () => void
 }): React.JSX.Element {
@@ -90,9 +91,11 @@ export function OverlaySuggestions({
         )}
         {!selected && (
           <div className="suggestion-empty">
-            {live ? (
+            {status === 'error' ? (
+              <p>Listening stopped. The details are above.</p>
+            ) : live ? (
               <p>
-                {paused
+                {status === 'paused'
                   ? 'Paused. Answer now and Ask still work.'
                   : 'Listening for key moments — or press Answer now.'}
               </p>
