@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import type { RetentionPreview, RetentionResult, SettingsView } from '@shared/types'
-import { SettingsSection } from './SettingsSection'
-import { errorText } from '../../lib/ipc-error'
+import { FieldRow } from '../../controls/FieldRow'
+import { SettingsSection } from '../frame/SettingsSection'
+import { errorText } from '../../../lib/ipc-error'
 
 const CHOICES: { days: number; label: string }[] = [
   { days: 0, label: 'Keep forever' },
@@ -49,11 +50,13 @@ export function RetentionSection({
 
   return (
     <SettingsSection
-      title="Retention"
+      id="retention"
       description="Recordings are the bulky part (about 115 MB per hour); transcripts and summaries are small. A meeting that is still running is never touched."
     >
-      <label className="field">
-        <span className="label">Delete audio recordings</span>
+      <FieldRow
+        label="Delete audio recordings"
+        help="The transcript, summary and suggestions stay; only the WAV goes."
+      >
         <select
           value={view.audioRetentionDays}
           onChange={(e) => onChange({ audioRetentionDays: Number(e.target.value) })}
@@ -64,11 +67,12 @@ export function RetentionSection({
             </option>
           ))}
         </select>
-        <small>The transcript, summary and suggestions stay; only the WAV goes.</small>
-      </label>
+      </FieldRow>
 
-      <label className="field">
-        <span className="label">Delete whole meetings</span>
+      <FieldRow
+        label="Delete whole meetings"
+        help="Transcript, summary, suggestions and recording — gone for good."
+      >
         <select
           value={view.meetingRetentionDays}
           onChange={(e) => onChange({ meetingRetentionDays: Number(e.target.value) })}
@@ -79,10 +83,9 @@ export function RetentionSection({
             </option>
           ))}
         </select>
-        <small>Transcript, summary, suggestions and recording — gone for good.</small>
-      </label>
+      </FieldRow>
 
-      <p className="muted retention-status">
+      <div className="settings-callout" role="status">
         {preview === null
           ? 'Checking…'
           : nothingDue
@@ -98,14 +101,14 @@ export function RetentionSection({
               ]
                 .filter(Boolean)
                 .join(' ')}
-      </p>
-      <div className="row">
+      </div>
+      <div className="settings-actions">
         <button type="button" className="btn btn-sm" onClick={cleanUp} disabled={nothingDue}>
           Clean up now
         </button>
-        {cleanUpError && <span className="warn">{cleanUpError}</span>}
+        {cleanUpError && <span className="settings-inline-message warn">{cleanUpError}</span>}
         {!cleanUpError && result && (
-          <span className={result.failed > 0 ? 'warn' : 'ok'}>
+          <span className={`settings-inline-message ${result.failed > 0 ? 'warn' : 'ok'}`}>
             {`Removed ${result.audioFiles} recording(s) and ${result.meetings} meeting(s)` +
               (result.orphanFiles > 0
                 ? `, plus ${result.orphanFiles} recording(s) no meeting was using`

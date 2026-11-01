@@ -1,5 +1,5 @@
 /* ---------- base ---------- */
-/* Sanas — library window. Tokens → base → controls → shell → transcript → pages. */
+/* Sanas — library window. Tokens → base → controls → shell → transcript → pages → settings. */
 @import './tokens.css';
 
 * {

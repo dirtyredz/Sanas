@@ -448,55 +448,6 @@
   padding: 0 1px;
 }
 
-/* ---------- settings ---------- */
-.settings-page {
-  max-width: 600px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.settings-section {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.settings-section > header {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-bottom: 2px;
-}
-
-.settings-section > header p {
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.settings-page input[type='text'],
-.settings-page input[type='password'],
-.settings-page input[type='number'],
-.settings-page input[type='email'],
-.settings-page select {
-  width: 100%;
-}
-
-.save-bar {
-  position: sticky;
-  bottom: -28px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 0;
-  margin-top: 4px;
-  background: linear-gradient(to top, var(--bg) 70%, transparent);
-}
-
-.retention-status {
-  font-size: 13px;
-}
-
 /* ---------- ask ---------- */
 
 .ask-page {
@@ -613,14 +564,4 @@
 .presentation-editor pre {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-}
-
-/* Settings → Hotkeys: the overlay's local (focused-only) shortcuts */
-.local-shortcuts {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 0;
-  list-style: none;
-  font-size: 13px;
 }

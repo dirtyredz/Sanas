@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import type { SettingsView } from '@shared/types'
-import { SettingsSection } from './SettingsSection'
+import { FieldRow } from '../../controls/FieldRow'
+import { Switch } from '../../controls/Switch'
+import { SettingsSection } from '../frame/SettingsSection'
 
 export function MicrophoneSection({
   view,
@@ -20,11 +22,10 @@ export function MicrophoneSection({
 
   return (
     <SettingsSection
-      title="Microphone"
+      id="microphone"
       description="Where the meeting is (this PC, or elsewhere) is chosen per meeting on the Live page."
     >
-      <label className="field">
-        <span className="label">Input device</span>
+      <FieldRow label="Input device">
         <select
           value={view.audioDeviceId}
           onChange={(e) => onChange({ audioDeviceId: e.target.value })}
@@ -36,23 +37,14 @@ export function MicrophoneSection({
             </option>
           ))}
         </select>
-      </label>
+      </FieldRow>
 
-      <label className="check">
-        <input
-          type="checkbox"
-          checked={view.recordAudio}
-          onChange={(e) => onChange({ recordAudio: e.target.checked })}
-        />
-        <span>
-          Save meeting audio to disk (WAV, local only)
-          <br />
-          <small className="hint">
-            Needed for the post-meeting pass that gives speakers stable labels. See Retention for
-            how long it is kept.
-          </small>
-        </span>
-      </label>
+      <FieldRow
+        label="Save meeting audio to disk"
+        help="WAV, local only. Needed for the post-meeting pass that gives speakers stable labels. See Retention for how long it is kept."
+      >
+        <Switch checked={view.recordAudio} onChange={(recordAudio) => onChange({ recordAudio })} />
+      </FieldRow>
     </SettingsSection>
   )
 }

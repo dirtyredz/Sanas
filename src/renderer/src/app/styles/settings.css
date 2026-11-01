@@ -1,0 +1,315 @@
+/* ---------- settings ---------- */
+/* Two panes: a sticky section index and the section cards, with one sticky save bar. Controls
+   come from controls.css (FieldRow, Switch, Badge); this block is layout only. */
+.settings-page {
+  max-width: 980px;
+}
+
+.settings-head {
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings-layout {
+  display: grid;
+  grid-template-columns: 184px minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+
+.settings-nav {
+  position: sticky;
+  top: 0;
+}
+
+.settings-nav ul {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.settings-nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  height: 32px;
+  padding: 0 10px 0 12px;
+  border: none;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--muted);
+  font-size: 13.5px;
+  text-align: left;
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+
+.settings-nav-item:hover {
+  background: var(--panel-2);
+  color: var(--text);
+}
+
+.settings-nav-item.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.settings-nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 7px;
+  bottom: 7px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--accent);
+}
+
+.settings-nav-flag {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--warn);
+  flex-shrink: 0;
+}
+
+.settings-sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.settings-section {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  scroll-margin-top: 4px;
+}
+
+.settings-section:focus {
+  outline: none;
+}
+
+.settings-section:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.settings-section-head {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 16px 20px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.settings-section-head p {
+  color: var(--muted);
+  font-size: 13px;
+  max-width: 72ch;
+}
+
+.settings-section-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: 2px 20px 16px;
+}
+
+.settings-section-body > .field-row:last-of-type {
+  padding-bottom: 4px;
+}
+
+.field-row-optional,
+.field-row-value {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.field-row-value {
+  font-family: var(--mono);
+  color: var(--accent);
+}
+
+.field-row-note {
+  display: block;
+  margin-top: 2px;
+}
+
+.field-row-note.warn {
+  color: var(--warn);
+}
+
+.input-number {
+  max-width: 96px;
+}
+
+.settings-callout {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.settings-inline-message {
+  font-size: 13px;
+}
+
+/* Settings → Hotkeys: the overlay's local (focused-only) shortcuts */
+.settings-subgroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.shortcut-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 6px 16px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.shortcut-grid > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.shortcut-grid dd {
+  margin: 0;
+  color: var(--muted);
+}
+
+/* Settings → Updates */
+.settings-facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 8px 24px;
+  margin: 14px 0 0;
+  font-size: 13.5px;
+}
+
+.settings-facts > div {
+  display: contents;
+}
+
+.settings-facts dt {
+  color: var(--muted);
+}
+
+.settings-facts dd {
+  margin: 0;
+}
+
+.progress {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  overflow: hidden;
+}
+
+.progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 0.2s;
+}
+
+.settings-save-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+  padding: 10px 12px 10px 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  background: rgba(22, 27, 33, 0.96);
+  box-shadow: 0 -8px 24px rgba(15, 19, 23, 0.9);
+}
+
+.settings-save-bar.dirty {
+  border-color: rgba(90, 167, 160, 0.5);
+}
+
+.settings-save-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.settings-save-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.settings-save-status.accent {
+  color: var(--accent);
+}
+
+.settings-save-status.ok {
+  color: var(--ok);
+}
+
+.settings-save-status.warn {
+  color: var(--warn);
+}
+
+/* Narrow window: the index becomes a scrolling strip above the cards. */
+@media (max-width: 820px) {
+  .settings-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
+  }
+
+  .settings-nav {
+    z-index: 3;
+    margin: -4px 0 0;
+    padding: 4px 0 8px;
+    background: var(--bg);
+  }
+
+  .settings-nav ul {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+
+  .settings-nav-item {
+    width: auto;
+    white-space: nowrap;
+  }
+
+  .settings-nav-item.active::before {
+    display: none;
+  }
+}

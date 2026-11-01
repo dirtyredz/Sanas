@@ -1,71 +1,89 @@
-import { UpdatesSection } from '../settings/UpdatesSection'
-import { useEffect, useState } from 'react'
-import type { Settings, SettingsView } from '@shared/types'
-import { ApiKeysSection } from '../settings/ApiKeysSection'
-import { HotkeysSection } from '../settings/HotkeysSection'
-import { MicrophoneSection } from '../settings/MicrophoneSection'
-import { OverlaySection } from '../settings/OverlaySection'
-import { EmailSection } from '../settings/EmailSection'
-import { RetentionSection } from '../settings/RetentionSection'
-import { AssistantSection } from '../settings/AssistantSection'
-import type { SecretKey } from '../settings/SettingsSection'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { SettingsView } from '@shared/types'
+import { errorText } from '../../lib/ipc-error'
+import { ApiKeysSection } from '../settings/sections/ApiKeysSection'
+import { AssistantSection } from '../settings/sections/AssistantSection'
+import { HotkeysSection } from '../settings/sections/HotkeysSection'
+import { MicrophoneSection } from '../settings/sections/MicrophoneSection'
+import { OverlaySection } from '../settings/sections/OverlaySection'
+import { EmailSection } from '../settings/sections/EmailSection'
+import { RetentionSection } from '../settings/sections/RetentionSection'
+import { UpdatesSection } from '../settings/sections/UpdatesSection'
+import { SettingsNav } from '../settings/frame/SettingsNav'
+import { SettingsSaveBar, type SaveState } from '../settings/frame/SettingsSaveBar'
+import { useSectionSpy } from '../settings/frame/useSectionSpy'
+import type { SettingsSectionId } from '../settings/frame/settings-sections'
+import {
+  hasUnsavedChanges,
+  NO_SECRETS,
+  settingsPatch,
+  settingsProblems,
+  type SecretKey,
+} from '../settings/frame/settings-draft'
 
-const NO_SECRETS: Record<SecretKey, string> = {
-  deepgramApiKey: '',
-  anthropicApiKey: '',
-  smtpPass: '',
-}
-
-/** Owns the draft (view + typed secrets) and the save; each section renders one concern. */
+/** Owns the draft (view + typed secrets), what was last saved, and the save; each section
+ *  renders one concern. */
 export function SettingsPage(): React.JSX.Element {
   const [view, setView] = useState<SettingsView | null>(null)
-  const [secrets, setSecrets] = useState(NO_SECRETS)
-  const [saved, setSaved] = useState(false)
+  const [saved, setSaved] = useState<SettingsView | null>(null)
+  const [secrets, setSecrets] = useState<Record<SecretKey, string>>(NO_SECRETS)
+  const [save, setSave] = useState<SaveState>({ kind: 'idle' })
   const [savedAt, setSavedAt] = useState(0)
+  const rootRef = useRef<HTMLDivElement>(null)
+  const [active, jumpTo] = useSectionSpy(rootRef, view !== null)
 
   useEffect(() => {
-    window.sanas.settings.get().then(setView)
+    window.sanas.settings.get().then((settings) => {
+      setView(settings)
+      setSaved(settings)
+    })
+    // The overlay changes its own opacity; keep both the draft and the baseline in step.
+    const follow =
+      (settings: SettingsView) =>
+      (current: SettingsView | null): SettingsView =>
+        current ? { ...current, overlayOpacity: settings.overlayOpacity } : settings
     return window.sanas.settings.onChanged((settings) => {
-      setView((current) =>
-        current ? { ...current, overlayOpacity: settings.overlayOpacity } : settings,
-      )
+      setView(follow(settings))
+      setSaved(follow(settings))
     })
   }, [])
 
-  if (!view) return <p className="muted">Loading…</p>
+  useEffect(() => {
+    if (save.kind !== 'saved') return
+    const timer = setTimeout(() => setSave({ kind: 'idle' }), 2000)
+    return () => clearTimeout(timer)
+  }, [save])
 
-  const save = async (): Promise<void> => {
-    const patch: Partial<Settings> = {
-      overlayHotkey: view.overlayHotkey,
-      assistHotkey: view.assistHotkey,
-      presentationPrevHotkey: view.presentationPrevHotkey,
-      presentationNextHotkey: view.presentationNextHotkey,
-      anthropicWorkspaceId: view.anthropicWorkspaceId.trim(),
-      nudgeModel: view.nudgeModel.trim(),
-      answerModel: view.answerModel.trim(),
-      classifierModel: view.classifierModel.trim(),
-      coachWhileTalking: view.coachWhileTalking,
-      nudgeCooldownSec: view.nudgeCooldownSec,
-      whisperMode: view.whisperMode,
-      audioDeviceId: view.audioDeviceId,
-      recordAudio: view.recordAudio,
-      overlayOpacity: view.overlayOpacity,
-      summaryEmailAuto: view.summaryEmailAuto,
-      smtpHost: view.smtpHost.trim(),
-      smtpPort: view.smtpPort,
-      smtpUser: view.smtpUser.trim(),
-      audioRetentionDays: view.audioRetentionDays,
-      meetingRetentionDays: view.meetingRetentionDays,
+  const problems = useMemo(() => (view ? settingsProblems(view) : []), [view])
+  const attention = useMemo(() => {
+    const flagged = new Set<SettingsSectionId>(problems.map((p) => p.section))
+    if (saved && (!saved.deepgramKeySet || !saved.anthropicKeySet)) flagged.add('api-keys')
+    return flagged
+  }, [problems, saved])
+
+  if (!view || !saved) return <p className="muted">Loading…</p>
+
+  const dirty = hasUnsavedChanges(view, saved, secrets)
+
+  const onSave = async (): Promise<void> => {
+    if (problems.length > 0) return
+    setSave({ kind: 'saving' })
+    try {
+      const next = await window.sanas.settings.set(settingsPatch(view, secrets))
+      setView(next)
+      setSaved(next)
+      setSecrets(NO_SECRETS)
+      setSavedAt(Date.now())
+      setSave({ kind: 'saved' })
+    } catch (e) {
+      setSave({ kind: 'error', message: errorText(e) })
     }
-    // Only send secrets the user actually typed — empty means "keep existing".
-    for (const key of Object.keys(secrets) as SecretKey[]) {
-      if (secrets[key]) patch[key] = secrets[key]
-    }
-    setView(await window.sanas.settings.set(patch))
+  }
+
+  const onDiscard = (): void => {
+    setView(saved)
     setSecrets(NO_SECRETS)
-    setSaved(true)
-    setSavedAt(Date.now())
-    setTimeout(() => setSaved(false), 2000)
+    setSave({ kind: 'idle' })
   }
 
   const onChange = (patch: Partial<SettingsView>): void => setView({ ...view, ...patch })
@@ -73,23 +91,30 @@ export function SettingsPage(): React.JSX.Element {
     setSecrets((prev) => ({ ...prev, [key]: value }))
 
   return (
-    <div className="settings-page">
-      <div className="page-head">
+    <div className="settings-page" ref={rootRef}>
+      <div className="page-head settings-head">
         <h2>Settings</h2>
+        <p>Stored on this computer. Changes apply when you save.</p>
       </div>
-      <ApiKeysSection view={view} secrets={secrets} onChange={onChange} onSecret={onSecret} />
-      <AssistantSection view={view} onChange={onChange} />
-      <HotkeysSection view={view} onChange={onChange} />
-      <MicrophoneSection view={view} onChange={onChange} />
-      <OverlaySection view={view} onChange={onChange} />
-      <EmailSection view={view} secrets={secrets} onChange={onChange} onSecret={onSecret} />
-      <RetentionSection view={view} savedAt={savedAt} onChange={onChange} />
-      <UpdatesSection />
-      <div className="save-bar">
-        <button className="btn btn-primary" onClick={save}>
-          Save
-        </button>
-        {saved && <span className="ok">Saved ✓</span>}
+      <div className="settings-layout">
+        <SettingsNav active={active} attention={attention} onJump={jumpTo} />
+        <div className="settings-sections">
+          <ApiKeysSection view={view} secrets={secrets} onChange={onChange} onSecret={onSecret} />
+          <AssistantSection view={view} problems={problems} onChange={onChange} />
+          <HotkeysSection view={view} onChange={onChange} />
+          <MicrophoneSection view={view} onChange={onChange} />
+          <OverlaySection view={view} onChange={onChange} />
+          <EmailSection view={view} secrets={secrets} onChange={onChange} onSecret={onSecret} />
+          <RetentionSection view={view} savedAt={savedAt} onChange={onChange} />
+          <UpdatesSection />
+          <SettingsSaveBar
+            dirty={dirty}
+            problemCount={problems.length}
+            save={save}
+            onSave={() => void onSave()}
+            onDiscard={onDiscard}
+          />
+        </div>
       </div>
     </div>
   )

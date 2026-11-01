@@ -1,5 +1,8 @@
 import type { SettingsView } from '@shared/types'
-import { SetBadge, SettingsSection, type SecretKey } from './SettingsSection'
+import { FieldRow } from '../../controls/FieldRow'
+import { Switch } from '../../controls/Switch'
+import { KeyBadge, SettingsSection } from '../frame/SettingsSection'
+import type { SecretKey } from '../frame/settings-draft'
 
 export function EmailSection({
   view,
@@ -14,30 +17,29 @@ export function EmailSection({
 }): React.JSX.Element {
   return (
     <SettingsSection
-      title="Summary email"
+      id="email"
       description="Each job has its own recipient (set on the job page). This is the account Sanas sends from."
     >
-      <label className="check">
-        <input
-          type="checkbox"
+      <FieldRow
+        label="Email the summary when a meeting stops"
+        help="Only for jobs that have an address."
+      >
+        <Switch
           checked={view.summaryEmailAuto}
-          onChange={(e) => onChange({ summaryEmailAuto: e.target.checked })}
+          onChange={(summaryEmailAuto) => onChange({ summaryEmailAuto })}
         />
-        Email the summary automatically when a meeting stops (jobs with an address only)
-      </label>
+      </FieldRow>
 
-      <label className="field">
-        <span className="label">SMTP server</span>
+      <FieldRow label="SMTP server">
         <input
           type="text"
           placeholder="smtp.gmail.com"
           value={view.smtpHost}
           onChange={(e) => onChange({ smtpHost: e.target.value })}
         />
-      </label>
+      </FieldRow>
 
-      <label className="field">
-        <span className="label">Port</span>
+      <FieldRow label="Port" help="465 (TLS) or 587 (STARTTLS).">
         <input
           type="number"
           min={1}
@@ -50,33 +52,30 @@ export function EmailSection({
             })
           }
         />
-        <small>465 (TLS) or 587 (STARTTLS).</small>
-      </label>
+      </FieldRow>
 
-      <label className="field">
-        <span className="label">Login (also the From address)</span>
+      <FieldRow label="Login (also the From address)">
         <input
           type="text"
           placeholder="you@gmail.com"
           value={view.smtpUser}
           onChange={(e) => onChange({ smtpUser: e.target.value })}
         />
-      </label>
+      </FieldRow>
 
-      <label className="field">
-        <span className="label">
-          Password <SetBadge set={view.smtpPassSet} />
-        </span>
+      <FieldRow
+        label="Password"
+        badge={<KeyBadge set={view.smtpPassSet} />}
+        help="For Gmail, an App Password (needs 2-step verification), not your login password."
+      >
         <input
           type="password"
-          placeholder={view.smtpPassSet ? '•••••••• (leave blank to keep)' : 'app password'}
+          autoComplete="off"
+          placeholder={view.smtpPassSet ? 'Leave blank to keep' : 'App password'}
           value={secrets.smtpPass}
           onChange={(e) => onSecret('smtpPass', e.target.value)}
         />
-        <small>
-          For Gmail, an App Password (needs 2-step verification), not your login password.
-        </small>
-      </label>
+      </FieldRow>
     </SettingsSection>
   )
 }
