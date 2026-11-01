@@ -91,7 +91,7 @@ sanas/
 
 - `src/main/lifecycle/` — userData identity, capped/redacted main logging and normal startup wiring; normal startup is not loaded by smoke
 - `src/main/diagnostics/` — isolated, headless packaged diagnostics used by `--smoke`
-- `src/main/windows/` — BrowserWindow builders and the main → all-windows broadcast
+- `src/main/windows/` — BrowserWindow builders and the main → all-windows broadcast (`overlay-bounds.ts`: pure on-screen fitting of saved overlay bounds)
 - `src/main/ipc/` — typed IPC handlers; validate ingress and delegate, with no business logic
 - `src/main/` — process entry (`index.ts`, normal vs `--smoke` dispatch) and the display-media loopback handler (`system-audio.ts`)
 - `src/main/services/` — main-process services and provider seams

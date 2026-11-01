@@ -3,6 +3,7 @@ import { join } from 'path'
 import { IPC } from '@shared/ipc'
 import type { OverlayResizeRequest } from '@shared/types'
 import { loadSettings, saveSettings } from '../config/settings'
+import { fitOverlayBounds } from './overlay-bounds'
 
 let overlay: BrowserWindow | null = null
 let rendererReady = false
@@ -11,15 +12,37 @@ let saveBoundsTimer: ReturnType<typeof setTimeout> | null = null
 const MIN_WIDTH = 280
 const MIN_HEIGHT = 230
 
+function fitCurrentBounds(saved: Rectangle | null | undefined): Rectangle {
+  return fitOverlayBounds(
+    saved,
+    screen.getAllDisplays().map((d) => d.workArea),
+    screen.getPrimaryDisplay().workArea,
+    { width: MIN_WIDTH, height: MIN_HEIGHT },
+  )
+}
+
+/** A display was unplugged or rearranged while running: pull the overlay back on-screen. */
+function reclampOverlay(): void {
+  if (!overlay || overlay.isDestroyed()) return
+  const current = overlay.getBounds()
+  const fit = fitCurrentBounds(current)
+  if (
+    fit.x !== current.x ||
+    fit.y !== current.y ||
+    fit.width !== current.width ||
+    fit.height !== current.height
+  ) {
+    overlay.setBounds(fit)
+  }
+}
+
 function createOverlay(): BrowserWindow {
   rendererReady = false
-  const { width } = screen.getPrimaryDisplay().workAreaSize
-  const saved = loadSettings().overlayBounds
+  // Saved bounds outlive monitors: validate against what is connected now (the fallback is
+  // not persisted until the user moves/resizes the overlay).
+  const fit = fitCurrentBounds(loadSettings().overlayBounds)
   overlay = new BrowserWindow({
-    width: saved?.width ?? 380,
-    height: saved?.height ?? 460,
-    x: saved?.x ?? width - 400,
-    y: saved?.y ?? 60,
+    ...fit,
     show: false,
     frame: false,
     transparent: true,
@@ -42,7 +65,13 @@ function createOverlay(): BrowserWindow {
   // 'screen-saver' level floats above most fullscreen apps on Windows (see GOTCHAS.md).
   overlay.setAlwaysOnTop(true, 'screen-saver')
   overlay.setOpacity(clampOpacity(loadSettings().overlayOpacity))
-  overlay.on('closed', () => (overlay = null))
+  screen.on('display-removed', reclampOverlay)
+  screen.on('display-metrics-changed', reclampOverlay)
+  overlay.on('closed', () => {
+    overlay = null
+    screen.removeListener('display-removed', reclampOverlay)
+    screen.removeListener('display-metrics-changed', reclampOverlay)
+  })
 
   // remember where the user parks it (debounced — move fires continuously). The write is
   // wrapped because this runs from a timer: an unwritable settings file would otherwise

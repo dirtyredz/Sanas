@@ -66,6 +66,7 @@ starts this logger or writes there.
   windows as non-resizable, so `resizable: true` does not give the frameless overlay a usable
   Windows border. Keep its renderer-owned right/bottom/corner handles wired through validated
   IPC; removing them silently makes the overlay fixed-size again.
+- **Saved window bounds outlive monitors.** `overlayBounds` is restored from settings, and a disconnected monitor leaves it fully off-screen (invisible overlay). `windows/overlay-bounds.ts` re-fits it to the connected work areas on create and on `display-removed`/`display-metrics-changed`; the fallback is not persisted until the user moves/resizes. Negative DIP coords are valid for monitors left/above the primary.
 - **Global hotkeys collide.** `globalShortcut` registration fails silently if another
   app owns the combo — check the return value and surface a settings warning.
 

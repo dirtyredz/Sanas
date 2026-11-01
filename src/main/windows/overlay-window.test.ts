@@ -11,7 +11,12 @@ const f = vi.hoisted(() => ({
   closed: null as (() => void) | null,
 }))
 vi.mock('electron', () => ({
-  screen: { getPrimaryDisplay: () => ({ workAreaSize: { width: 1000 } }) },
+  screen: {
+    getPrimaryDisplay: () => ({ workArea: { x: 0, y: 0, width: 1536, height: 864 } }),
+    getAllDisplays: () => [{ workArea: { x: 0, y: 0, width: 1536, height: 864 } }],
+    on() {},
+    removeListener() {},
+  },
   BrowserWindow: class {
     webContents = { send: f.send }
     setContentProtection = f.protect
