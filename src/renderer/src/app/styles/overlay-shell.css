@@ -89,60 +89,242 @@ body.overlay-body {
   -webkit-app-region: no-drag;
 }
 
-.overlay-header-actions .ov-range {
-  width: 150px;
-  grid-template-columns: auto minmax(0, 1fr);
-}
-
-.overlay-header-actions .ov-range-value {
-  display: none;
-}
-
 @media (max-width: 340px) {
   .overlay-header {
     gap: 6px;
     padding-left: 9px;
   }
 
-  .overlay-header-actions .ov-range {
-    width: 110px;
+  .overlay-header .ov-badge {
+    display: none;
   }
 }
 
-/* ----- persistent banners (outside workspaces) ----- */
-.ov-banner {
+/* ----- preferences popover ----- */
+.overlay-preferences {
+  position: absolute;
+  top: 42px;
+  right: 8px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: min(280px, calc(100vw - 16px));
+  max-height: calc(100vh - 56px);
+  padding: var(--space-3);
+  overflow-y: auto;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  background: rgba(22, 27, 33, 0.98);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
+  -webkit-app-region: no-drag;
+}
+
+.preferences-shortcuts dl {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: var(--space-1);
+  font-size: 12px;
+}
+
+.preferences-shortcuts dl > div {
+  display: grid;
+  grid-template-columns: 4.6em minmax(0, 1fr);
+  gap: var(--space-2);
+  align-items: baseline;
+}
+
+.preferences-shortcuts dd {
+  margin: 0;
+  color: var(--muted);
+}
+
+.overlay-panel kbd {
+  padding: 0 4px;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  color: var(--text);
+  font: 11px var(--mono);
+}
+
+/* ----- persistent status (outside workspaces) ----- */
+.overlay-status {
+  display: flex;
   flex: 0 0 auto;
-  padding: 5px 12px;
-  border-bottom: 1px solid rgba(217, 164, 74, 0.2);
-  background: var(--warn-soft);
-  color: var(--warn);
-  font-size: 11.5px;
+  flex-direction: column;
+  max-height: 40vh;
+  overflow-y: auto;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.ov-status {
+  padding: 4px 12px;
+  font-size: 12px;
   line-height: 1.35;
 }
 
-.answer-every-question {
-  flex: 0 0 auto;
-  padding: 2px 12px;
+.ov-status--warn,
+.ov-status--error {
+  background: var(--warn-soft);
+  color: var(--warn);
 }
 
-/* ----- content grid and divider ----- */
-.overlay-content {
+.ov-status--info {
+  color: var(--muted);
+}
+
+.overlay-panel .ov-status summary {
+  min-height: 22px;
+  color: inherit;
+  font-weight: 500;
+}
+
+.overlay-panel .ov-status summary::before {
+  content: '!';
+  width: auto;
+  font-weight: 700;
+  transform: none;
+}
+
+.ov-status-short {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ov-status-more {
+  flex: 0 0 auto;
+  font-size: 11px;
+  text-decoration: underline;
+  opacity: 0.85;
+}
+
+details.ov-status[open] .ov-status-more {
+  display: none;
+}
+
+details.ov-status > p {
+  padding: 2px 0 4px 14px;
+}
+
+/* ----- rail + main column ----- */
+.overlay-frame {
   display: grid;
   flex: 1 1 auto;
+  grid-template-columns: auto minmax(0, 1fr);
   min-height: 0;
-  grid-template-rows: minmax(60px, 1fr) 8px minmax(120px, auto);
 }
 
-.overlay-splitter {
+.overlay-rail {
+  min-height: 0;
+  padding: 6px 4px;
+  overflow-y: auto;
+  border-right: 1px solid rgba(255, 255, 255, 0.07);
+  scrollbar-width: none;
+  -webkit-app-region: no-drag;
+}
+
+.overlay-rail [role='tablist'] {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.overlay-panel .rail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 56px;
+  min-height: 42px;
+  padding: 5px 2px 4px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.1;
+}
+
+.overlay-panel .rail-item:hover {
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+}
+
+.overlay-panel .rail-item[aria-selected='true'] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.overlay-panel .rail-item svg {
+  width: 16px;
+  height: 16px;
+}
+
+.rail-label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-height: 340px) {
+  .rail-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .overlay-panel .rail-item {
+    width: 32px;
+    min-height: 26px;
+    padding: 4px;
+  }
+}
+
+.overlay-main {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr) 0 0;
+}
+
+.answer-region,
+.workspace-region {
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.answer-region > .overlay-suggestion {
+  flex: 1 1 auto;
+}
+
+.is-answer .workspace-region {
+  visibility: hidden;
+}
+
+/* ----- the divider between answer preview and workspace ----- */
+.overlay-divider {
   position: relative;
   z-index: 2;
   background: rgba(255, 255, 255, 0.04);
+  outline-offset: -2px;
   cursor: ns-resize;
   touch-action: none;
   -webkit-app-region: no-drag;
 }
 
-.overlay-splitter::after {
+.overlay-divider[hidden] {
+  display: none;
+}
+
+.overlay-divider::after {
   content: '';
   position: absolute;
   top: 2px;
@@ -153,20 +335,41 @@ body.overlay-body {
   background: rgba(90, 167, 160, 0.55);
 }
 
-.overlay-splitter:hover::after,
-.overlay-splitter:focus-visible::after {
+.overlay-divider:hover::after,
+.overlay-divider:focus-visible::after {
   right: 36%;
   left: 36%;
   background: var(--accent);
 }
 
-.whisper-maximized .overlay-transcript {
-  padding-top: 0;
-  padding-bottom: 0;
-  overflow: hidden;
-  opacity: 0.35;
+/* ----- workspaces: all mounted, one visible ----- */
+.workspaces {
+  display: grid;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
 }
 
+.workspace {
+  display: flex;
+  flex-direction: column;
+  grid-area: 1 / 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.workspace:not(.is-active) {
+  visibility: hidden;
+}
+
+.workspace-title {
+  flex: 0 0 auto;
+  padding: 8px 12px 2px;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+}
 /* ----- resize grips ----- */
 .resize-handle {
   position: absolute;

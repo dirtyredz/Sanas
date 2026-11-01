@@ -1,20 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
-import { DEFAULT_WHISPER_RATIO } from './overlay-split'
+import { DEFAULT_ANSWER_RATIO } from './overlay-split'
 import { createOverlayOpacitySaver } from './overlay-opacity'
 
 export interface OverlaySettingsModel {
   overlayOpacity: number
   /** Apply at once (main sets the window opacity on save) and persist, coalesced. */
   changeOpacity(opacity: number): void
-  whisperRatio: number
-  setWhisperRatio(ratio: number): void
-  persistSplit(ratio: number): void
+  answerRatio: number
+  setAnswerRatio(ratio: number): void
+  persistAnswerRatio(ratio: number): void
 }
 
-/** Overlay opacity and the persisted split ratio: load, debounced save, and Settings sync. */
+/** Overlay opacity and the persisted answer-preview ratio (the divider): load, debounced save, and Settings sync. */
 export function useOverlaySettings(): OverlaySettingsModel {
   const [overlayOpacity, setOverlayOpacity] = useState(1)
-  const [whisperRatio, setWhisperRatio] = useState(DEFAULT_WHISPER_RATIO)
+  const [answerRatio, setAnswerRatio] = useState(DEFAULT_ANSWER_RATIO)
   const saveSplitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const opacitySaverRef = useRef(
     createOverlayOpacitySaver((opacity) => window.sanas.settings.set({ overlayOpacity: opacity })),
@@ -23,7 +23,7 @@ export function useOverlaySettings(): OverlaySettingsModel {
     let active = true
     void window.sanas.settings.get().then((settings) => {
       if (active) {
-        setWhisperRatio(settings.overlayWhisperRatio)
+        setAnswerRatio(settings.overlayWhisperRatio)
         setOverlayOpacity(settings.overlayOpacity)
       }
     })
@@ -39,7 +39,7 @@ export function useOverlaySettings(): OverlaySettingsModel {
     }
   }, [])
 
-  const persistSplit = (ratio: number): void => {
+  const persistAnswerRatio = (ratio: number): void => {
     if (saveSplitTimerRef.current) clearTimeout(saveSplitTimerRef.current)
     saveSplitTimerRef.current = setTimeout(() => {
       saveSplitTimerRef.current = null
@@ -55,8 +55,8 @@ export function useOverlaySettings(): OverlaySettingsModel {
       setOverlayOpacity(opacity)
       opacitySaverRef.current.schedule(opacity)
     },
-    whisperRatio,
-    setWhisperRatio,
-    persistSplit,
+    answerRatio,
+    setAnswerRatio,
+    persistAnswerRatio,
   }
 }

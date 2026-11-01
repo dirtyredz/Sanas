@@ -6,8 +6,6 @@
 * {
   box-sizing: border-box;
   margin: 0;
-  scrollbar-color: var(--scrollbar-thumb) transparent;
-  scrollbar-width: thin;
 }
 
 ::-webkit-scrollbar {
@@ -412,4 +410,9 @@
     animation: none !important;
     transition: none !important;
   }
+}
+
+.ov-range input[type='range']:focus-visible {
+  outline-offset: 4px;
+  border-radius: 999px;
 }

@@ -10,6 +10,7 @@ export function OverlayComposer({ model }: { model: OverlayComposerModel }): Rea
   return (
     <div className="overlay-composer">
       <OverlayTextArea
+        hideLabel
         label="Ask Sanas"
         ref={model.inputRef}
         rows={3}

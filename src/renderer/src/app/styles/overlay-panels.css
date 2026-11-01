@@ -2,18 +2,36 @@
 /* Workspace content: Ask composer, Screen, Slide, Transcript and Context. Each panel's own
    content scrolls; chrome stays put. */
 
-.presentation-region {
+/* ----- shared workspace body ----- */
+.workspace-body {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
+  gap: var(--space-2);
   min-height: 0;
-  overflow: hidden;
+  padding: 6px 12px 12px;
+  overflow-y: auto;
+  -webkit-app-region: no-drag;
 }
 
-.ov-tabs {
+.workspace-actions {
   display: flex;
-  flex: 0 0 auto;
-  gap: 2px;
-  padding: 6px 8px 2px;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.capture-panel > p:first-child {
+  font-size: 13px;
+}
+
+.capture-panel .capture-screen {
+  align-self: flex-start;
+}
+
+.capture-panel .ov-message .ov-btn {
+  height: 22px;
+  padding: 0 6px;
+  color: var(--accent);
 }
 
 /* ----- transcript ----- */
@@ -125,7 +143,6 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  flex-basis: 100%;
   -webkit-app-region: no-drag;
 }
 

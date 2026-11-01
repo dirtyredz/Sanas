@@ -6,19 +6,16 @@ export function OverlayCaptureAction({
   live,
   answering,
   capturing,
-  variant = 'secondary',
 }: {
   meetingId: number | null
   live: boolean
   /** A requested answer is streaming (the capture answer, once admitted). */
   answering: boolean
   capturing: boolean
-  variant?: 'primary' | 'secondary'
 }): React.JSX.Element {
   return (
     <OverlayButton
-      variant={variant}
-      size={variant === 'primary' ? 'md' : 'sm'}
+      variant="primary"
       className="capture-screen"
       title="Capture the screen under the overlay and explain it"
       busy={capturing}

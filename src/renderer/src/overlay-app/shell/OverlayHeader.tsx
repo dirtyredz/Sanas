@@ -22,7 +22,7 @@ export function OverlayHeader({
   windowState: OverlayWindowState
   children?: ReactNode
 }): React.JSX.Element {
-  const restore = windowState.overlayShortcut || 'the overlay shortcut'
+  const restore = windowState.shortcuts.overlay || 'the overlay shortcut'
   return (
     <header className="overlay-header">
       <span className={`dot ${status}`} aria-hidden="true" />

@@ -8,7 +8,25 @@ Electron desktop app, single-device, local-first. Two windows:
 
 1. **Main window** — library UI: jobs, meetings, transcripts, context packs, settings.
 2. **Overlay window** — small frameless always-on-top panel shown during a live meeting;
-   displays the rolling transcript tail + AI suggestions. Summoned/dismissed by global hotkey.
+   answer-first: the selected suggestion, plus one secondary workspace (Ask, Screen, Slide,
+   Transcript, Context) chosen from a rail. Summoned/dismissed by global hotkey.
+
+### Overlay composition
+
+`overlay-app/shell/OverlaySession.tsx` composes every controller once for the window's
+lifetime — transcript/meeting state, presentation, settings, ghost/shortcut labels,
+navigation, suggestion history, manual requests, the composer (draft + screen attachment),
+capture status and Answer every question — and hands view models to `OverlayShell`. Views
+own no subscriptions or request policy. All workspaces stay mounted (hidden ones are `inert`),
+so switching never resets a draft, attachment, history selection or scroll position; a new
+meeting does. The compose listener and `composerReady` handshake live in the session, above
+conditional rendering: a cold-start Ask intent opens Ask and focuses the textarea once it is
+available. Navigation is a pure reducer (`shell/navigation/overlay-navigation.ts`) whose only
+inputs are the owner's actions and a meeting change — no answer, slide or context event can
+switch the workspace, and every meeting opens on Answer. Local shortcuts (Ctrl+1–6, Ctrl+,
+and Escape) are a window keydown listener; global shortcuts stay in main. In a secondary
+workspace the answer is a preview above a draggable divider whose ratio persists as
+`overlayWhisperRatio`; Answer gives it the whole column.
 
 ## Runtime data flow (live meeting)
 
@@ -119,7 +137,8 @@ objection | none`. It **fails closed**: timeout, cancel, malformed output or pro
   is independently timed out and balanced in the post-processing guard.
 - **Overlay history:** suggestion events are reduced by ID into an in-memory list for the
   current meeting. Ambient arrivals preserve an answer being read and advertise the newer
-  item; explicitly requested answers always take focus.
+  item; explicitly requested answers are always selected (selection only — never the
+  workspace or keyboard focus).
 - **Whisper mode:** Smart (default) answers concrete asks such as code, commands, numbers,
   definitions and formulas while coaching other moments; Full answers every ambient moment;
   Points keeps ambient help terse. Points/Smart use tight budgets; Full/on-demand have room

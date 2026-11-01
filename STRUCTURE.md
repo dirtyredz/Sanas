@@ -60,10 +60,15 @@ sanas/
 │   │       │   ├── pages/                  # route/page components
 │   │       │   ├── jobs/                   # job presentation editor
 │   │       │   ├── settings/               # one component per Settings section
-│   │       │   └── styles/                 # tokens → controls → shell → transcript → pages
+│   │       │   └── styles/                 # tokens → base/controls → shell/transcript/pages; overlay-* layers
 │   │       ├── overlay-app/                # separate small overlay bundle
-│   │       │   ├── layout/                 # opacity, split ratio, resize/split-drag hooks
-│   │       │   └── capture/                # Capture screen action and composer attachment state
+│   │       │   ├── shell/                  # session composition, layout, header, status, preferences
+│   │       │   │   └── navigation/         # workspace reducer, local shortcuts, rail, compose handshake
+│   │       │   ├── suggestions/            # answer surface, history coordination, manual requests
+│   │       │   ├── workspaces/             # secondary views: composer/ (Ask), presentation/, transcript/
+│   │       │   ├── controls/               # OverlayButton, OverlayTextArea, overlay icons
+│   │       │   ├── layout/                 # opacity, divider ratio/drag, resize grips
+│   │       │   └── capture/                # Screen view, capture status and composer attachment state
 │   │       ├── audio/                      # mic/loopback capture and worklet bridge
 │   │       ├── lib/                        # pure shared renderer helpers
 │   │       │   ├── meeting/                # meeting/context/presentation state and hooks
@@ -126,10 +131,15 @@ sanas/
 - `src/renderer/src/app/pages/` — one component per library route/page
 - `src/renderer/src/app/jobs/` — job-specific editors, currently the presentation deck editor
 - `src/renderer/src/app/settings/` — one component per Settings section, including independent update state
-- `src/renderer/src/app/styles/` — layered shared stylesheet; no per-page stylesheets
+- `src/renderer/src/app/styles/` — layered shared stylesheet; no per-page stylesheets. `tokens.css` is shared by both windows; the library imports `index.css` (base → controls → shell → transcript → pages), the overlay imports `overlay-app/overlay.css` (tokens → controls → `overlay-controls` → `overlay-shell` → `overlay-panels` → `overlay-suggestions`)
 - `src/renderer/src/overlay-app/` — deliberately small, separate overlay bundle
-- `src/renderer/src/overlay-app/layout/` — overlay opacity/split-ratio persistence and window resize / split-drag hooks with their pure helpers
-- `src/renderer/src/overlay-app/capture/` — Capture screen action/status and the composer's screen-attachment state
+- `src/renderer/src/overlay-app/shell/` — `OverlaySession` (composes every controller once), `OverlayShell` layout, header, persistent status, preferences popover, window state, Answer every question
+- `src/renderer/src/overlay-app/shell/navigation/` — pure workspace reducer, local shortcut table/dispatch, the rail, and the compose readiness/focus handshake
+- `src/renderer/src/overlay-app/suggestions/` — the answer surface (full and preview), history/reading coordination and manual-request (detail/audience) policy
+- `src/renderer/src/overlay-app/workspaces/` — secondary workspace views and the frame that keeps them mounted; `composer/` (Ask: draft state, submission, view), `presentation/`, `transcript/`
+- `src/renderer/src/overlay-app/controls/` — the overlay's small control wrappers (button variants, labelled textarea) and local icons; not a general component framework
+- `src/renderer/src/overlay-app/layout/` — overlay opacity and divider-ratio persistence, divider drag/measurement, and the three resize grips
+- `src/renderer/src/overlay-app/capture/` — Screen workspace view, Capture screen action, capture status subscription/helpers and the composer's screen-attachment state
 - `src/renderer/src/audio/` — renderer capture and AudioWorklet downsampling
 - `src/renderer/src/lib/` — pure presentation helpers shared across renderer pages and bundles
 - `src/renderer/src/lib/meeting/` — meeting, context and presentation reducers/hooks

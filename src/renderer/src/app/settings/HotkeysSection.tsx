@@ -2,6 +2,7 @@ import type { SettingsView } from '@shared/types'
 import { useEffect, useState } from 'react'
 import type { HotkeyStatus } from '@shared/hotkeys/types'
 import { hotkeyLabel } from '../../lib/hotkey-label'
+import { LOCAL_SHORTCUTS } from '../../overlay-app/shell/navigation/overlay-shortcuts'
 import { SettingsSection } from './SettingsSection'
 
 export function HotkeysSection({
@@ -86,6 +87,16 @@ export function HotkeysSection({
           {view[s.action] !== saved[s.action] && 'Unsaved change.'}
         </p>
       ))}
+      <div className="field">
+        <span className="label">In the overlay (only while it is focused; not configurable)</span>
+        <ul className="local-shortcuts">
+          {LOCAL_SHORTCUTS.map((shortcut) => (
+            <li key={shortcut.keys}>
+              <span className="kbd">{shortcut.keys}</span> {shortcut.action}
+            </li>
+          ))}
+        </ul>
+      </div>
       {error && <p role="alert">{error}</p>}
     </SettingsSection>
   )

@@ -81,3 +81,11 @@ export function IconMore(): React.JSX.Element {
     </svg>
   )
 }
+
+export function IconExpand(): React.JSX.Element {
+  return (
+    <svg {...base}>
+      <path d="M9.5 2.5h4v4M6.5 13.5h-4v-4M13.5 2.5 9 7M2.5 13.5 7 9" />
+    </svg>
+  )
+}

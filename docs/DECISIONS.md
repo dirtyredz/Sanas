@@ -2,6 +2,30 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-11-01 — Answer-first overlay: a rail of workspaces, a kept divider, no auto-switching
+
+The overlay had grown into a stack (status, toggle, tabs, transcript, splitter, answer bar,
+composer, capture/audience/detail buttons) where the answer sat below everything and controls
+rendered with browser defaults. It is now **answer-first**: the selected suggestion is always
+visible, and one secondary workspace — **Answer · Ask · Screen · Slide · Transcript · Context** —
+is chosen from a compact vertical rail (Ctrl+1–6 while the overlay is focused; Ctrl+, opens
+preferences; Esc returns to Answer and releases focus). Opacity and Answer every question moved
+into a preferences popover; the system-audio warning, meeting error and capture progress stay
+in a persistent status region outside the workspaces.
+
+Owner decisions (plan section 8): keep a **draggable divider** between the answer preview and
+the workspace below, its ratio persisted in the existing `overlayWhisperRatio` setting (the
+answer's share; Answer mode gives it the whole column). The planner's proposal to remove the
+splitter was rejected. **Every meeting opens on Answer**, decks included; no slide, context,
+transcript or answer event ever switches the workspace — the navigation reducer has no such
+inputs. Requested answers select their card without changing workspace or focus.
+
+Local shortcuts only: no new global registrations (collision risk), the six existing globals
+are unchanged. Workspaces stay mounted and inactive ones are `inert`, so drafts, the screen
+attachment, history selection and scroll survive switching. Rejected: full-screen task tabs
+(the answer disappears while asking), remounting views per tab (lost drafts), and a
+deck-opens-on-Slide default (surprising focus change mid-call).
+
 ## 2026-10-31 — Screen capture is an explicit, unsaved still sent once
 
 During a client or team meeting the owner can press **Capture screen** (overlay button or

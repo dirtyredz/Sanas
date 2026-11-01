@@ -41,8 +41,20 @@
   animation: pulse 1s ease-in-out infinite;
 }
 
-.answer-now {
+.suggestion-bar-end {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   margin-left: auto;
+}
+
+.overlay-suggestion.is-preview {
+  gap: 4px;
+  padding: 6px 12px 8px;
+}
+
+.is-preview .compact-headline {
+  font-size: 14px;
 }
 
 .new-answer {
@@ -64,8 +76,7 @@
   font-size: 13px;
 }
 
-.suggestion-actions,
-.suggestion-preview-actions {
+.suggestion-actions {
   display: flex;
   flex: 0 0 auto;
   flex-wrap: wrap;
@@ -176,4 +187,16 @@
 .compact-follow-up {
   color: var(--muted);
   font-size: 13px;
+}
+
+/* the preview bar never wraps: the label gives way first */
+.is-preview .suggestion-bar {
+  flex-wrap: nowrap;
+}
+
+.is-preview .suggestion-label {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }

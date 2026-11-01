@@ -335,6 +335,27 @@ starts this logger or writes there.
 - Visual QA in the real Electron window — the browser preview cannot show the frameless
   overlay at 380×460, transparency, or the Windows title bar
 
+## Overlay shell
+
+- **Overlay controllers live in `OverlaySession`, not in views.** Drafts, the screen attachment,
+  history selection and capture status must survive workspace switches, so their hooks are
+  composed once above the workspaces; a view that owns a subscription or a draft loses it
+  when hidden. Meeting-owned state resets on a meeting change, and async replies (typed send,
+  attach, More detail, audience) are dropped when they land after the meeting changed.
+- **Hidden workspaces are `inert` + `visibility: hidden`, not unmounted or `display: none`.**
+  That keeps drafts and scroll positions and removes them from the tab order. Focus cannot
+  land in an inert subtree, so the compose activation waits until Ask is active before
+  focusing the textarea.
+- **`scrollbar-color`/`scrollbar-width` disable `::-webkit-scrollbar` styling in current
+  Chromium** (and bring back arrow buttons). The overlay layer uses only the webkit pseudos.
+- **`overlayWhisperRatio` now means the answer preview's share above the divider.** The name
+  is kept for settings compatibility; it always meant "the answer's share".
+- **Vitest has no `@shared` alias.** A renderer test that imports a component with a runtime
+  `@shared/...` import must `vi.mock` it (e.g. by path: `() => import('../../../../shared/x')`).
+- **Overlay CSS must not import `base.css`** — its opaque `body` background would cover the
+  transparent window. `overlay.css` imports `tokens.css` and `controls.css` plus the scoped
+  `overlay-*.css` layers.
+
 ## Presentation mode
 
 - Editing/saving/clearing a job deck applies to the next meeting only. Deck versions are immutable; the active version can change through meeting Apply, independently of the job.

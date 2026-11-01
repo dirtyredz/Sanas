@@ -614,3 +614,13 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+/* Settings → Hotkeys: the overlay's local (focused-only) shortcuts */
+.local-shortcuts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}

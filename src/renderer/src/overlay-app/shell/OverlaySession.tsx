@@ -1,4 +1,3 @@
-import { useCallback, useEffect, useState } from 'react'
 import { usePresentationState } from '../../lib/meeting/usePresentationState'
 import { useTranscript } from '../../lib/meeting/useTranscript'
 import { useCaptureStatus } from '../capture/useCaptureStatus'
@@ -8,6 +7,7 @@ import { useOverlaySuggestions } from '../suggestions/useOverlaySuggestions'
 import { useOverlayComposer } from '../workspaces/composer/useOverlayComposer'
 import { useAnswerEveryQuestion } from './AnswerEveryQuestion'
 import { useComposerActivation } from './navigation/useComposerActivation'
+import { useOverlayNavigation } from './navigation/useOverlayNavigation'
 import { OverlayShell } from './OverlayShell'
 import { useOverlayWindowState } from './useOverlayWindowState'
 
@@ -18,11 +18,11 @@ export type OverlaySessionModel = ReturnType<typeof useOverlaySessionModel>
 function useOverlaySessionModel() {
   const { lines, state } = useTranscript()
   const meetingId = state.meetingId
-  const live = state.status === 'live'
-  const active = live || state.status === 'paused'
+  const active = state.status === 'live' || state.status === 'paused'
   const presentation = usePresentationState(meetingId)
   const settings = useOverlaySettings()
   const windowState = useOverlayWindowState()
+  const navigation = useOverlayNavigation(meetingId)
   const suggestions = useOverlaySuggestions(meetingId)
   const manual = useManualRequests(
     meetingId,
@@ -33,34 +33,21 @@ function useOverlaySessionModel() {
   const composer = useOverlayComposer(meetingId, suggestions.requestedInFlight || manual.pending)
   const capture = useCaptureStatus(meetingId, suggestions.requestedInFlight)
   const answerEveryQuestion = useAnswerEveryQuestion(meetingId)
-  const [composerOpen, setComposerOpen] = useState(false)
-  const openComposer = useCallback(() => setComposerOpen(true), [])
-  useComposerActivation(openComposer, composer.inputRef, composerOpen)
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent): void => {
-      if (event.key !== 'Escape' || event.isComposing) return
-      setComposerOpen(false)
-      void window.sanas.overlay.releaseFocus()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  useComposerActivation(navigation.openAsk, composer.inputRef, navigation.workspace === 'ask')
   return {
     meeting: state,
     meetingId,
-    live,
     active,
     lines,
     presentation,
     settings,
     windowState,
+    navigation,
     suggestions,
     manual,
     composer,
     capture,
     answerEveryQuestion,
-    composerOpen,
-    setComposerOpen,
   }
 }
 

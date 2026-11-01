@@ -1,28 +1,29 @@
 import { useRef } from 'react'
-import { SPLITTER_HEIGHT, whisperRatioFromHeight } from './overlay-split'
+import { DIVIDER_HEIGHT, answerRatioFromHeight } from './overlay-split'
+
 interface SplitSession {
   pointerId: number
   screenY: number
-  whisperHeight: number
+  previewHeight: number
   containerHeight: number
 }
 
+/** Pointer handlers for the divider: dragging down grows the answer preview above it. */
 export function useSplitDrag(
   contentHeight: number,
-  whisperHeight: number,
-  setWhisperMaximized: (value: boolean) => void,
-  setWhisperRatio: (value: number) => void,
-  persistSplit: (value: number) => void,
+  previewHeight: number,
+  setRatio: (value: number) => void,
+  persistRatio: (value: number) => void,
 ) {
   const splitRef = useRef<SplitSession | null>(null)
   const startSplit = (event: React.PointerEvent<HTMLDivElement>): void => {
-    if (event.button !== 0 || contentHeight <= SPLITTER_HEIGHT) return
+    if (event.button !== 0 || contentHeight <= DIVIDER_HEIGHT) return
     event.preventDefault()
     event.currentTarget.setPointerCapture(event.pointerId)
     splitRef.current = {
       pointerId: event.pointerId,
       screenY: event.screenY,
-      whisperHeight,
+      previewHeight,
       containerHeight: contentHeight,
     }
   }
@@ -31,13 +32,12 @@ export function useSplitDrag(
     const session = splitRef.current
     if (!session || session.pointerId !== event.pointerId) return
     if (Math.abs(session.screenY - event.screenY) < 3) return
-    const ratio = whisperRatioFromHeight(
+    const ratio = answerRatioFromHeight(
       session.containerHeight,
-      session.whisperHeight + session.screenY - event.screenY,
+      session.previewHeight + event.screenY - session.screenY,
     )
-    setWhisperMaximized(false)
-    setWhisperRatio(ratio)
-    persistSplit(ratio)
+    setRatio(ratio)
+    persistRatio(ratio)
   }
 
   const stopSplit = (event: React.PointerEvent<HTMLDivElement>): void => {
