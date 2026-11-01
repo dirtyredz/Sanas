@@ -93,6 +93,7 @@ sanas/
 │   └── actions/                            # shared local actions (Node/download-cache setup)
 ├── docs/                                   # living docs and Docket items
 ├── vite.renderer.config.ts                 # browser-only renderer preview
+├── vitest.config.ts                        # test runner; @shared alias only
 └── STRUCTURE.md
 ```
 

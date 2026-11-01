@@ -115,6 +115,12 @@ export function settingsProblems(view: SettingsView): SettingsProblem[] {
   for (const [key, model] of models) {
     if (model.trim() === '') {
       problems.push({ key, section: 'assistant', message: 'Enter a Claude model ID.' })
+    } else if (model.trim().length > SETTINGS_LIMITS.modelId.maxLength) {
+      problems.push({
+        key,
+        section: 'assistant',
+        message: `Use a model ID of ${SETTINGS_LIMITS.modelId.maxLength} characters or fewer.`,
+      })
     }
   }
   const cooldown = view.nudgeCooldownSec

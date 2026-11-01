@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { SETTINGS_LIMITS } from '@shared/settings-limits'
 import type { SettingsView } from '@shared/types'
 import { sampleSettings } from '../../../dev/mock-fixtures'
 import {
@@ -81,6 +82,16 @@ describe('settingsProblems', () => {
     expect(
       problemFor(settingsProblems(edit({ nudgeCooldownSec: Number.NaN })), 'nudgeCooldownSec'),
     ).toBeDefined()
+  })
+})
+
+describe('settingsProblems model ID length', () => {
+  it('accepts the limit and refuses one past it', () => {
+    const max = SETTINGS_LIMITS.modelId.maxLength
+    const ok = settingsProblems(edit({ nudgeModel: 'a'.repeat(max) }))
+    const tooLong = settingsProblems(edit({ nudgeModel: 'a'.repeat(max + 1) }))
+    expect(problemFor(ok, 'nudgeModel')).toBeUndefined()
+    expect(problemFor(tooLong, 'nudgeModel')).toMatch(new RegExp(`${max} characters`))
   })
 })
 

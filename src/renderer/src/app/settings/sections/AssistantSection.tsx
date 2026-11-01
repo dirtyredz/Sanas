@@ -1,4 +1,5 @@
 import { useEffect, useId, useState } from 'react'
+import { SETTINGS_LIMITS } from '@shared/settings-limits'
 import type { SettingsView } from '@shared/types'
 import { FieldRow } from '../../controls/FieldRow'
 import { Switch } from '../../controls/Switch'
@@ -56,7 +57,7 @@ function ModelField({
       {custom && (
         <input
           value={model}
-          maxLength={200}
+          maxLength={SETTINGS_LIMITS.modelId.maxLength}
           className="mono"
           placeholder="Claude model ID"
           aria-label={`${label} custom model ID`}
@@ -136,14 +137,14 @@ export function AssistantSection({
       </FieldRow>
       <FieldRow
         label="Answer cooldown"
-        help="Seconds between automatic answers to the room (0–60). 0 means no cooldown."
+        help={`Seconds between automatic answers to the room (${SETTINGS_LIMITS.nudgeCooldownSec.min}–${SETTINGS_LIMITS.nudgeCooldownSec.max}). 0 means no cooldown.`}
         error={problemFor(problems, 'nudgeCooldownSec')}
       >
         <input
           type="number"
           className="input-number"
-          min={0}
-          max={60}
+          min={SETTINGS_LIMITS.nudgeCooldownSec.min}
+          max={SETTINGS_LIMITS.nudgeCooldownSec.max}
           step={1}
           value={view.nudgeCooldownSec}
           onChange={(e) => onChange({ nudgeCooldownSec: Number(e.target.value) })}

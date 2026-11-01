@@ -1,5 +1,4 @@
-export type SaveState =
-  { kind: 'idle' } | { kind: 'saving' } | { kind: 'saved' } | { kind: 'error'; message: string }
+import type { SaveState } from './useSettingsDraft'
 
 /** The page's one Save: always in reach at the bottom, saying whether anything is unsaved,
  *  why Save is waiting, or that it worked. */

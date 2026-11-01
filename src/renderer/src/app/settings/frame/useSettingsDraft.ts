@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { SettingsView } from '@shared/types'
 import { errorText } from '../../../lib/ipc-error'
-import type { SaveState } from './SettingsSaveBar'
 import {
   hasUnsavedChanges,
   NO_SECRETS,
@@ -25,6 +24,9 @@ function followExternal(pushed: SettingsView) {
     return next
   }
 }
+
+export type SaveState =
+  { kind: 'idle' } | { kind: 'saving' } | { kind: 'saved' } | { kind: 'error'; message: string }
 
 export interface SettingsDraft {
   /** Null until the first load. */
