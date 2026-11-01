@@ -65,12 +65,12 @@ sanas/
 │   │       │   ├── shell/                  # session composition, layout, header, status, preferences
 │   │       │   │   └── navigation/         # workspace reducer, local shortcuts, rail, compose handshake
 │   │       │   ├── suggestions/            # answer surface, history coordination, manual requests
-│   │       │   ├── workspaces/             # secondary views: composer/ (Ask), presentation/, transcript/
-│   │       │   ├── controls/               # OverlayButton, OverlayTextArea, overlay icons
+│   │       │   ├── workspaces/             # frame + secondary views (Screen, Slide, Transcript, Context); composer/ (Ask)
+│   │       │   ├── controls/               # OverlayButton, OverlayTextArea, OpenSanasButton, overlay icons
 │   │       │   ├── layout/                 # opacity, divider ratio/drag, resize grips
-│   │       │   └── capture/                # Screen view, capture status and composer attachment state
+│   │       │   └── capture/                # capture action, status subscription and composer attachment state
 │   │       ├── audio/                      # mic/loopback capture and worklet bridge
-│   │       ├── lib/                        # pure shared renderer helpers
+│   │       ├── lib/                        # pure shared renderer helpers (incl. overlay-workspaces.ts: workspace names + local shortcut table)
 │   │       │   ├── meeting/                # meeting/context/presentation state and hooks
 │   │       │   ├── presentation/           # slide editor and forgiving import
 │   │       │   └── suggestions/            # safe suggestion rendering and history reducer
@@ -136,16 +136,16 @@ sanas/
 - `src/renderer/src/overlay-app/shell/` — `OverlaySession` (composes every controller once), `OverlayShell` layout, header, persistent status, preferences popover, window state, Answer every question
 - `src/renderer/src/overlay-app/shell/navigation/` — pure workspace reducer, local shortcut table/dispatch, the rail, and the compose readiness/focus handshake
 - `src/renderer/src/overlay-app/suggestions/` — the answer surface (full and preview), history/reading coordination and manual-request (detail/audience) policy
-- `src/renderer/src/overlay-app/workspaces/` — secondary workspace views and the frame that keeps them mounted; `composer/` (Ask: draft state, submission, view), `context/` (text-only meeting context), `presentation/`, `transcript/`
-- `src/renderer/src/overlay-app/controls/` — the overlay's small control wrappers (button variants, labelled textarea) and local icons; not a general component framework
+- `src/renderer/src/overlay-app/workspaces/` — the frame that keeps secondary views mounted plus one file per view (`OverlayCapturePanel`, `SlidePanel`, `OverlayTranscript`, `OverlayContext`); `composer/` (Ask: draft state, submission, view) is the only subfolder, kept because it has several files
+- `src/renderer/src/overlay-app/controls/` — the overlay's small control wrappers (button variants, labelled textarea, Open Sanas) and local icons; not a general component framework
 - `src/renderer/src/overlay-app/layout/` — overlay opacity and divider-ratio persistence, divider drag/measurement, and the three resize grips
-- `src/renderer/src/overlay-app/capture/` — Screen workspace view, Capture screen action, capture status subscription/helpers and the composer's screen-attachment state
+- `src/renderer/src/overlay-app/capture/` — Capture screen action, capture status subscription/helpers and the composer's screen-attachment state (hooks only; the Screen view lives in `workspaces/`)
 - `src/renderer/src/audio/` — renderer capture and AudioWorklet downsampling
-- `src/renderer/src/lib/` — pure presentation helpers shared across renderer pages and bundles
+- `src/renderer/src/lib/` — pure presentation helpers shared across renderer pages and bundles (`overlay-workspaces.ts`: workspace names and the local shortcut table shared by the overlay and Settings → Hotkeys)
 - `src/renderer/src/lib/meeting/` — meeting, context and presentation reducers/hooks; `meeting-context-draft.ts` + `useMeetingContextDraft.ts` are the draft/apply/reload/conflict logic shared by the main window's full editor and the overlay's text-only Context
 - `src/renderer/src/lib/presentation/` — reusable slide editing and import UI/helpers
 - `src/renderer/src/lib/suggestions/` — text-safe compact/detail renderers and live history state
-- `src/renderer/src/dev/` — browser-preview implementation of the typed preload bridge; `overlay-scenarios.ts` holds the deterministic overlay preview states (`overlay.html?scenario=<name>`) driven through `mockDriver`
+- `src/renderer/src/dev/` — browser-preview implementation of the typed preload bridge: `mock-api.ts` assembles it, `mock-fixtures.ts` holds the static sample data, `mock-live-meeting.ts` the scripted live meeting; `overlay-scenarios.ts` holds the deterministic overlay preview states (`overlay.html?scenario=<name>`) driven through `mockDriver`
 - `src/renderer/public/` — AudioWorklet processors and other unbundled assets
 - `src/shared/` — types shared by main, preload and renderer
 - `src/shared/presentation/` — deck and historical timeline contracts
@@ -199,6 +199,16 @@ New main-process code belongs in a responsibility folder above, not beside `inde
 
 ## Structural debt
 
+- `renderer/src/lib/` is broad (loose helpers beside `meeting/`, `presentation/`, `suggestions/`) and
+  `lib/meeting/` has a high file fan-out; split by responsibility before either grows again.
+- The overlay's CSS layers (`overlay-controls/-shell/-panels/-suggestions.css`) live in
+  `app/styles/` beside the library's, so the shared folder mixes two bundles; `.workspace-body` /
+  `.workspace-actions` sit in `overlay-panels.css` while the workspace frame is in `overlay-shell.css`.
+- `services/meetings/` and `services/assistant/` are both broad (many files plus subfolders);
+  group by lifecycle vs. policy before adding more siblings.
+- `shell/` and `workspaces/` are coupled through `OverlaySessionModel`: workspaces take the whole
+  session, and `OverlaySession` imports the composer hook. Narrow the props per workspace if the
+  session grows.
 - `services/` now has 12 entries with `screen-capture/` (placed there by the screen-capture plan so
   it stays separate from audio capture); relieving that breadth is tracked by dk-bd2e1ebf.
 - Screen answers are stored as `typed` plus a `[Screen capture]` request-text marker because the

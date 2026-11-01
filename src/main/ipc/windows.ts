@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron'
 import { IPC } from '@shared/ipc'
-import { showMainWindow } from '../windows/main-window'
+import { createMainWindow } from '../windows/main-window'
 import {
   activateComposer,
   composerReady,
@@ -25,5 +25,5 @@ export function registerWindowsIpc(): void {
   ipcMain.handle(IPC.ComposeReady, () => composerReady())
   ipcMain.handle(IPC.ComposeRelease, () => releaseOverlayFocus())
   // parameterless: the renderer cannot choose a page or pass anything through
-  ipcMain.handle(IPC.MainWindowShow, () => showMainWindow())
+  ipcMain.handle(IPC.MainWindowShow, () => createMainWindow())
 }

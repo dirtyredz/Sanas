@@ -20,8 +20,8 @@ export function MeetingContextEditor({ meetingId }: { meetingId: number }): Reac
 
 function ContextDraftEditor({ context }: { context: MeetingContext }): React.JSX.Element {
   const presentation = usePresentationState(context.meetingId)
-  const { draft, dispatch, conflict, apply, reload } = useMeetingContextDraft(context, context, {
-    textOnly: false,
+  const { draft, dispatch, conflict, apply, reload } = useMeetingContextDraft(context, {
+    mode: 'deck',
     presentationRevision: presentation.revision,
     currentOrdinal: presentation.ordinal,
   })

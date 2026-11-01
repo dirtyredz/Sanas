@@ -41,8 +41,3 @@ export function createMainWindow(): BrowserWindow {
   }
   return mainWindow
 }
-
-/** Open Sanas from the overlay. */
-export function showMainWindow(): void {
-  createMainWindow()
-}

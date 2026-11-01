@@ -1,15 +1,19 @@
 import type { ReactNode } from 'react'
 import { OpenSanasButton } from '../controls/OpenSanasButton'
 import { AudienceButton } from '../suggestions/AudienceButton'
-import { OverlayContext } from './context/OverlayContext'
-import { OverlayCapturePanel } from '../capture/OverlayCapturePanel'
-import { panelId, tabId } from '../shell/navigation/OverlayNavigation'
-import type { SecondaryWorkspace, Workspace } from '../shell/navigation/overlay-navigation'
-import { WORKSPACE_LABELS } from '../shell/navigation/overlay-shortcuts'
+import { OverlayContext } from './OverlayContext'
+import { OverlayCapturePanel } from './OverlayCapturePanel'
+import { WORKSPACE_LABELS } from '../../lib/overlay-workspaces'
+import {
+  panelId,
+  tabId,
+  type SecondaryWorkspace,
+  type Workspace,
+} from '../shell/navigation/overlay-navigation'
 import type { OverlaySessionModel } from '../shell/OverlaySession'
 import { AskWorkspace } from './composer/AskWorkspace'
-import { SlidePanel } from './presentation/SlidePanel'
-import { OverlayTranscript } from './transcript/OverlayTranscript'
+import { SlidePanel } from './SlidePanel'
+import { OverlayTranscript } from './OverlayTranscript'
 
 /** One secondary workspace's frame. Every workspace stays mounted so drafts and scroll
  *  positions survive switching; inactive ones are hidden and inert (out of the tab order). */

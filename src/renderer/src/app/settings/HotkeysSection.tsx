@@ -2,7 +2,7 @@ import type { SettingsView } from '@shared/types'
 import { useEffect, useState } from 'react'
 import type { HotkeyStatus } from '@shared/hotkeys/types'
 import { hotkeyLabel } from '../../lib/hotkey-label'
-import { LOCAL_SHORTCUTS } from '../../overlay-app/shell/navigation/overlay-shortcuts'
+import { LOCAL_SHORTCUTS } from '../../lib/overlay-workspaces'
 import { SettingsSection } from './SettingsSection'
 
 export function HotkeysSection({

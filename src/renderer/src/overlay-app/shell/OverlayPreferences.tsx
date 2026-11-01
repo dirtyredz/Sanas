@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { OverlaySettingsModel } from '../layout/useOverlaySettings'
 import { AnswerEveryQuestion, type AnswerEveryQuestionModel } from './AnswerEveryQuestion'
-import { LOCAL_SHORTCUTS } from './navigation/overlay-shortcuts'
+import { LOCAL_SHORTCUTS } from '../../lib/overlay-workspaces'
 
 /** The preferences popover: whole-window opacity (Electron's, synced with Settings), this
  *  meeting's Answer every question, and the local shortcuts. It scrolls inside the window.

@@ -29,7 +29,7 @@ vi.mock('electron', () => ({
     }
   },
 }))
-import { createMainWindow, showMainWindow } from './main-window'
+import { createMainWindow } from './main-window'
 
 beforeEach(() => {
   f.closed?.()
@@ -50,7 +50,7 @@ it('restores, shows and focuses an existing minimized or hidden window without r
   vi.clearAllMocks()
   f.minimized = true
   f.visible = false
-  showMainWindow()
+  createMainWindow()
   expect(f.created).toBe(1)
   expect(f.restore).toHaveBeenCalledOnce()
   expect(f.show).toHaveBeenCalledOnce()
@@ -62,7 +62,7 @@ it('restores, shows and focuses an existing minimized or hidden window without r
 it('only focuses a window that is already visible', () => {
   createMainWindow()
   vi.clearAllMocks()
-  showMainWindow()
+  createMainWindow()
   expect(f.restore).not.toHaveBeenCalled()
   expect(f.show).not.toHaveBeenCalled()
   expect(f.focus).toHaveBeenCalledOnce()
@@ -71,6 +71,6 @@ it('only focuses a window that is already visible', () => {
 it('recreates the window after it was closed', () => {
   createMainWindow()
   f.closed?.()
-  showMainWindow()
+  createMainWindow()
   expect(f.created).toBe(2)
 })

@@ -1,6 +1,6 @@
 import { OverlayButton } from '../controls/OverlayButton'
-import { OverlayCaptureAction } from './OverlayCaptureAction'
-import type { CaptureStatusModel } from './useCaptureStatus'
+import { OverlayCaptureAction } from '../capture/OverlayCaptureAction'
+import type { CaptureStatusModel } from '../capture/useCaptureStatus'
 
 /** Screen: capture the display under the overlay and explain it at once. Opening this view
  *  never captures anything; progress also shows in the persistent status region. */

@@ -187,6 +187,10 @@ body.overlay-body {
   transform: none;
 }
 
+.overlay-panel details.ov-status[open] > summary::before {
+  transform: none;
+}
+
 .ov-status-short {
   flex: 1 1 auto;
   min-width: 0;
@@ -208,6 +212,10 @@ details.ov-status[open] .ov-status-more {
 
 details.ov-status > p {
   padding: 2px 0 4px 14px;
+}
+
+.ov-status-action {
+  padding: 0 0 4px 14px;
 }
 
 /* ----- rail + main column ----- */
@@ -305,10 +313,6 @@ details.ov-status > p {
   flex: 1 1 auto;
 }
 
-.is-answer .workspace-region {
-  visibility: hidden;
-}
-
 /* ----- the divider between answer preview and workspace ----- */
 .overlay-divider {
   position: relative;
@@ -356,6 +360,10 @@ details.ov-status > p {
   grid-area: 1 / 1;
   min-height: 0;
   overflow: hidden;
+}
+
+.is-answer .workspace-region {
+  visibility: hidden;
 }
 
 .workspace:not(.is-active) {
@@ -412,14 +420,6 @@ details.ov-status > p {
   border-right: 2px solid rgba(90, 167, 160, 0.7);
   border-bottom: 2px solid rgba(90, 167, 160, 0.7);
   border-radius: 0 0 2px;
-}
-
-.ov-status-action {
-  padding: 0 0 4px 14px;
-}
-
-.overlay-panel details.ov-status[open] > summary::before {
-  transform: none;
 }
 
 @media (max-height: 300px) {

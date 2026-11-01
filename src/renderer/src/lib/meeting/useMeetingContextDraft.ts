@@ -10,6 +10,11 @@ import {
   type ContextDraftEvent,
 } from './meeting-context-draft'
 
+/** Text-only drafts never carry a deck (the overlay); deck drafts also edit slides against the
+ *  live presentation (the main window). */
+export type ContextDraftMode =
+  { mode: 'text' } | { mode: 'deck'; presentationRevision: number; currentOrdinal: number }
+
 export interface MeetingContextDraftModel {
   draft: ContextDraft
   dispatch: React.Dispatch<ContextDraftEvent>
@@ -22,12 +27,13 @@ export interface MeetingContextDraftModel {
 /** Binds one meeting's context draft. Mount it keyed by meeting id: a new meeting starts a new
  *  draft, so an Apply that finishes late cannot touch the next meeting's text. */
 export function useMeetingContextDraft(
-  saved: MeetingContext,
-  latest: MeetingContext | null,
-  options: { textOnly: boolean; presentationRevision: number; currentOrdinal: number },
+  context: MeetingContext,
+  options: ContextDraftMode,
 ): MeetingContextDraftModel {
-  const [draft, dispatch] = useReducer(contextDraftReducer, saved, initialContextDraft)
-  const { textOnly, presentationRevision, currentOrdinal } = options
+  const [draft, dispatch] = useReducer(contextDraftReducer, context, initialContextDraft)
+  const textOnly = options.mode === 'text'
+  const presentationRevision = options.mode === 'deck' ? options.presentationRevision : 0
+  const currentOrdinal = options.mode === 'deck' ? options.currentOrdinal : 0
   const apply = useCallback(async (): Promise<void> => {
     dispatch({ type: 'begin' })
     try {
@@ -40,13 +46,13 @@ export function useMeetingContextDraft(
     }
   }, [draft, textOnly, presentationRevision, currentOrdinal])
   const reload = useCallback(() => {
-    if (latest) dispatch({ type: 'reload', context: latest })
-  }, [latest])
+    dispatch({ type: 'reload', context })
+  }, [context])
   return {
     draft,
     dispatch,
     unsaved: isUnsaved(draft, !textOnly),
-    conflict: hasConflict(draft, latest),
+    conflict: hasConflict(draft, context),
     apply,
     reload,
   }

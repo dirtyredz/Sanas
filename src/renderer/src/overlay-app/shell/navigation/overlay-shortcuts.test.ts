@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest'
-import { LOCAL_SHORTCUTS, overlayShortcut, type ShortcutKey } from './overlay-shortcuts'
+import { LOCAL_SHORTCUTS } from '../../../lib/overlay-workspaces'
+import { overlayShortcut, type ShortcutKey } from './overlay-shortcuts'
 
 const key = (over: Partial<ShortcutKey>): ShortcutKey => ({
   key: '',

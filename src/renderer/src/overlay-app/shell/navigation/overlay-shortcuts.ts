@@ -1,35 +1,8 @@
-import type { Workspace } from './overlay-navigation'
+import { WORKSPACE_KEYS, type Workspace } from '../../../lib/overlay-workspaces'
 
 // Local overlay shortcuts — only while the overlay window has focus. The global shortcuts
 // (show/hide, Answer now, Ask, Capture, slides) are registered by main and live in Settings.
-// Settings → Hotkeys imports LOCAL_SHORTCUTS so the documented labels never drift.
-
-export const WORKSPACE_LABELS: Record<Workspace, string> = {
-  answer: 'Answer',
-  ask: 'Ask',
-  screen: 'Screen',
-  slide: 'Slide',
-  transcript: 'Transcript',
-  context: 'Context',
-}
-
-const WORKSPACE_KEYS: Record<string, Workspace> = {
-  '1': 'answer',
-  '2': 'ask',
-  '3': 'screen',
-  '4': 'slide',
-  '5': 'transcript',
-  '6': 'context',
-}
-
-export const LOCAL_SHORTCUTS: { keys: string; action: string }[] = [
-  ...Object.entries(WORKSPACE_KEYS).map(([digit, workspace]) => ({
-    keys: `Ctrl+${digit}`,
-    action: WORKSPACE_LABELS[workspace],
-  })),
-  { keys: 'Ctrl+,', action: 'Overlay preferences' },
-  { keys: 'Esc', action: 'Close preferences, else back to Answer and release focus' },
-]
+// The label/key table is shared data in lib/overlay-workspaces.ts.
 
 export function workspaceShortcut(workspace: Workspace): string {
   const digit = Object.keys(WORKSPACE_KEYS).find((key) => WORKSPACE_KEYS[key] === workspace)

@@ -1,9 +1,9 @@
 import type { MeetingContext } from '@shared/live-controls/types'
-import { useMeetingContext } from '../../../lib/meeting/useMeetingContext'
-import { useMeetingContextDraft } from '../../../lib/meeting/useMeetingContextDraft'
-import { OpenSanasButton } from '../../controls/OpenSanasButton'
-import { OverlayButton } from '../../controls/OverlayButton'
-import { OverlayTextArea } from '../../controls/OverlayTextArea'
+import { useMeetingContext } from '../../lib/meeting/useMeetingContext'
+import { useMeetingContextDraft } from '../../lib/meeting/useMeetingContextDraft'
+import { OpenSanasButton } from '../controls/OpenSanasButton'
+import { OverlayButton } from '../controls/OverlayButton'
+import { OverlayTextArea } from '../controls/OverlayTextArea'
 
 /** Context: quick, text-only edits to this meeting's background. Apply never changes slides;
  *  full deck editing stays in the main window's Live page. Unsaved text is never applied or
@@ -33,11 +33,9 @@ function TextDraft({
   context: MeetingContext
   slideCount: number
 }): React.JSX.Element {
-  const { draft, dispatch, unsaved, conflict, apply, reload } = useMeetingContextDraft(
-    context,
-    context,
-    { textOnly: true, presentationRevision: 0, currentOrdinal: 0 },
-  )
+  const { draft, dispatch, unsaved, conflict, apply, reload } = useMeetingContextDraft(context, {
+    mode: 'text',
+  })
   return (
     <div className="workspace-body overlay-context">
       <div className="context-head">

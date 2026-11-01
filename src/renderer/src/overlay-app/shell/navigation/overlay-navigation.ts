@@ -3,8 +3,10 @@
 // changes the workspace: no slide, context, transcript or answer event is an input here, and
 // every meeting (with or without a deck) opens on Answer.
 
-export const WORKSPACES = ['answer', 'ask', 'screen', 'slide', 'transcript', 'context'] as const
-export type Workspace = (typeof WORKSPACES)[number]
+import { WORKSPACES, type Workspace } from '../../../lib/overlay-workspaces'
+
+export { WORKSPACES }
+export type { Workspace }
 export type SecondaryWorkspace = Exclude<Workspace, 'answer'>
 
 export interface NavigationState {
@@ -20,6 +22,9 @@ export type NavigationEvent =
   | { type: 'compose' }
   | { type: 'preferences'; open: boolean }
   | { type: 'escape' }
+
+export const tabId = (workspace: Workspace): string => `ov-tab-${workspace}`
+export const panelId = (workspace: Workspace): string => `ov-panel-${workspace}`
 
 export function initialNavigation(meetingId: number | null): NavigationState {
   return { meetingId, workspace: 'answer', preferencesOpen: false }

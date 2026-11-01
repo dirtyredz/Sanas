@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { MeetingState } from '@shared/types'
-import type { TranscriptLine } from '../../../lib/meeting/useTranscript'
-import { speakerDisplay } from '../../../lib/speaker-label'
+import type { TranscriptLine } from '../../lib/meeting/useTranscript'
+import { speakerDisplay } from '../../lib/speaker-label'
 
 /** The live transcript tail: the last twelve lines, interim text muted, teal for the room and
  *  sand for the owner. The full record stays in the main window. */

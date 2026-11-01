@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { PresentationState } from '@shared/presentation/types'
-import { hotkeyLabel } from '../../../lib/hotkey-label'
-import { OverlayButton } from '../../controls/OverlayButton'
+import { hotkeyLabel } from '../../lib/hotkey-label'
+import { OverlayButton } from '../controls/OverlayButton'
 
 /** Slide: ordinal and title, Previous/Next, the scrolling script and key facts, plus the shared
  *  Ask the audience action. A new revision scrolls back to the top. */

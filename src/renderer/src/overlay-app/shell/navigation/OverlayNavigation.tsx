@@ -7,8 +7,9 @@ import {
   IconSlide,
   IconTranscript,
 } from '../../controls/overlay-icons'
-import { WORKSPACES, type Workspace } from './overlay-navigation'
-import { WORKSPACE_LABELS, workspaceShortcut } from './overlay-shortcuts'
+import { WORKSPACE_LABELS } from '../../../lib/overlay-workspaces'
+import { WORKSPACES, panelId, tabId, type Workspace } from './overlay-navigation'
+import { workspaceShortcut } from './overlay-shortcuts'
 
 const ICONS: Record<Workspace, () => React.JSX.Element> = {
   answer: IconAnswer,
@@ -18,9 +19,6 @@ const ICONS: Record<Workspace, () => React.JSX.Element> = {
   transcript: IconTranscript,
   context: IconContext,
 }
-
-export const tabId = (workspace: Workspace): string => `ov-tab-${workspace}`
-export const panelId = (workspace: Workspace): string => `ov-panel-${workspace}`
 
 /** The vertical rail: one tab per workspace, roving focus with arrows and Home/End. It only
  *  navigates — it is never a second row of actions. */
