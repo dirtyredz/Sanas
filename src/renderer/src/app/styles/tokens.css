@@ -1,0 +1,39 @@
+/* ---------- tokens ---------- */
+/* Shared design tokens for the library window and the overlay. Dark by design: the app lives
+   beside a call. Speaker colour carries meaning: teal is the room and the app, sand is your
+   own voice. base.css (library) and overlay.css (overlay) both import this file. */
+
+:root {
+  --bg: #0f1317;
+  --panel: #161b21;
+  --panel-2: #1c2229;
+  --line: #28303a;
+  --line-strong: #364050;
+  --text: #e4e8ed;
+  --muted: #8792a0;
+  --accent: #5aa7a0;
+  --accent-hover: #6bb8b1;
+  --accent-ink: #0e1113;
+  --accent-soft: rgba(90, 167, 160, 0.14);
+  --scrollbar-thumb: rgba(90, 167, 160, 0.28);
+  --scrollbar-thumb-hover: rgba(90, 167, 160, 0.46);
+  --me: #d9b26f;
+  --me-soft: rgba(217, 178, 111, 0.14);
+  --ok: #6fbf73;
+  --warn: #d9a44a;
+  --warn-soft: rgba(217, 164, 74, 0.12);
+  --danger: #e05d5d;
+  --danger-soft: rgba(224, 93, 93, 0.14);
+  --font: 'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-display: 'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif;
+  --mono: 'Cascadia Code', 'Cascadia Mono', Consolas, 'Courier New', monospace;
+  --radius: 6px;
+  --radius-lg: 10px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --control-h: 30px;
+  --control-h-sm: 26px;
+  --focus-ring: 2px solid var(--accent);
+}

@@ -1,7 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
 import { DEFAULT_WHISPER_RATIO } from './overlay-split'
 import { createOverlayOpacitySaver } from './overlay-opacity'
-export function useOverlaySettings() {
+
+export interface OverlaySettingsModel {
+  overlayOpacity: number
+  /** Apply at once (main sets the window opacity on save) and persist, coalesced. */
+  changeOpacity(opacity: number): void
+  whisperRatio: number
+  setWhisperRatio(ratio: number): void
+  persistSplit(ratio: number): void
+}
+
+/** Overlay opacity and the persisted split ratio: load, debounced save, and Settings sync. */
+export function useOverlaySettings(): OverlaySettingsModel {
   const [overlayOpacity, setOverlayOpacity] = useState(1)
   const [whisperRatio, setWhisperRatio] = useState(DEFAULT_WHISPER_RATIO)
   const saveSplitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -19,10 +30,11 @@ export function useOverlaySettings() {
     const removeSettingsListener = window.sanas.settings.onChanged((settings) => {
       setOverlayOpacity(settings.overlayOpacity)
     })
+    const saver = opacitySaverRef.current
     return () => {
       active = false
       removeSettingsListener()
-      opacitySaverRef.current.dispose()
+      saver.dispose()
       if (saveSplitTimerRef.current) clearTimeout(saveSplitTimerRef.current)
     }
   }, [])
@@ -39,10 +51,12 @@ export function useOverlaySettings() {
 
   return {
     overlayOpacity,
-    setOverlayOpacity,
+    changeOpacity: (opacity) => {
+      setOverlayOpacity(opacity)
+      opacitySaverRef.current.schedule(opacity)
+    },
     whisperRatio,
     setWhisperRatio,
     persistSplit,
-    opacitySaverRef,
   }
 }

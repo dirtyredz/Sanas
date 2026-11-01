@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
 import type { CaptureStatus } from '@shared/live-controls/capture'
-import { captureNotice, newerStatus } from './OverlayCaptureAction'
+import { captureNotice, isCapturing, newerStatus } from './capture-status'
 
 const status = (over: Partial<CaptureStatus>): CaptureStatus => ({
   meetingId: 1,
@@ -37,4 +37,11 @@ it('keeps the newest status when a late fetch arrives', () => {
   expect(newerStatus(fresh, late)).toBe(fresh)
   expect(newerStatus(late, fresh)).toBe(fresh)
   expect(newerStatus(null, late)).toBe(late)
+})
+
+it('reports capturing only for this meeting', () => {
+  expect(isCapturing(status({}), 1)).toBe(true)
+  expect(isCapturing(status({}), 2)).toBe(false)
+  expect(isCapturing(status({ phase: 'analyzing' }), 1)).toBe(false)
+  expect(isCapturing(null, 1)).toBe(false)
 })

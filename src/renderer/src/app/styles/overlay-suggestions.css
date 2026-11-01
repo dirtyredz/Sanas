@@ -1,0 +1,179 @@
+/* ---------- overlay suggestions ---------- */
+/* The answer surface: label and Answer now, the body (compact or detailed renderers), history
+   and card actions. Preview mode is the compact form above a secondary workspace. */
+
+.overlay-suggestion {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+  padding: 10px 12px;
+  overflow: hidden;
+  background: rgba(90, 167, 160, 0.05);
+  font-size: 14px;
+}
+
+.suggestion-bar {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.suggestion-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--accent);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cursor {
+  display: inline-block;
+  width: 6px;
+  height: 12px;
+  border-radius: 1px;
+  background: var(--accent);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.answer-now {
+  margin-left: auto;
+}
+
+.new-answer {
+  align-self: flex-start;
+  color: var(--accent);
+}
+
+.suggestion-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  outline: none;
+  user-select: text;
+  -webkit-app-region: no-drag;
+}
+
+.suggestion-empty {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.suggestion-actions,
+.suggestion-preview-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.suggestion-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.suggestion-index {
+  min-width: 2.6em;
+  color: var(--muted);
+  font: 12px var(--mono);
+  text-align: center;
+}
+
+/* ----- shared renderers (lib/suggestions) inside the overlay ----- */
+.compact-suggestion {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  line-height: 1.45;
+}
+
+.compact-headline {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.compact-suggestion code,
+.detailed-suggestion code {
+  font-family: var(--mono);
+  font-size: 0.9em;
+}
+
+.compact-suggestion > :not(.compact-code) code {
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.compact-code {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-height: 100%;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius);
+  background: rgba(8, 11, 14, 0.82);
+}
+
+.compact-code-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 30px;
+  padding: 3px 5px 3px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+  font: 11px var(--mono);
+}
+
+.overlay-panel .compact-code-bar button {
+  min-height: 24px;
+  padding: 0 9px;
+  border: 1px solid rgba(90, 167, 160, 0.35);
+  border-radius: 5px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.overlay-panel .compact-code-bar button:hover {
+  border-color: var(--accent);
+}
+
+.compact-code pre,
+.detailed-suggestion pre {
+  min-height: 0;
+  padding: 8px;
+  overflow: auto;
+  white-space: pre;
+  -webkit-app-region: no-drag;
+}
+
+.detailed-suggestion {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.detailed-suggestion pre {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius);
+  background: rgba(8, 11, 14, 0.82);
+}
+
+.compact-follow-up {
+  color: var(--muted);
+  font-size: 13px;
+}

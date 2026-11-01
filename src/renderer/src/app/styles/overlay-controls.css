@@ -1,0 +1,415 @@
+/* ---------- overlay controls ---------- */
+/* One control vocabulary for the overlay: buttons (primary/secondary/quiet/icon), fields,
+   switch, range, disclosure and messages. Every state is styled — default, hover, pressed,
+   focus-visible, disabled, busy, error — so nothing falls back to browser defaults. */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+  scrollbar-width: thin;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+::-webkit-scrollbar-button {
+  display: none;
+}
+
+.overlay-panel :where(button, input, select, textarea, summary) {
+  font: inherit;
+  color: inherit;
+  -webkit-app-region: no-drag;
+}
+
+.overlay-panel :focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Any button without its own vocabulary (shared editors) still gets the secondary look. */
+.overlay-panel :where(button) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: var(--control-h-sm);
+  padding: 0 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 12.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color 0.12s,
+    background 0.12s,
+    color 0.12s;
+}
+
+.overlay-panel :where(button):hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.overlay-panel :where(button):active:not(:disabled) {
+  background: var(--accent-soft);
+}
+
+.overlay-panel :where(button):disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ----- buttons ----- */
+.ov-btn {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: var(--control-h);
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color 0.12s,
+    background 0.12s,
+    color 0.12s;
+}
+
+.ov-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.ov-btn:active:not(:disabled),
+.ov-btn[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.ov-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.ov-btn[aria-busy='true'] {
+  opacity: 0.8;
+  cursor: progress;
+}
+
+.ov-btn[aria-busy='true']::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: ov-spin 0.8s linear infinite;
+}
+
+.ov-btn--sm {
+  height: var(--control-h-sm);
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.ov-btn--primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.ov-btn--primary:hover:not(:disabled) {
+  border-color: var(--accent-hover);
+  background: var(--accent-hover);
+}
+
+.ov-btn--primary:active:not(:disabled) {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.ov-btn--quiet,
+.ov-btn--icon {
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+}
+
+.ov-btn--quiet:hover:not(:disabled),
+.ov-btn--icon:hover:not(:disabled) {
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text);
+}
+
+.ov-btn--icon {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  font-size: 16px;
+}
+
+.ov-btn--icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+@keyframes ov-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ----- fields ----- */
+.ov-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.ov-field-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.overlay-panel textarea,
+.overlay-panel input[type='text'],
+.overlay-panel select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: rgba(8, 11, 14, 0.55);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.45;
+  user-select: text;
+}
+
+.overlay-panel textarea {
+  resize: none;
+}
+
+.overlay-panel :is(textarea, input[type='text'], select):focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.overlay-panel :is(textarea, input, select):disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.ov-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ----- switch (a checkbox styled as a toggle) ----- */
+.ov-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 28px;
+  font-size: 12.5px;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+
+.ov-switch input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.ov-switch-track {
+  position: relative;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  transition: background 0.12s;
+}
+
+.ov-switch-track::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: transform 0.12s;
+}
+
+.ov-switch input:checked + .ov-switch-track {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.ov-switch input:checked + .ov-switch-track::after {
+  transform: translateX(12px);
+  background: var(--accent-ink);
+}
+
+.ov-switch input:focus-visible + .ov-switch-track {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* ----- range ----- */
+.ov-range {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 3.2em;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 12.5px;
+}
+
+.ov-range input[type='range'] {
+  width: 100%;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  appearance: none;
+  cursor: pointer;
+}
+
+.ov-range input[type='range']::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--line-strong);
+}
+
+.ov-range input[type='range']::-webkit-slider-thumb {
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  border: 2px solid var(--accent-ink);
+  border-radius: 50%;
+  background: var(--accent);
+  appearance: none;
+}
+
+.ov-range-value {
+  color: var(--muted);
+  font: 12px var(--mono);
+  text-align: right;
+}
+
+/* ----- disclosure ----- */
+.overlay-panel summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  color: var(--accent);
+  font-size: 12.5px;
+  font-weight: 600;
+  list-style: none;
+  cursor: pointer;
+}
+
+.overlay-panel summary::-webkit-details-marker {
+  display: none;
+}
+
+.overlay-panel summary::before {
+  content: '\203A';
+  display: inline-block;
+  width: 10px;
+  transition: transform 0.12s;
+}
+
+.overlay-panel details[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+/* ----- messages, badges, empty states ----- */
+.ov-message {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.ov-message--error {
+  color: var(--warn);
+}
+
+.ov-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 6px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.ov-badge--accent {
+  border-color: rgba(90, 167, 160, 0.45);
+  color: var(--accent);
+}
+
+.ov-empty {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay-panel *,
+  .overlay-panel *::before,
+  .overlay-panel *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
