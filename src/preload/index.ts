@@ -92,6 +92,10 @@ const api = {
       return () => ipcRenderer.removeListener(IPC.SettingsChanged, listener)
     },
   },
+  app: {
+    /** Open Sanas: reveal the main window on its current page (restores, never reloads). */
+    showMain: (): Promise<void> => ipcRenderer.invoke(IPC.MainWindowShow),
+  },
   overlay: {
     activateComposer: (): Promise<void> => ipcRenderer.invoke(IPC.ComposeActivate),
     composerReady: (): Promise<void> => ipcRenderer.invoke(IPC.ComposeReady),

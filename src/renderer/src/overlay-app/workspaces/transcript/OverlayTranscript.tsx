@@ -22,10 +22,10 @@ export function OverlayTranscript({
       {tail.length === 0 && (
         <p className="ov-empty">
           {status === 'live'
-            ? 'Listening…'
+            ? 'Listening — speech appears here as it is transcribed.'
             : status === 'paused'
-              ? 'Paused.'
-              : 'Start a meeting in the Sanas window.'}
+              ? 'Paused. Resume in Sanas to keep transcribing.'
+              : 'The live transcript appears here during a meeting.'}
         </p>
       )}
       {tail.map((line, index) => (

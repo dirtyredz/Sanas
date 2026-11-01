@@ -1,4 +1,4 @@
-import { OverlayButton } from '../../controls/OverlayButton'
+import { AudienceButton } from '../../suggestions/AudienceButton'
 import type { ManualRequestsModel } from '../../suggestions/useManualRequests'
 import { OverlayComposer } from './OverlayComposer'
 import type { OverlayComposerModel } from './useOverlayComposer'
@@ -13,7 +13,6 @@ export function AskWorkspace({
 }: {
   composer: OverlayComposerModel
   manual: ManualRequestsModel
-  /** A meeting is live or paused. */
   active: boolean
   requestBusy: boolean
 }): React.JSX.Element {
@@ -21,16 +20,7 @@ export function AskWorkspace({
     <div className="workspace-body">
       <OverlayComposer model={composer} />
       <div className="workspace-actions">
-        <OverlayButton
-          size="sm"
-          variant="quiet"
-          busy={manual.pending}
-          disabled={!active || requestBusy}
-          title="Suggest a question to ask the audience from the recent discussion"
-          onClick={() => void manual.request('audience')}
-        >
-          Ask the audience
-        </OverlayButton>
+        <AudienceButton manual={manual} active={active} requestBusy={requestBusy} />
       </div>
     </div>
   )

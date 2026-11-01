@@ -409,6 +409,9 @@ const api: SanasApi = {
     },
     onChanged: on(settingsListeners),
   },
+  app: {
+    showMain: async () => console.info('[sanas] preview: Open Sanas reveals the main window'),
+  },
   overlay: {
     ...controls.overlay,
     toggle: async () => {

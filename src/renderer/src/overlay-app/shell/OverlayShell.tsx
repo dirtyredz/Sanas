@@ -72,6 +72,7 @@ export function OverlayShell({ session }: { session: OverlaySessionModel }): Rea
               model={suggestions}
               manual={session.manual}
               live={session.active}
+              paused={meeting.status === 'paused'}
               mode={fullAnswer ? 'full' : 'preview'}
               onReadFull={() => select('answer')}
             />

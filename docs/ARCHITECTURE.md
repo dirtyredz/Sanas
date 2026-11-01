@@ -28,6 +28,13 @@ and Escape) are a window keydown listener; global shortcuts stay in main. In a s
 workspace the answer is a preview above a draggable divider whose ratio persists as
 `overlayWhisperRatio`; Answer gives it the whole column.
 
+**Main-window reveal.** The overlay's Open Sanas invokes the parameterless typed channel
+`MainWindowShow` (`app.showMain()` in preload; handler in `ipc/windows.ts`), which calls the
+same `createMainWindow()` entry point startup and second-instance use: an existing window is
+restored if minimized, shown and focused — never reloaded or routed, so the Live page and its
+microphone session keep running. The overlay's Context edits text only; slides stay in the
+main window's editor.
+
 ## Runtime data flow (live meeting)
 
 ```

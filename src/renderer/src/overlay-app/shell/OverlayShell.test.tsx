@@ -7,8 +7,6 @@ import { OverlayShell } from './OverlayShell'
 
 // Vitest has no @shared alias: load the real module by path.
 vi.mock('@shared/suggestion-label', () => import('../../../../shared/suggestion-label'))
-// the shared deck editor is the main window's; the overlay only hosts it until Phase 3
-vi.mock('../../lib/meeting/MeetingContextEditor', () => ({ MeetingContextEditor: () => null }))
 
 const noop = (): void => {}
 const answer: SuggestionView = {
@@ -158,5 +156,62 @@ describe('overlay shell', () => {
       },
     })
     expect(html.indexOf('Display 2')).toBeLessThan(html.indexOf('overlay-frame'))
+  })
+})
+
+describe('overlay shell, focused workspaces', () => {
+  it('never carries the full deck editor; Context hands deck editing to Sanas', () => {
+    const html = render('context')
+    expect(html).not.toContain('Meeting slides')
+    expect(html).not.toContain('Restore meeting-start')
+    expect(html).not.toContain('Continue from slide')
+  })
+
+  it('offers Ask the audience in Slide as well as Ask', () => {
+    const slide = {
+      meetingId: 7,
+      revision: 2,
+      ordinal: 2,
+      count: 8,
+      current: {
+        title: 'Rollout checkpoints',
+        talkingPoint: 'Main point',
+        script: 'Say it',
+        keyFacts: '',
+      },
+    }
+    const html = render('slide', { presentation: slide } as Partial<OverlaySessionModel>)
+    const panel = html.slice(
+      html.indexOf('id="ov-panel-slide"'),
+      html.indexOf('id="ov-panel-transcript"'),
+    )
+    expect(panel).toContain('Slide 3 of 8')
+    expect(panel).toContain('Rollout checkpoints')
+    expect(panel).toContain('Ask the audience')
+  })
+
+  it('idle offers Open Sanas instead of meeting actions', () => {
+    const html = render('answer', {
+      meeting: { meetingId: null, status: 'idle' },
+      meetingId: null,
+      active: false,
+      suggestions: { ...session('answer').suggestions, items: [], selected: null, latest: null },
+    })
+    expect(html).toContain('Start a meeting in Sanas.')
+    expect(html).toContain('Open Sanas')
+    expect(html).toMatch(/class="[^"]*answer-now[^"]*"[^>]*disabled=""/)
+  })
+
+  it('a meeting error keeps an Open Sanas action outside the workspaces', () => {
+    const html = render('transcript', {
+      meeting: {
+        meetingId: 7,
+        status: 'error',
+        error: 'Deepgram rejected the key. Check Settings.',
+      },
+    })
+    const status = html.slice(0, html.indexOf('overlay-frame'))
+    expect(status).toContain('Deepgram rejected the key')
+    expect(status).toContain('Open Sanas')
   })
 })

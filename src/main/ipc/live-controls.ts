@@ -9,7 +9,6 @@ import {
 } from '../services/meetings'
 import { requireId } from './validate'
 import { requireContextUpdate, requireManualRequest } from './live-controls-validation'
-import { activateComposer, composerReady, releaseOverlayFocus } from '../windows/overlay-window'
 
 export function registerLiveControlsIpc(): void {
   ipcMain.handle(IPC.MeetingContextGet, (_e, id: unknown) =>
@@ -24,7 +23,4 @@ export function registerLiveControlsIpc(): void {
     if (typeof enabled !== 'boolean') throw new Error('Expected a boolean.')
     return setAnswerEveryQuestion(requireId(id, 'meetingId'), enabled)
   })
-  ipcMain.handle(IPC.ComposeActivate, () => activateComposer())
-  ipcMain.handle(IPC.ComposeReady, () => composerReady())
-  ipcMain.handle(IPC.ComposeRelease, () => releaseOverlayFocus())
 }

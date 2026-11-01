@@ -74,7 +74,7 @@ Meeting history, exports and summaries show timestamped slide markers. Presentat
 
 ## Live presentation controls
 
-During a live or paused meeting, open Context in the overlay rail (Ctrl+6 while focused) or the Live page editor to edit meeting-only background and slides, then Apply to this meeting. Continue from slide is explicit; Restore meeting-start slides uses the original meeting snapshot. Edits reset Next point coaching but answers already started finish against their captured context.
+During a live or paused meeting, open Context in the overlay rail (Ctrl+6 while focused) for quick, text-only edits to the meeting-only background (Apply never changes slides; an Unsaved badge, Reload saved and conflict notice keep the draft safe), or the Live page editor to edit the background and the meeting's slides, then Apply to this meeting. The overlay's **Open Sanas** (idle answer, Context, Slide empty state, meeting error) reveals the main window on its current page — restored if minimized, never reloaded. Ask the audience is in both Ask and Slide. Continue from slide is explicit; Restore meeting-start slides uses the original meeting snapshot. Edits reset Next point coaching but answers already started finish against their captured context.
 
 Ask? or Ctrl+Shift+K opens the typed composer. Enter submits, Shift+Enter adds a line, IME Enter remains composition, and Escape closes/releases focus while keeping the draft. Rejected requests keep their drafts. Ask the audience suggests one question grounded in recent finalized discussion; without speech it reports that there is no discussion yet. More detail creates/selects a linked expansion using the source answer's original grounding, with Back to source navigation.
 

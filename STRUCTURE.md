@@ -96,8 +96,8 @@ sanas/
 
 - `src/main/lifecycle/` — userData identity, capped/redacted main logging and normal startup wiring; normal startup is not loaded by smoke
 - `src/main/diagnostics/` — isolated, headless packaged diagnostics used by `--smoke`
-- `src/main/windows/` — BrowserWindow builders and the main → all-windows broadcast (`overlay-bounds.ts`: pure on-screen fitting of saved overlay bounds)
-- `src/main/ipc/` — typed IPC handlers; validate ingress and delegate, with no business logic
+- `src/main/windows/` — BrowserWindow builders and the main → all-windows broadcast (`overlay-bounds.ts`: pure on-screen fitting of saved overlay bounds; `main-window.ts`: create or reveal — restore/show/focus, never reload)
+- `src/main/ipc/` — typed IPC handlers; validate ingress and delegate, with no business logic (`windows.ts`: overlay toggle/resize/ghost, compose handshake and the parameterless Open Sanas)
 - `src/main/` — process entry (`index.ts`, normal vs `--smoke` dispatch) and the display-media loopback handler (`system-audio.ts`)
 - `src/main/services/` — main-process services and provider seams
 - `src/main/services/stt/` — the swappable STT seam, Deepgram implementation and message normalization
@@ -136,13 +136,13 @@ sanas/
 - `src/renderer/src/overlay-app/shell/` — `OverlaySession` (composes every controller once), `OverlayShell` layout, header, persistent status, preferences popover, window state, Answer every question
 - `src/renderer/src/overlay-app/shell/navigation/` — pure workspace reducer, local shortcut table/dispatch, the rail, and the compose readiness/focus handshake
 - `src/renderer/src/overlay-app/suggestions/` — the answer surface (full and preview), history/reading coordination and manual-request (detail/audience) policy
-- `src/renderer/src/overlay-app/workspaces/` — secondary workspace views and the frame that keeps them mounted; `composer/` (Ask: draft state, submission, view), `presentation/`, `transcript/`
+- `src/renderer/src/overlay-app/workspaces/` — secondary workspace views and the frame that keeps them mounted; `composer/` (Ask: draft state, submission, view), `context/` (text-only meeting context), `presentation/`, `transcript/`
 - `src/renderer/src/overlay-app/controls/` — the overlay's small control wrappers (button variants, labelled textarea) and local icons; not a general component framework
 - `src/renderer/src/overlay-app/layout/` — overlay opacity and divider-ratio persistence, divider drag/measurement, and the three resize grips
 - `src/renderer/src/overlay-app/capture/` — Screen workspace view, Capture screen action, capture status subscription/helpers and the composer's screen-attachment state
 - `src/renderer/src/audio/` — renderer capture and AudioWorklet downsampling
 - `src/renderer/src/lib/` — pure presentation helpers shared across renderer pages and bundles
-- `src/renderer/src/lib/meeting/` — meeting, context and presentation reducers/hooks
+- `src/renderer/src/lib/meeting/` — meeting, context and presentation reducers/hooks; `meeting-context-draft.ts` + `useMeetingContextDraft.ts` are the draft/apply/reload/conflict logic shared by the main window's full editor and the overlay's text-only Context
 - `src/renderer/src/lib/presentation/` — reusable slide editing and import UI/helpers
 - `src/renderer/src/lib/suggestions/` — text-safe compact/detail renderers and live history state
 - `src/renderer/src/dev/` — browser-preview implementation of the typed preload bridge

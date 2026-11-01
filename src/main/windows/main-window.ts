@@ -3,11 +3,19 @@ import { join } from 'path'
 
 let mainWindow: BrowserWindow | null = null
 
+/** Reveals the existing main window without reloading it: restore if minimized, show if
+ *  hidden, then focus. The Live page (and its microphone session) stays mounted. */
+function reveal(window: BrowserWindow): BrowserWindow {
+  if (window.isMinimized()) window.restore()
+  if (!window.isVisible()) window.show()
+  window.focus()
+  return window
+}
+
+/** Startup, second-instance and the overlay's Open Sanas all come here: reveal the window
+ *  that exists, or create it. */
 export function createMainWindow(): BrowserWindow {
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.focus()
-    return mainWindow
-  }
+  if (mainWindow && !mainWindow.isDestroyed()) return reveal(mainWindow)
 
   mainWindow = new BrowserWindow({
     width: 1100,
@@ -32,4 +40,9 @@ export function createMainWindow(): BrowserWindow {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
   return mainWindow
+}
+
+/** Open Sanas from the overlay. */
+export function showMainWindow(): void {
+  createMainWindow()
 }

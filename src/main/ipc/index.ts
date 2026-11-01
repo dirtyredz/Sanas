@@ -3,14 +3,10 @@ import { ipcMain } from 'electron'
 import { registerLiveControlsIpc } from './live-controls'
 import { registerScreenCaptureIpc } from './screen-capture'
 import { registerPresentationIpc } from './presentation'
+import { registerWindowsIpc } from './windows'
 import { IPC } from '@shared/ipc'
 import { loadSettings, saveSettings, toView } from '../config/settings'
-import {
-  applyOverlayOpacity,
-  resizeOverlay,
-  setClickThrough,
-  toggleOverlay,
-} from '../windows/overlay-window'
+import { applyOverlayOpacity } from '../windows/overlay-window'
 import {
   startMeeting,
   pauseMeeting,
@@ -28,7 +24,6 @@ import {
   requireId,
   requireIdList,
   requireJob,
-  requireOverlayResize,
   requireSettingsPatch,
   requireSpeaker,
   requireText,
@@ -62,6 +57,7 @@ export function registerIpcHandlers(): void {
   registerPresentationIpc()
   registerLiveControlsIpc()
   registerScreenCaptureIpc()
+  registerWindowsIpc()
   ipcMain.handle(IPC.SettingsGet, () => toView(loadSettings()))
 
   ipcMain.handle(IPC.SettingsSet, (_e, raw: unknown) => {
@@ -73,11 +69,6 @@ export function registerIpcHandlers(): void {
     broadcast(IPC.SettingsChanged, view)
     return view
   })
-
-  ipcMain.handle(IPC.OverlayToggle, () => toggleOverlay())
-  ipcMain.handle(IPC.OverlayResize, (_e, request: unknown) =>
-    resizeOverlay(requireOverlayResize(request)),
-  )
 
   ipcMain.handle(IPC.MeetingStart, (_e, jobId: unknown, channels: unknown) =>
     // validate at ingress: an optional job id, and only 1 or 2 are meaningful capture topologies
@@ -189,7 +180,4 @@ export function registerIpcHandlers(): void {
   )
   ipcMain.handle(IPC.RetentionPreview, () => previewRetention())
   ipcMain.handle(IPC.RetentionRun, () => runRetention())
-  ipcMain.handle(IPC.OverlayClickThrough, (_e, on: unknown) =>
-    setClickThrough(requireBool(on, 'flag')),
-  )
 }

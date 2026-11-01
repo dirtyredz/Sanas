@@ -6,12 +6,15 @@ export function OverlayCaptureAction({
   live,
   answering,
   capturing,
+  failed = false,
 }: {
   meetingId: number | null
   live: boolean
   /** A requested answer is streaming (the capture answer, once admitted). */
   answering: boolean
   capturing: boolean
+  /** The last capture failed: the same action reads as a retry. */
+  failed?: boolean
 }): React.JSX.Element {
   return (
     <OverlayButton
@@ -24,7 +27,7 @@ export function OverlayCaptureAction({
         if (meetingId !== null) void window.sanas.screenCapture.capture(meetingId).catch(() => {})
       }}
     >
-      {capturing ? 'Capturing…' : 'Capture screen'}
+      {capturing ? 'Capturing…' : failed ? 'Try again' : 'Capture screen'}
     </OverlayButton>
   )
 }

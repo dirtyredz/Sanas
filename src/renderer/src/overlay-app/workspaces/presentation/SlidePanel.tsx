@@ -1,9 +1,17 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { PresentationState } from '@shared/presentation/types'
 import { hotkeyLabel } from '../../../lib/hotkey-label'
 import { OverlayButton } from '../../controls/OverlayButton'
 
-export function SlidePanel({ state }: { state: PresentationState }): React.JSX.Element {
+/** Slide: ordinal and title, Previous/Next, the scrolling script and key facts, plus the shared
+ *  Ask the audience action. A new revision scrolls back to the top. */
+export function SlidePanel({
+  state,
+  audience,
+}: {
+  state: PresentationState
+  audience?: ReactNode
+}): React.JSX.Element {
   const scroll = useRef<HTMLDivElement>(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -77,6 +85,7 @@ export function SlidePanel({ state }: { state: PresentationState }): React.JSX.E
           </p>
         )}
       </div>
+      {audience && <div className="slide-footer">{audience}</div>}
     </div>
   )
 }

@@ -1,73 +1,39 @@
-import { useState } from 'react'
 import type { MeetingContext } from '@shared/live-controls/types'
 import { validateSlides } from '@shared/presentation/types'
 import { SlideListEditor } from '../presentation/SlideListEditor'
+import { selectedOrdinal } from './meeting-context-draft'
 import { useMeetingContext } from './useMeetingContext'
+import { useMeetingContextDraft } from './useMeetingContextDraft'
 import { usePresentationState } from './usePresentationState'
 
+/** The full meeting-context editor (main window, Live page): text, slides, restore, clear
+ *  and continue-from. The overlay uses the text-only OverlayContext instead. */
 export function MeetingContextEditor({ meetingId }: { meetingId: number }): React.JSX.Element {
   const { context, error } = useMeetingContext(meetingId)
   return (
     <>
       {error && <p role="alert">{error}</p>}
-      {context && <ContextDraft key={meetingId} context={context} />}
+      {context && <ContextDraftEditor key={meetingId} context={context} />}
     </>
   )
 }
-function ContextDraft({ context }: { context: MeetingContext }): React.JSX.Element {
-  const [base, setBase] = useState(context)
-  const [text, setText] = useState(context.text)
-  const [slides, setSlides] = useState(context.slides)
+
+function ContextDraftEditor({ context }: { context: MeetingContext }): React.JSX.Element {
   const presentation = usePresentationState(context.meetingId)
-  const [deckRevision, setDeckRevision] = useState<number | null>(null)
-  const [ordinal, setOrdinal] = useState<number | null>(null)
-  const [busy, setBusy] = useState(false)
-  const [notice, setNotice] = useState('')
-  const changedDeck = JSON.stringify(slides) !== JSON.stringify(base.slides)
-  const selected = Math.min(ordinal ?? presentation.ordinal, Math.max(0, slides.length - 1))
+  const { draft, dispatch, conflict, apply, reload } = useMeetingContextDraft(context, context, {
+    textOnly: false,
+    presentationRevision: presentation.revision,
+    currentOrdinal: presentation.ordinal,
+  })
+  const selected = selectedOrdinal(draft, presentation.ordinal)
   let invalid = ''
   try {
-    validateSlides(slides)
+    validateSlides(draft.slides)
   } catch (e) {
     invalid = String(e)
   }
-  const reload = (): void => {
-    setBase(context)
-    setText(context.text)
-    setSlides(context.slides)
-    setDeckRevision(null)
-    setOrdinal(null)
-    setNotice('')
-  }
-  const apply = async (): Promise<void> => {
-    setBusy(true)
-    try {
-      const result = await window.sanas.meetingContext.update({
-        meetingId: base.meetingId,
-        expectedRevision: base.revision,
-        text,
-        ...(changedDeck
-          ? {
-              deck: {
-                slides,
-                ordinal: selected,
-                expectedPresentationRevision: deckRevision ?? presentation.revision,
-              },
-            }
-          : {}),
-      })
-      setBase(result)
-      setText(result.text)
-      setSlides(result.slides)
-      setDeckRevision(null)
-      setOrdinal(null)
-      setNotice('Applied to this meeting.')
-    } catch (e) {
-      setNotice(String(e))
-    } finally {
-      setBusy(false)
-    }
-  }
+  const setSlides = (slides: MeetingContext['slides'], pin = false): void =>
+    dispatch({ type: 'slides', slides, presentationRevision: presentation.revision, pin })
   return (
     <div className="meeting-context-editor">
       <label className="field">
@@ -75,46 +41,31 @@ function ContextDraft({ context }: { context: MeetingContext }): React.JSX.Eleme
         <textarea
           maxLength={20000}
           rows={5}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
+          value={draft.text}
+          onChange={(e) => dispatch({ type: 'text', text: e.target.value })}
         />
       </label>
       <details>
         <summary>Meeting slides</summary>
-        <SlideListEditor
-          slides={slides}
-          setSlides={(value) => {
-            setSlides(value)
-            if (deckRevision === null) setDeckRevision(presentation.revision)
-          }}
-        />
-        <button
-          onClick={() => {
-            setSlides(base.initialSlides)
-            setDeckRevision(presentation.revision)
-          }}
-        >
+        <SlideListEditor slides={draft.slides} setSlides={(value) => setSlides(value)} />
+        <button onClick={() => setSlides(draft.base.initialSlides, true)}>
           Restore meeting-start slides
         </button>
-        <button
-          onClick={() => {
-            setSlides([])
-            setDeckRevision(presentation.revision)
-          }}
-        >
-          Clear slides
-        </button>
-        {slides.length > 0 && (
+        <button onClick={() => setSlides([], true)}>Clear slides</button>
+        {draft.slides.length > 0 && (
           <label>
             Continue from slide{' '}
             <select
               value={selected}
-              onChange={(e) => {
-                setOrdinal(Number(e.target.value))
-                setDeckRevision(presentation.revision)
-              }}
+              onChange={(e) =>
+                dispatch({
+                  type: 'ordinal',
+                  ordinal: Number(e.target.value),
+                  presentationRevision: presentation.revision,
+                })
+              }
             >
-              {slides.map((s, i) => (
+              {draft.slides.map((s, i) => (
                 <option key={i} value={i}>
                   {i + 1}: {s.title}
                 </option>
@@ -123,17 +74,17 @@ function ContextDraft({ context }: { context: MeetingContext }): React.JSX.Eleme
           </label>
         )}
       </details>
-      {context.revision !== base.revision && (
+      {conflict && (
         <p role="alert">Context changed in another window. Reload to use the latest version.</p>
       )}
       {invalid && <p role="alert">{invalid}</p>}
-      <button disabled={busy || !!invalid} onClick={() => void apply()}>
+      <button disabled={draft.busy || !!invalid} onClick={() => void apply()}>
         Apply to this meeting
       </button>
-      <button disabled={busy} onClick={reload}>
+      <button disabled={draft.busy} onClick={reload}>
         Reload saved context
       </button>
-      <p role="status">{notice}</p>
+      <p role="status">{draft.notice}</p>
     </div>
   )
 }

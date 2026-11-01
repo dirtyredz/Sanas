@@ -28,6 +28,7 @@ export function OverlayCapturePanel({
         live={active}
         answering={answering}
         capturing={capture.capturing}
+        failed={capture.notice?.failed ?? false}
       />
       {capture.notice && (
         <p

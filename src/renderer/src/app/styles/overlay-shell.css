@@ -413,3 +413,7 @@ details.ov-status > p {
   border-bottom: 2px solid rgba(90, 167, 160, 0.7);
   border-radius: 0 0 2px;
 }
+
+.ov-status-action {
+  padding: 0 0 4px 14px;
+}

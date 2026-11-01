@@ -37,6 +37,7 @@ export const IPC = {
   // overlay
   OverlayToggle: 'overlay:toggle',
   OverlayResize: 'overlay:resize',
+  MainWindowShow: 'window:main-show',
   // meetings (renderer → main)
   MeetingStart: 'meeting:start',
   MeetingGetState: 'meeting:get-state',

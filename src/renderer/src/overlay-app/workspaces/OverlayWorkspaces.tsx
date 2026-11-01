@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react'
-import { MeetingContextEditor } from '../../lib/meeting/MeetingContextEditor'
+import { OpenSanasButton } from '../controls/OpenSanasButton'
+import { AudienceButton } from '../suggestions/AudienceButton'
+import { OverlayContext } from './context/OverlayContext'
 import { OverlayCapturePanel } from '../capture/OverlayCapturePanel'
 import { panelId, tabId } from '../shell/navigation/OverlayNavigation'
 import type { SecondaryWorkspace, Workspace } from '../shell/navigation/overlay-navigation'
@@ -37,7 +39,11 @@ function WorkspacePanel({
 }
 
 function Empty({ children }: { children: ReactNode }): React.JSX.Element {
-  return <p className="workspace-body ov-empty">{children}</p>
+  return (
+    <div className="workspace-body">
+      <p className="ov-empty">{children}</p>
+    </div>
+  )
 }
 
 /** Ask, Screen, Slide, Transcript and Context below the answer preview. */
@@ -50,6 +56,7 @@ export function OverlayWorkspaces({
 }): React.JSX.Element {
   const { meetingId, active, suggestions, manual, presentation } = session
   const requestBusy = suggestions.requestedInFlight || manual.pending
+  const audience = <AudienceButton manual={manual} active={active} requestBusy={requestBusy} />
   return (
     <div className="workspaces">
       <WorkspacePanel id="ask" current={workspace}>
@@ -72,12 +79,16 @@ export function OverlayWorkspaces({
       </WorkspacePanel>
       <WorkspacePanel id="slide" current={workspace}>
         {presentation.current ? (
-          <SlidePanel state={presentation} />
+          <SlidePanel state={presentation} audience={audience} />
         ) : (
           <Empty>
-            {meetingId === null
-              ? 'Slides appear here during a meeting with a deck.'
-              : 'This meeting has no slides. Add them in Sanas’s Live page.'}
+            {meetingId === null ? (
+              'Slides appear here during a meeting with a deck.'
+            ) : (
+              <>
+                This meeting has no slides. Add them in Sanas’s Live page. <OpenSanasButton />
+              </>
+            )}
           </Empty>
         )}
       </WorkspacePanel>
@@ -88,9 +99,7 @@ export function OverlayWorkspaces({
         {meetingId === null ? (
           <Empty>Meeting context can be edited once a meeting starts.</Empty>
         ) : (
-          <div className="overlay-context">
-            <MeetingContextEditor key={meetingId} meetingId={meetingId} />
-          </div>
+          <OverlayContext key={meetingId} meetingId={meetingId} slideCount={presentation.count} />
         )}
       </WorkspacePanel>
     </div>

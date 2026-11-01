@@ -352,6 +352,12 @@ starts this logger or writes there.
   is kept for settings compatibility; it always meant "the answer's share".
 - **Vitest has no `@shared` alias.** A renderer test that imports a component with a runtime
   `@shared/...` import must `vi.mock` it (e.g. by path: `() => import('../../../../shared/x')`).
+- **Open Sanas must not route or reload the main renderer.** `LiveMeetingPage` owns the
+  microphone capture session; remounting it (a route change, a `loadURL`) would interrupt
+  capture. `MainWindowShow` is parameterless and only restores/shows/focuses.
+- **The overlay's Context is text-only on purpose.** Its Apply payload never carries `deck`,
+  so it cannot change slides; bulk deck editing stays in the main window's
+  `MeetingContextEditor`. Both share `lib/meeting/meeting-context-draft.ts`.
 - **Overlay CSS must not import `base.css`** — its opaque `body` background would cover the
   transparent window. `overlay.css` imports `tokens.css` and `controls.css` plus the scoped
   `overlay-*.css` layers.

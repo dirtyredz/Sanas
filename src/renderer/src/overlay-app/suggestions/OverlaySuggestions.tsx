@@ -2,6 +2,7 @@ import { suggestionArrivalLabel, suggestionLabel } from '@shared/suggestion-labe
 import { SuggestionContent } from '../../lib/suggestions/SuggestionContent'
 import { OverlayButton } from '../controls/OverlayButton'
 import { IconExpand } from '../controls/overlay-icons'
+import { OpenSanasButton } from '../controls/OpenSanasButton'
 import { canRequestDetail, findStored } from './manual-requests'
 import type { ManualRequestsModel } from './useManualRequests'
 import type { OverlaySuggestionsModel } from './useOverlaySuggestions'
@@ -14,12 +15,15 @@ export function OverlaySuggestions({
   model,
   manual,
   live,
+  paused = false,
   mode = 'full',
   onReadFull,
 }: {
   model: OverlaySuggestionsModel
   manual: ManualRequestsModel
   live: boolean
+  /** The meeting is paused (still `live` for requests). */
+  paused?: boolean
   mode?: 'full' | 'preview'
   onReadFull?: () => void
 }): React.JSX.Element {
@@ -85,11 +89,21 @@ export function OverlaySuggestions({
           <SuggestionContent text={selected.text} manualKind={selected.manualKind} />
         )}
         {!selected && (
-          <p className="suggestion-empty">
-            {live
-              ? 'Listening for key moments — or press Answer now.'
-              : 'Suggestions appear here during your meeting.'}
-          </p>
+          <div className="suggestion-empty">
+            {live ? (
+              <p>
+                {paused
+                  ? 'Paused. Answer now and Ask still work.'
+                  : 'Listening for key moments — or press Answer now.'}
+              </p>
+            ) : (
+              <>
+                <p>Start a meeting in Sanas.</p>
+                <OpenSanasButton variant="secondary" />
+                <p>Suggestions appear here during your meeting.</p>
+              </>
+            )}
+          </div>
         )}
       </div>
       {full && (items.length > 1 || canRequestDetail(selected) || source) && (
