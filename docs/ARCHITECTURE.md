@@ -6,7 +6,7 @@ _How the system works. For code shape, see [../STRUCTURE.md](../STRUCTURE.md)._
 
 Electron desktop app, single-device, local-first. Two windows:
 
-1. **Main window** — library UI: jobs, meetings, transcripts, context packs, settings.
+1. **Main window** — library UI: jobs, meetings, transcripts, context packs, settings. Native title bar hidden; the app header is the title bar (titleBarOverlay, `main/windows/window-chrome.ts`).
 2. **Overlay window** — small frameless always-on-top panel shown during a live meeting;
    answer-first: the selected suggestion, plus one secondary workspace (Ask, Screen, Slide,
    Transcript, Context) chosen from a rail. Summoned/dismissed by global hotkey.
