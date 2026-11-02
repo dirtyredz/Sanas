@@ -1,0 +1,157 @@
+{
+  "version": 1,
+  "name": "Mock job interview",
+  "durationMs": 31000,
+  "steps": [
+    {
+      "id": "intro-q",
+      "atMs": 100,
+      "kind": "utterance",
+      "channel": "them",
+      "speaker": 1,
+      "text": "Tell me about a time you resolved a conflict on a team?",
+      "durationMs": 2200
+    },
+    {
+      "id": "intro-a",
+      "atMs": 2700,
+      "kind": "utterance",
+      "channel": "me",
+      "speaker": 0,
+      "text": "I mediated a disagreement between design and backend.",
+      "durationMs": 2200
+    },
+    {
+      "id": "followup-q",
+      "atMs": 5300,
+      "kind": "utterance",
+      "channel": "them",
+      "speaker": 1,
+      "text": "What was the outcome of that decision?",
+      "durationMs": 2200
+    },
+    {
+      "id": "followup-a",
+      "atMs": 7900,
+      "kind": "utterance",
+      "channel": "me",
+      "speaker": 0,
+      "text": "We shipped on time and kept both goals.",
+      "durationMs": 2200
+    },
+    {
+      "id": "tech-q",
+      "atMs": 10500,
+      "kind": "utterance",
+      "channel": "them",
+      "speaker": 1,
+      "text": "How would you design an idempotent order service?",
+      "durationMs": 2200
+    },
+    {
+      "id": "tech-a",
+      "atMs": 13100,
+      "kind": "utterance",
+      "channel": "me",
+      "speaker": 0,
+      "text": "I would use an idempotency key per request.",
+      "durationMs": 2200
+    },
+    {
+      "id": "drop",
+      "atMs": 15800,
+      "kind": "fault",
+      "fault": "socket-drop",
+      "durationMs": 500
+    },
+    {
+      "id": "tech-followup",
+      "atMs": 17000,
+      "kind": "utterance",
+      "channel": "them",
+      "speaker": 1,
+      "text": "And how does that scale with the queue?",
+      "durationMs": 2200
+    },
+    {
+      "id": "diagram",
+      "atMs": 20000,
+      "kind": "screen",
+      "image": "../fixtures/architecture.png"
+    },
+    {
+      "id": "detail",
+      "atMs": 22500,
+      "kind": "detail"
+    },
+    {
+      "id": "closing-q",
+      "atMs": 25000,
+      "kind": "utterance",
+      "channel": "them",
+      "speaker": 1,
+      "text": "Do you have any questions for us?",
+      "durationMs": 2200
+    },
+    {
+      "id": "closing-a",
+      "atMs": 27600,
+      "kind": "utterance",
+      "channel": "me",
+      "speaker": 0,
+      "text": "What does onboarding look like for the team?",
+      "durationMs": 2200
+    }
+  ],
+  "expectations": [
+    {
+      "id": "finals-only",
+      "kind": "no-interims"
+    },
+    {
+      "id": "summary-saved",
+      "kind": "summary",
+      "contains": "idempotent"
+    },
+    {
+      "id": "recorded",
+      "kind": "recording"
+    },
+    {
+      "id": "behavioural-suggestion",
+      "kind": "suggestion",
+      "after": "intro-q",
+      "withinMs": 5000
+    },
+    {
+      "id": "followup-in-context",
+      "kind": "suggestion",
+      "after": "followup-q",
+      "withinMs": 5000
+    },
+    {
+      "id": "technical-suggestion",
+      "kind": "suggestion",
+      "after": "tech-q",
+      "withinMs": 5000
+    },
+    {
+      "id": "reconnected",
+      "kind": "reconnect",
+      "after": "drop",
+      "withinMs": 2000
+    },
+    {
+      "id": "post-reconnect-suggestion",
+      "kind": "suggestion",
+      "after": "tech-followup",
+      "withinMs": 5000
+    },
+    {
+      "id": "diagram-delivered",
+      "kind": "screen",
+      "after": "diagram",
+      "withinMs": 2500
+    }
+  ]
+}

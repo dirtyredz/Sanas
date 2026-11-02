@@ -26,8 +26,13 @@ No retention, updates, email, global shortcuts or microphone capture are started
   warning, reconnect, missing display, More detail, summary and batch replacement.
 - `presentation`: Next point coaching, slide navigation, answer mode, screen and capture timeout.
 - `standup`: slow/failing assistant, busy admission, screenshot and oversize encoding failure.
+- `mock-interview`: behavioural, technical and follow-up questions with automatic suggestions,
+  a shared architecture diagram (screen step), a socket drop and reconnect, summary saved.
+- `rapid-qa`: two bursts of short stakeholder questions plus an explicit Answer-now ask. The
+  ambient lane is newest-only by design (earlier questions in a burst are superseded), so the
+  scenario expects the latest question of each burst and the explicit ask to be answered.
 
-The checked-in PNGs are locally rendered client dashboards/slides. A scripted screen source
+The checked-in PNGs are locally rendered client dashboards, slides and an architecture diagram. A scripted screen source
 deliberately puts a wrong display first so display-ID matching remains exercised.
 
 ```powershell

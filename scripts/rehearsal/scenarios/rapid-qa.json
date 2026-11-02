@@ -1,0 +1,118 @@
+{
+  "version": 1,
+  "name": "Rapid-fire stakeholder Q&A",
+  "durationMs": 20000,
+  "steps": [
+    {
+      "id": "b1q1",
+      "atMs": 100,
+      "kind": "utterance",
+      "channel": "them",
+      "speaker": 1,
+      "text": "What is the delivery date?",
+      "durationMs": 1500
+    },
+    {
+      "id": "b1q2",
+      "atMs": 1900,
+      "kind": "utterance",
+      "channel": "them",
+      "speaker": 1,
+      "text": "Who owns the rollout?",
+      "durationMs": 1500
+    },
+    {
+      "id": "ask-owner",
+      "atMs": 3000,
+      "kind": "ask",
+      "text": "Who owns the rollout?"
+    },
+    {
+      "id": "b1q3",
+      "atMs": 3700,
+      "kind": "utterance",
+      "channel": "them",
+      "speaker": 1,
+      "text": "Is the budget approved?",
+      "durationMs": 1500
+    },
+    {
+      "id": "me-pause",
+      "atMs": 5600,
+      "kind": "utterance",
+      "channel": "me",
+      "speaker": 0,
+      "text": "Let me take those one at a time.",
+      "durationMs": 2000
+    },
+    {
+      "id": "b2q1",
+      "atMs": 10000,
+      "kind": "utterance",
+      "channel": "them",
+      "speaker": 1,
+      "text": "What is the biggest risk?",
+      "durationMs": 1500
+    },
+    {
+      "id": "b2q2",
+      "atMs": 11800,
+      "kind": "utterance",
+      "channel": "them",
+      "speaker": 1,
+      "text": "When is the next review?",
+      "durationMs": 1500
+    },
+    {
+      "id": "b2q3",
+      "atMs": 13600,
+      "kind": "utterance",
+      "channel": "them",
+      "speaker": 1,
+      "text": "Who signs off the release?",
+      "durationMs": 1500
+    },
+    {
+      "id": "me-close",
+      "atMs": 16500,
+      "kind": "utterance",
+      "channel": "me",
+      "speaker": 0,
+      "text": "I will confirm each delivery item today.",
+      "durationMs": 2200
+    }
+  ],
+  "expectations": [
+    {
+      "id": "finals-only",
+      "kind": "no-interims"
+    },
+    {
+      "id": "summary-saved",
+      "kind": "summary",
+      "contains": "delivery"
+    },
+    {
+      "id": "recorded",
+      "kind": "recording"
+    },
+    {
+      "id": "explicit-ask-answered",
+      "kind": "suggestion",
+      "after": "ask-owner",
+      "withinMs": 5000
+    },
+    {
+      "id": "burst1-latest-answered",
+      "kind": "suggestion",
+      "after": "b1q3",
+      "withinMs": 6000
+    },
+    {
+      "id": "burst2-latest-answered",
+      "kind": "suggestion",
+      "after": "b2q3",
+      "withinMs": 6000
+    }
+  ]
+}

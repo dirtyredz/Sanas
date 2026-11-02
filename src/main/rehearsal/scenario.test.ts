@@ -1,17 +1,20 @@
 import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { parseScenario } from './scenario'
 import { evaluate } from './assertions'
 
 const valid = (): unknown =>
   JSON.parse(readFileSync('scripts/rehearsal/scenarios/client-checkin.json', 'utf8'))
 describe('versioned scenarios', () => {
-  it.each(['client-checkin', 'standup', 'presentation'])('validates the %s starter', (name) => {
-    expect(
-      parseScenario(JSON.parse(readFileSync(`scripts/rehearsal/scenarios/${name}.json`, 'utf8')))
-        .version,
-    ).toBe(1)
-  })
+  it.each(readdirSync('scripts/rehearsal/scenarios').filter((f) => f.endsWith('.json')))(
+    'validates the %s scenario',
+    (file) => {
+      expect(
+        parseScenario(JSON.parse(readFileSync(`scripts/rehearsal/scenarios/${file}`, 'utf8')))
+          .version,
+      ).toBe(1)
+    },
+  )
   it('rejects unsupported versions, duplicate IDs and backwards timing', () => {
     const s = parseScenario(valid())
     expect(() => parseScenario({ ...s, version: 2 })).toThrow('version')
