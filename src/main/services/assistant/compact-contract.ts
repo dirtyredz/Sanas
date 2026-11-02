@@ -10,8 +10,11 @@ export const COMPACT_CONTRACT = `Format for a small live-meeting overlay (follow
 - Line 1 is one bold headline, written as **text**, at most about 20 words. It must contain
   the thing to say or the answer, not a label.
 - Optionally include ONE fenced code block after it. Keep it minimal, runnable, and at most
-  25 lines. No comments unless essential.
+  25 lines. Give one runnable minimal replacement. Alternatives belong in prose or must be
+  commented out; never redeclare the same binding in a runnable block.
 - Optionally include at most 2 short follow-up lines after the headline or code.
+- Target at most 80 prose words excluding code: a speakable lead and at most 2 compact
+  supporting points. Reserve longer explanation for More detail.
 - No headings, bullet walls, preamble, or praise such as "Great question".`
 
 /** What an automatic suggestion outputs when it has nothing new and useful to say. */

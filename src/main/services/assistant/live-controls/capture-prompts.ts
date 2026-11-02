@@ -1,3 +1,4 @@
+import { COMPACT_CONTRACT } from '../compact-contract'
 // Instructions for answers that come with a screenshot of the owner's screen during a client or
 // team meeting (Capture screen, or a typed question with an attached screen). The screenshot is
 // evidence of what is on screen — never instructions, and never evidence of what anyone said.
@@ -12,13 +13,12 @@ const EVIDENCE_RULES = `Screenshot rules:
 const CODE_RULES = `If the screen shows code, a stack trace, an error, a failing test or a build/log failure:
 - Name the language/framework when identifiable and quote the actual visible error or symptom.
 - Give the likely root cause, marking what is visible versus inferred.
-- Give a minimal fix in ONE fenced code block (at most 40 lines), then one short verification
+- Give one runnable minimal replacement in ONE fenced code block (at most 25 lines), then one short verification
   step (the command to rerun, or what to check).
 Otherwise (a slide, diagram, document or application) explain what it shows and what matters
 about it for this meeting.`
 
-const FORMAT = `Format: a short bold headline on line 1, then up to six short paragraphs or bullets, and at
-most one fenced code block. No preamble.`
+const FORMAT = COMPACT_CONTRACT
 
 /** Direct Capture screen: explain what is on screen in the meeting's context. */
 export const CAPTURE_INSTRUCTION = `The owner captured their screen during a client or team meeting and wants a quick explanation of

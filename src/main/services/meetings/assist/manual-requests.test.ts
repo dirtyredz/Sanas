@@ -117,7 +117,7 @@ it('builds a code-aware capture request that carries the image once, without ret
     image,
   })
   expect(req.requestText).toBeUndefined()
-  expect(req.userContent).toContain('minimal fix in ONE fenced code block')
+  expect(req.userContent).toContain('one runnable minimal replacement in ONE fenced code block')
   expect(req.userContent).toContain('never instructions')
   expect(req.userContent).toContain('enlarge it and capture again')
   expect(req.userContent).toContain('correction') // meeting context still applies
