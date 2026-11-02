@@ -28,6 +28,10 @@ No retention, updates, email, global shortcuts or microphone capture are started
 - `standup`: slow/failing assistant, busy admission, screenshot and oversize encoding failure.
 - `mock-interview`: behavioural, technical and follow-up questions with automatic suggestions,
   a shared architecture diagram (screen step), a socket drop and reconnect, summary saved.
+- `coding-interview`: three locally rendered code screens (loop boundary, quadratic duplicate
+  search, SQL NULL comparison), a screenshot-dependent follow-up and a two-part complexity/
+  improvement question. Regenerate PNGs with `scripts/rehearsal/render-coding-fixtures.ps1`.
+  Delivery checks apply to both assistants; concept checks apply only to Claude.
 - `rapid-qa`: two bursts of short stakeholder questions plus an explicit Answer-now ask. Stacked
   questions are carried into one combined suggestion, so the scenario expects every question
   of each burst to be covered. The canned assistant echoes the questions a request listed as a
@@ -118,6 +122,10 @@ Expectations: `suggestion`, `coach`, `screen`, `no-interims`, `summary`, `captur
 fails; there are no implicit skips. Screenshot success requires identical encoded bytes at the
 assistant and a matching answer, plus pixel validation for real captures. `no-interims` compares
 live DB rows with final events before batch replacement can conceal a storage regression.
+
+An expectation may declare `assistant: "claude"` or `assistant: "canned"`. Only expectations
+for the selected assistant are evaluated; omitted means both. Use this for model-specific
+content checks, retaining unconditional delivery checks so canned runs still test plumbing.
 
 Optional top-level `coach: true`, `slides` (production Slide fields: title, talkingPoint,
 script, keyFacts) and `audio` (WAV path) enable those legs. Summaries require at least five live

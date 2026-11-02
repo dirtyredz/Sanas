@@ -316,7 +316,7 @@ export async function runRehearsal(): Promise<void> {
           passed: capture.verified,
         })
     }
-    const checks = evaluate(scenario, evidence, starts)
+    const checks = evaluate(scenario, evidence, starts, assistant)
     for (const id of taskErrors)
       checks.push({
         id,

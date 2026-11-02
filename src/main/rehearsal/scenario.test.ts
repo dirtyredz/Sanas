@@ -5,6 +5,22 @@ import { evaluate } from './assertions'
 
 const valid = (): unknown =>
   JSON.parse(readFileSync('scripts/rehearsal/scenarios/client-checkin.json', 'utf8'))
+it('scopes model content checks explicitly while retaining shared delivery checks', () => {
+  const s = parseScenario(valid())
+  s.expectations = [
+    { id: 'delivery', kind: 'screen' },
+    { id: 'concept', kind: 'screen', contains: 'boundary', assistant: 'claude' },
+  ]
+  const evidence = [{ kind: 'screen' as const, atMs: 1, text: 'canned response' }]
+  expect(evaluate(s, evidence, new Map(), 'canned').map((c) => c.id)).toEqual(['delivery'])
+  expect(evaluate(s, evidence, new Map(), 'claude').map((c) => c.passed)).toEqual([true, false])
+  evidence[0].text = 'BOUNDARY error'
+  expect(evaluate(s, evidence, new Map(), 'claude').every((c) => c.passed)).toBe(true)
+  expect(evaluate(s, [], new Map(), 'canned')[0].passed).toBe(false)
+  expect(() =>
+    parseScenario({ ...s, expectations: [{ ...s.expectations[0], assistant: 'typo' }] }),
+  ).toThrow('Invalid expectation assistant')
+})
 describe('versioned scenarios', () => {
   it.each(readdirSync('scripts/rehearsal/scenarios').filter((f) => f.endsWith('.json')))(
     'validates the %s scenario',

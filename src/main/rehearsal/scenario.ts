@@ -39,6 +39,7 @@ export interface Expectation {
   after?: string
   withinMs?: number
   contains?: string
+  assistant?: 'canned' | 'claude'
 }
 export interface Scenario {
   version: 1
@@ -166,6 +167,8 @@ export function parseScenario(value: unknown): Scenario {
       throw new Error('Unknown expectation step')
     if (e.withinMs !== undefined) milliseconds(e.withinMs)
     if (e.contains !== undefined) text(e.contains)
+    if (e.assistant !== undefined && !['canned', 'claude'].includes(String(e.assistant)))
+      throw new Error('Invalid expectation assistant')
   }
   if (s.slides !== undefined) {
     if (!Array.isArray(s.slides)) throw new Error('Invalid slides')

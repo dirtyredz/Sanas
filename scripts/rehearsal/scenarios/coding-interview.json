@@ -1,0 +1,178 @@
+{
+  "version": 1,
+  "name": "Visual coding interview",
+  "durationMs": 140000,
+  "steps": [
+    {
+      "id": "intro",
+      "atMs": 0,
+      "kind": "utterance",
+      "channel": "them",
+      "speaker": 1,
+      "text": "Let us review three short code examples together.",
+      "durationMs": 5000
+    },
+    {
+      "id": "boundary-q",
+      "atMs": 6000,
+      "kind": "utterance",
+      "channel": "them",
+      "speaker": 1,
+      "text": "I am sharing a sum function. What is wrong with this code?",
+      "durationMs": 6000
+    },
+    {
+      "id": "boundary-screen",
+      "atMs": 13000,
+      "kind": "screen",
+      "image": "../fixtures/coding-boundary.png"
+    },
+    {
+      "id": "boundary-followup",
+      "atMs": 33000,
+      "kind": "utterance",
+      "channel": "them",
+      "speaker": 1,
+      "text": "For that same function, what happens with an empty array, and what exact loop condition fixes it?",
+      "durationMs": 8000
+    },
+    {
+      "id": "boundary-detail",
+      "atMs": 42000,
+      "kind": "detail"
+    },
+    {
+      "id": "acknowledgement",
+      "atMs": 54000,
+      "kind": "utterance",
+      "channel": "me",
+      "speaker": 0,
+      "text": "Thank you. Let us move to the duplicate finder.",
+      "durationMs": 5000
+    },
+    {
+      "id": "complexity-q",
+      "atMs": 60000,
+      "kind": "utterance",
+      "channel": "them",
+      "speaker": 1,
+      "text": "For the duplicate finder on screen, what is the worst case time complexity?",
+      "durationMs": 6500
+    },
+    {
+      "id": "improvement-q",
+      "atMs": 66600,
+      "kind": "utterance",
+      "channel": "them",
+      "speaker": 1,
+      "text": "And how would you improve it?",
+      "durationMs": 3000
+    },
+    {
+      "id": "duplicates-screen",
+      "atMs": 71000,
+      "kind": "screen",
+      "image": "../fixtures/coding-duplicates.png"
+    },
+    {
+      "id": "sql-q",
+      "atMs": 98000,
+      "kind": "utterance",
+      "channel": "them",
+      "speaker": 1,
+      "text": "This query should return customers with no orders. What is wrong with the null comparison?",
+      "durationMs": 8000
+    },
+    {
+      "id": "sql-screen",
+      "atMs": 107000,
+      "kind": "screen",
+      "image": "../fixtures/coding-sql.png"
+    },
+    {
+      "id": "closing",
+      "atMs": 132000,
+      "kind": "utterance",
+      "channel": "me",
+      "speaker": 0,
+      "text": "Thank you, that completes the code review.",
+      "durationMs": 4000
+    }
+  ],
+  "expectations": [
+    {
+      "id": "no-interims",
+      "kind": "no-interims"
+    },
+    {
+      "id": "recording",
+      "kind": "recording"
+    },
+    {
+      "id": "batch",
+      "kind": "batch"
+    },
+    {
+      "id": "summary",
+      "kind": "summary"
+    },
+    {
+      "id": "boundary-delivered",
+      "kind": "screen",
+      "after": "boundary-screen",
+      "withinMs": 22000
+    },
+    {
+      "id": "duplicates-delivered",
+      "kind": "screen",
+      "after": "duplicates-screen",
+      "withinMs": 22000
+    },
+    {
+      "id": "sql-delivered",
+      "kind": "screen",
+      "after": "sql-screen",
+      "withinMs": 22000
+    },
+    {
+      "id": "boundary-concept",
+      "kind": "screen",
+      "after": "boundary-screen",
+      "withinMs": 22000,
+      "contains": "off-by-one",
+      "assistant": "claude"
+    },
+    {
+      "id": "quadratic-concept",
+      "kind": "screen",
+      "after": "duplicates-screen",
+      "withinMs": 22000,
+      "contains": "O(n^2)",
+      "assistant": "claude"
+    },
+    {
+      "id": "set-concept",
+      "kind": "screen",
+      "after": "duplicates-screen",
+      "withinMs": 22000,
+      "contains": "set",
+      "assistant": "claude"
+    },
+    {
+      "id": "sql-concept",
+      "kind": "screen",
+      "after": "sql-screen",
+      "withinMs": 22000,
+      "contains": "IS NULL",
+      "assistant": "claude"
+    },
+    {
+      "id": "empty-array-followup",
+      "kind": "suggestion",
+      "after": "boundary-detail",
+      "withinMs": 22000,
+      "contains": "empty",
+      "assistant": "claude"
+    }
+  ]
+}
