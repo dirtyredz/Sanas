@@ -2,6 +2,27 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-11-02 — Live rehearsal counterpart uses the existing assistant transport
+
+Keep the guided interviewer under `rehearsal/live/` as a separate consumer of
+`AssistantProvider`, using Claude through the existing main-only SDK implementation.
+Its explicit input contains persona, current/next question and finals from both channels;
+it never reads the suggestion store, assistant prompt or suggestion stream. Projecting those
+fields at the provider boundary prevents accidental extra properties from leaking suggestions.
+The engine enforces topic order, follow-up caps and total duration; model output only selects
+a permitted follow-up or the next planned topic. Invalid/failed/timed-out generation falls
+back to the next planned question. Reuse the transport/key rules rather than adding an SDK
+client or allowing the model to control screens or meeting lifecycle.
+
+Use the normal owner-started Live page capture, requiring This PC stereo, rather than an
+injected microphone or another renderer audio implementation. Offline Windows speech goes
+to the default device and only real loopback STT enters the meeting. The explicit rehearsal
+gate remains the sole entry. Shares reuse fixtures but leave real screenshot acquisition
+under owner control. Silence means a received owner final followed by no owner activity for
+the configured interval, not a wall timer after the interviewer speaks. Skip/end are explicit
+rehearsal global controls with fail-fast registration. Live content is reported, never graded
+against a scripted rubric. First-visible retains the existing broadcast timing proxy.
+
 ## 2026-11-02 — Stacked questions get one combined suggestion
 
 Diagnosis follow-up (owner ruling): keep the existing ledger clearing and fail-closed policy.

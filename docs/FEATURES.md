@@ -116,3 +116,14 @@ unit tests cover their seams. See [REHEARSAL.md](REHEARSAL.md).
 The coding interview includes locally rendered JavaScript and SQL screens, a screenshot-dependent
 follow-up and a two-part complexity/improvement question. Assistant-scoped expectations separate
 Claude concept checks from shared screen-delivery checks.
+
+## Live guided rehearsal (explicit developer/owner mode)
+
+`scripts/rehearsal/run.ps1 -Tier live -Scenario live-interview` opens an isolated real meeting
+with a spoken Claude interviewer, real mic/system-loopback transcription, normal suggestions
+and owner-controlled screenshots of shared fixtures. `live-client-qa` supplies a shorter client
+plan. The interviewer adapts to finalized replies within topic/follow-up limits, with verbatim
+planned-question fallback. Skip, end and dismiss-share controls are documented in
+[REHEARSAL.md](REHEARSAL.md). Normal launches cannot enter live rehearsal. Afterward the private
+profile retains the normal meeting record; reports show delivery, latencies, counts and missing
+answer evidence without grading unscripted content. Physical/paid acceptance remains owner-run.

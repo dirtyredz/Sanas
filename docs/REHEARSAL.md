@@ -24,7 +24,92 @@ Missing CLI or signed-out reads fail with a corrective message; secret values ar
 finally; Electron receives them only in main and clears them
 from the isolated settings file during teardown. A forcibly killed run may retain those local
 credentials: treat its profile as private. Provider output and transcript text are not logged.
-No retention, updates, email, global shortcuts or microphone capture are started.
+Scripted/audio runs start no retention, updates, email, global shortcuts or microphone
+capture. Live runs additionally enable the normal owner-started capture and three rehearsal controls.
+
+## Live mock: hear, see and answer aloud
+
+```powershell
+& C:/Users/dirty/projects/.worktrees/sanas/rehearsal-harness/scripts/rehearsal/run.ps1 -Tier live -Scenario live-interview
+# Shorter client delivery review:
+& C:/Users/dirty/projects/.worktrees/sanas/rehearsal-harness/scripts/rehearsal/run.ps1 -Tier live -Scenario live-client-qa
+# Free preflight from any directory; never fetches keys, builds, opens devices or speaks:
+& C:/Users/dirty/projects/.worktrees/sanas/rehearsal-harness/scripts/rehearsal/run.ps1 -Tier live -Scenario live-interview -DryRun
+```
+
+Live implies visible windows and real Claude for both the interviewer and Sanas. Both missing
+keys are fetched through the existing 1Password references above. No fake STT, replayed WAV,
+injected audio or automatic screenshots are used. Do not pass `-Audio` or `-RealCapture`.
+
+1. The console explains controls and counts down before opening an isolated app. The app
+   checks that Windows exposes an input and output device, then shows setup instructions.
+2. Open **Live**, select the rehearsal job, keep **This PC**, and click **Start**. This is the
+   ordinary microphone + AudioWorklet + system-loopback capture, not a rehearsal capture path.
+   You have five minutes to start. If loopback falls back to mono, the rehearsal refuses it;
+   fix the device/permission issue and retry Start. No interviewer speaks before capture starts.
+3. Three seconds after Start, offline Windows speech plays the first question through the
+   default output. Deepgram hears it through real loopback; your real microphone is channel 0.
+   Read Sanas's normal suggestions in the overlay and answer aloud. The interviewer only sees
+   finalized conversation, never Sanas's suggestions. It waits for your final transcript and
+   2.5 seconds without owner-channel activity, then follows up or asks the next planned question.
+4. Screen topics open an existing fixture borderless across the target display. The overlay
+   moves to that display; use its **Screen** control yourself. A share persists until replaced
+   or dismissed. Screens are real desktop content, and screenshot acquisition stays production.
+5. The plan finishes when its topics and follow-ups finish, or at its maximum duration.
+   Stop or Pause on the normal Live page also ends the rehearsal. Summary and recording
+   post-processing finish before windows close. The console prints `OK` or `FAILED` and report path.
+
+| Control                         | Action                                                                                   |
+| ------------------------------- | ---------------------------------------------------------------------------------------- |
+| Ctrl+Alt+Right                  | Skip the current wait/speech, bypass follow-ups and advance to the next planned question |
+| Ctrl+Alt+End                    | End the session and save the normal meeting record                                       |
+| Ctrl+Alt+Backspace              | Dismiss the current share from anywhere                                                  |
+| Escape with the fixture focused | Dismiss that share                                                                       |
+
+If skip cancels generation before a planned question has begun, that still-unasked question
+is retried. Controls must register successfully; a collision fails setup instead of leaving an
+unstoppable session. Use the overlay's existing buttons for screenshots and requested answers;
+ordinary application global hotkeys are not installed in this isolated rehearsal.
+
+**Headphones recommended.** Digital loopback hears the interviewer with speakers OR headphones.
+The existing microphone path explicitly disables software echo cancellation; channel separation
+does not erase acoustic speaker bleed. Speakers can therefore duplicate interviewer speech on
+the owner channel and trigger premature turn-taking. Headphones avoid that. Close unrelated
+audio playback because loopback captures it too. No production audio policy is changed here.
+
+`live-interview` covers behavioural and technical questions plus architecture, boundary,
+duplicate-search and SQL fixtures (15-minute maximum). `live-client-qa` covers delivery,
+scope, risk, architecture and next actions (10-minute maximum). Allow build/startup and up to
+three minutes for post-processing in addition. These are maximums, not forced-length scripts.
+Provider charges include two-channel streaming, recorded-audio batch transcription, Sanas
+classifier/suggestions/summary, and one short interviewer call per turn. Windows TTS is offline.
+For planning, reserve a few dollars per 10–15-minute rehearsal; this is an unmeasured allowance,
+not a verified tariff or cap. Actual model, answer length and retries determine the charge.
+
+Live plans are version-1 JSON with `mode: "live"`, `name`, `persona`, `durationMs` (10 seconds
+to one hour), optional `silenceMs` (default 2500, range 500–15000), optional numeric `displayId`
+(primary by default), and ordered `topics`. Each topic has a unique `id`, a verbatim fallback
+`question`, `maxFollowUps` (0–5), and optional `screen` path relative to the plan. Copy a plan
+to customize timing/persona/questions. The engine, not Claude, owns ordering and follow-up caps.
+Interviewer failure, deadline or invalid output advances with the next question verbatim.
+
+The live JSON report includes every spoken interviewer turn, fallback status, recognized
+loopback audio spans, suggestion delivery, word counts, and correlated classifier/turn/request
+outcomes for missing suggestions. Latencies are relative to the last received loopback final;
+first-visible means the first main-to-renderer output broadcast, not a measured compositor paint.
+Absent loopback finals are reported explicitly and never inferred from TTS playback. Manual
+screen requests remain in the report's complete request list; they are not guessed into an
+automatic question correlation. No content rubric passes/fails unscripted answers.
+
+The normal finals, suggestions, summary and WAV stay in the reported isolated `profile` directory.
+Normal summary eligibility still applies (at least five final lines); ending very early can
+legitimately leave `summarySaved: false` in the report.
+The live report includes the interviewer's spoken text, but not the owner's answer text or Sanas's
+answer text; those remain in the private meeting record. To inspect it later without starting a
+new live run, use the built Electron executable with `out/main/index.js` and
+`--dev-user-data=<absolute reported profile path>` (normal library UI, cleared keys).
+Do not point that option at the owner's real profile. Paid audio/device acceptance is owner-only;
+the free tests use a stub interviewer and simulated finals, without microphone access.
 
 ## Starters and owner-only legs
 

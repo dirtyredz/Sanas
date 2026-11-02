@@ -456,6 +456,22 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
 
 ## Rehearsals
 
+- Live plans use `mode: live` and a separate schema, not scripted steps/expectations. Live
+  implies Claude + Deepgram, even when a caller supplies `-Assistant canned`; `-DryRun` fetches
+  neither. Only the normal owner Start opens devices; no TTS begins on mono fallback.
+- Headphones still feed loopback. Speakers also feed the raw mic acoustically: `audio/mic.ts`
+  sets echoCancellation false. Do not promise echo removal from structural channel identity.
+  Bleed can be recognized as an owner reply; use headphones for reliable rehearsal turns.
+- Owner silence is measured from received finals/activity, not provider audio time. Interims
+  and VAD postpone the next question but never enter the interview conversation or persistence.
+  Report correlation uses audio spans so delayed suggestions stay with their spoken question.
+- Live report first-visible is the main broadcast proxy, not renderer paint. A generated TTS
+  line with no loopback final is missing capture evidence, never proof that Sanas heard it.
+- Live shortcuts are scoped to the isolated process and must register. Screens fill display
+  bounds and reposition the overlay so production screenshot selection targets that display.
+  Escape requires fixture focus; Ctrl+Alt+Backspace dismisses from anywhere. End drains normal
+  post-processing, then closes windows and kills/awaits any owned offline speech child.
+
 - Use `scripts/rehearsal/run.ps1`, never the owner's userData. Dependencies must already exist;
   the runner does not install or download them. Isolated profile/DB/recording artifacts remain
   in `.tmp/rehearsal/`; logs and assertions are in `.tmp/owner-runs/`.

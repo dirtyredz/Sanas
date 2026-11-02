@@ -15,6 +15,11 @@ Layout below reflects what exists.
 Rehearsal homes: `src/main/rehearsal/` owns explicit isolated rehearsal dispatch, scenario
 validation/assertions and scripted providers; its `audio/` owns WAV replay/socket faults,
 and `screens/` owns fixture acquisition and real display verification;
+`live/` owns guided-plan validation, the serialized interviewer/owner-silence engine,
+the interviewer consumer of AssistantProvider, offline output playback, live composition
+and per-turn reporting. Its composition opens the normal library/overlay and observes real
+STT; it does not implement another microphone capture path. `scripts/rehearsal/speak-live.ps1`
+is its bounded offline Windows speech child; `scenarios/live-*.json` are guided plans.
 `outcomes.ts` owns request correlation/redacted outcome records, `semantics.ts` bounded content
 rubrics, and `screens/geometry.ts` DIP-to-thumbnail mapping. The optional main-only observer in
 `services/meetings/assist/diagnostics.ts` reports decisions without changing assistance policy.

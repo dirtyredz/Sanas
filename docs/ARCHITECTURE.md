@@ -4,6 +4,19 @@ _How the system works. For code shape, see [../STRUCTURE.md](../STRUCTURE.md)._
 
 ## Overview
 
+Explicit `--rehearsal --tier=live` dispatch creates an isolated profile before importing
+settings or repositories. It opens the normal library and overlay; the owner starts the
+ordinary This-PC renderer capture. A pass-through STT wrapper requires stereo and observes
+owner activity without injecting audio or transcript. Loopback recognizes default-output
+Windows TTS; final broadcasts alone populate the interviewer's conversation. The live engine
+serializes thinking, speech and owner waiting, with bounded calls, follow-up caps, cancellation
+and a total-duration limit. Separate plan prompts use the existing AssistantProvider transport
+directly, bypassing the observed suggestion wrapper so suggestions cannot enter interviewer input.
+Screen topics reuse the fixture window at full display bounds, while screenshot acquisition
+uses production DesktopDeps and requires the owner's action. On stop, normal repository-backed
+summary/recording processing drains; a private report joins STT audio spans to assistance outcomes.
+No new persistence schema, SQL, capture API or normal-launch behavior is introduced.
+
 Rehearsal diagnostics use an optional, explicit-mode main-process observer at the assistance
 coordinator. It observes completed turns, classifier outcomes and suppression/invalidation
 reasons without changing decisions or timers. Local request metadata links focused turn spans
