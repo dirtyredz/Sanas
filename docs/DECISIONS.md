@@ -4,6 +4,13 @@ _Design/architecture decisions, newest first. Why we chose what we chose, and wh
 
 ## 2026-11-02 — Stacked questions get one combined suggestion
 
+Diagnosis follow-up (owner ruling): keep the existing ledger clearing and fail-closed policy.
+Five absent paid answers lack enough retained evidence to identify their suppression paths.
+Add correlated outcomes before considering policy changes; canned success is not paid acceptance.
+Initial answers must never invent the user's history: label missing-fact placeholders, target
+80 prose words with at most two supporting points, and give one runnable code replacement.
+Detail remains expanded and grounded to its original source.
+
 Owner decision, from the rapid-qa rehearsal: with 8 back-to-back questions the ambient lane
 answered only the last few, silently dropping the rest. Now a question overtaken before any
 suggestion covered it is carried forward, and the single request for the newest question lists
@@ -516,7 +523,7 @@ speech builds stereo fixtures; clips that overrun their timing fail rather than 
 
 Scripted STT reset/reconnect is deterministic seam simulation. Audio faults close the actual
 WebSocket with an abnormal code so production reconnect owns backoff. Real desktop checks
-use a fixture window baseline and compare both whole-display and protected-overlay-region pixels.
+use a fixture window baseline and compare both fixture-content and protected-overlay-region pixels.
 Canned image replies establish byte delivery, not vision competence; Claude is owner-selectable.
 Profiles/reports remain under the worktree for inspection; provider output is suppressed and
 keys are cleared on normal teardown. A hard kill can leave private credentials in that profile.

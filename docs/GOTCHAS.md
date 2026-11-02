@@ -461,11 +461,20 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   in `.tmp/rehearsal/`; logs and assertions are in `.tmp/owner-runs/`.
 - Canned runs prove wiring, not model quality. Summary policy still requires five final lines;
   audio silent-channel injection can erase evidence and legitimately fail summary expectations.
+- Scripted long utterances must advance activity until their final. A lone future-dated interim
+  makes the 1.8-second silence fallback split retimed bursts early; the harness now emits ongoing
+  activity at replay time without changing production turn assembly.
 - Existing WAVs must be 16 kHz linear16 mono/stereo with valid RIFF chunks. Speech synthesis
   must fit each declared duration; enlarge timing instead of truncating words.
-- Offline speech preflight on 2026-11-02 exceeded `mock-interview`'s `intro-q` and
-  `rapid-qa`'s `b1q1` slots with the installed voice. Those audio starters need timing
-  repair before paid acceptance (`dk-8cd1d91d`); the coding-interview WAV rendered successfully.
+- Offline speech is voice-dependent. Mock/rapid slots were retimed from measured speech with
+  a 250 ms rounded margin; rendering reports every overrun in the WAV's `.timings.json` sidecar.
+  Keep short assembly gaps and enough silence before replies/Stop when changing timing.
+- Work-area capturePage pixels do not fill the entire display thumbnail. Map actual content
+  DIP bounds once (including negative monitor origins); never stretch over the taskbar or
+  multiply scale factor again. A correct fixture can otherwise fail the overlay oracle.
+- Batch word lists span the whole recording. Grouping only by speaker joins speech across
+  minutes of silence; batch now splits at gaps of at least two seconds as well as speaker
+  changes. Streaming grouping is unchanged; this is transcript granularity, not answer loss.
 - Real captures require an unlocked, unobscured target display. Colour/DPI/protected-content
   differences can fail pixel comparison; never disable overlay protection to make it pass.
 - The owner-run template in `scripts/rehearsal/` is canonical 1.0.0, copied verbatim. The older

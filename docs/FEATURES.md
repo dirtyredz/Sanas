@@ -4,6 +4,13 @@ _Capability inventory. Status: ✅ done · 🔨 in progress · 📋 planned · �
 
 ## Core loop
 
+Initial automatic, typed and captured-screen answers share a compact prompt contract: a
+speakable lead, at most two supporting points, target 80 prose words excluding one runnable
+minimal code replacement. Missing personal facts use labelled placeholders and a structure
+to fill; longer expansion stays in More detail. These are model instructions, not runtime
+truncation or a guarantee of model compliance. Batch transcripts split at speaker changes
+and pauses of at least two seconds; streaming behavior is unchanged.
+
 | Feature                                          | Status | Notes                                                                                                                |
 | ------------------------------------------------ | ------ | -------------------------------------------------------------------------------------------------------------------- |
 | Mic capture → 16 kHz PCM stream                  | ✅     | AudioWorklet (static file; AGC/EC/NS off)                                                                            |

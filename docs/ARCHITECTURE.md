@@ -4,6 +4,14 @@ _How the system works. For code shape, see [../STRUCTURE.md](../STRUCTURE.md)._
 
 ## Overview
 
+Rehearsal diagnostics use an optional, explicit-mode main-process observer at the assistance
+coordinator. It observes completed turns, classifier outcomes and suppression/invalidation
+reasons without changing decisions or timers. Local request metadata links focused turn spans
+or asynchronous manual action IDs to suggestion events; the Claude transport never sends that
+metadata externally. Rehearsal reports retain IDs, timings, verdicts, word counts and image
+digests, not prompt text or image bytes. The observer is absent in ordinary startup and cannot
+throw into assistance. See [REHEARSAL.md](REHEARSAL.md) for acceptance and retained artifacts.
+
 Electron desktop app, single-device, local-first. Two windows:
 
 1. **Main window** — library UI: jobs, meetings, transcripts, context packs, settings. Native title bar hidden; the app header is the title bar (titleBarOverlay, `main/windows/window-chrome.ts`).

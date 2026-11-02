@@ -15,6 +15,10 @@ Layout below reflects what exists.
 Rehearsal homes: `src/main/rehearsal/` owns explicit isolated rehearsal dispatch, scenario
 validation/assertions and scripted providers; its `audio/` owns WAV replay/socket faults,
 and `screens/` owns fixture acquisition and real display verification;
+`outcomes.ts` owns request correlation/redacted outcome records, `semantics.ts` bounded content
+rubrics, and `screens/geometry.ts` DIP-to-thumbnail mapping. The optional main-only observer in
+`services/meetings/assist/diagnostics.ts` reports decisions without changing assistance policy.
+`scripts/rehearsal/credentials.ps1` owns selective 1Password reads and environment cleanup;
 `scripts/rehearsal/` owns owner entry points and the verbatim owner-run 1.0.0 template
 from `~/.claude/templates/scripts/`; its `scenarios/` and `fixtures/` hold JSON and local PNGs.
 
