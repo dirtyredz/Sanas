@@ -1,3 +1,4 @@
+import { practiceSchema } from './repos/practice'
 import type { Database } from 'better-sqlite3'
 import { liveControlsSchema } from './repos/live-controls-schema'
 import { presentationSchema } from './repos/presentation-schema'
@@ -87,6 +88,7 @@ const migrations: string[] = [
      CHECK (purpose IN ('answer','next-point'));`,
   presentationSchema,
   liveControlsSchema,
+  practiceSchema,
 ]
 
 export const schemaVersion = migrations.length

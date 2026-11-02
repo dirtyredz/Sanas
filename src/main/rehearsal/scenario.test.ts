@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
 import { parseScenario } from './scenario'
 import { evaluate } from './assertions'
-import { parseLivePlan } from './live/plan'
+import { parseLivePlan } from '../services/mock-interview/plan'
 
 const valid = (): unknown =>
   JSON.parse(readFileSync('scripts/rehearsal/scenarios/client-checkin.json', 'utf8'))

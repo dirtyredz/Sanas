@@ -1,4 +1,4 @@
-import type { AssistantProvider } from '../../services/assistant/types'
+import type { AssistantProvider } from '../assistant/types'
 import type { LivePlan, LiveTopic } from './plan'
 
 export interface ConversationFinal {

@@ -19,8 +19,9 @@ const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout
 /** Called instead of normal startup, before settings/DB/services are imported. */
 export async function runRehearsal(): Promise<void> {
   if (flag('tier') === 'live') {
-    const { runLiveRehearsal } = await import('./live/run')
-    return runLiveRehearsal()
+    console.error('Live rehearsals moved to the Mock interview tab in Sanas.')
+    app.exit(1)
+    return
   }
   let reportPath: string | undefined
   let cleanup: (() => Promise<void>) | undefined

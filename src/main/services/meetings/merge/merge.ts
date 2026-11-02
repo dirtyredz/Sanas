@@ -40,6 +40,7 @@ export function mergeMeetings(ids: number[]): MergeResult {
   const parts = ids.map((id) => {
     const m = getMeeting(id)
     if (!m) throw new Error(`Meeting ${id} no longer exists.`)
+    if (m.practice) throw new Error('Practice sessions cannot be merged.')
     if (isPostProcessing(id)) {
       throw new Error(`"${m.title}" is still being written to — try again in a moment.`)
     }

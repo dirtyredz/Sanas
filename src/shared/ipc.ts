@@ -2,6 +2,15 @@
 // Keep this the single source of truth for channel strings.
 
 export const IPC = {
+  MockSetup: 'mock:setup',
+  MockStart: 'mock:start',
+  MockEnd: 'mock:end',
+  MockSkip: 'mock:skip',
+  MockDismiss: 'mock:dismiss',
+  MockState: 'mock:state',
+  MockChanged: 'mock:changed',
+  MockSpeechDone: 'mock:speech-done',
+  MockHistory: 'mock:history',
   UpdatesGet: 'updates:get',
   UpdatesCheck: 'updates:check',
   UpdatesRestart: 'updates:restart',

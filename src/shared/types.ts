@@ -24,6 +24,8 @@ export interface GlossaryTerm {
 }
 
 export interface Meeting {
+  /** True for saved mock sessions; absent on legacy callers means false. */
+  practice?: boolean
   id: number
   jobId: number
   title: string

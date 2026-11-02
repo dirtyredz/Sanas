@@ -4,18 +4,34 @@ _How the system works. For code shape, see [../STRUCTURE.md](../STRUCTURE.md)._
 
 ## Overview
 
-Explicit `--rehearsal --tier=live` dispatch creates an isolated profile before importing
-settings or repositories. It opens the normal library and overlay; the owner starts the
-ordinary This-PC renderer capture. A pass-through STT wrapper requires stereo and observes
-owner activity without injecting audio or transcript. Loopback recognizes default-output
-Windows TTS; final broadcasts alone populate the interviewer's conversation. The live engine
-serializes thinking, speech and owner waiting, with bounded calls, follow-up caps, cancellation
-and a total-duration limit. Separate plan prompts use the existing AssistantProvider transport
-directly, bypassing the observed suggestion wrapper so suggestions cannot enter interviewer input.
-Screen topics reuse the fixture window at full display bounds, while screenshot acquisition
-uses production DesktopDeps and requires the owner's action. On stop, normal repository-backed
-summary/recording processing drains; a private report joins STT audio spans to assistance outcomes.
-No new persistence schema, SQL, capture API or normal-launch behavior is introduced.
+The **Mock interview** tab starts a practice meeting for a chosen job using the normal
+settings, userData, recording and STT lifecycle. The shared renderer Start helper opens This PC
+mic + loopback before typed mock IPC calls the existing serialized meeting service. Stereo is
+required; missing Claude/Deepgram keys link to Settings. Live and Mock pages stay mounted across
+tab navigation so capture survives. Losing the library renderer, closing the interviewer,
+End, normal Stop/Pause, output failure or the plan duration ends the mock and meeting.
+
+`services/mock-interview/` owns the single guided engine, built-in job/client plans and packaged
+fixtures. A separate interviewer BrowserWindow shows persona, captions, speaking/listening/thinking
+status, shares and controls. Local-only speechSynthesis plays through default output, acknowledged
+by that window with a bounded deadline; no PowerShell child. The window receives only mock state,
+never transcript/suggestion broadcasts. The interviewer AssistantProvider consumer receives an
+explicit projection of plan + finalized conversation, never Sanas answers. Interims/VAD only
+postpone owner silence; calls have deadlines, bounded follow-ups and planned-question fallback.
+
+Optional main-only meeting/run/assistance subscriptions collect outcome evidence without changing
+admission policy. Shared pure outcome code correlates automatic requests by recognized audio spans.
+Results store question, delivery, first-visible/completion latency, prose word count and reasons;
+first-visible is the main broadcast proxy, not compositor paint. Manual screen requests have no
+automatic question span and are not guessed into these metrics. Late answers update saved results
+for up to 65 seconds after End, including when another session starts. Summaries/batch processing
+continue through the normal meeting lifecycle.
+
+Schema v8 adds `meetings.practice` (default false) and cascading `mock_results`. Practice records
+remain complete, labelled and accessible from the tab's past sessions, but normal job history,
+Search and Ask retrieval exclude them. Practice merges and automatic summary email are disabled.
+Explicit per-session summary/export/email still work. Storage retention/recovery include practice
+because they manage files and rows, not cross-meeting knowledge.
 
 Rehearsal diagnostics use an optional, explicit-mode main-process observer at the assistance
 coordinator. It observes completed turns, classifier outcomes and suppression/invalidation
@@ -25,12 +41,14 @@ metadata externally. Rehearsal reports retain IDs, timings, verdicts, word count
 digests, not prompt text or image bytes. The observer is absent in ordinary startup and cannot
 throw into assistance. See [REHEARSAL.md](REHEARSAL.md) for acceptance and retained artifacts.
 
-Electron desktop app, single-device, local-first. Two windows:
+Electron desktop app, single-device, local-first. Three window roles:
 
 1. **Main window** — library UI: jobs, meetings, transcripts, context packs, settings. Native title bar hidden; the app header is the title bar (titleBarOverlay, `main/windows/window-chrome.ts`).
 2. **Overlay window** — small frameless always-on-top panel shown during a live meeting;
    answer-first: the selected suggestion, plus one secondary workspace (Ask, Screen, Slide,
    Transcript, Context) chosen from a rail. Summoned/dismissed by global hotkey.
+
+3. **Interviewer window** — separate normal window for mock sessions; full-window shared fixture above captions and controls.
 
 ### Overlay composition
 
@@ -181,7 +199,7 @@ objection | none`. It **fails closed**: timeout, cancel, malformed output or pro
   after launch and every 6 h; Settings shows what is past its limit and can run it now.
   Live meetings are never touched. Deleting a meeting by hand goes through the same
   `removeMeeting` (file + row).
-- Schema (current v7: v1 base, v2 `speakers`, v3 `jobs.summary_email`, v4 `segments_fts`, v5 `suggestions.purpose`, v6 presentation, v7 live context/grounding; later tables described below):
+- Schema (current v8: v1 base, v2 `speakers`, v3 `jobs.summary_email`, v4 `segments_fts`, v5 `suggestions.purpose`, v6 presentation, v7 live context/grounding, v8 practice/results; later tables described below):
 
 ```
 jobs        (id, name, company_info, project_scope, notes,
@@ -189,7 +207,7 @@ jobs        (id, name, company_info, project_scope, notes,
              summary_email)                 -- per-job recipient (v3)
 glossary    (id, job_id, term, note)
 meetings    (id, job_id, title, started_at, ended_at,
-             audio_path, summary, action_items)
+             audio_path, summary, action_items, practice)
 segments    (id, meeting_id, t_start_ms, t_end_ms, speaker,
              is_user, text)              -- final transcript segments
 suggestions (id, meeting_id, t_ms, trigger,     -- lane: 'ambient' | 'hotkey'

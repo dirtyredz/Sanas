@@ -15,11 +15,10 @@ Layout below reflects what exists.
 Rehearsal homes: `src/main/rehearsal/` owns explicit isolated rehearsal dispatch, scenario
 validation/assertions and scripted providers; its `audio/` owns WAV replay/socket faults,
 and `screens/` owns fixture acquisition and real display verification;
-`live/` owns guided-plan validation, the serialized interviewer/owner-silence engine,
-the interviewer consumer of AssistantProvider, offline output playback, live composition
-and per-turn reporting. Its composition opens the normal library/overlay and observes real
-STT; it does not implement another microphone capture path. `scripts/rehearsal/speak-live.ps1`
-is its bounded offline Windows speech child; `scenarios/live-*.json` are guided plans.
+The former live engine now lives in `src/main/services/mock-interview/`; the live CLI tier is
+retired. The product service owns plans/fixtures, serialized turn-taking, window/TTS lifecycle
+and practice result collection. `meetings/observation.ts` and `assist/run-observation.ts` expose
+main-only, best-effort subscriptions; `assist/outcomes.ts` owns shared pure result types/counts.
 `outcomes.ts` owns request correlation/redacted outcome records, `semantics.ts` bounded content
 rubrics, and `screens/geometry.ts` DIP-to-thumbnail mapping. The optional main-only observer in
 `services/meetings/assist/diagnostics.ts` reports decisions without changing assistance policy.
@@ -44,6 +43,7 @@ sanas/
 │   │   │   │   ├── coach/                 # next-point policy and prompts
 │   │   │   │   ├── presentation/          # deck context, location hints and restricted coach prompt
 │   │   │   │   └── live-controls/         # typed/detail/audience prompt instructions
+│   │   │   ├── mock-interview/            # product plans/fixtures, interviewer, turn engine, session/results
 │   │   │   ├── meetings/                  # live lifecycle/STT/audio orchestrator, export and removal
 │   │   │   │   ├── index.ts               # lifecycle, STT wiring, audio and final persistence
 │   │   │   │   ├── live-controls.ts       # context/manual/answer-mode/slide control facade
@@ -81,6 +81,7 @@ sanas/
 │   │       │   │   └── frame/              # section list, index, pane, card, useSettingsDraft + patch/validation, save bar
 │   │       │   │       └── paging/         # pure page order + useSettingsPager
 │   │       │   └── styles/                 # tokens → base/controls → shell/transcript/pages/settings; overlay-* layers
+│   │       ├── interviewer-app/            # small offline-speech/caption/share/control entry
 │   │       ├── overlay-app/                # separate small overlay bundle
 │   │       │   ├── shell/                  # session composition, layout, header, status, preferences
 │   │       │   │   └── navigation/         # workspace reducer, local shortcuts, rail, compose handshake
@@ -97,6 +98,7 @@ sanas/
 │   │       ├── dev/                        # typed browser-preview bridge mocks
 │   │       └── env.d.ts                    # Vite client types
 │   └── shared/                              # cross-process IPC and domain contracts
+│       ├── mock-interview/                 # typed setup/state/result IPC contracts
 │       ├── presentation/                   # deck and timeline contracts
 │       ├── live-controls/                  # context, admission, suggestion metadata and capture contracts
 │       ├── hotkeys/                        # global shortcut actions and registration status
@@ -114,6 +116,15 @@ sanas/
 ```
 
 **Enforced homes:**
+
+- `src/main/services/mock-interview/` — one product engine, plan validation, interviewer seam consumer,
+  session lifecycle, bundled JSON plans/PNG fixtures and shared live-turn result correlation.
+- `src/main/windows/interviewer-window.ts` — separate window; restricts broadcasts to mock state.
+- `src/main/db/repos/practice.ts` — v8 migration SQL, result persistence and practice listing.
+- `src/main/ipc/mock-interview*.ts` — validated mock commands; speech ACKs require the output sender.
+- `src/renderer/src/interviewer-app/` — local OS speech, captions and shares; no provider/network calls.
+- `src/renderer/src/lib/meeting/start-captured-meeting.ts` — shared capture acquisition/adoption/cleanup.
+- `src/shared/mock-interview/` — cross-process mock contracts.
 
 - `src/main/lifecycle/` — userData identity, capped/redacted main logging and normal startup wiring; normal startup is not loaded by smoke
 - `src/main/diagnostics/` — isolated, headless packaged diagnostics used by `--smoke`

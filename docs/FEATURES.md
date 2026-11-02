@@ -117,13 +117,17 @@ The coding interview includes locally rendered JavaScript and SQL screens, a scr
 follow-up and a two-part complexity/improvement question. Assistant-scoped expectations separate
 Claude concept checks from shared screen-delivery checks.
 
-## Live guided rehearsal (explicit developer/owner mode)
+## Mock interview
 
-`scripts/rehearsal/run.ps1 -Tier live -Scenario live-interview` opens an isolated real meeting
-with a spoken Claude interviewer, real mic/system-loopback transcription, normal suggestions
-and owner-controlled screenshots of shared fixtures. `live-client-qa` supplies a shorter client
-plan. The interviewer adapts to finalized replies within topic/follow-up limits, with verbatim
-planned-question fallback. Skip, end and dismiss-share controls are documented in
-[REHEARSAL.md](REHEARSAL.md). Normal launches cannot enter live rehearsal. Afterward the private
-profile retains the normal meeting record; reports show delivery, latencies, counts and missing
-answer evidence without grading unscripted content. Physical/paid acceptance remains owner-run.
+Implemented; real-device/provider acceptance remains owner-only. Choose **Job interview**
+(behavioural, technical, coding screens; 15-minute cap) or **Client Q&A** (10-minute cap),
+choose a job, then Start. Saved app keys are used; missing keys link to Settings. Headphones
+are recommended because the raw mic has no echo cancellation. A separate interviewer window
+speaks using a local Windows voice, shows captions/status and shared fixtures, and offers
+Skip / End / Dismiss share. Replies use the real mic and follow-ups use only finalized speech.
+
+Start creates a normal This PC practice meeting automatically. Closing the interviewer or
+library, Stop/Pause or End stops it. The tab shows question-by-question delivery, latency,
+word counts and missing-suggestion evidence, and past practice sessions with complete records.
+Practice is excluded from normal history/Search/Ask and auto-email, and cannot be merged.
+The retired `-Tier live` command points here. Scripted/audio harnesses remain gated.

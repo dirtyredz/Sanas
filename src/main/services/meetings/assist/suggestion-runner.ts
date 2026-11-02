@@ -1,3 +1,4 @@
+import { observeRun } from './run-observation'
 import type { SuggestionMetadata } from '@shared/live-controls/types'
 import type { SuggestionEvent, SuggestionPurpose, SuggestionTrigger } from '@shared/types'
 import type { AssistantProvider, AssistImage } from '../../assistant/types'
@@ -102,8 +103,15 @@ export class SuggestionRunner {
       manualKind: req.manualKind,
       requestText: req.requestText,
     }
-    const emit = (kind: SuggestionEvent['kind'], text: string): void =>
-      this.deps.emit({
+    observeRun({
+      kind: 'begin',
+      id: sid,
+      meetingId: req.meetingId,
+      purpose: req.purpose,
+      spans: req.diagnosticTurns ?? [],
+    })
+    const emit = (kind: SuggestionEvent['kind'], text: string): void => {
+      const event: SuggestionEvent = {
         ...metadata,
         ...(storedSuggestionId === undefined ? {} : { storedSuggestionId }),
         suggestionId: sid,
@@ -115,10 +123,14 @@ export class SuggestionRunner {
           : { presentationRevision: req.presentationRevision }),
         kind,
         text,
-      })
+      }
+      this.deps.emit(event)
+      observeRun({ kind: 'visible', event })
+    }
     const streamed = req.delivery === 'stream'
     if (!req.apiKey) {
       if (streamed) emit('error', NO_KEY)
+      observeRun({ kind: 'settled', id: sid, meetingId: req.meetingId, outcome: 'error' })
       return null
     }
 
@@ -212,7 +224,10 @@ export class SuggestionRunner {
       }
     }
 
-    const done = run()
+    const done = run().then((outcome) => {
+      observeRun({ kind: 'settled', id: sid, meetingId: req.meetingId, outcome })
+      return outcome
+    })
     return {
       done,
       cancel: () => {

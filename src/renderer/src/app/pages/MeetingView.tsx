@@ -152,6 +152,7 @@ export function MeetingView({
         </div>
       </div>
       {notice && <p className={`notice ${notice.kind}`}>{notice.text}</p>}
+      {meeting.practice && <p className="notice">Practice meeting</p>}
       <p className="meeting-meta">
         <span className="when">
           {formatWhen(meeting.startedAt)}

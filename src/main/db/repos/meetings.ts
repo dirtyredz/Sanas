@@ -2,6 +2,7 @@ import { getDb } from '../index'
 import type { Meeting } from '@shared/types'
 
 export interface MeetingRow {
+  practice: number
   id: number
   job_id: number
   title: string
@@ -27,6 +28,7 @@ export function toMeeting(r: MeetingRow): Meeting {
   return {
     id: r.id,
     jobId: r.job_id,
+    practice: r.practice === 1,
     title: r.title,
     startedAt: r.started_at,
     endedAt: r.ended_at,
@@ -36,10 +38,10 @@ export function toMeeting(r: MeetingRow): Meeting {
   }
 }
 
-export function createMeeting(jobId: number, title: string): number {
+export function createMeeting(jobId: number, title: string, practice = false): number {
   const res = getDb()
-    .prepare(`INSERT INTO meetings (job_id, title) VALUES (?, ?)`)
-    .run(jobId, title)
+    .prepare(`INSERT INTO meetings (job_id, title, practice) VALUES (?, ?, ?)`)
+    .run(jobId, title, practice ? 1 : 0)
   return Number(res.lastInsertRowid)
 }
 
@@ -127,7 +129,7 @@ export function applyMerge(
 
 export function listMeetings(jobId: number): Meeting[] {
   const rows = getDb()
-    .prepare(`SELECT * FROM meetings WHERE job_id = ? ORDER BY started_at DESC`)
+    .prepare(`SELECT * FROM meetings WHERE job_id = ? AND practice = 0 ORDER BY started_at DESC`)
     .all(jobId) as MeetingRow[]
   return rows.map(toMeeting)
 }

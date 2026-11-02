@@ -1,4 +1,5 @@
 import { startUpdates, stopUpdates } from '../services/updates/service'
+import { endMock, mockState } from '../services/mock-interview'
 import { app, globalShortcut, dialog } from 'electron'
 import { registerShortcuts } from '../services/hotkeys/registration'
 import { createMainWindow } from '../windows/main-window'
@@ -67,6 +68,13 @@ app.on('second-instance', () => {
 app.on('window-all-closed', () => {
   // Standard Windows behavior: quit when all windows close.
   app.quit()
+})
+
+app.on('before-quit', (event) => {
+  if (!['idle', 'ended'].includes(mockState().status)) {
+    event.preventDefault()
+    void endMock().finally(() => app.quit())
+  }
 })
 
 app.on('will-quit', () => {

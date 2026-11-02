@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { LiveEngine } from './engine'
 import { cannedInterviewer, createInterviewer, type Interviewer } from './interviewer'
 import type { LivePlan } from './plan'
-import type { AssistRequest } from '../../services/assistant/types'
+import type { AssistRequest } from '../assistant/types'
 
 const plan: LivePlan = {
   version: 1,

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "mode": "live",
-  "name": "Live client Q&A",
+  "name": "Client Q&A",
   "persona": "You are a client delivery lead reviewing a project with its technical owner. Be conversational and specific. Probe scope, dates, risks, and ownership based on what the owner actually says. Never invent commitments or coach the owner. Follow the ordered plan.",
   "durationMs": 600000,
   "silenceMs": 2500,

@@ -1,4 +1,4 @@
-import { publicOutcome, type RequestOutcome } from '../outcomes'
+import { publicOutcome, type RequestOutcome } from '../meetings/assist/outcomes'
 import type { LiveTurn } from './engine'
 
 export interface LiveTransition {

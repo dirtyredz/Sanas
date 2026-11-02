@@ -52,10 +52,4 @@ export function semanticMatch(rubric: Rubric, text: string): boolean {
   }
 }
 
-export function proseWords(text: string): number {
-  return text
-    .replace(/```[^]*?```/g, '')
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean).length
-}
+export { proseWords } from '../services/meetings/assist/outcomes'

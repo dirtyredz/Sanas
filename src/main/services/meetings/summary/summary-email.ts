@@ -103,7 +103,7 @@ export async function emailMeetingSummary(meetingId: number): Promise<string> {
 /** Post-stop hook: sends only when auto-email is on and the job has an address.
  *  Never throws — a failed auto-send is logged, not surfaced (nobody is waiting). */
 export async function autoEmailSummary(meetingId: number): Promise<void> {
-  if (!loadSettings().summaryEmailAuto) return
+  if (!loadSettings().summaryEmailAuto || getMeeting(meetingId)?.practice) return
   const jobId = getMeeting(meetingId)?.jobId
   if (jobId === undefined || !getJob(jobId)?.summaryEmail.trim()) return // job opted out
   try {

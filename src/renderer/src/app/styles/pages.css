@@ -1,4 +1,7 @@
 /* ---------- live ---------- */
+.live-page-host {
+  height: 100%;
+}
 .live-page {
   display: flex;
   flex-direction: column;
@@ -564,4 +567,29 @@
 .presentation-editor pre {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+/* ---------- mock interview ---------- */
+.mock-page table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.mock-page th,
+.mock-page td {
+  text-align: left;
+  vertical-align: top;
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.mock-page th {
+  color: var(--muted);
+  white-space: nowrap;
+}
+.mock-page td:first-child {
+  min-width: 220px;
+}
+.mock-page .card {
+  display: grid;
+  gap: 14px;
 }

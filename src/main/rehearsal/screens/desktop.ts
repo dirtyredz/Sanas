@@ -146,7 +146,7 @@ export class RehearsalScreens {
       return sources
     },
   }
-  async prepare(step: Extract<Step, { kind: 'screen' }>, live = false): Promise<void> {
+  async prepare(step: Extract<Step, { kind: 'screen' }>): Promise<void> {
     this.close()
     this.real = !!step.real
     this.image = nativeImage.createFromPath(step.image)
@@ -162,7 +162,7 @@ export class RehearsalScreens {
     if (!display) throw new Error('Requested real display is missing')
     this.target = display
     this.fixtureWindow = new BrowserWindow({
-      ...(live ? display.bounds : display.workArea),
+      ...display.workArea,
       frame: false,
       show: false,
       skipTaskbar: true,
@@ -177,11 +177,6 @@ export class RehearsalScreens {
     this.fixtureWindow.setAlwaysOnTop(true, 'floating')
     this.fixtureWindow.show()
     this.fixtureWindow.moveTop()
-    if (live) {
-      this.fixtureWindow.webContents.on('before-input-event', (_event, input) => {
-        if (input.type === 'keyDown' && input.key === 'Escape') this.close()
-      })
-    }
     this.contentBounds = this.fixtureWindow.getContentBounds()
     mapRectangle(this.contentBounds, display.bounds, display.size)
     const overlay = BrowserWindow.getAllWindows().find((w) => w.getTitle() === 'Sanas Overlay')
@@ -197,7 +192,6 @@ export class RehearsalScreens {
       width: 380,
       height: 460,
     })
-    if (live) return // live screenshots use the unmodified production desktop provider
     await new Promise((resolve) => setTimeout(resolve, 500))
     this.expected = await this.fixtureWindow.webContents.capturePage()
   }

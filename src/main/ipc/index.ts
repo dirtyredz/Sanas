@@ -1,3 +1,4 @@
+import { registerMockInterviewIpc } from './mock-interview'
 import { registerUpdatesIpc } from './updates'
 import { ipcMain } from 'electron'
 import { registerLiveControlsIpc } from './live-controls'
@@ -53,6 +54,7 @@ import { broadcast } from '../windows/broadcast'
 // Thin handlers only — validate (./validate.ts) and delegate (see STRUCTURE.md).
 
 export function registerIpcHandlers(): void {
+  registerMockInterviewIpc()
   registerUpdatesIpc()
   registerPresentationIpc()
   registerLiveControlsIpc()

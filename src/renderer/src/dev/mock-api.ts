@@ -64,6 +64,33 @@ const controls = mockLiveControls(
   (event) => suggestionListeners.forEach((cb) => cb(event)),
 )
 const api: SanasApi = {
+  mockInterview: {
+    setup: async () => ({
+      plans: [
+        { id: 'interview', name: 'Job interview', persona: 'Engineering interviewer' },
+        { id: 'client-qa', name: 'Client Q&A', persona: 'Client delivery lead' },
+      ],
+      missingKeys: [],
+    }),
+    start: async () => {
+      throw new Error('Mock interviews require the desktop app and real This PC capture.')
+    },
+    getState: async () => ({
+      meetingId: null,
+      status: 'idle',
+      persona: '',
+      caption: '',
+      share: null,
+      speech: null,
+      result: null,
+    }),
+    end: async () => {},
+    skip: async () => {},
+    dismiss: async () => {},
+    speechDone: async () => {},
+    history: async () => [],
+    onChanged: () => () => {},
+  },
   updates: mockUpdates,
   meetingContext: controls.meetingContext,
   presentation: mockPresentation,

@@ -54,7 +54,7 @@ export function searchSegments(
        JOIN segments s ON s.id = f.rowid
        JOIN meetings m ON m.id = s.meeting_id
        JOIN jobs j ON j.id = m.job_id
-       WHERE segments_fts MATCH ? AND (? IS NULL OR m.job_id = ?)
+       WHERE m.practice = 0 AND segments_fts MATCH ? AND (? IS NULL OR m.job_id = ?)
        ORDER BY bm25(segments_fts), m.started_at DESC
        LIMIT ?`,
     )

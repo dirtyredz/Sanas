@@ -8,7 +8,7 @@ Audio and Claude incur provider charges; missing credentials come from 1Password
 .PARAMETER Scenario
 Starter name (client-checkin, presentation, standup) or JSON path relative to the repository.
 .PARAMETER Tier
-scripted, audio or live. Live uses real This PC capture and a guided interviewer.
+scripted or audio. The retired live tier points to the Mock interview tab.
 .PARAMETER Assistant
 canned or claude.
 .PARAMETER Visible
@@ -38,25 +38,14 @@ Add-LogSecret $env:ANTHROPIC_API_KEY
 Add-LogSecret $env:ANTHROPIC_WORKSPACE_ID
 $child = $null
 try {
+  if ($Tier -eq 'live') { throw 'Live rehearsals moved to the Mock interview tab in Sanas. Open the app and use its saved keys.' }
   $scenarioPath = if (Test-Path -LiteralPath (Join-Path $PSScriptRoot "scenarios/$Scenario.json")) {
     Join-Path $PSScriptRoot "scenarios/$Scenario.json"
   } elseif ([IO.Path]::IsPathRooted($Scenario)) { $Scenario } else { Join-Path $script:RepoRoot $Scenario }
   $scenarioPath = (Resolve-Path -LiteralPath $scenarioPath).Path
   $spec = Get-Content -LiteralPath $scenarioPath -Raw | ConvertFrom-Json
   if ($spec.version -ne 1) { throw 'Unsupported scenario version.' }
-  if ($Tier -eq 'live') {
-    if ($spec.mode -ne 'live' -or -not $spec.persona -or -not $spec.topics.Count -or $spec.durationMs -lt 10000 -or $spec.durationMs -gt 3600000) { throw 'A live plan with persona, topics and bounded duration is required.' }
-    if ($Audio -or $RealCapture) { throw 'Live uses real capture; do not pass -Audio or -RealCapture.' }
-    foreach ($topic in $spec.topics) {
-      if (-not $topic.id -or -not $topic.question -or $topic.maxFollowUps -lt 0 -or $topic.maxFollowUps -gt 5) { throw 'Invalid live topic.' }
-      if ($topic.screen -and -not (Test-Path -LiteralPath (Join-Path (Split-Path $scenarioPath) $topic.screen))) { throw 'Live screen fixture is missing.' }
-    }
-    $Visible = $true
-    $Assistant = 'claude'
-    Write-Log 'Live: real microphone + system loopback; Claude interviewer and suggestions; offline Windows speech.'
-    Write-Log 'Headphones recommended (loopback still hears speech). Open Live, select the rehearsal job, keep This PC, then Start.'
-    Write-Log 'Controls: Ctrl+Alt+Right skip; Ctrl+Alt+End finish; Ctrl+Alt+Backspace dismiss share. Use overlay Screen to capture.'
-  } elseif ($spec.mode -eq 'live') { throw 'Live plans require -Tier live.' }
+  if ($spec.mode -eq 'live') { throw 'Use the Mock interview tab in Sanas for live plans.' }
   if ($Audio -and -not [IO.Path]::IsPathRooted($Audio)) { $Audio = Join-Path $script:RepoRoot $Audio }
   if (-not $Audio -and $spec.audio) { $Audio = [IO.Path]::GetFullPath((Join-Path (Split-Path $scenarioPath) $spec.audio)) }
   if ($Audio -and -not (Test-Path -LiteralPath $Audio)) { throw 'Audio input is missing.' }
@@ -81,10 +70,6 @@ try {
     $code = Invoke-Native (Find-Tool 'powershell.exe') @('-NoProfile','-ExecutionPolicy','Bypass','-File',(Join-Path $PSScriptRoot 'render-audio.ps1'),'-Scenario',$scenarioPath,'-Output',$Audio) $script:RepoRoot
     if ($code -ne 0) { throw 'Offline speech rendering failed.' }
   }
-  if ($Tier -eq 'live') {
-    Write-Log 'Opening the isolated app in 3 seconds. Device preflight runs before you start capture.'
-    foreach ($second in 3,2,1) { Write-Log "$second..."; Start-Sleep -Seconds 1 }
-  }
   $report = Join-Path $script:RepoRoot ('.tmp/owner-runs/rehearsal-' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + $PID + '.json')
   $arguments = @((Join-Path $script:RepoRoot 'out/main/index.js'),'--rehearsal',"--rehearsal-root=$($script:RepoRoot)","--scenario=$scenarioPath","--tier=$Tier","--assistant=$Assistant","--rehearsal-report=$report")
   if ($Visible) { $arguments += '--visible' }
@@ -103,7 +88,7 @@ try {
   if (-not $child.Start()) { throw 'Electron did not start.' }
   $stdout = $child.StandardOutput.ReadToEndAsync()
   $stderr = $child.StandardError.ReadToEndAsync()
-  $timeout = (Get-Date).AddMilliseconds([Math]::Max(600000, [double]$spec.durationMs + $(if ($Tier -eq 'live') { 600000 } else { 420000 })))
+  $timeout = (Get-Date).AddMilliseconds([Math]::Max(600000, [double]$spec.durationMs + 420000))
   while (-not $child.WaitForExit(1000)) {
     if ((Get-Date) -ge $timeout) { throw 'Rehearsal timed out.' }
   }

@@ -2,7 +2,31 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-11-02 — Mock interview is a product flow with practice records
+
+Owner request: use saved app keys, choose a plan/job and press Start in a Mock interview tab.
+Promote the one engine into `services/mock-interview/`, bundle its plans/screens, and retire
+the live script launcher. Scripted/audio tiers remain isolated automated harnesses. The app
+uses the normal This PC capture helper and meeting service; both capture-owning pages remain
+mounted across tabs. No provider keys, network access or suggestions enter the interviewer UI
+or interviewer prompt. Keep the existing provider seam and deterministic planned fallback.
+
+Use a schema flag, not a title prefix or isolated database, to distinguish practice. v8 defaults
+old rows to normal; normal lists/search/history retrieval exclude practice centrally in repos.
+Full records/results remain available in past practice sessions. Refuse practice merges and
+skip automatic summary email; explicit single-session actions remain available. Retention and
+startup recovery still manage all records, including practice storage.
+
+Choose renderer speechSynthesis with an explicitly local Windows voice. This avoids spawning
+PowerShell, supports cancellation/ACK from the visible window and uses default output for real
+loopback. Reject unavailable local voices instead of silently using a remote service. A bounded
+ACK timeout ends capture on output failure. Offline voice availability, actual Windows playback
+and loopback are owner acceptance checks; stubbed tests cannot establish hardware behavior.
+Keep first-visible as broadcast evidence and label it; do not claim compositor timing.
+
 ## 2026-11-02 — Live rehearsal counterpart uses the existing assistant transport
+
+**Superseded by the product decision above; retained as history.**
 
 Keep the guided interviewer under `rehearsal/live/` as a separate consumer of
 `AssistantProvider`, using Claude through the existing main-only SDK implementation.

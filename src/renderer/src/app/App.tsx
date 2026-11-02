@@ -1,3 +1,4 @@
+import { MockInterviewPage } from './pages/MockInterviewPage'
 import { useEffect, useState } from 'react'
 import { SettingsPage } from './pages/SettingsPage'
 import { LiveMeetingPage } from './pages/LiveMeetingPage'
@@ -28,7 +29,12 @@ export function App(): React.JSX.Element {
         onToggleOverlay={() => window.sanas.overlay.toggle()}
       />
       <main className={`content content--${page}`}>
-        {page === 'live' && <LiveMeetingPage />}
+        <div className="live-page-host" hidden={page !== 'live'}>
+          <LiveMeetingPage />
+        </div>
+        <div hidden={page !== 'mock'}>
+          <MockInterviewPage visible={page === 'mock'} onSettings={() => setPage('settings')} />
+        </div>
         {page === 'jobs' && <JobsPage />}
         {page === 'search' && <SearchPage />}
         {page === 'ask' && <AskPage />}

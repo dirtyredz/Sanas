@@ -3,10 +3,10 @@ import { getDb } from '../index'
 import { deckSlides, getMeetingContext } from './meeting-context'
 import { createMeeting } from './meetings'
 
-export function createPresentationMeeting(jobId: number, title: string): number {
+export function createPresentationMeeting(jobId: number, title: string, practice = false): number {
   const db = getDb()
   return db.transaction(() => {
-    const id = createMeeting(jobId, title)
+    const id = createMeeting(jobId, title, practice)
     db.prepare('INSERT INTO meeting_deck_versions VALUES (?, 0)').run(id)
     db.prepare("INSERT INTO meeting_context_revisions VALUES (?, 0, '', 0, 0)").run(id)
     db.prepare(

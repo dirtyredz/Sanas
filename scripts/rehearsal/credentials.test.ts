@@ -24,13 +24,12 @@ function run(body: string): string {
   )
 }
 windows(
-  'live always needs both keys even if the assistant argument is canned',
+  'retired live credentials cannot invoke op',
   () => {
     const out = run(
-      "Get-RehearsalCredentials live canned $true; Write-Output ('calls=' + $script:calls)",
+      "try { Get-RehearsalCredentials live canned $false } catch { Write-Output $_.Exception.Message }; Write-Output ('calls=' + $script:calls)",
     )
-    expect(out).toContain('op://Sanas/Sanas - Claude/credential')
-    expect(out).toContain('op://Sanas/Sanas - Deepgram/credential')
+    expect(out).toContain('Mock interview tab')
     expect(out).toContain('calls=0')
   },
   30000,

@@ -1,3 +1,4 @@
+import { startCapturedMeeting } from '../../lib/meeting/start-captured-meeting'
 import { MeetingContextEditor } from '../../lib/meeting/MeetingContextEditor'
 import { useEffect, useRef, useState } from 'react'
 import type { Job, MeetingSource } from '@shared/types'
@@ -107,8 +108,13 @@ export function LiveMeetingPage(): React.JSX.Element {
     try {
       if (jobId !== '') localStorage.setItem('sanas.lastJobId', String(jobId))
       // capture first — the meeting needs to know mono vs stereo (loopback)
-      mic = await capture()
-      const st = await window.sanas.meeting.start(jobId === '' ? undefined : jobId, mic.channels)
+      const opened = await startCapturedMeeting(
+        source,
+        (channels) => window.sanas.meeting.start(jobId === '' ? undefined : jobId, channels),
+        (st) => st.status === 'live',
+      )
+      mic = opened.capture
+      const st = opened.result
       if (st.status === 'live') {
         micRef.current = mic
         setSysAudio(mic.channels === 2)
@@ -122,7 +128,6 @@ export function LiveMeetingPage(): React.JSX.Element {
       }
     } catch (e) {
       setMicError(errorText(e))
-      await window.sanas.meeting.stop()
     } finally {
       await mic?.stop()
       setBusy(false)

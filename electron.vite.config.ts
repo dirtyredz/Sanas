@@ -29,6 +29,7 @@ export default defineConfig({
           // library UI (main window) and the always-on-top overlay are separate pages
           index: resolve(__dirname, 'src/renderer/index.html'),
           overlay: resolve(__dirname, 'src/renderer/overlay.html'),
+          interviewer: resolve(__dirname, 'src/renderer/interviewer.html'),
         },
       },
     },

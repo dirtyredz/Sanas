@@ -395,9 +395,9 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   is kept for settings compatibility; it always meant "the answer's share".
 - **Vitest has no `@shared` alias.** A renderer test that imports a component with a runtime
   `@shared/...` import must `vi.mock` it (e.g. by path: `() => import('../../../../shared/x')`).
-- **Open Sanas must not route or reload the main renderer.** `LiveMeetingPage` owns the
-  microphone capture session; remounting it (a route change, a `loadURL`) would interrupt
-  capture. `MainWindowShow` is parameterless and only restores/shows/focuses.
+- **Open Sanas must not route or reload the main renderer.** The Live and Mock pages own
+  microphone capture sessions and stay mounted across tab switches. Reloading the renderer
+  would interrupt capture. `MainWindowShow` is parameterless and only restores/shows/focuses.
 - **The overlay's Context is text-only on purpose.** Its Apply payload never carries `deck`,
   so it cannot change slides; bulk deck editing stays in the main window's
   `MeetingContextEditor`. Both share `lib/meeting/meeting-context-draft.ts`.
@@ -456,21 +456,23 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
 
 ## Rehearsals
 
-- Live plans use `mode: live` and a separate schema, not scripted steps/expectations. Live
-  implies Claude + Deepgram, even when a caller supplies `-Assistant canned`; `-DryRun` fetches
-  neither. Only the normal owner Start opens devices; no TTS begins on mono fallback.
-- Headphones still feed loopback. Speakers also feed the raw mic acoustically: `audio/mic.ts`
-  sets echoCancellation false. Do not promise echo removal from structural channel identity.
-  Bleed can be recognized as an owner reply; use headphones for reliable rehearsal turns.
-- Owner silence is measured from received finals/activity, not provider audio time. Interims
-  and VAD postpone the next question but never enter the interview conversation or persistence.
-  Report correlation uses audio spans so delayed suggestions stay with their spoken question.
-- Live report first-visible is the main broadcast proxy, not renderer paint. A generated TTS
-  line with no loopback final is missing capture evidence, never proof that Sanas heard it.
-- Live shortcuts are scoped to the isolated process and must register. Screens fill display
-  bounds and reposition the overlay so production screenshot selection targets that display.
-  Escape requires fixture focus; Ctrl+Alt+Backspace dismisses from anywhere. End drains normal
-  post-processing, then closes windows and kills/awaits any owned offline speech child.
+- The live CLI tier is retired. Use the normal **Mock interview** tab with saved app keys;
+  scripted/audio tiers below remain isolated. Built-in product plans are not scripted scenarios.
+- Mock capture requires stereo. Headphones still feed digital loopback; speakers feed the raw
+  mic too (`echoCancellation: false`), potentially counting the interviewer as an owner reply.
+- Only local OS speech voices are accepted; no network voice or PowerShell fallback. Missing
+  voices/playback errors end the mock. Actual output/loopback needs owner Windows acceptance.
+- Owner silence uses received finals/activity, not provider audio time. Interims/VAD never enter
+  the conversation or persistence. No loopback final means missing evidence, not proof of hearing.
+- Result first-visible is the main broadcast proxy, not renderer paint. Late answers may update
+  results for 65 seconds after End. Manual screen requests have no guessed question association.
+- Live and Mock pages must remain mounted across navigation; unmounting stops the device owner.
+  Losing the library renderer ends the mock. Closing the interviewer ends its normal meeting too.
+- The shared fixture stays inside the interviewer window; put the protected overlay on that
+  display before Screen capture. Do not disable overlay content protection.
+- Practice is a v8 flag, not a title convention. Retrieval/list filters belong in repos.
+  Retention/recovery still include practice; summaries can run, but auto-email is skipped.
+  Node SQLite tests establish SQL constraints; they do not establish Electron ABI packaging.
 
 - Use `scripts/rehearsal/run.ps1`, never the owner's userData. Dependencies must already exist;
   the runner does not install or download them. Isolated profile/DB/recording artifacts remain

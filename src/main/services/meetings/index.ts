@@ -1,3 +1,4 @@
+import { observeMeeting } from './observation'
 import { IPC } from '@shared/ipc'
 import type { Admission } from '@shared/live-controls/types'
 import type { CaptureAttachResult, CaptureStatus } from '@shared/live-controls/capture'
@@ -118,6 +119,7 @@ export function currentState(): MeetingState {
 }
 
 function setState(state: MeetingState): MeetingState {
+  observeMeeting({ kind: 'state', value: state })
   lastError = state.error
   broadcast(IPC.MeetingState, state)
   return state
@@ -222,12 +224,14 @@ function handleTranscript(t: SttTranscript): void {
     // an interim is activity only; in mono its first-word speaker is no evidence of who
     assistance.activity(t.channel, t.tEndMs, stereo ? who.role : 'unknown')
   }
+  observeMeeting({ kind: 'transcript', value: ev, role: who.role })
   broadcast(IPC.TranscriptEvent, ev)
 }
 
 /** Streaming turn evidence from the provider. */
 function handleSignal(s: SttSignal): void {
   if (liveMeetingId() === null) return
+  observeMeeting({ kind: 'signal', value: s })
   if (s.kind === 'reset') assistance.connectionReset()
   else if (s.kind === 'boundary') assistance.boundary(s.channel, s.atMs, s.source)
   else {
@@ -259,9 +263,16 @@ async function openSession(apiKey: string, startOffsetMs: number): Promise<SttSe
   })
 }
 
-export function startMeeting(jobId?: number, channels: ChannelCount = 1): Promise<MeetingState> {
+export function startMeeting(
+  jobId?: number,
+  channels: ChannelCount = 1,
+  practice = false,
+): Promise<MeetingState> {
   return serialized(async () => {
-    if (liveMeetingId() !== null) return currentState() // one meeting at a time
+    if (liveMeetingId() !== null) {
+      if (practice) throw new Error('End the current meeting before starting a mock interview.')
+      return currentState() // one meeting at a time
+    }
 
     const settings = loadSettings()
     if (!settings.deepgramApiKey) {
@@ -273,7 +284,11 @@ export function startMeeting(jobId?: number, channels: ChannelCount = 1): Promis
     }
 
     const job = jobId ?? ensureDefaultJob()
-    const id = createPresentationMeeting(job, `Meeting ${new Date().toLocaleString()}`)
+    const id = createPresentationMeeting(
+      job,
+      `${practice ? 'Practice' : 'Meeting'} ${new Date().toLocaleString()}`,
+      practice,
+    )
     captures.meetingChanged() // drafts and feedback belong to one meeting
     setLiveMeeting(id)
     meetingJobId = job
@@ -497,3 +512,5 @@ export function pinSpeaker(speaker: number, isUser: boolean): void {
   live.relabel(speaker, isUser) // the prompt window and pending work follow the new identity
   if (meetingId !== null) setSpeakerIsUser(meetingId, speaker, isUser)
 }
+
+export const meetingAudioMs = (): number => audioMsReceived

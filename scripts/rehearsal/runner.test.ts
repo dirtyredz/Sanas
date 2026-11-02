@@ -1,14 +1,14 @@
 import { expect, it } from 'vitest'
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { readPcmWav } from '../../src/main/rehearsal/audio/wav'
 
 const windows = process.platform === 'win32' ? it : it.skip
 windows(
-  'live dry run from C:\\Windows names both keys, controls and no capture',
+  'retired live tier points to the app before requesting credentials or opening capture',
   () => {
-    const output = execFileSync(
+    const result = spawnSync(
       'powershell.exe',
       [
         '-NoProfile',
@@ -29,11 +29,9 @@ windows(
         env: { ...process.env, DEEPGRAM_API_KEY: '', ANTHROPIC_API_KEY: '' },
       },
     )
-    expect(output).toContain('OK (exit 0) log:')
-    expect(output).toContain('op://Sanas/Sanas - Claude/credential')
-    expect(output).toContain('op://Sanas/Sanas - Deepgram/credential')
-    expect(output).toContain('Ctrl+Alt+Right')
-    expect(output).toContain('no build')
+    expect(result.status).toBe(1)
+    expect(result.stdout).toContain('Mock interview tab')
+    expect(result.stdout).not.toContain('op://')
   },
   50000,
 )

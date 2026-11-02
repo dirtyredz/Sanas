@@ -1,17 +1,14 @@
 import { expect, it } from 'vitest'
 import { loadLivePlan, parseLivePlan } from './plan'
 
-it.each(['live-interview', 'live-client-qa'])(
-  'loads the shipped %s plan and local fixtures',
-  (name) => {
-    const p = loadLivePlan(`scripts/rehearsal/scenarios/${name}.json`)
-    expect(p.silenceMs).toBe(2500)
-    expect(p.topics.length).toBeGreaterThan(3)
-    expect(p.topics.some((t) => t.screen)).toBe(true)
-  },
-)
+it.each(['interview', 'client-qa'])('loads the shipped %s plan and local fixtures', (name) => {
+  const p = loadLivePlan(`src/main/services/mock-interview/plans/${name}.json`)
+  expect(p.silenceMs).toBe(2500)
+  expect(p.topics.length).toBeGreaterThan(3)
+  expect(p.topics.some((t) => t.screen)).toBe(true)
+})
 it('rejects scripted plans, duplicate IDs, unbounded durations and missing fixtures', () => {
-  const p = loadLivePlan('scripts/rehearsal/scenarios/live-interview.json')
+  const p = loadLivePlan('src/main/services/mock-interview/plans/interview.json')
   expect(() => loadLivePlan('scripts/rehearsal/scenarios/mock-interview.json')).toThrow(
     'Invalid live plan',
   )

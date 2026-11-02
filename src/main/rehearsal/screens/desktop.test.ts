@@ -140,22 +140,3 @@ it('does not pass absent or differently sized pixel buffers', () => {
   expect(imageDifference(new Uint8Array(), new Uint8Array())).toBe(Infinity)
   expect(imageDifference(new Uint8Array(4), new Uint8Array(8))).toBe(Infinity)
 })
-it('live shares fill the target display, dismiss on Escape and replace the prior fixture', async () => {
-  const screens = new RehearsalScreens(() => 0)
-  const step = {
-    id: 'live',
-    atMs: 0,
-    kind: 'screen' as const,
-    image: 'scripts/rehearsal/fixtures/dashboard.png',
-    real: true,
-    displayId: 42,
-  }
-  await screens.prepare(step, true)
-  expect(fake.options).toHaveBeenLastCalledWith(expect.objectContaining(fake.display.bounds))
-  expect(screens.captures).toEqual([])
-  await screens.prepare(step, true)
-  expect(fake.destroy).toHaveBeenCalledTimes(1)
-  const listener = fake.on.mock.calls.at(-1)![1]
-  listener({}, { type: 'keyDown', key: 'Escape' })
-  expect(fake.destroy).toHaveBeenCalledTimes(2)
-})

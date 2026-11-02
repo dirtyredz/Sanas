@@ -1,3 +1,9 @@
+import type {
+  MockPlanId,
+  MockSetup,
+  MockState,
+  PracticeSession,
+} from '../shared/mock-interview/types'
 import type { UpdateState } from '../shared/updates/types'
 import type {
   Admission,
@@ -37,6 +43,19 @@ function subscribe<T>(channel: string, cb: (value: T) => void): () => void {
   return () => ipcRenderer.removeListener(channel, listener)
 }
 const api = {
+  mockInterview: {
+    setup: (): Promise<MockSetup> => ipcRenderer.invoke(IPC.MockSetup),
+    start: (plan: MockPlanId, jobId: number, channels: number): Promise<MockState> =>
+      ipcRenderer.invoke(IPC.MockStart, plan, jobId, channels),
+    getState: (): Promise<MockState> => ipcRenderer.invoke(IPC.MockState),
+    end: (): Promise<void> => ipcRenderer.invoke(IPC.MockEnd),
+    skip: (): Promise<void> => ipcRenderer.invoke(IPC.MockSkip),
+    dismiss: (): Promise<void> => ipcRenderer.invoke(IPC.MockDismiss),
+    speechDone: (id: number, ok: boolean): Promise<void> =>
+      ipcRenderer.invoke(IPC.MockSpeechDone, id, ok),
+    history: (): Promise<PracticeSession[]> => ipcRenderer.invoke(IPC.MockHistory),
+    onChanged: (cb: (state: MockState) => void): (() => void) => subscribe(IPC.MockChanged, cb),
+  },
   updates: {
     get: (): Promise<UpdateState> => ipcRenderer.invoke(IPC.UpdatesGet),
     check: (): Promise<UpdateState> => ipcRenderer.invoke(IPC.UpdatesCheck),
