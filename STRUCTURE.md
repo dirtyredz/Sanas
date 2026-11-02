@@ -33,7 +33,7 @@ Shared interview screens live in `services/mock-interview/fixtures/`.
 sanas/
 ├── src/
 │   ├── main/                              # Electron main process
-│   │   ├── index.ts                       # mode dispatch: normal startup vs --smoke diagnostics
+│   │   ├── index.ts                       # mode dispatch: normal startup, --smoke diagnostics, --rehearsal harness
 │   │   ├── lifecycle/                     # userData identity, capped main log and normal application startup
 │   │   ├── rehearsal/                     # isolated scripted/audio composition
 │   │   │   ├── scenario/                  # validation, assertions, semantic rubrics
@@ -242,7 +242,8 @@ main-process code belongs in a responsibility folder above, not beside them.
 
 ## Responsibility boundaries (the seams that matter)
 
-- **Startup modes stay isolated.** `main/index.ts` selects `--smoke` before importing normal startup;
+- **Startup modes stay isolated.** `main/index.ts` selects `--smoke` or `--rehearsal` before importing normal
+  startup; rehearsal uses an isolated userData and installs its test providers only under that flag;
   diagnostics use disposable userData and never initialize windows, IPC, providers, audio, retention,
   or updates.
 - **Providers are interfaces.** `SttProvider`, `AssistantProvider` and `EmailProvider` isolate
@@ -286,8 +287,8 @@ main-process code belongs in a responsibility folder above, not beside them.
   `suggestions` CHECK constraint has no `capture` kind. A real `capture` kind needs a table rebuild
   migration; the codec in `db/repos/manual-kind.ts` is the only place to change.
 
-- `windows/main-window.ts` and `overlay-window.ts` share webPreferences/load-URL boilerplate. Extract a
-  `createAppWindow(opts)` helper only if a third window appears.
+- `windows/main-window.ts`, `overlay-window.ts` and `interviewer-window.ts` share webPreferences/load-URL
+  boilerplate. The third window has arrived; a shared `createAppWindow(opts)` factory is tracked as a P1 item.
 - `AssistRequest.model`, `AssistRequest.effort` and `AssistRequest.workspaceId` map closely to
   Anthropic-specific knobs. A second provider will need its own model settings and interpretation.
 - Live assistance and summaries select `AssistantProvider` through `services/assistant/provider.ts`.
