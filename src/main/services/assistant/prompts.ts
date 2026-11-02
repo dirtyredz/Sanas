@@ -15,6 +15,7 @@ export type TranscriptLine = FormattableLine
 
 export const WINDOW_CHARS = 6000 // ~recent few minutes of conversation
 const TURN_CHARS = 4000 // the triggering turn, opening + ending kept
+const EARLIER_TURN_CHARS = 600 // each carried-forward question
 export const SUMMARY_CHARS = 120_000 // enough for a long technical meeting, while still bounded
 const MIN_SUMMARY_TOKENS = 1500
 const MAX_SUMMARY_TOKENS = 8000
@@ -87,6 +88,9 @@ export interface TriggeringTurn {
   kind: ResponseKind
   /** Who it was put to: Me specifically, or the room (an open floor). */
   addressee: 'me' | 'room' | 'other'
+  /** Earlier questions overtaken before any suggestion covered them, oldest first. The
+   *  suggestion answers these and `text` together. */
+  earlier?: readonly { speaker: string; text: string }[]
 }
 
 export interface UserContentOptions {
@@ -107,6 +111,18 @@ exactly ${NO_SUGGESTION}.`
       : turn.addressee === 'other'
         ? 'It was put to another participant. The owner has enabled answering every question; provide an answer for the owner’s reference.'
         : 'It was put to Me.'
+  if (turn.earlier?.length) {
+    const lines = [
+      ...turn.earlier.map((e) => ({ ...e, text: boundedExcerpt(e.text, EARLIER_TURN_CHARS) })),
+      { speaker: turn.speaker, text: boundedExcerpt(turn.text, TURN_CHARS) },
+    ].map((q, i) => `${i + 1}. ${q.speaker}: ${q.text}`)
+    const list = lines.join('\n')
+    return `Questions to answer (oldest first; the last is the newest, a ${turn.kind}):
+${list}
+These were asked back to back and none has been answered yet. Address EACH one, briefly and in
+order, in ONE suggestion the user can scan mid-conversation: one short labelled line or point
+per question, no preamble. ${who}`
+  }
   return `Respond to this completed turn (a ${turn.kind}):
 ${turn.speaker}: ${boundedExcerpt(turn.text, TURN_CHARS)}
 Answer THAT turn, about the topic being discussed now. ${who}`

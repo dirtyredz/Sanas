@@ -28,9 +28,11 @@ No retention, updates, email, global shortcuts or microphone capture are started
 - `standup`: slow/failing assistant, busy admission, screenshot and oversize encoding failure.
 - `mock-interview`: behavioural, technical and follow-up questions with automatic suggestions,
   a shared architecture diagram (screen step), a socket drop and reconnect, summary saved.
-- `rapid-qa`: two bursts of short stakeholder questions plus an explicit Answer-now ask. The
-  ambient lane is newest-only by design (earlier questions in a burst are superseded), so the
-  scenario expects the latest question of each burst and the explicit ask to be answered.
+- `rapid-qa`: two bursts of short stakeholder questions plus an explicit Answer-now ask. Stacked
+  questions are carried into one combined suggestion, so the scenario expects every question
+  of each burst to be covered. The canned assistant echoes the questions a request listed as a
+  `Covers: a / b` line, so `suggestion` + `contains` asserts on what the request covered.
+  `mock-interview` ends with a stacked two-part question checked the same way.
 
 The checked-in PNGs are locally rendered client dashboards, slides and an architecture diagram. A scripted screen source
 deliberately puts a wrong display first so display-ID matching remains exercised.

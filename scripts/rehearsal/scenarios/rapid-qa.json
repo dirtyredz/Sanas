@@ -103,16 +103,46 @@
       "withinMs": 5000
     },
     {
-      "id": "burst1-latest-answered",
+      "id": "b1q1-covered",
       "kind": "suggestion",
-      "after": "b1q3",
-      "withinMs": 6000
+      "after": "b1q1",
+      "withinMs": 9000,
+      "contains": "delivery date"
     },
     {
-      "id": "burst2-latest-answered",
+      "id": "b1q2-covered",
       "kind": "suggestion",
-      "after": "b2q3",
-      "withinMs": 6000
+      "after": "b1q1",
+      "withinMs": 9000,
+      "contains": "Who owns the rollout"
+    },
+    {
+      "id": "b1q3-covered",
+      "kind": "suggestion",
+      "after": "b1q1",
+      "withinMs": 9000,
+      "contains": "budget approved"
+    },
+    {
+      "id": "b2q1-covered",
+      "kind": "suggestion",
+      "after": "b2q1",
+      "withinMs": 9000,
+      "contains": "biggest risk"
+    },
+    {
+      "id": "b2q2-covered",
+      "kind": "suggestion",
+      "after": "b2q1",
+      "withinMs": 9000,
+      "contains": "next review"
+    },
+    {
+      "id": "b2q3-covered",
+      "kind": "suggestion",
+      "after": "b2q1",
+      "withinMs": 9000,
+      "contains": "signs off the release"
     }
   ]
 }

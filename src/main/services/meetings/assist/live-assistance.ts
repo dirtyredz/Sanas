@@ -8,6 +8,7 @@ import type {
   Addressee,
   ResponseKind,
 } from '../../assistant/classifier'
+import { QuestionLedger } from './question-ledger'
 import { CoachPolicy } from '../../assistant/coach/coach-policy'
 import { speakerLabel } from '../../transcript-format'
 import type { SuggestionHandle, SuggestionRunner } from './suggestion-runner'
@@ -89,6 +90,8 @@ export class LiveAssistance {
   private coach = new CoachPolicy()
   private coachBoundary = 0
   private recentTurns: CompletedTurn[] = []
+  /** Admitted questions no suggestion has covered yet: stacked ones are answered together. */
+  private unanswered = new QuestionLedger()
   private classifying: Candidate | null = null
   private queued: Candidate | null = null
   private ready: Candidate | null = null
@@ -201,7 +204,10 @@ export class LiveAssistance {
       if (!snap || (snap.window.length === 0 && !snap.presentation?.current)) return
       this.cancelCoach()
       const handle = this.deps.runner.start(answerRequest(snap, this.deps.settings(), 'hotkey'))
-      if (handle) this.afterRun(handle)
+      if (handle) {
+        this.unanswered.clear() // it answers the whole window; nothing earlier is left to carry
+        this.afterRun(handle)
+      }
     })
   }
 
@@ -222,7 +228,8 @@ export class LiveAssistance {
   private admit(c: Candidate): void {
     this.cancelCoach() // answer assistance has priority
     this.ready = null // a newer completed turn supersedes one still waiting for the lane
-    this.queued = c // the newest only: never a queue
+    this.queued = c // the newest only: never a queue — it carries the overtaken questions
+    this.unanswered.record(c.turn, this.deps.now())
     this.tryClassify()
   }
 
@@ -235,6 +242,8 @@ export class LiveAssistance {
       if (f.role === 'user' && words(f.text) < USER_RESPONSE_MIN_WORDS) continue
       this.dropCandidate(c)
     }
+    // the user is answering: what was asked before is no longer waiting for a suggestion
+    if (f.role === 'user' && words(f.text) >= USER_RESPONSE_MIN_WORDS) this.unanswered.clear()
   }
 
   private dropCandidate(c: Candidate): void {
@@ -342,15 +351,23 @@ export class LiveAssistance {
     const snap = this.deps.snapshot()
     this.ready = null
     if (!snap) return
+    const asked = this.unanswered.select(now)
+    const earlier = asked.filter((t) => t !== c.turn)
+    const label = (t: CompletedTurn): string =>
+      speakerLabel({ speaker: t.speaker, isUser: false }, snap.names)
     const handle = this.deps.runner.start(
       answerRequest(snap, s, 'ambient', {
-        speaker: speakerLabel({ speaker: c.turn.speaker, isUser: false }, snap.names),
+        speaker: label(c.turn),
         text: c.turn.text,
         kind: c.kind,
         addressee: c.addressee,
+        earlier: earlier.length
+          ? earlier.map((t) => ({ speaker: label(t), text: t.text }))
+          : undefined,
       }),
     )
     if (!handle) return
+    this.unanswered.cover(asked) // started: answered, or deliberately declined — never re-asked
     // consumed when an answer starts — and kept even if it declines with the no-op, so a
     // model with nothing new to say cannot be asked again and again
     this.lastAnswerAt = now
@@ -481,6 +498,7 @@ export class LiveAssistance {
     this.epoch++
     for (const name of this.timers.keys()) this.clearTimer(name)
     for (const c of [this.classifying, this.queued, this.ready]) if (c) this.dropCandidate(c)
+    this.unanswered.clear()
     this.cancelCoach()
     this.assembler.reset()
     this.coach.resetEpisode()

@@ -18,6 +18,7 @@ _Capability inventory. Status: ✅ done · 🔨 in progress · 📋 planned · �
 | Next point while you talk                        | ✅     | opt-in (off by default); ≥1 per 30 s; labelled "Next point" in overlay, history and export                           |
 | System-audio capture warning                     | ✅     | This PC mode: banner when ch1 is silent but the mic hears speech; advisory only                                      |
 | Live whisper history                             | ✅     | Per-meeting history with previous/next/Latest; follows new answers unless reading an older/scrolled item             |
+| Stacked questions answered together              | ✅     | Back-to-back questions yield one combined suggestion (max 3, within 30 s); covered ones are not re-asked             |
 | On-demand full answer (global hotkey)            | ✅     | Ctrl+Shift+Enter or "Answer now"; runs beside an ambient nudge, opens its answer, 60 s timeout                       |
 | Always-on-top overlay window                     | ✅     | frameless, position/size memory, resize grips; requests current meeting state when opened                            |
 | Answer-first overlay with workspace rail         | ✅     | Answer · Ask · Screen · Slide · Transcript · Context; answer preview + draggable divider above the rest (2026-11-01) |

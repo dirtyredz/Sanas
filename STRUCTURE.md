@@ -119,7 +119,7 @@ sanas/
 - `src/main/services/assistant/presentation/` — presentation answer context, current-location hints and scoped coaching prompts
 - `src/main/services/assistant/live-controls/` — typed, detail, audience and screen-capture request instructions
 - `src/main/services/meetings/` — meeting lifecycle/STT/audio orchestration plus meeting-level facades
-- `src/main/services/meetings/assist/` — per-meeting prompt/grounding state, manual and screen-capture admission, in-memory composer screen drafts (`capture-drafts.ts`), automatic coordination and suggestion execution
+- `src/main/services/meetings/assist/` — per-meeting prompt/grounding state, manual and screen-capture admission, in-memory composer screen drafts (`capture-drafts.ts`), automatic coordination (`question-ledger.ts` carries uncovered stacked questions into one suggestion) and suggestion execution
 - `src/main/services/meetings/capture/` — AUDIO capture-side identity and capture-health policy (screen capture lives in `services/screen-capture/`)
 - `src/main/services/meetings/context/` — pure preparation followed by commit/publication of live context changes
 - `src/main/services/meetings/presentation/` — current cursor state and historical slide-marker formatting

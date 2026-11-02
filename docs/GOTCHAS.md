@@ -328,6 +328,12 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   20 seconds to avoid a Claude call for every nearby question. It is now a 0–60 second
   Settings value (default 5) and the trigger reads it when each candidate fires. Lowering
   it makes nudges faster but can increase API usage and on-screen churn.
+- **The ambient lane carries questions, not just the newest.** `admit()` still keeps one
+  candidate, but every admitted question also enters `QuestionLedger`; the next request lists
+  the uncovered ones (cap 3, 30 s). Carried questions skip the classifier (only the newest is
+  classified), so the prompt tells Claude to answer each listed one. If an answer is in flight
+  the uncovered ones wait in the ledger and ride the next request. Don't "fix" this back to
+  newest-only or cover questions on classification: coverage is marked when a request starts.
 - **Suggestion concurrency has two lanes, not one global lock.** One ambient nudge and one
   requested answer may stream together; each lane still caps itself at one. A requested
   answer must never be dropped just because an ambient nudge owns the provider. Each request

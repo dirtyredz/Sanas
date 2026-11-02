@@ -487,3 +487,103 @@ describe('live assistance: next point while the user talks', () => {
     expect(t.generations[0].req.maxTokens).toBe(1200)
   })
 })
+
+describe('live assistance: stacked questions', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(1_000_000)
+  })
+  afterEach(() => vi.useRealTimers())
+
+  /** Q1 and Q2 arrive back to back, so Q1's pending classification is overtaken. */
+  async function stackTwo(t: ReturnType<typeof setup>): Promise<void> {
+    await otherTurn(t.assist, 'What is the delivery date?', 0, 800)
+    await otherTurn(t.assist, 'Who owns the rollout?', 1_000, 1_800)
+    await t.classify(0, t.question) // the overtaken classification is ignored
+    await vi.advanceTimersByTimeAsync(1_000)
+    await t.classify(1, t.question)
+  }
+
+  it('carries overtaken questions into the one suggestion for the newest', async () => {
+    const t = setup({ nudgeCooldownSec: 0 })
+    await stackTwo(t)
+    expect(t.generations).toHaveLength(1)
+    const content = t.generations[0].req.userContent
+    expect(content).toContain('1. S2: What is the delivery date?')
+    expect(content).toContain('2. S2: Who owns the rollout?')
+    expect(content).toContain('Address EACH one')
+  })
+
+  it('caps the carried set at three questions', async () => {
+    const t = setup({ nudgeCooldownSec: 0 })
+    for (let i = 0; i < 5; i++)
+      await otherTurn(t.assist, `Question number ${i}?`, i * 900, i * 900 + 700)
+    await t.classify(0, t.question)
+    await vi.advanceTimersByTimeAsync(1_000)
+    await t.classify(1, t.question)
+    const content = t.generations[0].req.userContent
+    expect(content).not.toContain('Question number 1?')
+    for (const i of [2, 3, 4]) expect(content).toContain(`Question number ${i}?`)
+  })
+
+  it('does not re-ask questions an earlier suggestion covered', async () => {
+    const t = setup({ nudgeCooldownSec: 0 })
+    await stackTwo(t)
+    t.generations[0].d.resolve('**Both answered.**')
+    await vi.advanceTimersByTimeAsync(0)
+    await otherTurn(t.assist, 'Is the budget approved?', 5_000, 5_800)
+    await vi.advanceTimersByTimeAsync(1_000)
+    await t.classify(2, t.question)
+    const content = t.generations[1].req.userContent
+    expect(content).toContain('Is the budget approved?')
+    expect(content).not.toContain('delivery date')
+    expect(content).not.toContain('Respond to these')
+    expect(content).toContain('Respond to this completed turn')
+  })
+
+  it('carries questions that arrived while a suggestion was in flight', async () => {
+    const t = setup({ nudgeCooldownSec: 0 })
+    await otherTurn(t.assist, 'First one?', 0, 800)
+    await t.classify(0, t.question) // generation 0 covers only the first
+    await vi.advanceTimersByTimeAsync(1_000)
+    await otherTurn(t.assist, 'Second one?', 2_000, 2_800)
+    await otherTurn(t.assist, 'Third one?', 3_000, 3_800)
+    await t.classify(1, t.question)
+    await vi.advanceTimersByTimeAsync(1_000)
+    await t.classify(2, t.question)
+    expect(t.generations).toHaveLength(1) // lane busy
+    t.generations[0].d.resolve('**First.**')
+    await vi.advanceTimersByTimeAsync(0)
+    const content = t.generations[1].req.userContent
+    expect(content).toContain('Second one?')
+    expect(content).toContain('Third one?')
+    expect(content).not.toContain('First one?')
+  })
+
+  it('forgets stacked questions once the user starts answering', async () => {
+    const t = setup({ nudgeCooldownSec: 0 })
+    await otherTurn(t.assist, 'What is the delivery date?', 0, 800)
+    t.assist.final(me('Let me take those one at a time.', 1_000, 2_500))
+    await vi.advanceTimersByTimeAsync(5_000)
+    await t.classify(0, t.question) // the overtaken classification settles, ignored
+    await otherTurn(t.assist, 'Who owns the rollout?', 9_000, 9_800)
+    await vi.advanceTimersByTimeAsync(1_000)
+    await t.classify(1, t.question)
+    expect(t.generations[0].req.userContent).not.toContain('delivery date')
+  })
+
+  it('leaves Answer now unchanged and clears what it answered', async () => {
+    const t = setup({ nudgeCooldownSec: 0 })
+    t.window.push({ speaker: 1, isUser: false, text: 'x' })
+    await otherTurn(t.assist, 'What is the delivery date?', 0, 800)
+    t.assist.answerNow()
+    expect(t.generations[0].req.userContent).not.toContain('Questions to answer')
+    expect(t.generations[0].req.maxTokens).toBe(1200)
+    await otherTurn(t.assist, 'Who owns the rollout?', 3_000, 3_800)
+    await t.classify(0, t.question) // the overtaken classification settles, ignored
+    await vi.advanceTimersByTimeAsync(1_000)
+    await t.classify(1, t.question)
+    const ambient = t.generations.find((g) => g.req.maxTokens !== 1200)
+    expect(ambient?.req.userContent).not.toContain('delivery date')
+  })
+})

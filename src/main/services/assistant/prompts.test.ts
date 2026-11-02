@@ -164,3 +164,20 @@ describe('knowledge summary prompt', () => {
     expect(buildSummaryPrompt(long).length).toBeLessThan(SUMMARY_CHARS + 5000)
   })
 })
+
+describe('buildUserContent: stacked questions', () => {
+  it('lists carried questions in order and asks for one combined suggestion', () => {
+    const prompt = buildUserContent([], 'ambient', 'smart', {
+      turn: {
+        speaker: 'S2',
+        text: 'Who owns the rollout?',
+        kind: 'question',
+        addressee: 'me',
+        earlier: [{ speaker: 'S2', text: 'What is the delivery date?' }],
+      },
+    })
+    expect(prompt).toContain('1. S2: What is the delivery date?\n2. S2: Who owns the rollout?')
+    expect(prompt).toMatch(/Address EACH one, briefly and in\s+order, in ONE suggestion/)
+    expect(prompt).not.toContain('Respond to this completed turn')
+  })
+})

@@ -2,6 +2,19 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-11-02 — Stacked questions get one combined suggestion
+
+Owner decision, from the rapid-qa rehearsal: with 8 back-to-back questions the ambient lane
+answered only the last few, silently dropping the rest. Now a question overtaken before any
+suggestion covered it is carried forward, and the single request for the newest question lists
+all uncovered ones (`meetings/assist/question-ledger.ts`): **at most 3 questions** (the newest
+plus two carried), only those asked **within 30 s**. A started request marks its questions
+covered, so they are never re-asked; the user answering (>= 3 words), Answer now, and any
+invalidation clear the ledger. The prompt asks Claude to address each question briefly, in
+order, in one scannable suggestion. Explicit Answer now is untouched. Rejected: latest-only
+(drops asks, the bug); one card per question (floods a whisper-quiet overlay, multiplies
+cost and cooldown hits).
+
 ## 2026-11-02 — Product framing: meetings, Q&A and interviews
 
 Owner decision, superseding the 2026-08-27 "not an interview tool" framing. Sanas is a live

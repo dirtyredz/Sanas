@@ -1,7 +1,7 @@
 {
   "version": 1,
   "name": "Mock job interview",
-  "durationMs": 31000,
+  "durationMs": 37000,
   "steps": [
     {
       "id": "intro-q",
@@ -101,6 +101,24 @@
       "speaker": 0,
       "text": "What does onboarding look like for the team?",
       "durationMs": 2200
+    },
+    {
+      "id": "stacked-a",
+      "atMs": 30000,
+      "kind": "utterance",
+      "channel": "them",
+      "speaker": 1,
+      "text": "What is your notice period?",
+      "durationMs": 1800
+    },
+    {
+      "id": "stacked-b",
+      "atMs": 32000,
+      "kind": "utterance",
+      "channel": "them",
+      "speaker": 1,
+      "text": "And when could you start?",
+      "durationMs": 1800
     }
   ],
   "expectations": [
@@ -152,6 +170,20 @@
       "kind": "screen",
       "after": "diagram",
       "withinMs": 2500
+    },
+    {
+      "id": "stacked-a-covered",
+      "kind": "suggestion",
+      "after": "stacked-a",
+      "withinMs": 6000,
+      "contains": "notice period"
+    },
+    {
+      "id": "stacked-b-covered",
+      "kind": "suggestion",
+      "after": "stacked-a",
+      "withinMs": 6000,
+      "contains": "when could you start"
     }
   ]
 }

@@ -75,6 +75,18 @@ export class ScriptedSttProvider implements SttProvider {
   }
 }
 
+/** The question(s) an automatic request asked to answer, echoed so expectations can assert
+ *  on what the request actually covered (a stacked request lists several, oldest first). */
+function coveredLine(userContent: string): string {
+  const stacked = userContent.split('Questions to answer')[1]?.split('These were asked')[0]
+  const texts = stacked
+    ? [...stacked.matchAll(/^\d+\. [^:\n]+: (.+)$/gm)].map((m) => m[1])
+    : [...userContent.matchAll(/Respond to this completed turn[^\n]*\n[^:\n]+: (.+)/g)].map(
+        (m) => m[1],
+      )
+  return texts.length ? `\nCovers: ${texts.join(' / ')}` : ''
+}
+
 /** Canned responses are derived from actual requests, never from expectations. */
 export class RehearsalAssistant implements AssistantProvider {
   slowUntil = 0
@@ -110,7 +122,7 @@ export class RehearsalAssistant implements AssistantProvider {
             ? `SUMMARY\n${req.userContent.split('Write exactly')[0]}\nACTION ITEMS\n- Confirm the client follow-up.`
             : req.image
               ? '**The captured dashboard shows the client delivery status.**\nReview the visible milestones with the client.'
-              : '**Confirm the delivery milestone and next owner.**\nUse the client context to agree the next action.'
+              : `**Confirm the delivery milestone and next owner.**\nUse the client context to agree the next action.${coveredLine(req.userContent)}`
       req.onDelta?.(answer)
     }
     this.requests.push({ atMs: this.now(), image: req.image?.base64, answer })
