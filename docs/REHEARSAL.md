@@ -79,6 +79,10 @@ normal provider billing; canned success proves wiring, not provider quality.
   `request` checks establish coverage; Claude answer rubrics independently check each topic.
   Canned `Covers:` text is a plumbing oracle only. Mock interview checks its final pair the same way.
 
+Interview/dashboard PNGs live only in `src/main/services/mock-interview/fixtures/`; the coding
+renderer writes there. Scenarios reference that home; rehearsal `fixtures/` holds slide/standup only.
+Product plan screens are fixture IDs validated by the catalog, not filesystem paths.
+
 The checked-in PNGs are locally rendered client dashboards, slides and an architecture diagram. A scripted screen source
 deliberately puts a wrong display first so display-ID matching remains exercised.
 
@@ -136,7 +140,12 @@ milliseconds, bounded to ten minutes; steps are ordered and have unique IDs. Exa
       "text": "What is the rollout date?",
       "durationMs": 2500
     },
-    { "id": "screen", "atMs": 3500, "kind": "screen", "image": "../fixtures/dashboard.png" }
+    {
+      "id": "screen",
+      "atMs": 3500,
+      "kind": "screen",
+      "image": "../../../src/main/services/mock-interview/fixtures/dashboard.png"
+    }
   ],
   "expectations": [
     { "id": "answer", "kind": "suggestion", "after": "question", "withinMs": 3500 },

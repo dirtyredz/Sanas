@@ -12,7 +12,9 @@ tab navigation so capture survives. Losing the library renderer, closing the int
 End, normal Stop/Pause, output failure or the plan duration ends the mock and meeting.
 
 `services/mock-interview/` owns the single guided engine, built-in job/client plans and packaged
-fixtures. A separate interviewer BrowserWindow shows persona, captions, speaking/listening/thinking
+fixtures. `turns/` owns engine/interviewer/session composition; pure `validatePlan` validates
+bundled JSON at catalog load, with screen IDs resolved to packaged assets at display time.
+A separate interviewer BrowserWindow shows persona, captions, speaking/listening/thinking
 status, shares and controls. Local-only speechSynthesis plays through default output, acknowledged
 by that window with a bounded deadline; no PowerShell child. The window receives only mock state,
 never transcript/suggestion broadcasts. The interviewer AssistantProvider consumer receives an
@@ -194,7 +196,7 @@ objection | none`. It **fails closed**: timeout, cancel, malformed output or pro
 
 - **SQLite** via `better-sqlite3` in the main process (`%APPDATA%/sanas/sanas.db`).
 - Audio files under `%APPDATA%/sanas/audio/` (`meeting-<id>.wav`).
-- **Retention** (`services/retention/`): two age limits in Settings — recordings (default
+- **Retention** (`services/platform/retention/`): two age limits in Settings — recordings (default
   90 days) and whole meetings (default keep forever). A timer in main runs the purge 30 s
   after launch and every 6 h; Settings shows what is past its limit and can run it now.
   Live meetings are never touched. Deleting a meeting by hand goes through the same

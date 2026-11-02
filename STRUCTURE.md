@@ -13,18 +13,21 @@ Layout below reflects what exists.
 ## Layout
 
 Rehearsal homes: `src/main/rehearsal/` owns explicit isolated rehearsal dispatch, scenario
-validation/assertions and scripted providers; its `audio/` owns WAV replay/socket faults,
+validation/assertions (`scenario/`) and scripted providers/correlation (`outcomes/`).
+Its `runner/` owns flags, evidence, steps, clock/audio pumping and final checks/report;
+`audio/` owns WAV replay/socket faults,
 and `screens/` owns fixture acquisition and real display verification;
 The former live engine now lives in `src/main/services/mock-interview/`; the live CLI tier is
 retired. The product service owns plans/fixtures, serialized turn-taking, window/TTS lifecycle
 and practice result collection. `meetings/observation.ts` and `assist/run-observation.ts` expose
 main-only, best-effort subscriptions; `assist/outcomes.ts` owns shared pure result types/counts.
-`outcomes.ts` owns request correlation/redacted outcome records, `semantics.ts` bounded content
+`outcomes/outcomes.ts` owns request correlation/redacted outcome records, `scenario/semantics.ts` bounded content
 rubrics, and `screens/geometry.ts` DIP-to-thumbnail mapping. The optional main-only observer in
 `services/meetings/assist/diagnostics.ts` reports decisions without changing assistance policy.
 `scripts/rehearsal/credentials.ps1` owns selective 1Password reads and environment cleanup;
 `scripts/rehearsal/` owns owner entry points and the verbatim owner-run 1.0.0 template
-from `~/.claude/templates/scripts/`; its `scenarios/` and `fixtures/` hold JSON and local PNGs.
+from `~/.claude/templates/scripts/`; its `scenarios/` holds JSON and `fixtures/` only slide/standup PNGs.
+Shared interview screens live in `services/mock-interview/fixtures/`.
 
 ```
 sanas/
@@ -32,18 +35,30 @@ sanas/
 │   ├── main/                              # Electron main process
 │   │   ├── index.ts                       # mode dispatch: normal startup vs --smoke diagnostics
 │   │   ├── lifecycle/                     # userData identity, capped main log and normal application startup
+│   │   ├── rehearsal/                     # isolated scripted/audio composition
+│   │   │   ├── scenario/                  # validation, assertions, semantic rubrics
+│   │   │   ├── outcomes/                  # providers and request correlation
+│   │   │   ├── runner/                    # options, observers, steps, clock and reports
+│   │   │   ├── audio/                     # WAV replay and socket faults
+│   │   │   └── screens/                   # fixture display and verification
 │   │   ├── diagnostics/                   # isolated packaged smoke diagnostics
 │   │   ├── windows/                       # BrowserWindow builders and main → all-windows broadcast
+│   │   │   └── interviewer-window.ts      # restricted mock output window
 │   │   ├── ipc/                           # validated typed IPC handlers; delegate only
 │   │   ├── system-audio.ts                # display-media loopback handler
 │   │   ├── services/
 │   │   │   ├── stt/                       # SttProvider seam, Deepgram sessions and event normalization
 │   │   │   ├── turns/                     # pure completed-turn assembly
+│   │   │   │   └── transcript-format.ts   # canonical transcript formatting/windowing
 │   │   │   ├── assistant/                 # AssistantProvider seam, Claude, prompts, classifier, triggers
 │   │   │   │   ├── coach/                 # next-point policy and prompts
 │   │   │   │   ├── presentation/          # deck context, location hints and restricted coach prompt
 │   │   │   │   └── live-controls/         # typed/detail/audience prompt instructions
 │   │   │   ├── mock-interview/            # product plans/fixtures, interviewer, turn engine, session/results
+│   │   │   │   ├── shortcuts.ts          # mock-only shortcut registration/release
+│   │   │   │   ├── turns/                # engine, interviewer and session lifecycle
+│   │   │   │   ├── plans/                # validated JSON plans with fixture IDs
+│   │   │   │   └── fixtures/             # canonical interview/dashboard PNGs
 │   │   │   ├── meetings/                  # live lifecycle/STT/audio orchestrator, export and removal
 │   │   │   │   ├── index.ts               # lifecycle, STT wiring, audio and final persistence
 │   │   │   │   ├── live-controls.ts       # context/manual/answer-mode/slide control facade
@@ -56,14 +71,14 @@ sanas/
 │   │   │   │   ├── rediarize/             # batch pass and speaker carry-over
 │   │   │   │   ├── merge/                 # pure merge planning and DB apply
 │   │   │   │   └── recovery/              # close rows stranded by an earlier process
-│   │   │   ├── hotkeys/                   # registration/status, repeat suppression and callback errors
-│   │   │   ├── updates/                    # updater service and meeting-aware restart checks
-│   │   │   ├── email/                      # EmailProvider seam and SMTP transport
-│   │   │   ├── retention/                  # scheduled/on-demand recording and meeting cleanup
+│   │   │   ├── platform/                  # OS/app integrations
+│   │   │   │   ├── hotkeys/                   # registration/status, repeat suppression and callback errors
+│   │   │   │   ├── updates/                    # updater service and meeting-aware restart checks
+│   │   │   │   ├── email/                      # EmailProvider seam and SMTP transport
+│   │   │   │   └── retention/                  # scheduled/on-demand recording and meeting cleanup
 │   │   │   ├── history/                    # grounded ask-your-history retrieval and answers
 │   │   │   ├── audio-store/                # WAV recording of accepted capture audio
-│   │   │   ├── screen-capture/             # display choice, one-shot screenshot and encoding
-│   │   │   └── transcript-format.ts        # canonical main-side transcript formatting/windowing
+│   │   │   └── screen-capture/             # display choice, one-shot screenshot and encoding
 │   │   ├── db/                             # async open/backup/migrations and SQLite helpers
 │   │   │   └── repos/                      # entity repositories and all SQL strings
 │   │   └── config/                         # settings, secrets and exhaustive settings schema
@@ -105,6 +120,9 @@ sanas/
 │       └── updates/                        # sanitized updater snapshots
 ├── scripts/                                # repository, release and owner-operation tooling
 │   ├── release/                            # version, package, publish, install and smoke tooling
+│   ├── rehearsal/                        # runner, credentials and fixture rendering
+│   │   ├── scenarios/                    # scripted/audio JSON
+│   │   └── fixtures/                     # slide.png and standup.png only
 │   └── owner/                              # redacted owner operation dispatch/logging
 ├── .github/
 │   ├── workflows/                          # CI and manual release workflows
@@ -116,6 +134,22 @@ sanas/
 ```
 
 **Enforced homes:**
+
+- `src/main/rehearsal/` — isolated dispatch/composition; no ordinary startup policy.
+- `src/main/rehearsal/scenario/` — scenario validation, assertions and bounded content rubrics.
+- `src/main/rehearsal/outcomes/` — scripted providers and request/span correlation.
+- `src/main/rehearsal/runner/` — options, observer evidence, step execution, clock/audio pump and final checks/report.
+- `src/main/rehearsal/audio/` — PCM replay and socket fault injection.
+- `src/main/rehearsal/screens/` — fixture display, capture verification and coordinate geometry.
+- `scripts/rehearsal/` — owner runner, credentials and offline fixture rendering.
+- `scripts/rehearsal/scenarios/` — versioned scripted/audio scenarios.
+- `scripts/rehearsal/fixtures/` — rehearsal-only slide and standup screens.
+- `src/main/services/platform/` — email, updates, retention and global-hotkey integrations.
+- `src/main/services/turns/transcript-format.ts` — canonical main-side transcript labels/windowing.
+- `src/main/services/mock-interview/turns/` — interviewer consumer, serialized engine and session lifecycle.
+- `src/main/services/mock-interview/plans/` — bundled JSON validated by pure validatePlan in the production catalog.
+- `src/main/services/mock-interview/fixtures/` — canonical screen PNGs shared by product and rehearsal scenarios.
+- `src/main/services/mock-interview/shortcuts.ts` — mock-only shortcut registration/release.
 
 - `src/main/services/mock-interview/` — one product engine, plan validation, interviewer seam consumer,
   session lifecycle, bundled JSON plans/PNG fixtures and shared live-turn result correlation.
@@ -148,10 +182,10 @@ sanas/
 - `src/main/services/meetings/rediarize/` — batch re-diarization and speaker identity/name carry-over
 - `src/main/services/meetings/merge/` — split-recording merge planning and application
 - `src/main/services/meetings/recovery/` — startup repair of meetings left open by an earlier process
-- `src/main/services/hotkeys/` — global shortcut registration/status, repeat suppression and callback containment
-- `src/main/services/updates/` — electron-updater integration and restart eligibility checks
-- `src/main/services/email/` — the email provider seam and SMTP implementation
-- `src/main/services/retention/` — recording/meeting cleanup timers, preview and execution
+- `src/main/services/platform/hotkeys/` — global shortcut registration/status, repeat suppression and callback containment
+- `src/main/services/platform/updates/` — electron-updater integration and restart eligibility checks
+- `src/main/services/platform/email/` — the email provider seam and SMTP implementation
+- `src/main/services/platform/retention/` — recording/meeting cleanup timers, preview and execution
 - `src/main/services/history/` — FTS retrieval and grounded ask-your-history answers
 - `src/main/services/audio-store/` — WAV recording for accepted capture audio
 - `src/main/services/screen-capture/` — display selection, one-shot desktop capture, image sizing/encoding; no meeting or provider policy
@@ -246,8 +280,8 @@ main-process code belongs in a responsibility folder above, not beside them.
 - `shell/` and `workspaces/` are coupled through `OverlaySessionModel`: workspaces take the whole
   session, and `OverlaySession` imports the composer hook. Narrow the props per workspace if the
   session grows.
-- `services/` now has 12 entries with `screen-capture/` (placed there by the screen-capture plan so
-  it stays separate from audio capture); relieving that breadth is tracked by dk-bd2e1ebf.
+- `services/` has 9 children after grouping platform integrations and moving transcript formatting
+  into `turns/`; `meetings/` breadth remains tracked by dk-bd2e1ebf.
 - Screen answers are stored as `typed` plus a `[Screen capture]` request-text marker because the
   `suggestions` CHECK constraint has no `capture` kind. A real `capture` kind needs a table rebuild
   migration; the codec in `db/repos/manual-kind.ts` is the only place to change.

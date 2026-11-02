@@ -456,6 +456,11 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
 
 ## Rehearsals
 
+- Keep runner helpers that import meeting/DB services dynamically loaded after isolated
+  userData and provider setup in `rehearsal/run.ts`; eager imports can initialize normal
+  settings before the rehearsal profile exists.
+- Product plan screens are validated fixture IDs. Shared interview/dashboard PNGs live
+  only in `services/mock-interview/fixtures/`; scenario paths resolve relative to their JSON.
 - The live CLI tier is retired. Use the normal **Mock interview** tab with saved app keys;
   scripted/audio tiers below remain isolated. Built-in product plans are not scripted scenarios.
 - Mock capture requires stereo. Headphones still feed digital loopback; speakers feed the raw
