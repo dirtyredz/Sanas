@@ -20,25 +20,25 @@
       "id": "architecture",
       "question": "Looking at this architecture, how would you keep the service reliable during a dependency outage?",
       "maxFollowUps": 1,
-      "screen": "../fixtures/architecture.png"
+      "screen": "architecture"
     },
     {
       "id": "boundary",
       "question": "Review this code on the shared screen. What is the boundary bug, and how would you fix and test it?",
       "maxFollowUps": 1,
-      "screen": "../fixtures/coding-boundary.png"
+      "screen": "coding-boundary"
     },
     {
       "id": "duplicates",
       "question": "What is the time complexity of this duplicate search? How would you improve it?",
       "maxFollowUps": 1,
-      "screen": "../fixtures/coding-duplicates.png"
+      "screen": "coding-duplicates"
     },
     {
       "id": "sql",
       "question": "Why does this SQL query miss rows, and how would you correct it?",
       "maxFollowUps": 1,
-      "screen": "../fixtures/coding-sql.png"
+      "screen": "coding-sql"
     },
     {
       "id": "closing",

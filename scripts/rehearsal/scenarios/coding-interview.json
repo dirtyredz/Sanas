@@ -25,7 +25,7 @@
       "id": "boundary-screen",
       "atMs": 13000,
       "kind": "screen",
-      "image": "../fixtures/coding-boundary.png"
+      "image": "../../../src/main/services/mock-interview/fixtures/coding-boundary.png"
     },
     {
       "id": "boundary-detail",
@@ -45,7 +45,7 @@
       "id": "boundary-typed",
       "kind": "screen",
       "atMs": 98000,
-      "image": "../fixtures/coding-boundary.png",
+      "image": "../../../src/main/services/mock-interview/fixtures/coding-boundary.png",
       "text": "For this sum function, what happens with an empty array in the buggy version and corrected version, and what exact loop condition fixes it?"
     },
     {
@@ -79,7 +79,7 @@
       "id": "duplicates-screen",
       "atMs": 151000,
       "kind": "screen",
-      "image": "../fixtures/coding-duplicates.png"
+      "image": "../../../src/main/services/mock-interview/fixtures/coding-duplicates.png"
     },
     {
       "id": "sql-q",
@@ -94,7 +94,7 @@
       "id": "sql-screen",
       "atMs": 187000,
       "kind": "screen",
-      "image": "../fixtures/coding-sql.png"
+      "image": "../../../src/main/services/mock-interview/fixtures/coding-sql.png"
     },
     {
       "id": "closing",

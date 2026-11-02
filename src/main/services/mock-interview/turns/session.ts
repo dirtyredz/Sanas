@@ -1,12 +1,12 @@
 import type { MockState, MockResult } from '@shared/mock-interview/types'
 import type { MeetingState } from '@shared/types'
-import type { MeetingObservation } from '../meetings/observation'
-import type { RunObservation } from '../meetings/assist/run-observation'
-import type { AssistDiagnostic } from '../meetings/assist/diagnostics'
+import type { MeetingObservation } from '../../meetings/observation'
+import type { RunObservation } from '../../meetings/assist/run-observation'
+import type { AssistDiagnostic } from '../../meetings/assist/diagnostics'
 import { LiveEngine } from './engine'
-import { MockEvidence } from './evidence'
+import { MockEvidence } from '../evidence'
 import type { Interviewer } from './interviewer'
-import type { LivePlan } from './plan'
+import type { LivePlan } from '../plan'
 
 export interface MockSessionDeps {
   start(jobId: number): Promise<MeetingState>

@@ -6,22 +6,22 @@ import duplicates from './fixtures/coding-duplicates.png?asset'
 import sql from './fixtures/coding-sql.png?asset'
 import dashboard from './fixtures/dashboard.png?asset'
 import type { MockPlanId } from '@shared/mock-interview/types'
-import type { LivePlan } from './plan'
+import { validatePlan, type LivePlan, type FixtureId } from './plan'
 import { readFileSync } from 'node:fs'
 
-const fixtures: Record<string, string> = {
-  'architecture.png': architecture,
-  'coding-boundary.png': boundary,
-  'coding-duplicates.png': duplicates,
-  'coding-sql.png': sql,
-  'dashboard.png': dashboard,
+const fixtures: Record<FixtureId, string> = {
+  architecture: architecture,
+  'coding-boundary': boundary,
+  'coding-duplicates': duplicates,
+  'coding-sql': sql,
+  dashboard: dashboard,
 }
 export const plans: Record<MockPlanId, LivePlan> = {
-  interview: interview as LivePlan,
-  'client-qa': client as LivePlan,
+  interview: validatePlan(interview),
+  'client-qa': validatePlan(client),
 }
 export function fixtureData(name: string): string {
-  const path = fixtures[name.replace('../fixtures/', '')]
+  const path = fixtures[name as FixtureId]
   if (!path) throw new Error('Unknown mock interview screen')
   return `data:image/png;base64,${readFileSync(path).toString('base64')}`
 }

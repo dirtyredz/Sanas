@@ -66,7 +66,7 @@
       "id": "screen",
       "atMs": 14500,
       "kind": "screen",
-      "image": "../fixtures/dashboard.png"
+      "image": "../../../src/main/services/mock-interview/fixtures/dashboard.png"
     },
     {
       "id": "detail",
@@ -84,7 +84,7 @@
       "id": "bad-screen",
       "atMs": 19000,
       "kind": "screen",
-      "image": "../fixtures/dashboard.png"
+      "image": "../../../src/main/services/mock-interview/fixtures/dashboard.png"
     }
   ],
   "expectations": [

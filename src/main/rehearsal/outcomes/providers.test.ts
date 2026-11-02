@@ -1,10 +1,10 @@
 import { afterEach, expect, it, vi } from 'vitest'
 import { ScriptedSttProvider, RehearsalAssistant } from './providers'
 import { imageDigest } from './outcomes'
-import { CLASSIFIER_SYSTEM } from '../services/assistant/classifier'
-import type { AssistRequest } from '../services/assistant/types'
-import type { Step } from './scenario'
-import { TurnAssembler } from '../services/turns/turn-assembler'
+import { CLASSIFIER_SYSTEM } from '../../services/assistant/classifier'
+import type { AssistRequest } from '../../services/assistant/types'
+import type { Step } from '../scenario/scenario'
+import { TurnAssembler } from '../../services/turns/turn-assembler'
 
 it('keeps a multi-question turn open while retimed scripted speech is still advancing', async () => {
   const provider = new ScriptedSttProvider()
@@ -142,4 +142,20 @@ it('supports delay, abort and failure without leaking timers', async () => {
   p.slowUntil = 0
   p.failUntil = 100
   await expect(p.complete(req)).rejects.toThrow('failed')
+})
+
+it('echoes diagnostic turn coverage independently of prompt wording', async () => {
+  const second = { ...utterance, id: 'two', atMs: 400, text: 'What is next?' }
+  const p = new RehearsalAssistant(() => 0, undefined, [utterance, second])
+  const answer = await p.complete({
+    ...req,
+    userContent: 'A completely different prompt format',
+    diagnostic: { purpose: 'answer', turns: [{ startMs: 100, endMs: 600, completedAt: 700 }] },
+  })
+  expect(answer).toContain('Covers: ' + utterance.text + ' ' + second.text)
+  const noTurns = await p.complete({
+    ...req,
+    userContent: 'Respond to this completed turn\nThem: invented question',
+  })
+  expect(noTurns).not.toContain('Covers:')
 })

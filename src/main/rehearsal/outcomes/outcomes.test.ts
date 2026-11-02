@@ -1,9 +1,9 @@
 import { afterEach, expect, it, vi } from 'vitest'
 import { RehearsalAssistant } from './providers'
 import { publicOutcome } from './outcomes'
-import { evaluate } from './assertions'
-import type { AssistRequest } from '../services/assistant/types'
-import type { Scenario } from './scenario'
+import { evaluate } from '../scenario/assertions'
+import type { AssistRequest } from '../../services/assistant/types'
+import type { Scenario } from '../scenario/scenario'
 
 const req: AssistRequest = {
   apiKey: 'secret',

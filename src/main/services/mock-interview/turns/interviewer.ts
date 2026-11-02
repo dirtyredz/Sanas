@@ -1,5 +1,5 @@
-import type { AssistantProvider } from '../assistant/types'
-import type { LivePlan, LiveTopic } from './plan'
+import type { AssistantProvider } from '../../assistant/types'
+import type { LivePlan, LiveTopic } from '../plan'
 
 export interface ConversationFinal {
   role: 'owner' | 'interviewer'

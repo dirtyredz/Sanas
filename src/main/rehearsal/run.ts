@@ -1,20 +1,11 @@
 import { app, BrowserWindow } from 'electron'
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
-import { join, resolve, isAbsolute } from 'node:path'
-import { loadScenario, type Step } from './scenario'
-import { ScriptedSttProvider, RehearsalAssistant } from './providers'
-import { RehearsalScreens } from './screens/desktop'
-import { audioFrame, readPcmWav } from './audio/wav'
-import { evaluate, type Evidence } from './assertions'
+import { writeFileSync } from 'node:fs'
+import { ScriptedSttProvider, RehearsalAssistant } from './outcomes/providers'
+import { RehearsalScreens } from './screens/fixture-display'
 import { installSocketFaults } from './audio/socket-fault'
-import { IPC } from '../../shared/ipc'
-import type { SuggestionEvent, TranscriptEvent, MeetingState } from '../../shared/types'
-import { imageDigest, publicOutcome, turnSteps } from './outcomes'
-
-function flag(name: string): string | undefined {
-  return process.argv.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3)
-}
-const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms))
+import { imageDigest, publicOutcome } from './outcomes/outcomes'
+import { flag, prepareProfile, readOptions } from './runner/options'
+import { collectEvidence } from './runner/evidence'
 
 /** Called instead of normal startup, before settings/DB/services are imported. */
 export async function runRehearsal(): Promise<void> {
@@ -29,41 +20,10 @@ export async function runRehearsal(): Promise<void> {
   let diagnosticSnapshot: (() => object) | undefined
   let exitCode = 1
   try {
-    const root = flag('rehearsal-root')
-    if (!root || !isAbsolute(root)) throw new Error('An absolute rehearsal-root is required')
-    const folder = join(root, '.tmp', 'rehearsal')
-    mkdirSync(folder, { recursive: true })
-    const runFolder = mkdtempSync(join(folder, 'run-'))
-    const profile = join(runFolder, 'profile')
-    mkdirSync(profile)
-    app.setName('sanas-rehearsal')
-    app.setPath('userData', profile)
-    reportPath = flag('rehearsal-report') ?? join(runFolder, 'report.json')
-    const scenarioPath = flag('scenario')
-    if (!scenarioPath) throw new Error('Scenario required')
-    const scenario = loadScenario(resolve(root, scenarioPath))
-    if (process.argv.includes('--real-capture'))
-      for (const step of scenario.steps) if (step.kind === 'screen') step.real = true
-    const tier = flag('tier') ?? 'scripted',
-      assistant = flag('assistant') ?? 'canned'
-    if (!['scripted', 'audio'].includes(tier) || !['canned', 'claude'].includes(assistant))
-      throw new Error('Invalid tier or assistant')
-    if (tier === 'audio' && !process.env.DEEPGRAM_API_KEY)
-      throw new Error('DEEPGRAM_API_KEY required for audio tier')
-    if (assistant === 'claude' && !process.env.ANTHROPIC_API_KEY)
-      throw new Error('ANTHROPIC_API_KEY required for Claude')
-    const wavPath = flag('audio') ?? scenario.audio
-    const wav =
-      tier === 'audio'
-        ? readPcmWav(
-            readFileSync(
-              wavPath ??
-                (() => {
-                  throw new Error('Audio tier requires -Audio or a rendered scenario WAV')
-                })(),
-            ),
-          )
-        : undefined
+    const { root, profile, reportPath: destination } = prepareProfile()
+    reportPath = destination
+    const options = readOptions(root)
+    const { scenario, tier, assistant, wav } = options
     await app.whenReady()
     // No logging of provider errors, request bodies or keys. The JSON report contains IDs/results only.
     console.log = () => {}
@@ -89,7 +49,6 @@ export async function runRehearsal(): Promise<void> {
     const stt = new ScriptedSttProvider()
     const { installRehearsalStt } = await import('../services/stt')
     const { deepgramProvider } = await import('../services/stt/deepgram')
-    const evidence: Evidence[] = []
     let batchCount = 0
     const selectedStt = tier === 'audio' ? deepgramProvider : stt
     installRehearsalStt({
@@ -107,76 +66,22 @@ export async function runRehearsal(): Promise<void> {
       assistant === 'claude' ? claudeProvider : undefined,
       scenario.steps,
     )
-    const { observeRehearsalAssistance } = await import('../services/meetings/assist/diagnostics')
-    const finalReceipts = new Map<string, number>()
-    const turnCompletions = new Map<string, number>()
-    const transitions: {
-      atMs: number
-      event: string
-      stepIds: string[]
-      turnId?: number
-      reason?: string
-    }[] = []
-    observeRehearsalAssistance((e) => {
-      const stepIds = e.turn ? turnSteps(scenario.steps, [e.turn]) : []
-      if (e.event === 'turn-completed') for (const id of stepIds) turnCompletions.set(id, now())
-      transitions.push({
-        atMs: now(),
-        event: e.event,
-        turnId: e.turn?.id,
-        stepIds,
-        reason: e.reason,
-      })
-    })
+    const collected = collectEvidence(scenario, model, now)
+    const { evidence, finalReceipts, turnCompletions, transitions } = collected
     const { installRehearsalAssistant } = await import('../services/assistant/provider')
     installRehearsalAssistant(model)
     const screens = new RehearsalScreens(now)
     const { installRehearsalDesktop } = await import('../services/screen-capture')
     installRehearsalDesktop(screens.desktop)
-    const { observeRehearsalBroadcast } = await import('../windows/broadcast')
-    const finals: TranscriptEvent[] = []
-    let interimCount = 0
-    observeRehearsalBroadcast((channel, payload) => {
-      if (channel === IPC.SuggestionEvent) {
-        const e = payload as SuggestionEvent
-        const request = model.requests.find((r) => r.suggestionId === e.suggestionId)
-        if (request && e.kind === 'delta' && e.text) request.firstVisibleMs ??= now()
-        if (request && e.kind === 'done') {
-          request.deliveredMs = now()
-          request.firstVisibleMs ??= now()
-        }
-        if (e.kind === 'done')
-          evidence.push({
-            kind: e.purpose === 'next-point' ? 'coach' : 'suggestion',
-            atMs: now(),
-            text: e.text,
-            requestId: request?.id,
-          })
-        if (e.kind === 'error') evidence.push({ kind: 'assistant-error', atMs: now() })
-      }
-      if (channel === IPC.TranscriptEvent) {
-        const e = payload as TranscriptEvent
-        if (e.isFinal) {
-          finals.push(e)
-          if (!e.isUser)
-            for (const id of turnSteps(scenario.steps, [{ startMs: e.tStartMs, endMs: e.tEndMs }]))
-              finalReceipts.set(id, now())
-        } else interimCount++
-      }
-      if (channel === IPC.MeetingState && (payload as MeetingState).captureWarning)
-        evidence.push({ kind: 'capture-warning', atMs: now() })
-    })
     const meetings = await import('../services/meetings')
-    const { isPostProcessing } = await import('../services/meetings/status/post-processing')
-    const { listSegments } = await import('../db/repos/segments')
-    const { listSuggestions } = await import('../db/repos/suggestions')
-    const { getMeeting } = await import('../db/repos/meetings')
+    const { createStepExecutor } = await import('./runner/steps')
+    const { pumpClock, sleep } = await import('./runner/clock')
+    const { finishReport, writeReport } = await import('./runner/report')
     cleanup = async () => {
       if (meetings.currentState().meetingId !== null) await meetings.stopMeeting()
       screens.close()
       sockets?.close()
-      observeRehearsalBroadcast(undefined)
-      observeRehearsalAssistance(undefined)
+      collected.close()
       for (const window of BrowserWindow.getAllWindows()) window.destroy()
       closeDb()
     }
@@ -201,12 +106,17 @@ export async function runRehearsal(): Promise<void> {
       throw new Error('Meeting failed to start or recording failed')
     const meetingId = state.meetingId
     epoch = performance.now()
-    const starts = new Map<string, number>()
-    const tasks: Promise<void>[] = []
-    let silentUntil = -1,
-      lastReconnect = 0,
-      lastSocketOpen = sockets?.opened() ?? 0
-    const admissions: { stepId: string; atMs: number; accepted: boolean; reason?: string }[] = []
+    const executor = createStepExecutor({
+      meetingId,
+      tier,
+      stt,
+      model,
+      screens,
+      sockets,
+      evidence,
+      now,
+    })
+    const { admissions } = executor
     diagnosticSnapshot = () => ({
       profile,
       meetingId,
@@ -223,218 +133,30 @@ export async function runRehearsal(): Promise<void> {
         imageDigest: imageDigest(base64),
       })),
     })
-    const admission = (stepId: string, result: { accepted: boolean; reason?: string }): void => {
-      admissions.push({ stepId, atMs: now(), accepted: result.accepted, reason: result.reason })
-      if (!result.accepted && result.reason === 'busy') evidence.push({ kind: 'busy', atMs: now() })
-    }
-    const execute = async (step: Step): Promise<void> => {
-      starts.set(step.id, now())
-      switch (step.kind) {
-        case 'utterance':
-          if (tier === 'scripted') stt.utterance(step)
-          break
-        case 'ask':
-          admission(
-            step.id,
-            await meetings.requestAssist({ meetingId, kind: 'typed', text: step.text }),
-          )
-          break
-        case 'detail': {
-          const source = listSuggestions(meetingId)
-            .filter(
-              (s) => s.purpose === 'answer' && !['detail', 'audience'].includes(s.manualKind ?? ''),
-            )
-            .at(-1)
-          if (!source) throw new Error('More detail has no completed source')
-          admission(
-            step.id,
-            await meetings.requestAssist({
-              meetingId,
-              kind: 'detail',
-              sourceSuggestionId: source.id,
-            }),
-          )
-          break
-        }
-        case 'answer-mode':
-          await meetings.setAnswerEveryQuestion(meetingId, step.enabled)
-          break
-        case 'slide': {
-          const before = meetings.presentationState()
-          const after = await meetings.moveSlide(meetingId, step.direction)
-          evidence.push({ kind: 'slide', atMs: now(), passed: before.revision !== after.revision })
-          break
-        }
-        case 'screen': {
-          await screens.prepare(step)
-          const draft = step.text ? await meetings.attachScreen(meetingId) : undefined
-          if (draft && !draft.ok) throw new Error('Screen attachment failed')
-          const result = draft?.ok
-            ? await meetings.requestAssist({
-                meetingId,
-                kind: 'typed',
-                text: step.text!,
-                captureToken: draft.draft.token,
-              })
-            : await meetings.captureScreen(meetingId)
-          admission(step.id, result)
-          if (!result.accepted)
-            evidence.push({
-              kind: 'capture-error',
-              atMs: now(),
-              text: meetings.captureStatus().message,
-            })
-          break
-        }
-        case 'fault':
-          if (step.fault === 'socket-drop') {
-            if (sockets) sockets.drop()
-            else stt.drop(now(), step.durationMs)
-          } else if (step.fault === 'silent-them') silentUntil = now() + step.durationMs
-          else if (step.fault === 'assistant-slow') model.slowUntil = now() + step.durationMs
-          else if (step.fault === 'assistant-fail') model.failUntil = now() + step.durationMs
-          else screens.inject(step.fault, step.durationMs)
-          break
-      }
-    }
-    let stepIndex = 0,
-      audioMs = 0
-    const duration = Math.max(scenario.durationMs, wav ? wav.pcm.length / (32 * wav.channels) : 0)
-    const taskErrors: string[] = []
-    while (now() <= duration) {
-      const clock = now()
-      while (stepIndex < scenario.steps.length && scenario.steps[stepIndex].atMs <= clock) {
-        const step = scenario.steps[stepIndex++]
-        tasks.push(
-          model
-            .withAction(step.id, () => execute(step))
-            .catch(() => {
-              taskErrors.push(step.id)
-            }),
-        )
-      }
-      while (audioMs + 20 <= clock) {
-        meetings.sendAudioChunk(audioFrame(wav, audioMs, clock < silentUntil))
-        audioMs += 20
-      }
-      if (tier === 'scripted') stt.tick(clock)
-      if (stt.reconnects > lastReconnect || (sockets?.opened() ?? 0) > lastSocketOpen) {
-        evidence.push({ kind: 'reconnect', atMs: clock })
-        lastReconnect = stt.reconnects
-        lastSocketOpen = sockets?.opened() ?? 0
-      }
-      await sleep(10)
-    }
-    // Include the last partial frame; a WAV shorter than the scenario is zero-padded.
-    while (audioMs < duration) {
-      meetings.sendAudioChunk(audioFrame(wav, audioMs, now() < silentUntil))
-      audioMs += 20
-    }
-    stt.tick(duration)
-    while (stepIndex < scenario.steps.length) {
-      const step = scenario.steps[stepIndex++]
-      tasks.push(
-        model
-          .withAction(step.id, () => execute(step))
-          .catch(() => {
-            taskErrors.push(step.id)
-          }),
-      )
-    }
-    await Promise.all(tasks)
-    // Check live storage BEFORE batch replacement can hide an interim-persistence defect.
-    const liveRows = listSegments(meetingId)
-    const storedLines = liveRows
-      .map((r) => JSON.stringify([r.tStartMs, r.tEndMs, r.text, r.speaker, r.isUser]))
-      .sort()
-    const finalLines = finals
-      .map((r) => JSON.stringify([r.tStartMs, r.tEndMs, r.text, r.speaker, r.isUser]))
-      .sort()
-    evidence.push({
-      kind: 'no-interims',
-      atMs: now(),
-      passed:
-        (tier === 'audio' || interimCount > 0) &&
-        storedLines.length === finalLines.length &&
-        storedLines.every((r, i) => r === finalLines[i]),
-    })
-    const stoppedMs = now()
-    for (const request of model.requests) request.pendingAtStop = request.status === 'pending'
-    await meetings.stopMeeting()
-    const deadline =
-      performance.now() + (assistant === 'claude' || tier === 'audio' ? 330000 : 10000)
-    while (isPostProcessing(meetingId) && performance.now() < deadline) await sleep(20)
-    if (isPostProcessing(meetingId)) throw new Error('Post-processing deadline exceeded')
-    const saved = getMeeting(meetingId)
-    evidence.push({
-      kind: 'summary',
-      atMs: now(),
-      text: saved?.summary ?? '',
-      passed: !!saved?.summary,
-    })
-    if (saved?.audioPath) {
-      const recorded = readPcmWav(readFileSync(saved.audioPath))
-      evidence.push({
-        kind: 'recording',
-        atMs: now(),
-        passed: recorded.pcm.length > 0 && recorded.channels === (wav?.channels ?? 2),
-      })
-    }
-    evidence.push({
-      kind: 'batch',
-      atMs: now(),
-      passed: batchCount > 0 && listSegments(meetingId).length === batchCount,
-    })
-    for (const capture of screens.captures) {
-      const delivered = model.requests.find(
-        (r) =>
-          r.imageDigest === imageDigest(capture.base64) &&
-          r.atMs >= capture.atMs &&
-          r.deliveredMs !== undefined,
-      )
-      if (delivered)
-        evidence.push({
-          kind: 'screen',
-          atMs: delivered.deliveredMs!,
-          text: delivered.answer,
-          passed: capture.verified,
-          requestId: delivered.id,
-        })
-    }
-    for (const r of model.requests)
-      if (r.purpose !== 'classifier' && r.purpose !== 'summary')
-        evidence.push({ kind: 'request', atMs: r.atMs, requestId: r.id })
-    const checks = evaluate(
+    const taskErrors = await pumpClock({
       scenario,
+      wav,
+      now,
+      tier,
+      stt,
+      sockets,
+      model,
       evidence,
-      starts,
-      assistant,
-      model.requests,
-      finalReceipts,
-      turnCompletions,
-    )
-    for (const id of taskErrors)
-      checks.push({
-        id,
-        kind: 'step',
-        passed: false,
-        reason: 'Step failed; inspect isolated run artifacts',
-      })
-    exitCode = checks.every((c) => c.passed) ? 0 : 1
-    writeFileSync(
-      reportPath,
-      JSON.stringify(
-        {
-          ...diagnosticSnapshot(),
-          version: 1,
-          passed: exitCode === 0,
-          checks,
-          stoppedMs,
-        },
-        null,
-        2,
-      ),
-    )
+      executor,
+    })
+    const result = await finishReport({
+      options,
+      collected,
+      executor,
+      model,
+      screens,
+      meetingId,
+      now,
+      batchCount: () => batchCount,
+      taskErrors,
+    })
+    exitCode = result.passed ? 0 : 1
+    writeReport(reportPath, { ...diagnosticSnapshot(), ...result })
   } catch {
     if (reportPath)
       writeFileSync(

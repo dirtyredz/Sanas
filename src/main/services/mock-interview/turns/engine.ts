@@ -1,4 +1,4 @@
-import type { LivePlan } from './plan'
+import type { LivePlan } from '../plan'
 import { interviewRequest, type Interviewer, type ConversationFinal } from './interviewer'
 
 export interface LiveTurn {

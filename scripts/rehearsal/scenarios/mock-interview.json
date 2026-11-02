@@ -77,7 +77,7 @@
       "id": "diagram",
       "atMs": 104600,
       "kind": "screen",
-      "image": "../fixtures/architecture.png"
+      "image": "../../../src/main/services/mock-interview/fixtures/architecture.png"
     },
     {
       "id": "detail",

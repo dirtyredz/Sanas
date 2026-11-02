@@ -1,11 +1,17 @@
-import { existsSync, readFileSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
+export const fixtureIds = [
+  'architecture',
+  'coding-boundary',
+  'coding-duplicates',
+  'coding-sql',
+  'dashboard',
+] as const
+export type FixtureId = (typeof fixtureIds)[number]
 
 export interface LiveTopic {
   id: string
   question: string
   maxFollowUps: number
-  screen?: string
+  screen?: FixtureId
 }
 export interface LivePlan {
   version: 1
@@ -18,11 +24,7 @@ export interface LivePlan {
   topics: LiveTopic[]
 }
 
-export function loadLivePlan(path: string): LivePlan {
-  return parseLivePlan(JSON.parse(readFileSync(path, 'utf8')), dirname(path))
-}
-
-export function parseLivePlan(raw: unknown, folder: string): LivePlan {
+export function validatePlan(raw: unknown): LivePlan {
   const fail = (): never => {
     throw new Error('Invalid live plan')
   }
@@ -56,13 +58,13 @@ export function parseLivePlan(raw: unknown, folder: string): LivePlan {
     )
       return fail()
     ids.add(t.id)
-    if (t.screen !== undefined && (!text(t.screen, 1000) || !existsSync(resolve(folder, t.screen))))
+    if (t.screen !== undefined && !fixtureIds.includes(t.screen))
       throw new Error('Live screen fixture is missing')
     return {
       id: t.id,
       question: t.question,
       maxFollowUps: t.maxFollowUps,
-      ...(t.screen ? { screen: resolve(folder, t.screen) } : {}),
+      ...(t.screen ? { screen: t.screen } : {}),
     }
   })
   return {

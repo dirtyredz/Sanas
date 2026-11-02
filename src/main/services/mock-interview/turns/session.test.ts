@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { MockSession, type MockSessionDeps } from './session'
 import { cannedInterviewer } from './interviewer'
-import type { LivePlan } from './plan'
+import type { LivePlan } from '../plan'
 import type { MockState } from '@shared/mock-interview/types'
-import type { MeetingObservation } from '../meetings/observation'
-import type { RunObservation } from '../meetings/assist/run-observation'
+import type { MeetingObservation } from '../../meetings/observation'
+import type { RunObservation } from '../../meetings/assist/run-observation'
 
 const plan: LivePlan = {
   version: 1,

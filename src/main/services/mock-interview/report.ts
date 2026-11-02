@@ -1,5 +1,5 @@
 import { publicOutcome, type RequestOutcome } from '../meetings/assist/outcomes'
-import type { LiveTurn } from './engine'
+import type { LiveTurn } from './turns/engine'
 
 export interface LiveTransition {
   atMs: number

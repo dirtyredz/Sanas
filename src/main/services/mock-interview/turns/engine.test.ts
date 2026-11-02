@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 import { LiveEngine } from './engine'
 import { cannedInterviewer, createInterviewer, type Interviewer } from './interviewer'
-import type { LivePlan } from './plan'
-import type { AssistRequest } from '../assistant/types'
+import type { LivePlan } from '../plan'
+import type { AssistRequest } from '../../assistant/types'
 
 const plan: LivePlan = {
   version: 1,
@@ -13,7 +13,7 @@ const plan: LivePlan = {
   silenceMs: 2500,
   topics: [
     { id: 'a', question: 'When can we ship?', maxFollowUps: 1 },
-    { id: 'b', question: 'What does this screen show?', maxFollowUps: 0, screen: 'fixture.png' },
+    { id: 'b', question: 'What does this screen show?', maxFollowUps: 0, screen: 'architecture' },
   ],
 }
 function setup(provider: Interviewer = cannedInterviewer) {
@@ -85,7 +85,7 @@ describe('live turn-taking', () => {
     time(7500)
     await engine.settled()
     expect(speak).toHaveBeenCalledTimes(2)
-    expect(share).toHaveBeenCalledWith('fixture.png')
+    expect(share).toHaveBeenCalledWith('architecture')
     expect(share.mock.invocationCallOrder[0]).toBeLessThan(speak.mock.invocationCallOrder[1])
   })
   it('caps follow-ups, preserves plan order and shares only when entering a topic', async () => {

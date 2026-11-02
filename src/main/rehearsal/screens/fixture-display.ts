@@ -8,7 +8,7 @@ import {
 } from '../../services/screen-capture/desktop'
 import type { EncodableImage } from '../../services/screen-capture/encode'
 import { encodeForAssistant } from '../../services/screen-capture/encode'
-import type { Fault, Step } from '../scenario'
+import type { Fault, Step } from '../scenario/scenario'
 import { mapRectangle, type Rectangle } from './geometry'
 
 const fixtureDisplay: CaptureDisplay = {

@@ -69,7 +69,7 @@ vi.mock('electron', () => ({
     }
   },
 }))
-import { RehearsalScreens, imageDifference } from './desktop'
+import { RehearsalScreens, imageDifference } from './fixture-display'
 import { createScreenCapture } from '../../services/screen-capture'
 import { captureDisplay } from '../../services/screen-capture/desktop'
 afterEach(() => {
@@ -107,7 +107,7 @@ it('verifies real display pixels and overlay exclusion, rejecting a contaminated
     id: 'real',
     atMs: 0,
     kind: 'screen',
-    image: 'scripts/rehearsal/fixtures/dashboard.png',
+    image: 'src/main/services/mock-interview/fixtures/dashboard.png',
     real: true,
     displayId: 42,
   })

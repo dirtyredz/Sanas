@@ -15,7 +15,7 @@
       "id": "dashboard",
       "question": "Looking at this dashboard, which milestone is most at risk and what should we do about it?",
       "maxFollowUps": 2,
-      "screen": "../fixtures/dashboard.png"
+      "screen": "dashboard"
     },
     {
       "id": "scope",
@@ -26,7 +26,7 @@
       "id": "dependency",
       "question": "Using this architecture, explain how an upstream outage would affect our users and how you would respond.",
       "maxFollowUps": 1,
-      "screen": "../fixtures/architecture.png"
+      "screen": "architecture"
     },
     {
       "id": "next-actions",

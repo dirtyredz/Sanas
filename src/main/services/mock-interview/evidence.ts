@@ -2,7 +2,7 @@ import type { MockResult } from '@shared/mock-interview/types'
 import type { RunObservation } from '../meetings/assist/run-observation'
 import { proseWords, type RequestOutcome } from '../meetings/assist/outcomes'
 import { liveTurnReport, type LiveTransition } from './report'
-import type { LiveEngine } from './engine'
+import type { LiveEngine } from './turns/engine'
 
 /** Keeps only metadata and counts; Sanas answer text never enters the interviewer. */
 export class MockEvidence {

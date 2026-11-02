@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
-import type { Slide } from '../../shared/presentation/types'
+import type { Slide } from '../../../shared/presentation/types'
 import { rubrics, type Rubric } from './semantics'
 
 export type Fault =

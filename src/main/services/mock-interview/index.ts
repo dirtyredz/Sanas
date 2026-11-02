@@ -1,4 +1,4 @@
-import { globalShortcut, type WebContents } from 'electron'
+import { type WebContents } from 'electron'
 import { IPC } from '@shared/ipc'
 import type { MockPlanId, MockSetup, MockState } from '@shared/mock-interview/types'
 import { loadSettings } from '../../config/settings'
@@ -7,14 +7,15 @@ import { saveMockResult } from '../../db/repos/practice'
 import { broadcast } from '../../windows/broadcast'
 import { closeInterviewer, openInterviewer } from '../../windows/interviewer-window'
 import { showOverlay } from '../../windows/overlay-window'
-import { claudeProvider } from '../assistant/claude'
+import { assistantProvider } from '../assistant/provider'
+import { registerMockShortcuts } from './shortcuts'
 import { currentState, meetingAudioMs, startMeeting, stopMeeting } from '../meetings'
 import { subscribeMeeting } from '../meetings/observation'
 import { subscribeRuns } from '../meetings/assist/run-observation'
 import { subscribeAssistance } from '../meetings/assist/diagnostics'
-import { createInterviewer } from './interviewer'
+import { createInterviewer } from './turns/interviewer'
 import { plans, fixtureData } from './catalog'
-import { MockSession } from './session'
+import { MockSession } from './turns/session'
 
 let session: MockSession | undefined
 export function mockSetup(): MockSetup {
@@ -62,7 +63,7 @@ export async function startMock(
     epoch = performance.now()
   const own = new MockSession(
     plans[planId],
-    createInterviewer(claudeProvider, {
+    createInterviewer(assistantProvider, {
       apiKey: settings.anthropicApiKey,
       workspaceId: settings.anthropicWorkspaceId,
       model: settings.nudgeModel,
@@ -93,34 +94,7 @@ export async function startMock(
           owner.removeListener('render-process-gone', closed)
         }
       },
-      controls: (actions) => {
-        const keys: string[] = []
-        const release = (): void => {
-          for (const key of keys.splice(0)) globalShortcut.unregister(key)
-        }
-        try {
-          for (const [key, action] of [
-            ['CommandOrControl+Alt+Right', actions.skip],
-            ['CommandOrControl+Alt+End', actions.end],
-            ['CommandOrControl+Alt+Backspace', actions.dismiss],
-          ] as const) {
-            if (!globalShortcut.register(key, action))
-              throw new Error(`Mock interview shortcut unavailable: ${key}`)
-            keys.push(key)
-          }
-        } catch (e) {
-          release()
-          throw e
-        }
-        // Shortcuts are released at End, independently of late suggestion observation.
-        const unsubscribe = subscribeMeeting((e) => {
-          if (e.kind === 'state' && e.value.status !== 'live') release()
-        })
-        return () => {
-          release()
-          unsubscribe()
-        }
-      },
+      controls: registerMockShortcuts,
     },
   )
   session = own

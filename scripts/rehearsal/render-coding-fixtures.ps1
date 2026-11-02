@@ -53,7 +53,7 @@ foreach ($fixture in $fixtures) {
       $graphics.DrawString($line, $font, $brush, 40, $y)
       $y += 47
     }
-    $bitmap.Save((Join-Path $PSScriptRoot "fixtures/$($fixture.Name).png"), [Drawing.Imaging.ImageFormat]::Png)
+    $bitmap.Save((Join-Path $PSScriptRoot "../../src/main/services/mock-interview/fixtures/$($fixture.Name).png"), [Drawing.Imaging.ImageFormat]::Png)
   } finally {
     $brush.Dispose(); $titleFont.Dispose(); $font.Dispose(); $graphics.Dispose(); $bitmap.Dispose()
   }
