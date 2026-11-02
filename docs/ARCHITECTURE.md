@@ -289,3 +289,16 @@ The entry point configures userData before readiness and dynamically loads norma
 Database initialization keeps its candidate connection private while awaiting a consistent backup
 for an existing older schema; windows, IPC and services start only after successful migration.
 Final shutdown closes the connection. Smoke never imports normal startup and uses disposable data.
+
+## Isolated rehearsal flow
+
+Explicit `--rehearsal` dispatch bypasses normal startup and creates a unique worktree-local
+userData before opening settings/SQLite. The runner installs providers and DesktopDeps before
+importing the meeting orchestrator. Scripted interims/finals/boundaries feed its real callbacks;
+audio replay feeds `sendAudioChunk` at 20 ms intervals. The real lifecycle owns turn assembly,
+coach/answer admission, persistence, broadcasts, recording, summaries and batch replacement.
+Only optional Visible/real-capture mode creates the production overlay and registers IPC.
+No normal retention/updater/email/hotkey startup runs. Main-only observation collects final,
+suggestion and health evidence; live storage is checked before batch replacement. Screen checks
+match encoded bytes at acquisition and assistant receipt. The report contains expectation IDs
+and outcomes, not transcript or credentials. See [REHEARSAL.md](REHEARSAL.md).

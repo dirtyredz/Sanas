@@ -95,3 +95,12 @@ Development and packaged smoke perform no update checks. Ordinary quit installs 
 Storage is schema v7: v6 presentation snapshots/events plus v7 immutable context/deck revisions and
 saved assistance grounding. Startup backs up existing older databases before migration and rejects
 newer schemas without opening the application.
+
+## Meeting rehearsal harness
+
+Implemented: isolated versioned JSON scenarios for client check-in, slide presentation and
+standup; deterministic scripted STT and canned assistant; real lifecycle/persistence/summary
+and per-expectation reports; optional production overlay. Audio replay/Windows offline TTS,
+real Deepgram streaming/batch, optional Claude, real desktop fixture capture and fault injection
+are available for owner runs. Paid legs and physical desktop behavior require owner acceptance;
+unit tests cover their seams. See [REHEARSAL.md](REHEARSAL.md).

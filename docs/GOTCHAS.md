@@ -447,3 +447,19 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   Network Service child holding the main process open. The wrapper owns and removes the isolated
   directory after exit, allows 60 seconds, then kills only its own process and fails. A successful
   report alone is never a pass: the executable must also exit successfully before the timeout.
+
+## Rehearsals
+
+- Use `scripts/rehearsal/run.ps1`, never the owner's userData. Dependencies must already exist;
+  the runner does not install or download them. Isolated profile/DB/recording artifacts remain
+  in `.tmp/rehearsal/`; logs and assertions are in `.tmp/owner-runs/`.
+- Canned runs prove wiring, not model quality. Summary policy still requires five final lines;
+  audio silent-channel injection can erase evidence and legitimately fail summary expectations.
+- Existing WAVs must be 16 kHz linear16 mono/stereo with valid RIFF chunks. Speech synthesis
+  must fit each declared duration; enlarge timing instead of truncating words.
+- Real captures require an unlocked, unobscured target display. Colour/DPI/protected-content
+  differences can fail pixel comparison; never disable overlay protection to make it pass.
+- The owner-run template in `scripts/rehearsal/` is canonical 1.0.0, copied verbatim. The older
+  `scripts/owner/owner-run.ps1` is a different local API; this change does not migrate its callers.
+- Vitest now DOES configure the `@shared` alias in `vitest.config.ts`; the older overlay note
+  above saying otherwise is stale. Electron imports still need mocks in CI.

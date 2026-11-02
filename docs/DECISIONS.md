@@ -477,3 +477,23 @@ Existing data stays in APPDATA/sanas. Before an existing older schema is upgrade
 a consistent unique backup; failure aborts startup. Future schemas are rejected. Migrations remain
 transactional per version, so earlier completed migrations survive a later failure. Recovery is
 manual from the pre-upgrade backup, never an automatic overwrite of owner data.
+
+## 2026-11-02 ? Explicit rehearsal dispatch and main audio ingress
+
+Choose an isolated main-process rehearsal runner behind `--rehearsal`, alongside `--smoke`,
+with guarded composition setters for SttProvider, AssistantProvider and DesktopDeps. Normal
+launch never imports scripted providers. Use the real orchestrator and repository APIs;
+do not reproduce assistance policy or introduce rehearsal SQL.
+
+Replay 16 kHz linear16 WAV through `sendAudioChunk`, the same ingress used by audio IPC.
+This exercises accepted-audio timing, channel identity, health, recording and both Deepgram
+passes without unreliable fake getUserMedia devices. It intentionally does not test microphone
+drivers, browser permissions, echo cancellation or the AudioWorklet resampler. Offline Windows
+speech builds stereo fixtures; clips that overrun their timing fail rather than truncate.
+
+Scripted STT reset/reconnect is deterministic seam simulation. Audio faults close the actual
+WebSocket with an abnormal code so production reconnect owns backoff. Real desktop checks
+use a fixture window baseline and compare both whole-display and protected-overlay-region pixels.
+Canned image replies establish byte delivery, not vision competence; Claude is owner-selectable.
+Profiles/reports remain under the worktree for inspection; provider output is suppressed and
+keys are cleared on normal teardown. A hard kill can leave private credentials in that profile.
