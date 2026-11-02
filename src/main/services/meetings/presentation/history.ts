@@ -5,7 +5,7 @@ import {
   speakerLabel,
   type FormattableLine,
   type SpeakerNames,
-} from '../../transcript-format'
+} from '../../turns/transcript-format'
 
 export const SLIDE_SUMMARY_INSTRUCTION =
   'Slide markers identify the prepared slide selected at that audio time. They are context, not spoken statements or evidence that its script was delivered. Ground knowledge, decisions and action items in the transcript. Mention a slide title when it helps locate the discussion; do not infer agreement or coverage from navigation alone.'

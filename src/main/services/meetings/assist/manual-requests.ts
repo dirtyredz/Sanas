@@ -14,7 +14,7 @@ import {
   TYPED_CAPTURE_INSTRUCTION,
 } from '../../assistant/live-controls/capture-prompts'
 import type { AssistImage } from '../../assistant/types'
-import { renderTranscriptWindow } from '../../transcript-format'
+import { renderTranscriptWindow } from '../../turns/transcript-format'
 import { presentationHint } from '../../assistant/presentation/prompts'
 import { answerRequest, type AssistSettings, type AssistSnapshot } from './suggestion-requests'
 import type { SuggestionHandle, SuggestionRequest } from './suggestion-runner'

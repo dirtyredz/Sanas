@@ -1,5 +1,5 @@
-import { liveMeetingId } from '../meetings/status/live-meeting'
-import { postProcessingCount } from '../meetings/status/post-processing'
+import { liveMeetingId } from '../../meetings/status/live-meeting'
+import { postProcessingCount } from '../../meetings/status/post-processing'
 
 export function restartBlockReason(downloaded: boolean): string | null {
   if (!downloaded) return 'An update must finish downloading first.'

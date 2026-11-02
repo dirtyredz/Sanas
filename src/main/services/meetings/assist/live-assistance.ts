@@ -11,7 +11,7 @@ import type {
 } from '../../assistant/classifier'
 import { QuestionLedger } from './question-ledger'
 import { CoachPolicy } from '../../assistant/coach/coach-policy'
-import { speakerLabel } from '../../transcript-format'
+import { speakerLabel } from '../../turns/transcript-format'
 import type { SuggestionHandle, SuggestionRunner } from './suggestion-runner'
 import {
   answerRequest,

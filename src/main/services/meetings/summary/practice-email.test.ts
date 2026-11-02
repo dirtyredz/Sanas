@@ -1,4 +1,4 @@
-import { expect, it, vi } from 'vitest'
+﻿import { expect, it, vi } from 'vitest'
 const mock = vi.hoisted(() => ({ send: vi.fn(), practice: true }))
 vi.mock('../../../config/settings', () => ({ loadSettings: () => ({ summaryEmailAuto: true }) }))
 vi.mock('../../../db/repos/meetings', () => ({
@@ -13,7 +13,7 @@ vi.mock('../../../db/repos/meetings', () => ({
 vi.mock('../../../db/repos/jobs', () => ({
   getJob: () => ({ name: 'Client', summaryEmail: 'client@example.invalid' }),
 }))
-vi.mock('../../email', () => ({ emailProvider: { send: mock.send } }))
+vi.mock('../../platform/email', () => ({ emailProvider: { send: mock.send } }))
 import { autoEmailSummary } from './summary-email'
 it('does not auto-email practice even when both account and job opt in', async () => {
   await autoEmailSummary(7)

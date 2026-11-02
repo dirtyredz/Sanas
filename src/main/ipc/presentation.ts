@@ -5,7 +5,7 @@ import { getPresentationHistory } from '../db/repos/meeting-presentation'
 import { moveSlide, presentationState } from '../services/meetings'
 import { requireId } from './validate'
 import { requireSlideMove, requireSlides } from './presentation-validation'
-import { hotkeyStatus } from '../services/hotkeys/registration'
+import { hotkeyStatus } from '../services/platform/hotkeys/registration'
 
 export function registerPresentationIpc(): void {
   ipcMain.handle(IPC.HotkeysStatus, () => hotkeyStatus())

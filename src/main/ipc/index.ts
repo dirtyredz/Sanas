@@ -41,7 +41,7 @@ import {
 import { listMeetings, getMeeting, renameMeeting, moveMeetingToJob } from '../db/repos/meetings'
 import { removeMeeting } from '../services/meetings/remove'
 import { mergeMeetings } from '../services/meetings/merge/merge'
-import { previewRetention, runRetention } from '../services/retention'
+import { previewRetention, runRetention } from '../services/platform/retention'
 import { listSegments } from '../db/repos/segments'
 import { askHistory, searchTranscripts } from '../services/history'
 import { exportMeetingMarkdown } from '../services/meetings/export'

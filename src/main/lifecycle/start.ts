@@ -1,7 +1,7 @@
-import { startUpdates, stopUpdates } from '../services/updates/service'
+import { startUpdates, stopUpdates } from '../services/platform/updates/service'
 import { endMock, mockState } from '../services/mock-interview'
 import { app, globalShortcut, dialog } from 'electron'
-import { registerShortcuts } from '../services/hotkeys/registration'
+import { registerShortcuts } from '../services/platform/hotkeys/registration'
 import { createMainWindow } from '../windows/main-window'
 import { activateComposer, showOverlay, toggleOverlay } from '../windows/overlay-window'
 import { openDb, closeDb } from '../db'
@@ -9,7 +9,7 @@ import { loadSettings } from '../config/settings'
 import { registerIpcHandlers } from '../ipc'
 import { answerNow, captureScreen, moveSlideShortcut } from '../services/meetings'
 import { registerSystemAudioLoopback } from '../system-audio'
-import { scheduleRetention } from '../services/retention'
+import { scheduleRetention } from '../services/platform/retention'
 import { closeDanglingMeetingsAtStartup } from '../services/meetings/recovery/startup-recovery'
 
 let initialized = false

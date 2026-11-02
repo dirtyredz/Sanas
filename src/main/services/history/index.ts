@@ -8,7 +8,7 @@ import { speakerNameMap } from '../../db/repos/speakers'
 import { broadcast } from '../../windows/broadcast'
 import { claudeProvider } from '../assistant/claude'
 import { HISTORY_SYSTEM, buildHistoryPrompt } from '../assistant/prompts'
-import { formatClockMs, speakerLabel } from '../transcript-format'
+import { formatClockMs, speakerLabel } from '../turns/transcript-format'
 
 // Your history: ranked search over every transcript, and "what did we decide about X?"
 // answered from the transcripts rather than from memory. Retrieval is FTS5 (bm25) over

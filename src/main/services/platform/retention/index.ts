@@ -1,15 +1,15 @@
 import { statSync } from 'fs'
 import { resolve } from 'path'
 import type { Meeting, RetentionPreview, RetentionResult } from '@shared/types'
-import { loadSettings } from '../../config/settings'
+import { loadSettings } from '../../../config/settings'
 import {
   clearMeetingAudioPath,
   listAudioPaths,
   listMeetingsEndedBefore,
-} from '../../db/repos/meetings'
-import { toSqliteDateTime } from '../../db/sqlite-time'
-import { listRecordings } from '../audio-store'
-import { removeAudioFile, removeMeeting } from '../meetings/remove'
+} from '../../../db/repos/meetings'
+import { toSqliteDateTime } from '../../../db/sqlite-time'
+import { listRecordings } from '../../audio-store'
+import { removeAudioFile, removeMeeting } from '../../meetings/remove'
 
 // Age-based clean-up of what a meeting leaves behind. Audio files are the bulky part
 // (~115 MB per mono hour); transcripts and summaries are small — so the two have

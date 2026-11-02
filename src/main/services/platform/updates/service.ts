@@ -1,8 +1,8 @@
 import { app } from 'electron'
 import updater from 'electron-updater'
-import type { UpdateState } from '../../../shared/updates/types'
-import { IPC } from '../../../shared/ipc'
-import { broadcast } from '../../windows/broadcast'
+import type { UpdateState } from '../../../../shared/updates/types'
+import { IPC } from '../../../../shared/ipc'
+import { broadcast } from '../../../windows/broadcast'
 import { createRestart, restartBlockReason } from './restart'
 
 let autoUpdater: typeof updater.autoUpdater

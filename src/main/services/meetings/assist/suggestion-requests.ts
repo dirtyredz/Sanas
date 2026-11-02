@@ -3,7 +3,7 @@ import type { Settings } from '@shared/types'
 import type { PresentationState } from '@shared/presentation/types'
 import { presentationCoachContent, presentationHint } from '../../assistant/presentation/prompts'
 import { COMPACT_CONTRACT, recentSuggestionsBlock } from '../../assistant/compact-contract'
-import type { SpeakerNames } from '../../transcript-format'
+import type { SpeakerNames } from '../../turns/transcript-format'
 import {
   assistProfile,
   buildUserContent,

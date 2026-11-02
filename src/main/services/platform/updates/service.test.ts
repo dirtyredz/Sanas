@@ -24,7 +24,7 @@ vi.mock('electron-updater', () => ({
     },
   },
 }))
-vi.mock('../../windows/broadcast', () => ({ broadcast: mock.broadcast }))
+vi.mock('../../../windows/broadcast', () => ({ broadcast: mock.broadcast }))
 let events: EventEmitter
 beforeEach(() => {
   vi.resetModules()

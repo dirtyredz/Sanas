@@ -1,11 +1,11 @@
 import { afterEach, expect, it, vi } from 'vitest'
 import { createRestart, restartBlockReason } from './restart'
-import { setLiveMeeting } from '../meetings/status/live-meeting'
+import { setLiveMeeting } from '../../meetings/status/live-meeting'
 import {
   markPostProcessing,
   clearPostProcessing,
   postProcessingCount,
-} from '../meetings/status/post-processing'
+} from '../../meetings/status/post-processing'
 afterEach(() => {
   setLiveMeeting(null)
   clearPostProcessing(10)

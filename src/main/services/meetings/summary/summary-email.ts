@@ -2,7 +2,7 @@ import { parseSummaryInline, parseSummaryMarkdown } from '@shared/summary-markdo
 import { loadSettings } from '../../../config/settings'
 import { getMeeting } from '../../../db/repos/meetings'
 import { getJob } from '../../../db/repos/jobs'
-import { emailProvider, type OutgoingEmail } from '../../email'
+import { emailProvider, type OutgoingEmail } from '../../platform/email'
 
 // Composes the summary email for one meeting and hands it to the mail seam.
 // Body = summary + action items only; the full transcript stays local (export

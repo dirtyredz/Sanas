@@ -3,7 +3,7 @@ import {
   renderTranscriptWindow,
   type FormattableLine,
   type SpeakerNames,
-} from '../transcript-format'
+} from '../turns/transcript-format'
 import { COMPACT_CONTRACT, NO_SUGGESTION, recentSuggestionsBlock } from './compact-contract'
 import { boundedExcerpt } from './excerpt'
 import type { ResponseKind } from './classifier'
