@@ -50,6 +50,20 @@ export function splitBySpeaker(words: DeepgramWord[]): DeepgramWord[][] {
   return runs
 }
 
+/** Batch covers a whole recording, unlike a streaming Results message. Preserve pauses
+ * of at least two seconds as segment boundaries; never stretch speech over long silence. */
+export function splitBatchWords(words: DeepgramWord[]): DeepgramWord[][] {
+  const runs: DeepgramWord[][] = []
+  for (const word of words) {
+    const last = runs.at(-1)
+    const previous = last?.at(-1)
+    if (last && previous && previous.speaker === word.speaker && word.start - previous.end < 2)
+      last.push(word)
+    else runs.push([word])
+  }
+  return runs
+}
+
 export function runText(run: DeepgramWord[]): string {
   return run.map((w) => w.punctuated_word ?? w.word).join(' ')
 }

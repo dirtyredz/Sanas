@@ -10,7 +10,7 @@ import type {
 import {
   normalizeDeepgramMessage,
   runText,
-  splitBySpeaker,
+  splitBatchWords,
   type DeepgramWord,
 } from './deepgram-events'
 
@@ -195,7 +195,7 @@ export const deepgramProvider: SttProvider = {
     const chans = json.results?.channels ?? []
     for (let channel = 0; channel < chans.length; channel++) {
       const words = chans[channel]?.alternatives?.[0]?.words ?? []
-      for (const run of splitBySpeaker(words)) {
+      for (const run of splitBatchWords(words)) {
         out.push({
           channel,
           speaker: run[0].speaker ?? -1,
