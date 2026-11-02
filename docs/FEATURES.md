@@ -100,8 +100,12 @@ newer schemas without opening the application.
 ## Meeting rehearsal harness
 
 Implemented: isolated versioned JSON scenarios for client check-in, slide presentation,
-standup, mock job interview and rapid-fire Q&A; deterministic scripted STT and canned assistant; real lifecycle/persistence/summary
+standup, mock job interview, visual coding interview and rapid-fire Q&A; deterministic scripted STT and canned assistant; real lifecycle/persistence/summary
 and per-expectation reports; optional production overlay. Audio replay/Windows offline TTS,
 real Deepgram streaming/batch, optional Claude, real desktop fixture capture and fault injection
 are available for owner runs. Paid legs and physical desktop behavior require owner acceptance;
 unit tests cover their seams. See [REHEARSAL.md](REHEARSAL.md).
+
+The coding interview includes locally rendered JavaScript and SQL screens, a screenshot-dependent
+follow-up and a two-part complexity/improvement question. Assistant-scoped expectations separate
+Claude concept checks from shared screen-delivery checks.

@@ -463,6 +463,9 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   audio silent-channel injection can erase evidence and legitimately fail summary expectations.
 - Existing WAVs must be 16 kHz linear16 mono/stereo with valid RIFF chunks. Speech synthesis
   must fit each declared duration; enlarge timing instead of truncating words.
+- Offline speech preflight on 2026-11-02 exceeded `mock-interview`'s `intro-q` and
+  `rapid-qa`'s `b1q1` slots with the installed voice. Those audio starters need timing
+  repair before paid acceptance (`dk-8cd1d91d`); the coding-interview WAV rendered successfully.
 - Real captures require an unlocked, unobscured target display. Colour/DPI/protected-content
   differences can fail pixel comparison; never disable overlay protection to make it pass.
 - The owner-run template in `scripts/rehearsal/` is canonical 1.0.0, copied verbatim. The older
