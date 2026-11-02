@@ -1,0 +1,148 @@
+{
+  "version": 1,
+  "name": "Client team standup",
+  "durationMs": 26000,
+  "steps": [
+    {
+      "id": "q",
+      "atMs": 100,
+      "kind": "utterance",
+      "channel": "them",
+      "speaker": 1,
+      "text": "What is the delivery status?",
+      "durationMs": 2200
+    },
+    {
+      "id": "status",
+      "atMs": 2700,
+      "kind": "utterance",
+      "channel": "me",
+      "speaker": 0,
+      "text": "The delivery is on track.",
+      "durationMs": 2200
+    },
+    {
+      "id": "tests",
+      "atMs": 5300,
+      "kind": "utterance",
+      "channel": "them",
+      "speaker": 1,
+      "text": "The tests passed today.",
+      "durationMs": 2200
+    },
+    {
+      "id": "review",
+      "atMs": 7900,
+      "kind": "utterance",
+      "channel": "me",
+      "speaker": 0,
+      "text": "Maya will review the change.",
+      "durationMs": 2200
+    },
+    {
+      "id": "next",
+      "atMs": 10500,
+      "kind": "utterance",
+      "channel": "them",
+      "speaker": 1,
+      "text": "Please confirm the next action.",
+      "durationMs": 2200
+    },
+    {
+      "id": "slow",
+      "atMs": 14000,
+      "kind": "fault",
+      "fault": "assistant-slow",
+      "durationMs": 2000
+    },
+    {
+      "id": "ask",
+      "atMs": 14100,
+      "kind": "ask",
+      "text": "Summarize our next delivery action."
+    },
+    {
+      "id": "busy",
+      "atMs": 14300,
+      "kind": "ask",
+      "text": "Who owns the follow-up?"
+    },
+    {
+      "id": "fail",
+      "atMs": 17000,
+      "kind": "fault",
+      "fault": "assistant-fail",
+      "durationMs": 1000
+    },
+    {
+      "id": "failed-ask",
+      "atMs": 17100,
+      "kind": "ask",
+      "text": "Confirm the delivery owner."
+    },
+    {
+      "id": "screen",
+      "atMs": 19000,
+      "kind": "screen",
+      "image": "../fixtures/standup.png"
+    },
+    {
+      "id": "oversize",
+      "atMs": 22000,
+      "kind": "fault",
+      "fault": "oversize-image",
+      "durationMs": 2500
+    },
+    {
+      "id": "oversize-screen",
+      "atMs": 22100,
+      "kind": "screen",
+      "image": "../fixtures/standup.png"
+    }
+  ],
+  "expectations": [
+    {
+      "id": "finals-only",
+      "kind": "no-interims"
+    },
+    {
+      "id": "summary-saved",
+      "kind": "summary",
+      "contains": "delivery"
+    },
+    {
+      "id": "recorded",
+      "kind": "recording"
+    },
+    {
+      "id": "batch-replaced",
+      "kind": "batch"
+    },
+    {
+      "id": "busy-handled",
+      "kind": "busy",
+      "after": "busy",
+      "withinMs": 1000
+    },
+    {
+      "id": "provider-failure",
+      "kind": "assistant-error",
+      "after": "failed-ask",
+      "withinMs": 1500
+    },
+    {
+      "id": "screen-delivered",
+      "kind": "screen",
+      "after": "screen",
+      "withinMs": 2500,
+      "contains": "dashboard"
+    },
+    {
+      "id": "oversize-rejected",
+      "kind": "capture-error",
+      "after": "oversize-screen",
+      "withinMs": 2000,
+      "contains": "too detailed"
+    }
+  ]
+}

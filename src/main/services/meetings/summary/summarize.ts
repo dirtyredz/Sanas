@@ -7,7 +7,7 @@ import { listSegments } from '../../../db/repos/segments'
 import { getJob, listGlossary } from '../../../db/repos/jobs'
 import { speakerNameMap } from '../../../db/repos/speakers'
 import { whilePostProcessing } from '../status/post-processing'
-import { claudeProvider } from '../../assistant/claude'
+import { assistantProvider } from '../../assistant/provider'
 import {
   buildSummaryPrompt,
   buildSystemPrompt,
@@ -39,7 +39,7 @@ export async function summarizeLines(
 
   const names = speakerNameMap(meetingId)
   const history = getPresentationHistory(meetingId)
-  const text = await claudeProvider.complete({
+  const text = await assistantProvider.complete({
     apiKey: anthropicApiKey,
     workspaceId: anthropicWorkspaceId || undefined,
     model: answerModel,

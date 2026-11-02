@@ -1,0 +1,141 @@
+{
+  "version": 1,
+  "name": "Client delivery check-in",
+  "durationMs": 22000,
+  "steps": [
+    {
+      "id": "silent",
+      "atMs": 0,
+      "kind": "fault",
+      "fault": "silent-them",
+      "durationMs": 6500
+    },
+    {
+      "id": "question",
+      "atMs": 100,
+      "kind": "utterance",
+      "channel": "them",
+      "speaker": 1,
+      "text": "What is the delivery date?",
+      "durationMs": 2200
+    },
+    {
+      "id": "commitment",
+      "atMs": 2600,
+      "kind": "utterance",
+      "channel": "me",
+      "speaker": 0,
+      "text": "The delivery is Friday.",
+      "durationMs": 2200
+    },
+    {
+      "id": "owner",
+      "atMs": 5100,
+      "kind": "utterance",
+      "channel": "them",
+      "speaker": 1,
+      "text": "Maya owns the rollout.",
+      "durationMs": 2200
+    },
+    {
+      "id": "risk",
+      "atMs": 7600,
+      "kind": "utterance",
+      "channel": "me",
+      "speaker": 0,
+      "text": "We will check the open risk.",
+      "durationMs": 2200
+    },
+    {
+      "id": "drop",
+      "atMs": 10000,
+      "kind": "fault",
+      "fault": "socket-drop",
+      "durationMs": 500
+    },
+    {
+      "id": "followup",
+      "atMs": 11000,
+      "kind": "utterance",
+      "channel": "them",
+      "speaker": 1,
+      "text": "Please confirm the delivery plan.",
+      "durationMs": 2200
+    },
+    {
+      "id": "screen",
+      "atMs": 14500,
+      "kind": "screen",
+      "image": "../fixtures/dashboard.png"
+    },
+    {
+      "id": "detail",
+      "atMs": 16500,
+      "kind": "detail"
+    },
+    {
+      "id": "missing",
+      "atMs": 18500,
+      "kind": "fault",
+      "fault": "missing-display",
+      "durationMs": 2500
+    },
+    {
+      "id": "bad-screen",
+      "atMs": 19000,
+      "kind": "screen",
+      "image": "../fixtures/dashboard.png"
+    }
+  ],
+  "expectations": [
+    {
+      "id": "finals-only",
+      "kind": "no-interims"
+    },
+    {
+      "id": "summary-saved",
+      "kind": "summary",
+      "contains": "delivery"
+    },
+    {
+      "id": "recorded",
+      "kind": "recording"
+    },
+    {
+      "id": "batch-replaced",
+      "kind": "batch"
+    },
+    {
+      "id": "automatic-answer",
+      "kind": "suggestion",
+      "after": "question",
+      "withinMs": 5000
+    },
+    {
+      "id": "screen-delivered",
+      "kind": "screen",
+      "after": "screen",
+      "withinMs": 2500,
+      "contains": "dashboard"
+    },
+    {
+      "id": "silent-warning",
+      "kind": "capture-warning",
+      "after": "silent",
+      "withinMs": 6500
+    },
+    {
+      "id": "reconnected",
+      "kind": "reconnect",
+      "after": "drop",
+      "withinMs": 2000
+    },
+    {
+      "id": "missing-display-rejected",
+      "kind": "capture-error",
+      "after": "bad-screen",
+      "withinMs": 1500,
+      "contains": "no longer connected"
+    }
+  ]
+}

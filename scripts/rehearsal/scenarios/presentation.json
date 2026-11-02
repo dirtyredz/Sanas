@@ -1,0 +1,143 @@
+{
+  "version": 1,
+  "name": "Client delivery presentation",
+  "coach": true,
+  "durationMs": 37000,
+  "slides": [
+    {
+      "title": "Delivery plan",
+      "talkingPoint": "Explain the rollout and Friday delivery.",
+      "script": "Confirm delivery owners and risk checks.",
+      "keyFacts": "Delivery is Friday."
+    },
+    {
+      "title": "Client decisions",
+      "talkingPoint": "Confirm approval and follow-up.",
+      "script": "Ask for client approval.",
+      "keyFacts": "Maya owns rollout."
+    }
+  ],
+  "steps": [
+    {
+      "id": "intro",
+      "atMs": 100,
+      "kind": "utterance",
+      "channel": "me",
+      "speaker": 0,
+      "text": "The delivery plan has three stages. We review the client scope, check the current risks, and prepare the rollout with Maya.",
+      "durationMs": 6500
+    },
+    {
+      "id": "explain",
+      "atMs": 6800,
+      "kind": "utterance",
+      "channel": "me",
+      "speaker": 0,
+      "text": "Each stage has an owner and a review. We will collect feedback before Friday delivery and confirm approval with the client.",
+      "durationMs": 6500
+    },
+    {
+      "id": "mode",
+      "atMs": 16000,
+      "kind": "answer-mode",
+      "enabled": true
+    },
+    {
+      "id": "slide",
+      "atMs": 17000,
+      "kind": "slide",
+      "direction": "next"
+    },
+    {
+      "id": "q",
+      "atMs": 18000,
+      "kind": "utterance",
+      "channel": "them",
+      "speaker": 1,
+      "text": "Who approves the delivery?",
+      "durationMs": 2200
+    },
+    {
+      "id": "approval",
+      "atMs": 20500,
+      "kind": "utterance",
+      "channel": "me",
+      "speaker": 0,
+      "text": "The client approves on Friday.",
+      "durationMs": 2200
+    },
+    {
+      "id": "thanks",
+      "atMs": 23000,
+      "kind": "utterance",
+      "channel": "them",
+      "speaker": 1,
+      "text": "Please send the delivery plan.",
+      "durationMs": 2200
+    },
+    {
+      "id": "screen",
+      "atMs": 27000,
+      "kind": "screen",
+      "image": "../fixtures/slide.png"
+    },
+    {
+      "id": "timeout",
+      "atMs": 30000,
+      "kind": "fault",
+      "fault": "capture-timeout",
+      "durationMs": 6000
+    },
+    {
+      "id": "timeout-screen",
+      "atMs": 30100,
+      "kind": "screen",
+      "image": "../fixtures/slide.png"
+    }
+  ],
+  "expectations": [
+    {
+      "id": "finals-only",
+      "kind": "no-interims"
+    },
+    {
+      "id": "summary-saved",
+      "kind": "summary",
+      "contains": "delivery"
+    },
+    {
+      "id": "recorded",
+      "kind": "recording"
+    },
+    {
+      "id": "batch-replaced",
+      "kind": "batch"
+    },
+    {
+      "id": "coach-produced",
+      "kind": "coach",
+      "after": "intro",
+      "withinMs": 16500
+    },
+    {
+      "id": "slide-moved",
+      "kind": "slide",
+      "after": "slide",
+      "withinMs": 1000
+    },
+    {
+      "id": "screen-delivered",
+      "kind": "screen",
+      "after": "screen",
+      "withinMs": 2500,
+      "contains": "dashboard"
+    },
+    {
+      "id": "timeout-rejected",
+      "kind": "capture-error",
+      "after": "timeout-screen",
+      "withinMs": 6000,
+      "contains": "too long"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+import { expect, it } from 'vitest'
+import { audioFrame, readPcmWav, wavBytes } from './wav'
+
+it('keeps mono/stereo sample identity and silences only Them at capture ingress', () => {
+  const pcm = Buffer.alloc(1280)
+  pcm.writeInt16LE(1234, 0)
+  pcm.writeInt16LE(-5678, 2)
+  const wav = readPcmWav(wavBytes(pcm, 2))
+  expect(audioFrame(wav, 0, false).subarray(0, 4)).toEqual(pcm.subarray(0, 4))
+  const silent = audioFrame(wav, 0, true)
+  expect(silent.readInt16LE(0)).toBe(1234)
+  expect(silent.readInt16LE(2)).toBe(0)
+  expect(audioFrame(wav, 20, false).every((b) => b === 0)).toBe(true)
+  expect(audioFrame(wav, 40, false).every((b) => b === 0)).toBe(true)
+  expect(readPcmWav(wavBytes(Buffer.alloc(640), 1)).channels).toBe(1)
+})
+it('parses ancillary RIFF chunks and rejects corrupt, wrong-rate and compressed recordings', () => {
+  const bytes = wavBytes(Buffer.alloc(640), 1)
+  const junk = Buffer.from([74, 85, 78, 75, 2, 0, 0, 0, 1, 2])
+  const extra = Buffer.concat([bytes.subarray(0, 12), junk, bytes.subarray(12)])
+  extra.writeUInt32LE(extra.length - 8, 4)
+  expect(readPcmWav(extra).pcm.length).toBe(640)
+  expect(() => readPcmWav(bytes.subarray(0, -1))).toThrow('Truncated')
+  const wrongRate = Buffer.from(bytes)
+  wrongRate.writeUInt32LE(48000, 24)
+  expect(() => readPcmWav(wrongRate)).toThrow('16 kHz')
+  const compressed = Buffer.from(bytes)
+  compressed.writeUInt16LE(3, 20)
+  expect(() => readPcmWav(compressed)).toThrow('linear16')
+})

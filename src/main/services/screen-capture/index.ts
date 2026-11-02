@@ -1,6 +1,12 @@
 import type { Rectangle } from 'electron'
 import type { AssistImage } from '../assistant/types'
-import { captureDisplay, electronDesktop, targetDisplay, type CaptureDisplay } from './desktop'
+import {
+  captureDisplay,
+  electronDesktop,
+  targetDisplay,
+  type CaptureDisplay,
+  type DesktopDeps,
+} from './desktop'
 import { encodeForAssistant, thumbnailDataUrl } from './encode'
 
 // The Electron-bound screen capture used by the meeting: pick the display, capture it within
@@ -21,8 +27,18 @@ export interface ScreenCapture {
   acquire(display: CaptureDisplay): Promise<AcquiredCapture>
 }
 
-export function createScreenCapture(overlayBounds: () => Rectangle | null): ScreenCapture {
-  const desktop = electronDesktop(overlayBounds)
+let rehearsalDesktop: DesktopDeps | undefined
+
+export function installRehearsalDesktop(desktop: DesktopDeps): void {
+  if (!process.argv.includes('--rehearsal')) throw new Error('Rehearsal mode required')
+  rehearsalDesktop = desktop
+}
+
+export function createScreenCapture(
+  overlayBounds: () => Rectangle | null,
+  deps?: DesktopDeps,
+): ScreenCapture {
+  const desktop = deps ?? rehearsalDesktop ?? electronDesktop(overlayBounds)
   return {
     target: () => targetDisplay(desktop),
     acquire: async (display) => {

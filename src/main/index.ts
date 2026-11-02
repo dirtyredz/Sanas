@@ -2,8 +2,11 @@ import { app } from 'electron'
 import { configureUserData } from './lifecycle/user-data'
 
 const smoke = process.argv.includes('--smoke')
-configureUserData(smoke)
-if (smoke) {
+const rehearsal = process.argv.includes('--rehearsal')
+if (!rehearsal) configureUserData(smoke)
+if (rehearsal) {
+  void import('./rehearsal/run').then(({ runRehearsal }) => runRehearsal()).catch(() => app.exit(1))
+} else if (smoke) {
   void import('./diagnostics/smoke').then(({ runSmoke }) => runSmoke())
 } else {
   void import('./lifecycle/main-log')

@@ -7,7 +7,7 @@ import { IPC } from '@shared/ipc'
 import { loadSettings } from '../../../config/settings'
 import { insertSuggestion } from '../../../db/repos/suggestions'
 import { speakerNameMap } from '../../../db/repos/speakers'
-import { claudeProvider } from '../../assistant/claude'
+import { assistantProvider } from '../../assistant/provider'
 import { classifyTurn } from '../../assistant/classifier'
 import { rememberHeadline } from '../../assistant/compact-contract'
 import type { TranscriptLine } from '../../assistant/prompts'
@@ -46,7 +46,7 @@ export class LiveSession {
     private readonly presentation: () => PresentationState,
   ) {
     const runner = (this.runner = new SuggestionRunner({
-      provider: claudeProvider,
+      provider: assistantProvider,
       emit: (event) => broadcast(IPC.SuggestionEvent, event),
       persist: (s) => {
         const id = insertSuggestion(s)
@@ -65,7 +65,7 @@ export class LiveSession {
       setTimer: (fn, ms) => setTimeout(fn, ms),
       clearTimer: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
       settings: loadSettings,
-      classify: (req) => classifyTurn(claudeProvider, req),
+      classify: (req) => classifyTurn(assistantProvider, req),
       runner,
       snapshot: (this.snapshot = () => {
         const meetingId = liveMeetingId()

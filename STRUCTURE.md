@@ -12,6 +12,12 @@ Layout below reflects what exists.
 
 ## Layout
 
+Rehearsal homes: `src/main/rehearsal/` owns explicit isolated rehearsal dispatch, scenario
+validation/assertions and scripted providers; its `audio/` owns WAV replay/socket faults,
+and `screens/` owns fixture acquisition and real display verification;
+`scripts/rehearsal/` owns owner entry points and the verbatim owner-run 1.0.0 template
+from `~/.claude/templates/scripts/`; its `scenarios/` and `fixtures/` hold JSON and local PNGs.
+
 ```
 sanas/
 ├── src/
@@ -230,8 +236,8 @@ main-process code belongs in a responsibility folder above, not beside them.
   `createAppWindow(opts)` helper only if a third window appears.
 - `AssistRequest.model`, `AssistRequest.effort` and `AssistRequest.workspaceId` map closely to
   Anthropic-specific knobs. A second provider will need its own model settings and interpretation.
-- `services/meetings/assist/live-session.ts` imports `claudeProvider` concretely. This is deliberate
-  while there is one assistant provider; the swap point remains one import line.
+- Live assistance and summaries select `AssistantProvider` through `services/assistant/provider.ts`.
+  Normal startup selects Claude; explicit rehearsal startup may install a canned provider.
 - SMTP credentials use the same plain local-settings trust model as API keys. `safeStorage` encryption
   for all secrets should be one future change if required.
 - `EmailProvider.send(config, mail)` takes an SMTP-shaped configuration. A non-SMTP transport would
