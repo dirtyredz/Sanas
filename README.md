@@ -6,8 +6,8 @@ A private, local-first **live meeting copilot**. Sanas listens to the room throu
 laptop mic, transcribes the conversation in real time, and quietly suggests what to say
 next — grounded in the context of whichever job/client the meeting belongs to.
 
-**Not** an interview cheater — a working tool for people juggling multiple jobs/clients,
-each with its own projects, jargon, and talking points.
+Built for people juggling multiple jobs/clients — each with its own projects, jargon, and
+talking points — and for question-driven conversations: Q&A sessions and interviews.
 
 ## What it does
 

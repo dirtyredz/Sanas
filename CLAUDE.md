@@ -7,8 +7,9 @@ meetings, organized per job. Read [STRUCTURE.md](STRUCTURE.md) and
 
 ## Ground rules
 
-- **This is NOT an interview-cheating tool.** Framing, copy, and features target the
-  user's real multi-job/client work. Don't drift the product toward interview use.
+- **Meetings, Q&A and interviews.** Sanas serves the user's multi-job/client work _and_
+  question-driven conversations, interviews included (owner decision 2026-11-02,
+  docs/DECISIONS.md). Features stay grounded in the user's own per-job context.
 - **Privacy boundary:** API keys and all external traffic live in the **main process
   only**. Renderer gets data via typed IPC. `contextIsolation` stays on.
 - **Providers stay swappable:** all STT work goes through `SttProvider`, all LLM work

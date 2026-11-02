@@ -2,6 +2,16 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-11-02 — Product framing: meetings, Q&A and interviews
+
+Owner decision, superseding the 2026-08-27 "not an interview tool" framing. Sanas is a live
+copilot for the user's multi-job/client meetings _and_ for question-driven conversations —
+Q&A sessions and interviews. The per-job context packs stay the grounding source; an interview
+or Q&A is just another meeting with its own context. Consequences: the CLAUDE.md ground rule
+and README framing are rewritten; the rehearsal harness ships mock-interview and rapid Q&A
+scenarios as its main question → suggested-answer stress test. Rejected: keeping interviews
+as test fixtures only — the owner wants interview use supported as a product purpose.
+
 ## 2026-11-01 — Main window without a native title bar; Settings paged, not scrolled
 
 Owner feedback on the v0.1.6 face-lift: the default Windows title bar still sat above the new
@@ -146,8 +156,8 @@ The overlay is always excluded from screen capture because it carries the owner'
 notes and suggestions for their own client work while they share a screen. This applies only to the
 overlay window; the main window remains capturable. The trade-off is that the overlay is also blank
 in the owner's own screenshots and recordings. There is no toggle, by owner choice. This privacy
-boundary does not shift the product toward interview use; the ground rule in `CLAUDE.md` still
-applies.
+boundary was originally noted as not shifting the product toward interview use; see the
+2026-11-02 reframing, which now includes interviews.
 
 ## 2026-10-29 — A meeting summary is a knowledge extract, not a recap
 
@@ -381,7 +391,7 @@ Rejected: mixing loopback+mic into one mono stream (loses the free identity spli
 Scottish Gaelic for "whisper / hint" **and** "glossary" — matches the two core mechanics
 (whispered suggestions + per-job term glossary). Rejected: cueline, meeting-copilot, cagar, guth.
 
-## 2026-08-27 — Product framing: meeting copilot, not interview tool
+## 2026-08-27 — Product framing: meeting copilot, not interview tool _(superseded 2026-11-02)_
 
 User explicitly does **not** want an interview cheater. Sanas is a live copilot for the
 multiple real jobs/clients the user works — per-job project scope, company info, jargon,
