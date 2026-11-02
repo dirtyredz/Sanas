@@ -1,8 +1,8 @@
 # Dot-sourced by the owner wrapper. Never send op output/errors to logs.
 function Get-RehearsalCredentials([string]$Tier, [string]$Assistant, [bool]$DryRun) {
   $needed = @{}
-  if ($Tier -eq 'audio') { $needed.DEEPGRAM_API_KEY = 'op://Sanas/Sanas - Deepgram/credential' }
-  if ($Assistant -eq 'claude') { $needed.ANTHROPIC_API_KEY = 'op://Sanas/Sanas - Claude/credential' }
+  if ($Tier -in @('audio','live')) { $needed.DEEPGRAM_API_KEY = 'op://Sanas/Sanas - Deepgram/credential' }
+  if ($Assistant -eq 'claude' -or $Tier -eq 'live') { $needed.ANTHROPIC_API_KEY = 'op://Sanas/Sanas - Claude/credential' }
   foreach ($name in ($needed.Keys | Sort-Object)) {
     if ([Environment]::GetEnvironmentVariable($name, 'Process')) { continue }
     if ($DryRun) { Write-Log "Would fetch $name from $($needed[$name]) via op (Windows Hello may prompt)."; continue }

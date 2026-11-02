@@ -24,6 +24,18 @@ function run(body: string): string {
   )
 }
 windows(
+  'live always needs both keys even if the assistant argument is canned',
+  () => {
+    const out = run(
+      "Get-RehearsalCredentials live canned $true; Write-Output ('calls=' + $script:calls)",
+    )
+    expect(out).toContain('op://Sanas/Sanas - Claude/credential')
+    expect(out).toContain('op://Sanas/Sanas - Deepgram/credential')
+    expect(out).toContain('calls=0')
+  },
+  30000,
+)
+windows(
   'dry run names only needed references without invoking op',
   () => {
     const out = run(

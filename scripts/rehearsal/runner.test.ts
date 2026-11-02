@@ -6,6 +6,38 @@ import { readPcmWav } from '../../src/main/rehearsal/audio/wav'
 
 const windows = process.platform === 'win32' ? it : it.skip
 windows(
+  'live dry run from C:\\Windows names both keys, controls and no capture',
+  () => {
+    const output = execFileSync(
+      'powershell.exe',
+      [
+        '-NoProfile',
+        '-ExecutionPolicy',
+        'Bypass',
+        '-File',
+        resolve('scripts/rehearsal/run.ps1'),
+        '-Scenario',
+        'live-interview',
+        '-Tier',
+        'live',
+        '-DryRun',
+      ],
+      {
+        cwd: process.env.SystemRoot,
+        encoding: 'utf8',
+        timeout: 45000,
+        env: { ...process.env, DEEPGRAM_API_KEY: '', ANTHROPIC_API_KEY: '' },
+      },
+    )
+    expect(output).toContain('OK (exit 0) log:')
+    expect(output).toContain('op://Sanas/Sanas - Claude/credential')
+    expect(output).toContain('op://Sanas/Sanas - Deepgram/credential')
+    expect(output).toContain('Ctrl+Alt+Right')
+    expect(output).toContain('no build')
+  },
+  50000,
+)
+windows(
   'dry-run resolves a starter from outside the repository and prints its log path',
   () => {
     const output = execFileSync(

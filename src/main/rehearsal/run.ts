@@ -18,6 +18,10 @@ const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout
 
 /** Called instead of normal startup, before settings/DB/services are imported. */
 export async function runRehearsal(): Promise<void> {
+  if (flag('tier') === 'live') {
+    const { runLiveRehearsal } = await import('./live/run')
+    return runLiveRehearsal()
+  }
   let reportPath: string | undefined
   let cleanup: (() => Promise<void>) | undefined
   let clearCredentials: (() => void) | undefined

@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "mode": "live",
+  "name": "Live mock job interview",
+  "persona": "You are a friendly but rigorous senior engineering interviewer. Explore the candidate's own experience, technical reasoning, and communication. Ask about evidence and tradeoffs. Never invent their history or provide a solution. Use the ordered questions and at most the allowed short follow-ups.",
+  "durationMs": 900000,
+  "silenceMs": 2500,
+  "topics": [
+    {
+      "id": "introduction",
+      "question": "Tell me about a recent project you owned and the impact you had.",
+      "maxFollowUps": 1
+    },
+    {
+      "id": "behavioural",
+      "question": "Describe a time you disagreed with a teammate. How did you resolve it?",
+      "maxFollowUps": 1
+    },
+    {
+      "id": "architecture",
+      "question": "Looking at this architecture, how would you keep the service reliable during a dependency outage?",
+      "maxFollowUps": 1,
+      "screen": "../fixtures/architecture.png"
+    },
+    {
+      "id": "boundary",
+      "question": "Review this code on the shared screen. What is the boundary bug, and how would you fix and test it?",
+      "maxFollowUps": 1,
+      "screen": "../fixtures/coding-boundary.png"
+    },
+    {
+      "id": "duplicates",
+      "question": "What is the time complexity of this duplicate search? How would you improve it?",
+      "maxFollowUps": 1,
+      "screen": "../fixtures/coding-duplicates.png"
+    },
+    {
+      "id": "sql",
+      "question": "Why does this SQL query miss rows, and how would you correct it?",
+      "maxFollowUps": 1,
+      "screen": "../fixtures/coding-sql.png"
+    },
+    {
+      "id": "closing",
+      "question": "What would you like to ask us about the team or role?",
+      "maxFollowUps": 0
+    }
+  ]
+}

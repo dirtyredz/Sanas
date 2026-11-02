@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
 import { parseScenario } from './scenario'
 import { evaluate } from './assertions'
+import { parseLivePlan } from './live/plan'
 
 const valid = (): unknown =>
   JSON.parse(readFileSync('scripts/rehearsal/scenarios/client-checkin.json', 'utf8'))
@@ -25,10 +26,10 @@ describe('versioned scenarios', () => {
   it.each(readdirSync('scripts/rehearsal/scenarios').filter((f) => f.endsWith('.json')))(
     'validates the %s scenario',
     (file) => {
-      expect(
-        parseScenario(JSON.parse(readFileSync(`scripts/rehearsal/scenarios/${file}`, 'utf8')))
-          .version,
-      ).toBe(1)
+      const raw = JSON.parse(readFileSync(`scripts/rehearsal/scenarios/${file}`, 'utf8'))
+      const plan =
+        raw.mode === 'live' ? parseLivePlan(raw, 'scripts/rehearsal/scenarios') : parseScenario(raw)
+      expect(plan.version).toBe(1)
     },
   )
   it('rejects unsupported versions, duplicate IDs and backwards timing', () => {
