@@ -1,7 +1,7 @@
 {
   "version": 1,
   "name": "Visual coding interview",
-  "durationMs": 140000,
+  "durationMs": 220000,
   "steps": [
     {
       "id": "intro",
@@ -28,8 +28,13 @@
       "image": "../fixtures/coding-boundary.png"
     },
     {
+      "id": "boundary-detail",
+      "atMs": 50000,
+      "kind": "detail"
+    },
+    {
       "id": "boundary-followup",
-      "atMs": 33000,
+      "atMs": 68000,
       "kind": "utterance",
       "channel": "them",
       "speaker": 1,
@@ -37,13 +42,15 @@
       "durationMs": 8000
     },
     {
-      "id": "boundary-detail",
-      "atMs": 42000,
-      "kind": "detail"
+      "id": "boundary-typed",
+      "kind": "screen",
+      "atMs": 98000,
+      "image": "../fixtures/coding-boundary.png",
+      "text": "For this sum function, what happens with an empty array in the buggy version and corrected version, and what exact loop condition fixes it?"
     },
     {
       "id": "acknowledgement",
-      "atMs": 54000,
+      "atMs": 134000,
       "kind": "utterance",
       "channel": "me",
       "speaker": 0,
@@ -52,7 +59,7 @@
     },
     {
       "id": "complexity-q",
-      "atMs": 60000,
+      "atMs": 140000,
       "kind": "utterance",
       "channel": "them",
       "speaker": 1,
@@ -61,7 +68,7 @@
     },
     {
       "id": "improvement-q",
-      "atMs": 66600,
+      "atMs": 146600,
       "kind": "utterance",
       "channel": "them",
       "speaker": 1,
@@ -70,13 +77,13 @@
     },
     {
       "id": "duplicates-screen",
-      "atMs": 71000,
+      "atMs": 151000,
       "kind": "screen",
       "image": "../fixtures/coding-duplicates.png"
     },
     {
       "id": "sql-q",
-      "atMs": 98000,
+      "atMs": 178000,
       "kind": "utterance",
       "channel": "them",
       "speaker": 1,
@@ -85,13 +92,13 @@
     },
     {
       "id": "sql-screen",
-      "atMs": 107000,
+      "atMs": 187000,
       "kind": "screen",
       "image": "../fixtures/coding-sql.png"
     },
     {
       "id": "closing",
-      "atMs": 132000,
+      "atMs": 212000,
       "kind": "utterance",
       "channel": "me",
       "speaker": 0,
@@ -120,59 +127,109 @@
       "id": "boundary-delivered",
       "kind": "screen",
       "after": "boundary-screen",
-      "withinMs": 22000
+      "withinMs": 35000,
+      "covers": ["boundary-screen"],
+      "responsivenessMs": 5000
     },
     {
       "id": "duplicates-delivered",
       "kind": "screen",
       "after": "duplicates-screen",
-      "withinMs": 22000
+      "withinMs": 35000,
+      "covers": ["duplicates-screen"],
+      "responsivenessMs": 5000
     },
     {
       "id": "sql-delivered",
       "kind": "screen",
       "after": "sql-screen",
-      "withinMs": 22000
+      "withinMs": 35000,
+      "covers": ["sql-screen"],
+      "responsivenessMs": 5000
     },
     {
       "id": "boundary-concept",
       "kind": "screen",
       "after": "boundary-screen",
-      "withinMs": 22000,
-      "contains": "off-by-one",
-      "assistant": "claude"
+      "withinMs": 35000,
+      "assistant": "claude",
+      "covers": ["boundary-screen"],
+      "responsivenessMs": 5000,
+      "rubric": "boundary"
     },
     {
       "id": "quadratic-concept",
       "kind": "screen",
       "after": "duplicates-screen",
-      "withinMs": 22000,
-      "contains": "O(n^2)",
-      "assistant": "claude"
+      "withinMs": 35000,
+      "assistant": "claude",
+      "covers": ["duplicates-screen"],
+      "responsivenessMs": 5000,
+      "rubric": "quadratic"
     },
     {
       "id": "set-concept",
       "kind": "screen",
       "after": "duplicates-screen",
-      "withinMs": 22000,
+      "withinMs": 35000,
       "contains": "set",
-      "assistant": "claude"
+      "assistant": "claude",
+      "covers": ["duplicates-screen"],
+      "responsivenessMs": 5000
     },
     {
       "id": "sql-concept",
       "kind": "screen",
       "after": "sql-screen",
-      "withinMs": 22000,
-      "contains": "IS NULL",
-      "assistant": "claude"
+      "withinMs": 35000,
+      "assistant": "claude",
+      "covers": ["sql-screen"],
+      "responsivenessMs": 5000,
+      "rubric": "sql-null"
     },
     {
-      "id": "empty-array-followup",
+      "id": "empty-array-typed",
+      "kind": "screen",
+      "after": "boundary-typed",
+      "withinMs": 35000,
+      "assistant": "claude",
+      "covers": ["boundary-typed"],
+      "responsivenessMs": 5000,
+      "rubric": "empty-array"
+    },
+    {
+      "id": "spoken-followup-request",
+      "kind": "request",
+      "after": "boundary-followup",
+      "fromFinal": true,
+      "withinMs": 6000,
+      "covers": ["boundary-followup"]
+    },
+    {
+      "id": "spoken-followup-answer",
+      "kind": "suggestion",
+      "after": "boundary-followup",
+      "fromFinal": true,
+      "withinMs": 20000,
+      "covers": ["boundary-followup"],
+      "responsivenessMs": 5000
+    },
+    {
+      "id": "source-expansion",
       "kind": "suggestion",
       "after": "boundary-detail",
-      "withinMs": 22000,
-      "contains": "empty",
-      "assistant": "claude"
+      "withinMs": 35000,
+      "covers": ["boundary-detail"]
+    },
+    {
+      "id": "spoken-followup-content",
+      "kind": "suggestion",
+      "after": "boundary-followup",
+      "fromFinal": true,
+      "withinMs": 20000,
+      "covers": ["boundary-followup"],
+      "assistant": "claude",
+      "rubric": "empty-array"
     }
   ]
 }

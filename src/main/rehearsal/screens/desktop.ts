@@ -9,6 +9,7 @@ import {
 import type { EncodableImage } from '../../services/screen-capture/encode'
 import { encodeForAssistant } from '../../services/screen-capture/encode'
 import type { Fault, Step } from '../scenario'
+import { mapRectangle, type Rectangle } from './geometry'
 
 const fixtureDisplay: CaptureDisplay = {
   id: 771,
@@ -50,6 +51,8 @@ export class RehearsalScreens {
   private real = false
   private fixtureWindow: BrowserWindow | null = null
   private expected: NativeImage | null = null
+  private contentBounds: Rectangle | null = null
+  private restoreOverlay?: () => void
   private fault: Fault | null = null
   private faultUntil = 0
   readonly captures: {
@@ -58,6 +61,10 @@ export class RehearsalScreens {
     displayId: number
     verified: boolean
     base64: string
+    contentError?: number
+    overlayError?: number
+    reason?: string
+    contentBounds?: Rectangle
   }[] = []
   constructor(private readonly now: () => number) {}
   inject(fault: Fault, durationMs: number): void {
@@ -97,35 +104,24 @@ export class RehearsalScreens {
       }
       const sources = await electronDesktop(() => this.target.bounds).getSources(options)
       const actual = sources.find((s) => s.display_id === String(this.target.id))?.thumbnail
-      if (!actual || !this.expected) throw new Error('Real capture missed the target display')
+      if (!actual || !this.expected || !this.contentBounds)
+        throw new Error('Real capture missed the target display')
       const expected = this.expected
+      const content = mapRectangle(this.contentBounds, this.target.bounds, actual.getSize())
+      const actualContent = actual.crop(content)
       const diff = imageDifference(
-        actual.resize({ width: 160, height: 90 }).toBitmap(),
+        actualContent.resize({ width: 160, height: 90 }).toBitmap(),
         expected.resize({ width: 160, height: 90 }).toBitmap(),
       )
       // The actual Sanas overlay must be visible on the target for exclusion to be tested.
       const overlay = BrowserWindow.getAllWindows().find((w) => w.getTitle() === 'Sanas Overlay')
       if (!overlay?.isVisible())
         throw new Error('Real capture requires the visible protected overlay')
-      const b = overlay.getBounds(),
-        t = this.target.bounds
-      const size = actual.getSize()
-      const crop = {
-        x: Math.round(((b.x - t.x) * size.width) / t.width),
-        y: Math.round(((b.y - t.y) * size.height) / t.height),
-        width: Math.round((b.width * size.width) / t.width),
-        height: Math.round((b.height * size.height) / t.height),
-      }
-      if (
-        crop.x < 0 ||
-        crop.y < 0 ||
-        crop.x + crop.width > size.width ||
-        crop.y + crop.height > size.height
-      )
-        throw new Error('Overlay is not wholly on the target display')
-      const expectedSized = expected.resize(size)
+      const b = overlay.getBounds()
+      const crop = mapRectangle(b, this.contentBounds, actualContent.getSize())
+      const expectedSized = expected.resize(actualContent.getSize())
       const overlayDiff = imageDifference(
-        actual.crop(crop).resize({ width: 80, height: 60 }).toBitmap(),
+        actualContent.crop(crop).resize({ width: 80, height: 60 }).toBitmap(),
         expectedSized.crop(crop).resize({ width: 80, height: 60 }).toBitmap(),
       )
       const verified = diff < 12 && overlayDiff < 12
@@ -135,6 +131,15 @@ export class RehearsalScreens {
         displayId: this.target.id,
         verified,
         base64: encodeForAssistant(actual).image.base64,
+        contentError: diff,
+        overlayError: overlayDiff,
+        contentBounds: this.contentBounds,
+        reason:
+          diff >= 12
+            ? 'fixture-obstructed-or-mismatched'
+            : overlayDiff >= 12
+              ? 'overlay-not-excluded'
+              : 'valid',
       })
       if (!verified)
         throw new Error('Real screen pixels differ from fixture or overlay was not excluded')
@@ -157,7 +162,7 @@ export class RehearsalScreens {
     if (!display) throw new Error('Requested real display is missing')
     this.target = display
     this.fixtureWindow = new BrowserWindow({
-      ...display.bounds,
+      ...display.workArea,
       frame: false,
       show: false,
       skipTaskbar: true,
@@ -167,8 +172,20 @@ export class RehearsalScreens {
     await this.fixtureWindow.loadURL(
       `data:text/html;charset=utf-8,${encodeURIComponent(`<html><body style="margin:0;background:#152438;overflow:hidden"><img style="width:100vw;height:100vh;object-fit:fill" src="data:image/png;base64,${encoded}"></body></html>`)}`,
     )
-    this.fixtureWindow.showInactive()
+    // Explicit owner rehearsal: raise the fixture above ordinary windows, below the
+    // production screen-saver-level protected overlay. Do not change its protection.
+    this.fixtureWindow.setAlwaysOnTop(true, 'floating')
+    this.fixtureWindow.show()
+    this.fixtureWindow.moveTop()
+    this.contentBounds = this.fixtureWindow.getContentBounds()
+    mapRectangle(this.contentBounds, display.bounds, display.size)
     const overlay = BrowserWindow.getAllWindows().find((w) => w.getTitle() === 'Sanas Overlay')
+    if (overlay) {
+      const original = overlay.getBounds()
+      this.restoreOverlay = () => {
+        if (!overlay.isDestroyed()) overlay.setBounds(original)
+      }
+    }
     overlay?.setBounds({
       x: display.bounds.x + 30,
       y: display.bounds.y + 30,
@@ -179,9 +196,12 @@ export class RehearsalScreens {
     this.expected = await this.fixtureWindow.webContents.capturePage()
   }
   close(): void {
+    this.restoreOverlay?.()
+    this.restoreOverlay = undefined
     this.fixtureWindow?.destroy()
     this.fixtureWindow = null
     this.expected = null
+    this.contentBounds = null
   }
 }
 

@@ -4,7 +4,7 @@ Run an isolated Sanas meeting rehearsal from any directory.
 .DESCRIPTION
 Builds local sources, launches explicit rehearsal mode, prints each assertion and exits
 with 0 on success or 1 on failure. No downloads. Logs are redacted and timestamped.
-Audio and Claude incur provider charges; credentials come only from environment variables.
+Audio and Claude incur provider charges; missing credentials come from 1Password via op.
 .PARAMETER Scenario
 Starter name (client-checkin, presentation, standup) or JSON path relative to the repository.
 .PARAMETER Tier
@@ -31,6 +31,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'owner-run.ps1')
+. (Join-Path $PSScriptRoot 'credentials.ps1')
 Initialize-OwnerRun 'rehearsal'
 Add-LogSecret $env:DEEPGRAM_API_KEY
 Add-LogSecret $env:ANTHROPIC_API_KEY
@@ -47,9 +48,8 @@ try {
   if (-not $Audio -and $spec.audio) { $Audio = [IO.Path]::GetFullPath((Join-Path (Split-Path $scenarioPath) $spec.audio)) }
   if ($Audio -and -not (Test-Path -LiteralPath $Audio)) { throw 'Audio input is missing.' }
   Write-Log "Scenario: $($spec.name); tier: $Tier; assistant: $Assistant; isolated profile under .tmp/rehearsal"
+  Get-RehearsalCredentials $Tier $Assistant ([bool]$DryRun)
   if ($DryRun) { Complete-OwnerRun 0 'Dry run: no build, audio synthesis, capture or provider calls.' }
-  if ($Tier -eq 'audio' -and -not $env:DEEPGRAM_API_KEY) { throw 'Set DEEPGRAM_API_KEY for the audio tier.' }
-  if ($Assistant -eq 'claude' -and -not $env:ANTHROPIC_API_KEY) { throw 'Set ANTHROPIC_API_KEY for Claude.' }
   $electron = Join-Path $script:RepoRoot 'node_modules/electron/dist/electron.exe'
   if (-not (Test-Path -LiteralPath $electron)) { throw 'Local Electron dependencies are missing; no downloads attempted.' }
   # Respect other builds/editors; this wrapper never terminates another checkout.
@@ -103,6 +103,7 @@ try {
 } catch {
   Complete-OwnerRun 1 $_.Exception.Message
 } finally {
+  Clear-RehearsalCredentials
   if ($child) {
     if (-not $child.HasExited) { & taskkill.exe /PID $child.Id /T /F 2>$null | Out-Null; $child.WaitForExit() }
     $child.Dispose()

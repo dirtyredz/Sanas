@@ -28,6 +28,9 @@ try {
   $voice.Rate = 2
   $format = New-Object System.Speech.AudioFormat.SpeechAudioFormatInfo(16000, [System.Speech.AudioFormat.AudioBitsPerSample]::Sixteen, [System.Speech.AudioFormat.AudioChannel]::Mono)
   $pcm = New-Object byte[] ([int]$s.durationMs * 64)
+  $measurements = @()
+  $overruns = @()
+  $ends = @{ me = 0; them = 0 }
   foreach ($step in $s.steps) {
     if ($step.kind -ne 'utterance') { continue }
     if ($step.channel -notin @('me','them') -or $step.atMs -lt 0 -or $step.durationMs -le 0 -or ($step.atMs + $step.durationMs) -gt $s.durationMs) { throw 'Invalid utterance timing/channel.' }
@@ -38,7 +41,12 @@ try {
       $voice.Speak([string]$step.text)
       $clip = $stream.ToArray()
     } finally { $voice.SetOutputToNull(); $stream.Dispose() }
-    if ($clip.Length -gt ([int]$step.durationMs * 32)) { throw "Speech exceeds duration for step $($step.id); enlarge duration and move following steps." }
+    $speechMs = $clip.Length / 32
+    $overrun = [Math]::Max(0, $speechMs - $step.durationMs)
+    $measurements += [pscustomobject]@{ id = $step.id; speechMs = $speechMs; slotMs = $step.durationMs; overrunMs = $overrun; recommendedMs = [Math]::Ceiling(($speechMs + 250) / 100) * 100 }
+    if ($overrun -gt 0) { $overruns += $step.id; continue }
+    if ($step.atMs -lt $ends[$step.channel]) { throw "Overlapping speech on channel $($step.channel) at $($step.id)." }
+    $ends[$step.channel] = $step.atMs + $speechMs
     $channel = if ($step.channel -eq 'me') { 0 } else { 1 }
     for ($i = 0; $i -lt $clip.Length; $i += 2) {
       $at = ([int]$step.atMs * 16 + $i / 2) * 4 + $channel * 2
@@ -48,6 +56,9 @@ try {
     }
   }
   New-Item -ItemType Directory -Force -Path (Split-Path $Output) | Out-Null
+  $measurements | ConvertTo-Json | Set-Content -LiteralPath ($Output + '.timings.json') -Encoding UTF8
+  Write-Log "Measured $($measurements.Count) clips; $($overruns.Count) overrun slots. Timing report: $Output.timings.json"
+  if ($overruns.Count) { throw "Speech exceeds duration for steps: $($overruns -join ', '); enlarge slots using timing report and move dependent steps." }
   $file = [IO.File]::Create($Output)
   $writer = New-Object IO.BinaryWriter($file)
   try {

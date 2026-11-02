@@ -1,3 +1,4 @@
+import { observeAssistance } from './diagnostics'
 import { TurnAssembler } from '../../turns/turn-assembler'
 import type { CompletedTurn, IdentityRole, TurnFinal } from '../../turns/types'
 import { answerCooldownAllows, looksLikeResponseCandidate } from '../../assistant/triggers'
@@ -109,7 +110,7 @@ export class LiveAssistance {
   /** A meeting started or resumed: transient state and cooldowns start over. */
   start(): void {
     this.guard(() => {
-      this.invalidate()
+      this.invalidate('start')
       this.active = true
       this.coach.reset()
       this.recentTurns = []
@@ -124,19 +125,19 @@ export class LiveAssistance {
   halt(): void {
     this.guard(() => {
       this.active = false
-      this.invalidate()
+      this.invalidate('stop-or-pause')
     })
   }
 
   /** The provider lost connection continuity: whatever was half-assembled is incomplete. */
   connectionReset(): void {
-    this.guard(() => this.invalidate())
+    this.guard(() => this.invalidate('connection-reset'))
   }
 
   /** "That's me" changed: identities in flight are no longer trustworthy. Old turns are
    *  not re-triggered. */
   identityChanged(): void {
-    this.guard(() => this.invalidate())
+    this.guard(() => this.invalidate('identity-change'))
   }
 
   /** Assistance settings were saved. Disabling coaching cancels it at once. */
@@ -215,6 +216,7 @@ export class LiveAssistance {
 
   private handleCompleted(turns: CompletedTurn[], now: number): void {
     for (const turn of turns) {
+      observeAssistance({ event: 'turn-completed', turn })
       const previous = this.recentTurns.slice(-2)
       this.recentTurns = [...this.recentTurns, turn].slice(-RECENT_TURNS)
       if (turn.role === 'user') {
@@ -222,11 +224,14 @@ export class LiveAssistance {
         continue
       }
       if (looksLikeResponseCandidate(turn.text)) this.admit({ turn, previous, dropped: false })
+      else observeAssistance({ event: 'not-classified', turn, reason: 'prefilter' })
     }
   }
 
   private admit(c: Candidate): void {
     this.cancelCoach() // answer assistance has priority
+    if (this.ready) observeAssistance({ event: 'superseded', turn: this.ready.turn })
+    if (this.queued) observeAssistance({ event: 'superseded', turn: this.queued.turn })
     this.ready = null // a newer completed turn supersedes one still waiting for the lane
     this.queued = c // the newest only: never a queue — it carries the overtaken questions
     this.unanswered.record(c.turn, this.deps.now())
@@ -240,13 +245,17 @@ export class LiveAssistance {
       if (!c || c.dropped) continue
       if (f.tEndMs <= c.turn.endMs + AFTER_TOLERANCE_MS) continue // the candidate's own late words
       if (f.role === 'user' && words(f.text) < USER_RESPONSE_MIN_WORDS) continue
-      this.dropCandidate(c)
+      this.dropCandidate(c, f.role === 'user' ? 'user-final' : 'new-final')
     }
     // the user is answering: what was asked before is no longer waiting for a suggestion
-    if (f.role === 'user' && words(f.text) >= USER_RESPONSE_MIN_WORDS) this.unanswered.clear()
+    if (f.role === 'user' && words(f.text) >= USER_RESPONSE_MIN_WORDS) {
+      observeAssistance({ event: 'ledger-cleared', reason: 'user-final' })
+      this.unanswered.clear()
+    }
   }
 
-  private dropCandidate(c: Candidate): void {
+  private dropCandidate(c: Candidate, reason: string): void {
+    observeAssistance({ event: 'invalidated', turn: c.turn, reason })
     c.dropped = true
     c.abort?.abort()
     if (this.queued === c) this.queued = null
@@ -272,6 +281,17 @@ export class LiveAssistance {
       !s.anthropicApiKey ||
       !answerCooldownAllows(this.lastAnswerAt, now, s.nudgeCooldownSec)
     ) {
+      observeAssistance({
+        event: 'not-classified',
+        turn: c.turn,
+        reason: this.expired(c, now)
+          ? 'expired'
+          : now < this.suspendedUntil
+            ? 'suspended'
+            : !s.anthropicApiKey
+              ? 'no-key'
+              : 'cooldown',
+      })
       this.queued = null
       return
     }
@@ -300,6 +320,7 @@ export class LiveAssistance {
     const epoch = this.epoch
     void this.deps
       .classify({
+        diagnosticTurn: c.turn,
         apiKey: s.anthropicApiKey,
         workspaceId: s.anthropicWorkspaceId || undefined,
         model: s.classifierModel,
@@ -312,6 +333,16 @@ export class LiveAssistance {
   }
 
   private onClassified(c: Candidate, epoch: number, outcome: ClassifierOutcome): void {
+    observeAssistance({
+      event: 'classified',
+      turn: c.turn,
+      reason:
+        outcome.status === 'failed'
+          ? outcome.reason
+          : outcome.kind === 'none'
+            ? 'none'
+            : outcome.kind + ' ' + outcome.addressee,
+    })
     if (this.classifying === c) this.classifying = null
     if (epoch === this.epoch && !c.dropped) {
       if (outcome.status === 'failed') {
@@ -344,10 +375,18 @@ export class LiveAssistance {
       this.expired(c, now) ||
       !answerCooldownAllows(this.lastAnswerAt, now, s.nudgeCooldownSec)
     ) {
+      observeAssistance({
+        event: 'not-generated',
+        turn: c.turn,
+        reason: this.expired(c, now) ? 'expired' : 'addressee-or-cooldown',
+      })
       this.ready = null
       return
     }
-    if (!this.deps.runner.canStart('ambient')) return // retried when the lane frees
+    if (!this.deps.runner.canStart('ambient')) {
+      observeAssistance({ event: 'waiting', turn: c.turn, reason: 'busy-lane' })
+      return
+    } // retried when the lane frees
     const snap = this.deps.snapshot()
     this.ready = null
     if (!snap) return
@@ -355,8 +394,8 @@ export class LiveAssistance {
     const earlier = asked.filter((t) => t !== c.turn)
     const label = (t: CompletedTurn): string =>
       speakerLabel({ speaker: t.speaker, isUser: false }, snap.names)
-    const handle = this.deps.runner.start(
-      answerRequest(snap, s, 'ambient', {
+    const handle = this.deps.runner.start({
+      ...answerRequest(snap, s, 'ambient', {
         speaker: label(c.turn),
         text: c.turn.text,
         kind: c.kind,
@@ -365,7 +404,8 @@ export class LiveAssistance {
           ? earlier.map((t) => ({ speaker: label(t), text: t.text }))
           : undefined,
       }),
-    )
+      diagnosticTurns: asked,
+    })
     if (!handle) return
     this.unanswered.cover(asked) // started: answered, or deliberately declined — never re-asked
     // consumed when an answer starts — and kept even if it declines with the no-op, so a
@@ -494,10 +534,12 @@ export class LiveAssistance {
   }
 
   /** Discards the unfinished turn and every pending automatic request. */
-  private invalidate(): void {
+  private invalidate(reason: string): void {
+    observeAssistance({ event: 'invalidate', reason })
     this.epoch++
     for (const name of this.timers.keys()) this.clearTimer(name)
-    for (const c of [this.classifying, this.queued, this.ready]) if (c) this.dropCandidate(c)
+    for (const c of [this.classifying, this.queued, this.ready])
+      if (c) this.dropCandidate(c, reason)
     this.unanswered.clear()
     this.cancelCoach()
     this.assembler.reset()

@@ -16,6 +16,7 @@ import { canStartSuggestion, type SuggestionInFlight } from './suggestion-in-fli
 // (that is why the hold exists); only buffered next points are cancellable.
 
 export interface SuggestionRequest extends SuggestionMetadata {
+  diagnosticTurns?: readonly { startMs: number; endMs: number; completedAt: number }[]
   cacheableContext?: string
   presentationRevision?: number
   meetingId: number
@@ -150,6 +151,12 @@ export class SuggestionRunner {
     const run = async (): Promise<SuggestionOutcome> => {
       try {
         const text = await this.deps.provider.complete({
+          diagnostic: {
+            suggestionId: sid,
+            purpose: req.purpose,
+            manualKind: req.manualKind ?? undefined,
+            turns: req.diagnosticTurns,
+          },
           apiKey: req.apiKey,
           workspaceId: req.workspaceId,
           model: req.model,

@@ -26,6 +26,7 @@ export interface ClassifierTurn {
 }
 
 export interface ClassifyRequest {
+  diagnosticTurn?: { startMs: number; endMs: number; completedAt: number }
   apiKey: string
   workspaceId?: string
   model: string
@@ -102,6 +103,7 @@ export async function classifyTurn(
   })
   const call = provider
     .complete({
+      diagnostic: { purpose: 'classifier', turns: req.diagnosticTurn ? [req.diagnosticTurn] : [] },
       apiKey: req.apiKey,
       workspaceId: req.workspaceId,
       model: req.model,

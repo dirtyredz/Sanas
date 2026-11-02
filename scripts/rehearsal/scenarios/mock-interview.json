@@ -1,7 +1,7 @@
 {
   "version": 1,
   "name": "Mock job interview",
-  "durationMs": 37000,
+  "durationMs": 182400,
   "steps": [
     {
       "id": "intro-q",
@@ -10,115 +10,115 @@
       "channel": "them",
       "speaker": 1,
       "text": "Tell me about a time you resolved a conflict on a team?",
-      "durationMs": 2200
+      "durationMs": 3300
     },
     {
       "id": "intro-a",
-      "atMs": 2700,
+      "atMs": 23800,
       "kind": "utterance",
       "channel": "me",
       "speaker": 0,
       "text": "I mediated a disagreement between design and backend.",
-      "durationMs": 2200
+      "durationMs": 3200
     },
     {
       "id": "followup-q",
-      "atMs": 5300,
+      "atMs": 27400,
       "kind": "utterance",
       "channel": "them",
       "speaker": 1,
       "text": "What was the outcome of that decision?",
-      "durationMs": 2200
+      "durationMs": 2400
     },
     {
       "id": "followup-a",
-      "atMs": 7900,
+      "atMs": 50200,
       "kind": "utterance",
       "channel": "me",
       "speaker": 0,
       "text": "We shipped on time and kept both goals.",
-      "durationMs": 2200
+      "durationMs": 2700
     },
     {
       "id": "tech-q",
-      "atMs": 10500,
+      "atMs": 53300,
       "kind": "utterance",
       "channel": "them",
       "speaker": 1,
       "text": "How would you design an idempotent order service?",
-      "durationMs": 2200
+      "durationMs": 3000
     },
     {
       "id": "tech-a",
-      "atMs": 13100,
+      "atMs": 76700,
       "kind": "utterance",
       "channel": "me",
       "speaker": 0,
       "text": "I would use an idempotency key per request.",
-      "durationMs": 2200
+      "durationMs": 3000
     },
     {
       "id": "drop",
-      "atMs": 15800,
+      "atMs": 80200,
       "kind": "fault",
       "fault": "socket-drop",
       "durationMs": 500
     },
     {
       "id": "tech-followup",
-      "atMs": 17000,
+      "atMs": 81400,
       "kind": "utterance",
       "channel": "them",
       "speaker": 1,
       "text": "And how does that scale with the queue?",
-      "durationMs": 2200
+      "durationMs": 2400
     },
     {
       "id": "diagram",
-      "atMs": 20000,
+      "atMs": 104600,
       "kind": "screen",
       "image": "../fixtures/architecture.png"
     },
     {
       "id": "detail",
-      "atMs": 22500,
+      "atMs": 142100,
       "kind": "detail"
     },
     {
       "id": "closing-q",
-      "atMs": 25000,
+      "atMs": 144600,
       "kind": "utterance",
       "channel": "them",
       "speaker": 1,
       "text": "Do you have any questions for us?",
-      "durationMs": 2200
+      "durationMs": 2300
     },
     {
       "id": "closing-a",
-      "atMs": 27600,
+      "atMs": 147300,
       "kind": "utterance",
       "channel": "me",
       "speaker": 0,
       "text": "What does onboarding look like for the team?",
-      "durationMs": 2200
+      "durationMs": 2500
     },
     {
       "id": "stacked-a",
-      "atMs": 30000,
+      "atMs": 150000,
       "kind": "utterance",
       "channel": "them",
       "speaker": 1,
       "text": "What is your notice period?",
-      "durationMs": 1800
+      "durationMs": 2100
     },
     {
       "id": "stacked-b",
-      "atMs": 32000,
+      "atMs": 152300,
       "kind": "utterance",
       "channel": "them",
       "speaker": 1,
       "text": "And when could you start?",
-      "durationMs": 1800
+      "durationMs": 1900
     }
   ],
   "expectations": [
@@ -129,7 +129,8 @@
     {
       "id": "summary-saved",
       "kind": "summary",
-      "contains": "idempotent"
+      "contains": "idempotent",
+      "assistant": "canned"
     },
     {
       "id": "recorded",
@@ -139,19 +140,28 @@
       "id": "behavioural-suggestion",
       "kind": "suggestion",
       "after": "intro-q",
-      "withinMs": 5000
+      "withinMs": 20000,
+      "covers": ["intro-q"],
+      "fromFinal": true,
+      "responsivenessMs": 5000
     },
     {
       "id": "followup-in-context",
       "kind": "suggestion",
       "after": "followup-q",
-      "withinMs": 5000
+      "withinMs": 20000,
+      "covers": ["followup-q"],
+      "fromFinal": true,
+      "responsivenessMs": 5000
     },
     {
       "id": "technical-suggestion",
       "kind": "suggestion",
       "after": "tech-q",
-      "withinMs": 5000
+      "withinMs": 20000,
+      "covers": ["tech-q"],
+      "fromFinal": true,
+      "responsivenessMs": 5000
     },
     {
       "id": "reconnected",
@@ -163,27 +173,71 @@
       "id": "post-reconnect-suggestion",
       "kind": "suggestion",
       "after": "tech-followup",
-      "withinMs": 5000
+      "withinMs": 20000,
+      "covers": ["tech-followup"],
+      "fromFinal": true,
+      "responsivenessMs": 5000
     },
     {
       "id": "diagram-delivered",
       "kind": "screen",
       "after": "diagram",
-      "withinMs": 2500
+      "withinMs": 35000,
+      "covers": ["diagram"],
+      "fromFinal": true,
+      "responsivenessMs": 5000
     },
     {
       "id": "stacked-a-covered",
       "kind": "suggestion",
-      "after": "stacked-a",
-      "withinMs": 6000,
-      "contains": "notice period"
+      "after": "stacked-b",
+      "withinMs": 20000,
+      "contains": "notice period",
+      "covers": ["stacked-a"],
+      "fromFinal": true,
+      "responsivenessMs": 5000,
+      "assistant": "canned"
     },
     {
       "id": "stacked-b-covered",
       "kind": "suggestion",
-      "after": "stacked-a",
+      "after": "stacked-b",
+      "withinMs": 20000,
+      "contains": "when could you start",
+      "covers": ["stacked-b"],
+      "fromFinal": true,
+      "responsivenessMs": 5000,
+      "assistant": "canned"
+    },
+    {
+      "id": "stacked-a-answer",
+      "kind": "suggestion",
+      "after": "stacked-b",
+      "withinMs": 20000,
+      "covers": ["stacked-a"],
+      "fromFinal": true,
+      "responsivenessMs": 5000,
+      "assistant": "claude",
+      "rubric": "notice"
+    },
+    {
+      "id": "stacked-b-answer",
+      "kind": "suggestion",
+      "after": "stacked-b",
+      "withinMs": 20000,
+      "covers": ["stacked-b"],
+      "fromFinal": true,
+      "responsivenessMs": 5000,
+      "assistant": "claude",
+      "rubric": "start"
+    },
+    {
+      "id": "stacked-request",
+      "kind": "request",
+      "after": "stacked-b",
+      "fromFinal": true,
       "withinMs": 6000,
-      "contains": "when could you start"
+      "covers": ["stacked-a", "stacked-b"]
     }
   ]
 }

@@ -1,8 +1,47 @@
 import { afterEach, expect, it, vi } from 'vitest'
 import { ScriptedSttProvider, RehearsalAssistant } from './providers'
+import { imageDigest } from './outcomes'
 import { CLASSIFIER_SYSTEM } from '../services/assistant/classifier'
 import type { AssistRequest } from '../services/assistant/types'
 import type { Step } from './scenario'
+import { TurnAssembler } from '../services/turns/turn-assembler'
+
+it('keeps a multi-question turn open while retimed scripted speech is still advancing', async () => {
+  const provider = new ScriptedSttProvider()
+  const turns = new TurnAssembler()
+  let clock = 0
+  await provider.start({
+    apiKey: '',
+    channels: 2,
+    keyterms: [],
+    onError: vi.fn(),
+    onTranscript: (line) => {
+      if (line.isFinal) turns.final({ ...line, role: 'other' }, clock)
+      else turns.activity(line.channel, line.tEndMs, clock)
+    },
+    onSignal: (signal) => {
+      if (signal.kind === 'boundary')
+        turns.boundary(signal.channel, signal.atMs, signal.source, clock)
+      else if (signal.kind === 'activity') turns.activity(signal.channel, signal.atMs, clock)
+    },
+  })
+  provider.utterance({ ...utterance, atMs: 0, durationMs: 2100 })
+  for (clock = 0; clock <= 2100; clock += 100) provider.tick(clock)
+  clock = 2300
+  provider.utterance({
+    ...utterance,
+    id: 'two',
+    atMs: 2300,
+    durationMs: 1900,
+    text: 'When can you start?',
+  })
+  for (; clock < 4200; clock += 100) {
+    provider.tick(clock)
+    expect(turns.tick(clock)).toEqual([])
+  }
+  provider.tick(clock)
+  expect(turns.tick(clock + 350)[0].text).toBe(utterance.text + ' When can you start?')
+})
 
 afterEach(() => vi.useRealTimers())
 const utterance: Extract<Step, { kind: 'utterance' }> = {
@@ -85,7 +124,7 @@ it('uses the actual image request and forwards real provider calls without inven
   expect(
     await p.complete({ ...req, image: { mediaType: 'image/png', base64: 'actual-bytes' } }),
   ).toContain('dashboard')
-  expect(p.requests.at(-1)?.image).toBe('actual-bytes')
+  expect(p.requests.at(-1)?.imageDigest).toBe(imageDigest('actual-bytes'))
   const complete = vi.fn().mockResolvedValue('real answer')
   expect(await new RehearsalAssistant(() => 0, { complete }).complete(req)).toBe('real answer')
   expect(complete).toHaveBeenCalledWith(req)
@@ -102,5 +141,5 @@ it('supports delay, abort and failure without leaking timers', async () => {
   expect(vi.getTimerCount()).toBe(0)
   p.slowUntil = 0
   p.failUntil = 100
-  await expect(p.complete(req)).rejects.toThrow('Injected')
+  await expect(p.complete(req)).rejects.toThrow('failed')
 })

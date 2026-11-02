@@ -1,28 +1,40 @@
 import { afterEach, expect, it, vi } from 'vitest'
 
 const fake = vi.hoisted(() => {
-  const image = (value = 30): any => ({
+  const crops: unknown[] = []
+  const image = (value = 30, width = 1920, height = 1020, overlayValue?: number): any => ({
     isEmpty: () => false,
-    getSize: () => ({ width: 960, height: 540 }),
-    resize: () => image(value),
-    crop: () => image(value),
+    getSize: () => ({ width, height }),
+    resize: (size: { width: number; height: number }) =>
+      image(value, size.width, size.height, overlayValue),
+    crop: (rect: { x: number; y: number; width: number; height: number }) => {
+      crops.push(rect)
+      return image(
+        rect.x > 0 ? (overlayValue ?? value) : value,
+        rect.width,
+        rect.height,
+        overlayValue,
+      )
+    },
     toPNG: () => Buffer.from(`png-${value}`),
     toJPEG: () => Buffer.from(`jpeg-${value}`),
     toBitmap: () => Buffer.alloc(160 * 90 * 4, value),
   })
   const display = {
     id: 42,
-    bounds: { x: -960, y: 0, width: 960, height: 540 },
-    size: { width: 960, height: 540 },
-    scaleFactor: 1,
+    bounds: { x: -1536, y: 0, width: 1536, height: 864 },
+    size: { width: 1536, height: 864 },
+    scaleFactor: 1.25,
+    workArea: { x: -1536, y: 0, width: 1536, height: 816 },
   }
   const overlay = {
     getTitle: () => 'Sanas Overlay',
     isVisible: () => true,
-    getBounds: () => ({ x: -930, y: 30, width: 380, height: 460 }),
+    getBounds: () => ({ x: -1506, y: 30, width: 380, height: 460 }),
     setBounds: () => {},
+    isDestroyed: () => false,
   }
-  return { image, display, overlay, getSources: vi.fn(), destroy: vi.fn() }
+  return { image, crops, display, overlay, getSources: vi.fn(), destroy: vi.fn() }
 })
 vi.mock('electron', () => ({
   nativeImage: { createEmpty: () => fake.image(), createFromPath: () => fake.image() },
@@ -34,7 +46,12 @@ vi.mock('electron', () => ({
     }
     webContents = { capturePage: async () => fake.image() }
     async loadURL(): Promise<void> {}
-    showInactive(): void {}
+    show(): void {}
+    moveTop(): void {}
+    setAlwaysOnTop(): void {}
+    getContentBounds() {
+      return fake.display.workArea
+    }
     destroy(): void {
       fake.destroy()
     }
@@ -46,6 +63,7 @@ import { captureDisplay } from '../../services/screen-capture/desktop'
 afterEach(() => {
   vi.useRealTimers()
   vi.clearAllMocks()
+  fake.crops.length = 0
 })
 
 it('routes fixtures by display ID and carries actual encoded bytes', async () => {
@@ -83,14 +101,26 @@ it('verifies real display pixels and overlay exclusion, rejecting a contaminated
   })
   await vi.advanceTimersByTimeAsync(500)
   await prepare
-  fake.getSources.mockResolvedValue([{ display_id: '42', thumbnail: fake.image() }])
+  fake.getSources.mockResolvedValue([
+    { display_id: 'wrong', thumbnail: fake.image(200) },
+    { display_id: '42', thumbnail: fake.image(30, 1429, 804) },
+  ])
   const result = await captureDisplay(screens.desktop, fake.display)
   expect(result.image.isEmpty()).toBe(false)
   expect(screens.captures.at(-1)).toMatchObject({ real: true, displayId: 42, verified: true })
+  expect(fake.crops).toContainEqual({ x: 0, y: 0, width: 1429, height: 759 })
+  fake.getSources.mockResolvedValue([
+    { display_id: '42', thumbnail: fake.image(30, 1429, 804, 200) },
+  ])
+  await expect(captureDisplay(screens.desktop, fake.display)).rejects.toThrow(
+    'overlay was not excluded',
+  )
+  expect(screens.captures.at(-1)).toMatchObject({ reason: 'overlay-not-excluded', contentError: 0 })
   fake.getSources.mockResolvedValue([{ display_id: '42', thumbnail: fake.image(200) }])
   await expect(captureDisplay(screens.desktop, fake.display)).rejects.toThrow(
     'overlay was not excluded',
   )
+  expect(screens.captures.at(-1)).toMatchObject({ reason: 'fixture-obstructed-or-mismatched' })
   screens.close()
   expect(fake.destroy).toHaveBeenCalledTimes(1)
 })

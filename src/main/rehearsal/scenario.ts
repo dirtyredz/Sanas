@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import type { Slide } from '../../shared/presentation/types'
+import { rubrics, type Rubric } from './semantics'
 
 export type Fault =
   | 'socket-drop'
@@ -12,7 +13,7 @@ export type Fault =
   | 'oversize-image'
 export type Step = { id: string; atMs: number } & (
   | { kind: 'utterance'; channel: 'me' | 'them'; speaker: number; text: string; durationMs: number }
-  | { kind: 'screen'; image: string; real?: boolean; displayId?: number }
+  | { kind: 'screen'; image: string; real?: boolean; displayId?: number; text?: string }
   | { kind: 'ask'; text: string }
   | { kind: 'detail' }
   | { kind: 'answer-mode'; enabled: boolean }
@@ -20,6 +21,7 @@ export type Step = { id: string; atMs: number } & (
   | { kind: 'fault'; fault: Fault; durationMs: number }
 )
 export type CheckKind =
+  | 'request'
   | 'suggestion'
   | 'screen'
   | 'no-interims'
@@ -40,6 +42,10 @@ export interface Expectation {
   withinMs?: number
   contains?: string
   assistant?: 'canned' | 'claude'
+  covers?: string[]
+  rubric?: Rubric
+  fromFinal?: boolean
+  responsivenessMs?: number
 }
 export interface Scenario {
   version: 1
@@ -62,6 +68,7 @@ const faults: Fault[] = [
   'oversize-image',
 ]
 const checks: CheckKind[] = [
+  'request',
   'suggestion',
   'screen',
   'no-interims',
@@ -130,6 +137,7 @@ export function parseScenario(value: unknown): Scenario {
         break
       case 'screen':
         text(step.image)
+        if (step.text !== undefined) text(step.text)
         if (step.real !== undefined && typeof step.real !== 'boolean')
           throw new Error('Invalid real capture flag')
         if (step.displayId !== undefined && !Number.isInteger(step.displayId))
@@ -167,6 +175,16 @@ export function parseScenario(value: unknown): Scenario {
       throw new Error('Unknown expectation step')
     if (e.withinMs !== undefined) milliseconds(e.withinMs)
     if (e.contains !== undefined) text(e.contains)
+    if (e.rubric !== undefined && !rubrics.includes(e.rubric as Rubric))
+      throw new Error('Invalid rubric')
+    if (
+      e.covers !== undefined &&
+      (!Array.isArray(e.covers) || !e.covers.length || e.covers.some((id) => !ids.has(String(id))))
+    )
+      throw new Error('Invalid coverage steps')
+    if (e.fromFinal !== undefined && typeof e.fromFinal !== 'boolean')
+      throw new Error('Invalid final anchor')
+    if (e.responsivenessMs !== undefined) milliseconds(e.responsivenessMs)
     if (e.assistant !== undefined && !['canned', 'claude'].includes(String(e.assistant)))
       throw new Error('Invalid expectation assistant')
   }

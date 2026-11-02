@@ -9,6 +9,13 @@ export interface AssistImage {
 }
 
 export interface AssistRequest {
+  /** Local correlation only; providers must not send this metadata to external APIs. */
+  diagnostic?: {
+    suggestionId?: number
+    purpose: string
+    manualKind?: string
+    turns?: readonly { startMs: number; endMs: number; completedAt: number }[]
+  }
   apiKey: string
   /** Org-level keys must name a workspace per request; blank for workspace-scoped keys. */
   workspaceId?: string

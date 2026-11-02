@@ -9,6 +9,7 @@ import { evaluate, type Evidence } from './assertions'
 import { installSocketFaults } from './audio/socket-fault'
 import { IPC } from '../../shared/ipc'
 import type { SuggestionEvent, TranscriptEvent, MeetingState } from '../../shared/types'
+import { imageDigest, publicOutcome, turnSteps } from './outcomes'
 
 function flag(name: string): string | undefined {
   return process.argv.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3)
@@ -20,6 +21,7 @@ export async function runRehearsal(): Promise<void> {
   let reportPath: string | undefined
   let cleanup: (() => Promise<void>) | undefined
   let clearCredentials: (() => void) | undefined
+  let diagnosticSnapshot: (() => object) | undefined
   let exitCode = 1
   try {
     const root = flag('rehearsal-root')
@@ -95,7 +97,32 @@ export async function runRehearsal(): Promise<void> {
     })
     const sockets = tier === 'audio' ? installSocketFaults() : undefined
     const { claudeProvider } = await import('../services/assistant/claude')
-    const model = new RehearsalAssistant(now, assistant === 'claude' ? claudeProvider : undefined)
+    const model = new RehearsalAssistant(
+      now,
+      assistant === 'claude' ? claudeProvider : undefined,
+      scenario.steps,
+    )
+    const { observeRehearsalAssistance } = await import('../services/meetings/assist/diagnostics')
+    const finalReceipts = new Map<string, number>()
+    const turnCompletions = new Map<string, number>()
+    const transitions: {
+      atMs: number
+      event: string
+      stepIds: string[]
+      turnId?: number
+      reason?: string
+    }[] = []
+    observeRehearsalAssistance((e) => {
+      const stepIds = e.turn ? turnSteps(scenario.steps, [e.turn]) : []
+      if (e.event === 'turn-completed') for (const id of stepIds) turnCompletions.set(id, now())
+      transitions.push({
+        atMs: now(),
+        event: e.event,
+        turnId: e.turn?.id,
+        stepIds,
+        reason: e.reason,
+      })
+    })
     const { installRehearsalAssistant } = await import('../services/assistant/provider')
     installRehearsalAssistant(model)
     const screens = new RehearsalScreens(now)
@@ -107,18 +134,29 @@ export async function runRehearsal(): Promise<void> {
     observeRehearsalBroadcast((channel, payload) => {
       if (channel === IPC.SuggestionEvent) {
         const e = payload as SuggestionEvent
+        const request = model.requests.find((r) => r.suggestionId === e.suggestionId)
+        if (request && e.kind === 'delta' && e.text) request.firstVisibleMs ??= now()
+        if (request && e.kind === 'done') {
+          request.deliveredMs = now()
+          request.firstVisibleMs ??= now()
+        }
         if (e.kind === 'done')
           evidence.push({
             kind: e.purpose === 'next-point' ? 'coach' : 'suggestion',
             atMs: now(),
             text: e.text,
+            requestId: request?.id,
           })
         if (e.kind === 'error') evidence.push({ kind: 'assistant-error', atMs: now() })
       }
       if (channel === IPC.TranscriptEvent) {
         const e = payload as TranscriptEvent
-        if (e.isFinal) finals.push(e)
-        else interimCount++
+        if (e.isFinal) {
+          finals.push(e)
+          if (!e.isUser)
+            for (const id of turnSteps(scenario.steps, [{ startMs: e.tStartMs, endMs: e.tEndMs }]))
+              finalReceipts.set(id, now())
+        } else interimCount++
       }
       if (channel === IPC.MeetingState && (payload as MeetingState).captureWarning)
         evidence.push({ kind: 'capture-warning', atMs: now() })
@@ -133,6 +171,7 @@ export async function runRehearsal(): Promise<void> {
       screens.close()
       sockets?.close()
       observeRehearsalBroadcast(undefined)
+      observeRehearsalAssistance(undefined)
       for (const window of BrowserWindow.getAllWindows()) window.destroy()
       closeDb()
     }
@@ -162,7 +201,25 @@ export async function runRehearsal(): Promise<void> {
     let silentUntil = -1,
       lastReconnect = 0,
       lastSocketOpen = sockets?.opened() ?? 0
-    const admission = (result: { accepted: boolean; reason?: string }): void => {
+    const admissions: { stepId: string; atMs: number; accepted: boolean; reason?: string }[] = []
+    diagnosticSnapshot = () => ({
+      profile,
+      meetingId,
+      scenario: scenario.name,
+      tier,
+      assistant,
+      requests: model.requests.map(publicOutcome),
+      transitions,
+      admissions,
+      finalReceipts: Object.fromEntries(finalReceipts),
+      turnCompletions: Object.fromEntries(turnCompletions),
+      captures: screens.captures.map(({ base64, ...c }) => ({
+        ...c,
+        imageDigest: imageDigest(base64),
+      })),
+    })
+    const admission = (stepId: string, result: { accepted: boolean; reason?: string }): void => {
+      admissions.push({ stepId, atMs: now(), accepted: result.accepted, reason: result.reason })
       if (!result.accepted && result.reason === 'busy') evidence.push({ kind: 'busy', atMs: now() })
     }
     const execute = async (step: Step): Promise<void> => {
@@ -172,7 +229,10 @@ export async function runRehearsal(): Promise<void> {
           if (tier === 'scripted') stt.utterance(step)
           break
         case 'ask':
-          admission(await meetings.requestAssist({ meetingId, kind: 'typed', text: step.text }))
+          admission(
+            step.id,
+            await meetings.requestAssist({ meetingId, kind: 'typed', text: step.text }),
+          )
           break
         case 'detail': {
           const source = listSuggestions(meetingId)
@@ -182,6 +242,7 @@ export async function runRehearsal(): Promise<void> {
             .at(-1)
           if (!source) throw new Error('More detail has no completed source')
           admission(
+            step.id,
             await meetings.requestAssist({
               meetingId,
               kind: 'detail',
@@ -201,8 +262,17 @@ export async function runRehearsal(): Promise<void> {
         }
         case 'screen': {
           await screens.prepare(step)
-          const result = await meetings.captureScreen(meetingId)
-          admission(result)
+          const draft = step.text ? await meetings.attachScreen(meetingId) : undefined
+          if (draft && !draft.ok) throw new Error('Screen attachment failed')
+          const result = draft?.ok
+            ? await meetings.requestAssist({
+                meetingId,
+                kind: 'typed',
+                text: step.text!,
+                captureToken: draft.draft.token,
+              })
+            : await meetings.captureScreen(meetingId)
+          admission(step.id, result)
           if (!result.accepted)
             evidence.push({
               kind: 'capture-error',
@@ -231,9 +301,11 @@ export async function runRehearsal(): Promise<void> {
       while (stepIndex < scenario.steps.length && scenario.steps[stepIndex].atMs <= clock) {
         const step = scenario.steps[stepIndex++]
         tasks.push(
-          execute(step).catch(() => {
-            taskErrors.push(step.id)
-          }),
+          model
+            .withAction(step.id, () => execute(step))
+            .catch(() => {
+              taskErrors.push(step.id)
+            }),
         )
       }
       while (audioMs + 20 <= clock) {
@@ -257,9 +329,11 @@ export async function runRehearsal(): Promise<void> {
     while (stepIndex < scenario.steps.length) {
       const step = scenario.steps[stepIndex++]
       tasks.push(
-        execute(step).catch(() => {
-          taskErrors.push(step.id)
-        }),
+        model
+          .withAction(step.id, () => execute(step))
+          .catch(() => {
+            taskErrors.push(step.id)
+          }),
       )
     }
     await Promise.all(tasks)
@@ -279,6 +353,8 @@ export async function runRehearsal(): Promise<void> {
         storedLines.length === finalLines.length &&
         storedLines.every((r, i) => r === finalLines[i]),
     })
+    const stoppedMs = now()
+    for (const request of model.requests) request.pendingAtStop = request.status === 'pending'
     await meetings.stopMeeting()
     const deadline =
       performance.now() + (assistant === 'claude' || tier === 'audio' ? 330000 : 10000)
@@ -306,17 +382,32 @@ export async function runRehearsal(): Promise<void> {
     })
     for (const capture of screens.captures) {
       const delivered = model.requests.find(
-        (r) => r.image && r.image === capture.base64 && r.atMs >= capture.atMs,
+        (r) =>
+          r.imageDigest === imageDigest(capture.base64) &&
+          r.atMs >= capture.atMs &&
+          r.deliveredMs !== undefined,
       )
       if (delivered)
         evidence.push({
           kind: 'screen',
-          atMs: delivered.atMs,
+          atMs: delivered.deliveredMs!,
           text: delivered.answer,
           passed: capture.verified,
+          requestId: delivered.id,
         })
     }
-    const checks = evaluate(scenario, evidence, starts, assistant)
+    for (const r of model.requests)
+      if (r.purpose !== 'classifier' && r.purpose !== 'summary')
+        evidence.push({ kind: 'request', atMs: r.atMs, requestId: r.id })
+    const checks = evaluate(
+      scenario,
+      evidence,
+      starts,
+      assistant,
+      model.requests,
+      finalReceipts,
+      turnCompletions,
+    )
     for (const id of taskErrors)
       checks.push({
         id,
@@ -329,14 +420,11 @@ export async function runRehearsal(): Promise<void> {
       reportPath,
       JSON.stringify(
         {
+          ...diagnosticSnapshot(),
           version: 1,
-          scenario: scenario.name,
-          tier,
-          assistant,
-          profile,
-          meetingId,
           passed: exitCode === 0,
           checks,
+          stoppedMs,
         },
         null,
         2,
@@ -348,6 +436,7 @@ export async function runRehearsal(): Promise<void> {
         reportPath,
         JSON.stringify(
           {
+            ...diagnosticSnapshot?.(),
             version: 1,
             passed: false,
             error:

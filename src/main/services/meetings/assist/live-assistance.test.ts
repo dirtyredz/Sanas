@@ -8,6 +8,10 @@ import { CLASSIFIER_SUSPEND_MS, LiveAssistance } from './live-assistance'
 import { SuggestionRunner } from './suggestion-runner'
 import type { AssistSettings } from './suggestion-requests'
 
+const diagnostics = vi.hoisted(() => vi.fn())
+vi.mock('./diagnostics', () => ({ observeAssistance: diagnostics }))
+beforeEach(() => diagnostics.mockClear())
+
 interface Deferred<T> {
   promise: Promise<T>
   resolve: (v: T) => void
@@ -192,6 +196,9 @@ describe('live assistance: answers to completed turns', () => {
     const t = setup()
     await otherTurn(t.assist, 'What a day?', 0, 800)
     await t.classify(0, t.none)
+    expect(diagnostics).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'classified', reason: 'none' }),
+    )
     expect(t.generations).toHaveLength(0)
     await vi.advanceTimersByTimeAsync(1_000)
     await otherTurn(t.assist, 'Can you share the deck?', 2_000, 3_000)
@@ -205,18 +212,27 @@ describe('live assistance: answers to completed turns', () => {
     expect(t.classifications).toHaveLength(0)
   })
 
-  it('fails closed and suspends the classifier for 30 s after a provider failure', async () => {
-    const t = setup()
-    await otherTurn(t.assist, 'Any thoughts?', 0, 800)
-    await t.classify(0, { status: 'failed', reason: 'provider' })
-    expect(t.generations).toHaveLength(0)
-    await vi.advanceTimersByTimeAsync(2_000)
-    await otherTurn(t.assist, 'Any other thoughts?', 3_000, 3_800)
-    expect(t.classifications).toHaveLength(1) // suspended
-    await vi.advanceTimersByTimeAsync(CLASSIFIER_SUSPEND_MS)
-    await otherTurn(t.assist, 'Thoughts now?', 40_000, 40_800)
-    expect(t.classifications).toHaveLength(2)
-  })
+  it.each(['provider', 'timeout'] as const)(
+    'fails closed and records suspension after %s',
+    async (reason) => {
+      const t = setup()
+      await otherTurn(t.assist, 'Any thoughts?', 0, 800)
+      await t.classify(0, { status: 'failed', reason })
+      expect(diagnostics).toHaveBeenCalledWith(
+        expect.objectContaining({ event: 'classified', reason }),
+      )
+      expect(t.generations).toHaveLength(0)
+      await vi.advanceTimersByTimeAsync(2_000)
+      await otherTurn(t.assist, 'Any other thoughts?', 3_000, 3_800)
+      expect(t.classifications).toHaveLength(1) // suspended
+      expect(diagnostics).toHaveBeenCalledWith(
+        expect.objectContaining({ event: 'not-classified', reason: 'suspended' }),
+      )
+      await vi.advanceTimersByTimeAsync(CLASSIFIER_SUSPEND_MS)
+      await otherTurn(t.assist, 'Thoughts now?', 40_000, 40_800)
+      expect(t.classifications).toHaveLength(2)
+    },
+  )
 
   it('runs one classifier at a time and keeps only the newest waiting candidate', async () => {
     const t = setup()
@@ -252,6 +268,9 @@ describe('live assistance: answers to completed turns', () => {
     await vi.advanceTimersByTimeAsync(6_100)
     await t.classify(0, t.question)
     expect(t.generations).toHaveLength(0)
+    expect(diagnostics).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'not-generated', reason: 'expired' }),
+    )
   })
 
   it('drops the candidate when the user starts answering, but not for a filler', async () => {
@@ -302,6 +321,17 @@ describe('live assistance: answers to completed turns', () => {
       const t = setup()
       await otherTurn(t.assist, 'Can you explain it?', 0, 800)
       t.assist[invalidate]()
+      expect(diagnostics).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: 'invalidated',
+          reason:
+            invalidate === 'halt'
+              ? 'stop-or-pause'
+              : invalidate === 'connectionReset'
+                ? 'connection-reset'
+                : 'identity-change',
+        }),
+      )
       await t.classify(0, t.question)
       expect(t.generations).toHaveLength(0)
       // a half-assembled turn is discarded, never completed later
@@ -555,6 +585,11 @@ describe('live assistance: stacked questions', () => {
     t.generations[0].d.resolve('**First.**')
     await vi.advanceTimersByTimeAsync(0)
     const content = t.generations[1].req.userContent
+    expect(content).toContain('Questions to answer')
+    expect(diagnostics).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'waiting', reason: 'busy-lane' }),
+    )
+    expect(t.generations[1].req.diagnostic?.turns).toHaveLength(2)
     expect(content).toContain('Second one?')
     expect(content).toContain('Third one?')
     expect(content).not.toContain('First one?')
@@ -569,6 +604,9 @@ describe('live assistance: stacked questions', () => {
     await otherTurn(t.assist, 'Who owns the rollout?', 9_000, 9_800)
     await vi.advanceTimersByTimeAsync(1_000)
     await t.classify(1, t.question)
+    expect(diagnostics).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'invalidated', reason: 'user-final' }),
+    )
     expect(t.generations[0].req.userContent).not.toContain('delivery date')
   })
 
