@@ -454,6 +454,8 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   directory after exit, allows 60 seconds, then kills only its own process and fails. A successful
   report alone is never a pass: the executable must also exit successfully before the timeout.
 
+- **Tools run from the Claude desktop app see a virtualized `%APPDATA%`.** Claude is an MSIX package, so processes it spawns (agents, shells, a dev Electron launched from a session) get a per-file merged view of `AppData\Roaming`. On 2026-11-03 `sanas.db` resolved to a stale Sep 10 shadow under `AppData\Local\Packages\Claude_pzs8sxrjxfjjc\LocalCache\Roaming\sanas\`, while `-wal`/`-shm` resolved to the real profile. That mismatched set read as "malformed" even though the real database was healthy. Before diagnosing or copying the owner's DB from such a process, check each file's final path (`GetFinalPathNameByHandle`), or copy raw bytes via `\\localhost\C$\Users\<user>\AppData\Roaming\sanas\`. Never open SQLite over that share, and never restore from a set assembled through the virtualized view.
+
 ## Rehearsals
 
 - Keep runner helpers that import meeting/DB services dynamically loaded after isolated
