@@ -3,6 +3,8 @@ import { CAPTURE_WARNING } from './capture/capture-health'
 import { sttProvider } from '../stt'
 
 const fakes = vi.hoisted(() => ({
+  profile: '',
+  create: vi.fn(() => 7),
   currentMeetingId: null as number | null,
   onTranscript: null as null | ((transcript: Record<string, unknown>) => void),
   liveFinal: vi.fn(),
@@ -18,7 +20,11 @@ vi.mock('@shared/ipc', () => ({
   },
 }))
 vi.mock('../../config/settings', () => ({
-  loadSettings: () => ({ deepgramApiKey: 'dg', recordAudio: false }),
+  loadSettings: () => ({
+    deepgramApiKey: 'dg',
+    recordAudio: false,
+    interviewProfile: fakes.profile,
+  }),
 }))
 vi.mock('../stt', () => ({
   sttProvider: {
@@ -41,7 +47,7 @@ vi.mock('../../db/repos/meeting-context', () => ({
   getMeetingContext: vi.fn(),
   saveMeetingContext: vi.fn(),
 }))
-vi.mock('../../db/repos/meeting-create', () => ({ createMeeting: () => 7 }))
+vi.mock('../../db/repos/meeting-create', () => ({ createMeeting: fakes.create }))
 vi.mock('../../db/repos/meeting-presentation', () => ({
   getPresentationHistory: () => ({ slides: fakes.slides, events: [] }),
   insertSlideEvent: fakes.slideEvents,
@@ -199,3 +205,37 @@ it('keeps the missing-resume cue across practice pause/resume and clears it for 
   expect(meetings.currentState().noResume).toBeUndefined()
   await meetings.stopMeeting()
 })
+
+it.each([
+  [{}, false],
+  [{ interview: false, resume: { name: 'Resume', text: 'Java' } }, false],
+  [{ interview: true }, true],
+  [{ resume: { name: 'Resume', text: 'Java' } }, true],
+  [{ practice: true, interview: false }, true],
+] as const)(
+  'snapshots interview-only profile and reuses hints with options %j',
+  async (options, applies) => {
+    await stopMeeting()
+    fakes.profile = 'At ExampleCo I built Camunda workflows.'
+    try {
+      await startMeeting(3, 2, options)
+      expect(fakes.create).toHaveBeenLastCalledWith(
+        3,
+        expect.any(String),
+        options,
+        applies ? fakes.profile : '',
+      )
+      expect(currentState().noResume).toBeUndefined()
+      const terms = () => vi.mocked(sttProvider.start).mock.calls.at(-1)![0].keyterms
+      expect(terms()?.includes('Camunda')).toBe(applies)
+      fakes.profile = 'LaterEmployer'
+      await pauseMeeting()
+      await resumeMeeting(2)
+      expect(terms()?.includes('Camunda')).toBe(applies)
+      expect(terms()).not.toContain('LaterEmployer')
+    } finally {
+      await stopMeeting()
+      fakes.profile = ''
+    }
+  },
+)

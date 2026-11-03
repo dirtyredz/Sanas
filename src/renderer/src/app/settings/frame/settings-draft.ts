@@ -13,6 +13,7 @@ export const NO_SECRETS: Readonly<Record<SecretKey, string>> = {
 
 /** Settings the Settings page edits and Save sends. */
 export const PAGE_OWNED = [
+  'interviewProfile',
   'overlayHotkey',
   'assistHotkey',
   'captureHotkey',

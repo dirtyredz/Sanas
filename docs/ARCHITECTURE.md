@@ -201,7 +201,7 @@ objection | none`. It **fails closed**: timeout, cancel, malformed output or pro
   after launch and every 6 h; Settings shows what is past its limit and can run it now.
   Live meetings are never touched. Deleting a meeting by hand goes through the same
   `removeMeeting` (file + row).
-- Schema (current v9: v1 base, v2 `speakers`, v3 `jobs.summary_email`, v4 `segments_fts`, v5 `suggestions.purpose`, v6 presentation, v7 live context/grounding, v8 practice/results, v9 `meetings.resume_name`/`resume_text` with an immutability trigger; later tables described below):
+- Schema (current v10: v1 base, v2 `speakers`, v3 `jobs.summary_email`, v4 `segments_fts`, v5 `suggestions.purpose`, v6 presentation, v7 live context/grounding, v8 practice/results, v9 `meetings.resume_name`/`resume_text` with an immutability trigger, v10 immutable meetings.interview_profile; later tables described below):
 
 ```
 jobs        (id, name, company_info, project_scope, notes,
@@ -360,3 +360,21 @@ Start sends an optional text/name attachment over typed IPC; main validates it o
 Capitalized names, acronyms, mixed-case technology and a small lowercase technology vocabulary become STT hints. Resume terms alternate with job glossary terms, deduplicate case-insensitively and respect conservative count/length/byte limits. Streaming start/resume and batch transcription use `SttProvider`; no new provider or network path exists.
 
 Resume file import: Start invokes a parameterless typed IPC picker. Main reads at most 5 MB plus one sentinel byte, parses PDF/DOCX locally, applies the existing text validation, and returns only the basename and text. Cancellation/errors preserve the draft. The source file is never copied into storage; successful Start uses the same immutable attachment flow as pasted text.
+
+## Interview profile lifecycle
+
+Settings owns the editable, local interviewProfile string. Typed Settings IPC validates its
+40,000-character limit. Live Start passes an optional Interview choice beside the existing
+resume and deck arguments; main resolves it once (explicit false wins over the resume
+default, practice always wins) before creating the meeting. Work meetings capture an empty
+string. Schema v10 inserts the profile snapshot in the same transaction as the resume and
+meeting; a trigger prevents updates. Old rows default empty.
+
+MeetingPrompts reads only that saved snapshot for ordinary and presentation bases, so
+Apply/deck changes, More detail and summaries cannot see later Settings edits. Resume facts
+precede profile facts; the profile block directs story selection and reserves marked filler
+for gaps. Both use shared delimiter escaping. Streaming stores snapshot hints in lifecycle
+state across pause/resume; batch re-diarization reads the snapshot from SQLite. Both call
+meetingKeyterms; SttProvider retains budget enforcement. Meeting rows expose only a boolean
+interviewProfileUsed for history. Mock's noResume state field now means neither resume nor
+profile is present, including fetched and broadcast state.

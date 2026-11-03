@@ -79,7 +79,14 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(
     IPC.MeetingStart,
-    (_e, jobId: unknown, channels: unknown, usePresentationDeck: unknown, resume: unknown) =>
+    (
+      _e,
+      jobId: unknown,
+      channels: unknown,
+      usePresentationDeck: unknown,
+      resume: unknown,
+      interview: unknown,
+    ) =>
       // validate at ingress: an optional job id, and only 1 or 2 are meaningful capture topologies
       startMeeting(
         jobId === undefined || jobId === null ? undefined : requireId(jobId, 'job id'),
@@ -90,6 +97,7 @@ export function registerIpcHandlers(): void {
               ? false
               : requireBool(usePresentationDeck, 'use presentation deck'),
           resume: validateResume(resume),
+          interview: interview === undefined ? undefined : requireBool(interview, 'interview'),
         },
       ),
   )

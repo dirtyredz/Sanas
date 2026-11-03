@@ -1,3 +1,4 @@
+import { getMeetingInterviewProfile } from '../../../db/repos/meeting-interview-profile'
 import { meetingKeyterms } from '../context/meeting-keyterms'
 import { getMeetingResume } from '../../../db/repos/meeting-resume'
 import { existsSync } from 'fs'
@@ -28,7 +29,11 @@ export async function rediarizeMeeting(meetingId: number, channels: number): Pro
     const transcripts = await sttProvider.transcribeFile(meeting.audioPath, {
       apiKey: deepgramApiKey,
       channels,
-      keyterms: meetingKeyterms(meeting.jobId, getMeetingResume(meetingId)?.text ?? ''),
+      keyterms: meetingKeyterms(
+        meeting.jobId,
+        getMeetingResume(meetingId)?.text ?? '',
+        getMeetingInterviewProfile(meetingId),
+      ),
     })
     if (transcripts.length === 0) return false // don't wipe real segments for an empty result
 

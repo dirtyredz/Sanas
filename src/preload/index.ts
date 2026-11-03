@@ -143,8 +143,9 @@ const api = {
       channels?: number,
       usePresentationDeck = false,
       resume?: MeetingResume | null,
+      interview?: boolean,
     ): Promise<MeetingState> =>
-      ipcRenderer.invoke(IPC.MeetingStart, jobId, channels, usePresentationDeck, resume),
+      ipcRenderer.invoke(IPC.MeetingStart, jobId, channels, usePresentationDeck, resume, interview),
     importResume: (): Promise<MeetingResume | null> => ipcRenderer.invoke(IPC.MeetingImportResume),
     /** Stop listening but keep the meeting open; resume continues its clock. */
     pause: (): Promise<MeetingState> => ipcRenderer.invoke(IPC.MeetingPause),

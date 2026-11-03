@@ -1,3 +1,4 @@
+import { meetingInterviewProfileSchema } from './repos/meeting-interview-profile'
 import { meetingResumeSchema } from './repos/meeting-resume-schema'
 import { practiceSchema } from './repos/practice'
 import type { Database } from 'better-sqlite3'
@@ -91,6 +92,7 @@ const migrations: string[] = [
   liveControlsSchema,
   practiceSchema,
   meetingResumeSchema,
+  meetingInterviewProfileSchema,
 ]
 
 export const schemaVersion = migrations.length

@@ -9,10 +9,12 @@ vi.mock('electron', () => ({
 vi.mock('fs', () => ({
   existsSync: () => true,
   readFileSync: () => file.contents,
-  writeFileSync: vi.fn(),
+  writeFileSync: vi.fn((_path: string, contents: string) => {
+    file.contents = contents
+  }),
 }))
 
-import { loadSettings } from './settings'
+import { saveSettings, loadSettings } from './settings'
 
 describe('settings defaults', () => {
   beforeEach(() => {
@@ -51,4 +53,12 @@ describe('settings defaults', () => {
     expect(settings.classifierModel).toBe('custom-classifier')
     expect(settings.coachWhileTalking).toBe(true)
   })
+})
+
+it('saves, loads and clears the local interview profile without losing headings', () => {
+  const profile = 'About me\nEngineer\n\nGo-to stories\nExampleCo / Camunda / cut latency'
+  expect(saveSettings({ interviewProfile: profile }).interviewProfile).toBe(profile)
+  expect(loadSettings().interviewProfile).toBe(profile)
+  saveSettings({ interviewProfile: '' })
+  expect(loadSettings().interviewProfile).toBe('')
 })

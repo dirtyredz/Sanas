@@ -2,6 +2,7 @@ import { getDb } from '../index'
 import type { Meeting } from '@shared/types'
 
 export interface MeetingRow {
+  interview_profile: string
   practice: number
   id: number
   job_id: number
@@ -29,6 +30,7 @@ export function toMeeting(r: MeetingRow): Meeting {
     id: r.id,
     jobId: r.job_id,
     practice: r.practice === 1,
+    interviewProfileUsed: !!r.interview_profile?.trim(),
     title: r.title,
     startedAt: r.started_at,
     endedAt: r.ended_at,

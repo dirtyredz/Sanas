@@ -5,6 +5,7 @@ import { hasPresentation, insertSlideEvent } from './meeting-presentation'
 /** Everything a caller may choose when a meeting starts; the one shape that flows
  *  IPC handler -> meetings service -> this repo. `resume` is already validated. */
 export interface MeetingStartOptions {
+  interview?: boolean
   practice?: boolean
   usePresentationDeck?: boolean
   resume?: MeetingResume | null
@@ -16,15 +17,16 @@ export function createMeeting(
   jobId: number,
   title: string,
   options: MeetingStartOptions = {},
+  interviewProfile = '', // resolved by main at Start, never accepted from renderer
 ): number {
   const { practice = false, usePresentationDeck = false, resume = null } = options
   const db = getDb()
   return db.transaction(() => {
     const res = db
       .prepare(
-        `INSERT INTO meetings (job_id, title, practice, resume_name, resume_text) VALUES (?, ?, ?, ?, ?)`,
+        `INSERT INTO meetings (job_id, title, practice, resume_name, resume_text, interview_profile) VALUES (?, ?, ?, ?, ?, ?)`,
       )
-      .run(jobId, title, practice ? 1 : 0, resume?.name ?? '', resume?.text ?? '')
+      .run(jobId, title, practice ? 1 : 0, resume?.name ?? '', resume?.text ?? '', interviewProfile)
     const id = Number(res.lastInsertRowid)
     db.prepare('INSERT INTO meeting_deck_versions VALUES (?, 0)').run(id)
     db.prepare("INSERT INTO meeting_context_revisions VALUES (?, 0, '', 0, 0)").run(id)

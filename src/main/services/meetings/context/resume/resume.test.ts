@@ -32,3 +32,11 @@ it('extracts Camunda, employers and technology deterministically, deduping gloss
   expect(merged.filter((t) => t.toLowerCase() === 'camunda')).toHaveLength(1)
   expect(merged).toContain('JobTool')
 })
+
+it('preserves s in employer and technology hints while normalizing whitespace', () => {
+  expect(interleaveKeyterms(['  Business   Systems  '], ['PostgreSQL', 'ResumeCo'])).toEqual([
+    'PostgreSQL',
+    'Business Systems',
+    'ResumeCo',
+  ])
+})

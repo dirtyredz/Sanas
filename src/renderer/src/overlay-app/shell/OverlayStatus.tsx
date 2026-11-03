@@ -55,7 +55,7 @@ export function OverlayStatus({
     return null
   return (
     <div className="overlay-status" aria-live="polite">
-      {meeting.noResume && <p className="ov-status ov-status--info">No resume</p>}
+      {meeting.noResume && <p className="ov-status ov-status--info">No resume or profile</p>}
       {error && <Expandable tone="error" text={error} action={<OpenSanasButton />} />}
       {meeting.automaticAnswerWarning && (
         <Expandable tone="warn" text={meeting.automaticAnswerWarning} />

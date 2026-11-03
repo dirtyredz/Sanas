@@ -19,7 +19,7 @@ describe('the Settings pager', () => {
   })
 
   it('steps through the index for Up/Down and stops at either end', () => {
-    expect(stepPage('assistant', 1)).toBe('hotkeys')
+    expect(stepPage('assistant', 1)).toBe('interview-profile')
     expect(stepPage('assistant', -1)).toBe('api-keys')
     expect(stepPage('api-keys', -1)).toBe('api-keys')
     expect(stepPage('updates', 1)).toBe('updates')

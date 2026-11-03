@@ -200,6 +200,7 @@ export const sampleSettings: SettingsView = {
   nudgeModel: 'claude-sonnet-5-5',
   answerModel: 'claude-opus-5-5',
   classifierModel: 'claude-haiku-5-5',
+  interviewProfile: '',
   answerEveryQuestion: false,
   composeHotkey: 'Control+Shift+K',
   coachWhileTalking: false,

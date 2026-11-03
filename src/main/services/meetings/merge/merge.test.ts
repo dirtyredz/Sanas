@@ -1,5 +1,5 @@
 import { expect, it, vi } from 'vitest'
-const f = vi.hoisted(() => ({ transaction: vi.fn(), remove: vi.fn() }))
+const f = vi.hoisted(() => ({ profile: '', transaction: vi.fn(), remove: vi.fn() }))
 vi.mock('../../../db', () => ({ getDb: () => ({ transaction: f.transaction }) }))
 vi.mock('../../../db/repos/meetings', () => ({
   getMeeting: () => ({ id: 1, title: 'Interview' }),
@@ -22,4 +22,21 @@ it('refuses resume-bearing merges before touching rows or recordings', () => {
   expect(() => mergeMeetings([1, 2])).toThrow('Meetings with resumes cannot be merged.')
   expect(f.transaction).not.toHaveBeenCalled()
   expect(f.remove).not.toHaveBeenCalled()
+})
+
+vi.mock('../../../db/repos/meeting-interview-profile', () => ({
+  getMeetingInterviewProfile: () => f.profile,
+}))
+
+it('refuses profile-bearing merges before mutating history', () => {
+  f.profile = 'My story'
+  try {
+    expect(() => mergeMeetings([1, 2])).toThrow(
+      'Meetings with interview profiles cannot be merged.',
+    )
+    expect(f.transaction).not.toHaveBeenCalled()
+    expect(f.remove).not.toHaveBeenCalled()
+  } finally {
+    f.profile = ''
+  }
 })

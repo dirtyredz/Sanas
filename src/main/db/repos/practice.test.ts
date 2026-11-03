@@ -23,7 +23,7 @@ afterEach(() => sqlite?.close())
 it('migrates legacy meetings as normal, excludes practice from both history retrieval paths, and cascades results', () => {
   database()
   runMigrations(mock.db)
-  expect(schemaVersion).toBe(9)
+  expect(schemaVersion).toBe(10)
   const job = createJob('Role')
   const normal = createMeeting(job.id, 'Real meeting')
   const practice = createMeeting(job.id, 'Mock interview', { practice: true })
@@ -56,7 +56,7 @@ it('upgrades a v7 database without changing existing transcript or meeting data'
   runMigrations(mock.db)
   // Recreate the pre-v8 shape using SQLite's supported DROP COLUMN on a disposable DB.
   sqlite.exec(
-    'DROP TRIGGER meetings_resume_immutable; ALTER TABLE meetings DROP COLUMN resume_name; ALTER TABLE meetings DROP COLUMN resume_text; DROP TABLE mock_results; DROP INDEX idx_meetings_practice; ALTER TABLE meetings DROP COLUMN practice; PRAGMA user_version = 7',
+    'DROP TRIGGER meetings_interview_profile_immutable; ALTER TABLE meetings DROP COLUMN interview_profile; DROP TRIGGER meetings_resume_immutable; ALTER TABLE meetings DROP COLUMN resume_name; ALTER TABLE meetings DROP COLUMN resume_text; DROP TABLE mock_results; DROP INDEX idx_meetings_practice; ALTER TABLE meetings DROP COLUMN practice; PRAGMA user_version = 7',
   )
   const job = createJob('Legacy')
   sqlite.prepare('INSERT INTO meetings (job_id, title) VALUES (?, ?)').run(job.id, 'Keep me')

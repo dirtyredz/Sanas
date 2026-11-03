@@ -37,7 +37,7 @@ export function interleaveKeyterms(glossary: string[], resume: string[]): string
   const seen = new Set<string>()
   for (let i = 0; i < Math.max(glossary.length, resume.length); i++) {
     for (const raw of [resume[i], glossary[i]]) {
-      const term = raw?.trim().replace(/s+/g, ' ')
+      const term = raw?.trim().replace(/\s+/g, ' ')
       if (!term || seen.has(term.toLowerCase())) continue
       seen.add(term.toLowerCase())
       result.push(term)

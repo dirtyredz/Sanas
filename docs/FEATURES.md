@@ -148,3 +148,18 @@ Initial answers in both automatic and Answer now lanes match the ask: screening,
 Start accepts an optional PDF/DOCX file (up to 5 MB) or pasted resume text independently of the job and presentation toggle, including Unsorted calls. The draft shows its name, character count and preview, can be removed, and clears after a successful Start. Empty or over-40,000-character drafts cannot start. Saved text is read-only in meeting history.
 
 Candidate facts ground answers with or without slides, survive later deck changes and More detail replay, and supply deterministic terminology hints such as Camunda to transcription. Resumes belong to one meeting; they are not remembered for the next call or shared as a reusable library. The native file picker extracts text offline in main, shows the file name, and keeps the existing draft on cancellation or failure. Start and edits wait for import to finish. Empty/scanned PDFs ask the user to paste text; extracted text uses the same 40,000-character validation. No source binary or path is saved.
+
+## Interview profile — implemented
+
+Settings → Interview profile saves reusable plain text locally, with guidance for About me,
+Go-to stories (problem / what I did / result), Strengths and weaknesses, Why I'm looking,
+Rate and availability, and Anything else. Save once, then edit when your experience changes.
+
+Mock interview always uses the saved profile. Live Start has an Interview checkbox beside
+the deck checkbox: attaching/importing a resume enables it, and you can switch it off.
+Ordinary work meetings do not receive the profile. Each applicable Start saves an immutable
+snapshot; later profile edits do not change past meetings. History shows when one was used.
+Per-meeting resume facts win over general profile stories, and marked plausible filler fills
+remaining gaps. Employer and technology terms also feed transcription hints. Practice shows
+“No resume or profile” only when both are empty. Deterministic wiring is tested; model-backed
+quality is NOT VERIFIED.

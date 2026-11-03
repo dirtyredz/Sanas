@@ -66,3 +66,21 @@ describe('Settings shows one page at a time', () => {
     expect(renderPage(pager, draft)).toContain('value="unsaved-model-id"')
   })
 })
+
+it('shows profile guidance and retains the shared draft across Settings pages', () => {
+  const draft = { ...sampleSettings, interviewProfile: 'My saved story' }
+  const profile = selectPage(INITIAL_PAGER, 'interview-profile')
+  const html = renderPage(profile, draft)
+  for (const heading of [
+    'About me',
+    'Go-to stories',
+    'Strengths and weaknesses',
+    'Why I',
+    'Rate and availability',
+    'Anything else',
+  ])
+    expect(html).toContain(heading)
+  expect(html).toContain('My saved story')
+  expect(renderPage(selectPage(profile, 'assistant'), draft)).not.toContain('My saved story')
+  expect(renderPage(profile, draft)).toContain('My saved story')
+})

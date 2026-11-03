@@ -24,6 +24,8 @@ export interface GlossaryTerm {
 }
 
 export interface Meeting {
+  /** Nonempty immutable interview profile captured at Start. */
+  interviewProfileUsed?: boolean
   /** True for saved mock sessions; absent on legacy callers means false. */
   practice?: boolean
   id: number
@@ -136,7 +138,7 @@ export interface MeetingState {
    *  nothing is relabelled or dropped because of it. */
   captureWarning?: string
   automaticAnswerWarning?: string
-  /** Practice meeting without a resume; ordinary work meetings are not nagged. */
+  /** Practice meeting without a resume or profile; ordinary work meetings are not nagged. */
   noResume?: boolean
 }
 
@@ -147,6 +149,7 @@ export interface OverlayResizeRequest {
 }
 
 export interface Settings {
+  interviewProfile: string
   deepgramApiKey: string
   anthropicApiKey: string
   /** Only needed for org-level (non-workspace) Anthropic keys; sent as anthropic-workspace-id. */

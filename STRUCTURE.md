@@ -322,3 +322,21 @@ main-process code belongs in a responsibility folder above, not beside them.
 - `db/repos/meeting-resume-schema.ts` owns append-only v9 SQL and the immutable-update guard; `createMeeting` persists the text in its one transaction. The resume is not on the `Meeting` row: `getMeetingResume(id)` is the only read (prompts, summary, re-diarize, merge guard, and `MeetingView` via `meetings.getResume`).
 - `lib/meeting/resume/MeetingResumeInput.tsx` owns the Start draft; `MeetingView` shows saved text read-only.
 - `MeetingPrompts` attaches candidate facts to both job prompt variants before saving grounding. `meetingKeyterms` builds one ordered hint list for streaming and batch STT; the provider applies its own limits.
+
+## Interview profile homes
+
+- shared/interview-profile.ts owns the text limit; config/settings.ts and settings-schema.ts
+  own local persistence/defaults and ingress validation.
+- app/settings/sections/InterviewProfileSection.tsx owns the one plain-text editor and guidance;
+  the existing Settings draft/pager/save flow owns editing state.
+- lib/meeting/resume/interview-selection.ts preserves a Live toggle override while editing an
+  attachment. LiveMeetingPage passes the choice through preload/IPC to MeetingStartOptions.
+- services/meetings/context/interview-profile/profile.ts owns Start selection and escaped profile
+  framing. No new siblings were added directly under services/meetings/.
+- db/repos/meeting-interview-profile.ts owns append-only v10 SQL and snapshot reads;
+  meeting-create.ts inserts the main-resolved snapshot in its existing transaction.
+- context/resume/meeting-facts.ts combines saved resume/profile blocks; meeting-prompts.ts freezes
+  both prompt variants. context/meeting-keyterms.ts combines glossary/resume/profile hints;
+  lifecycle and batch consumers use the same helper, with limits still in SttProvider.
+- MeetingView receives interviewProfileUsed through the existing Meeting projection; large profile
+  text stays off the list/history IPC objects. Merge refuses profile-bearing meetings.

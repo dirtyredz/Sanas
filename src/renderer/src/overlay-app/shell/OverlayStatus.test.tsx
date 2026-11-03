@@ -9,5 +9,5 @@ it.each([true, undefined])('renders the main-owned resume cue = %s', (noResume) 
       capture={{ notice: null, capturing: false }}
     />,
   )
-  expect(html.includes('No resume')).toBe(!!noResume)
+  expect(html.includes('No resume or profile')).toBe(!!noResume)
 })

@@ -117,6 +117,9 @@ export function MeetingView({
     speakerDisplay(s.speaker, s.isUser, names)
   return (
     <div className="meeting-view">
+      {meeting.interviewProfileUsed && (
+        <p className="notice">Interview profile used (saved at Start)</p>
+      )}
       {resume && (
         <details className="card">
           <summary>

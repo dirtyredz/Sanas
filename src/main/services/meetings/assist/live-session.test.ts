@@ -162,3 +162,7 @@ it('resolves grounding on context changes while snapshots only read the cached i
   })
   expect(f.saveGrounding).toHaveBeenCalledTimes(2)
 })
+
+vi.mock('../../../db/repos/meeting-interview-profile', () => ({
+  getMeetingInterviewProfile: () => '',
+}))

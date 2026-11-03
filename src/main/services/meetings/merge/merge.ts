@@ -7,6 +7,7 @@ import { reassignSpeakerNames } from '../../../db/repos/speakers'
 import { isPostProcessing } from '../status/post-processing'
 import { removeAudioFile } from '../remove'
 import { planMerge, type MergePart } from './merge-plan'
+import { getMeetingInterviewProfile } from '../../../db/repos/meeting-interview-profile'
 import { getMeetingResume } from '../../../db/repos/meeting-resume'
 import { hasAppliedContext } from '../../../db/repos/meeting-context'
 import { hasPresentation } from '../../../db/repos/meeting-presentation'
@@ -41,6 +42,8 @@ export function mergeMeetings(ids: number[]): MergeResult {
   const parts = ids.map((id) => {
     const m = getMeeting(id)
     if (!m) throw new Error(`Meeting ${id} no longer exists.`)
+    if (getMeetingInterviewProfile(id))
+      throw new Error('Meetings with interview profiles cannot be merged.')
     if (getMeetingResume(id)) throw new Error('Meetings with resumes cannot be merged.')
     if (m.practice) throw new Error('Practice sessions cannot be merged.')
     if (isPostProcessing(id)) {

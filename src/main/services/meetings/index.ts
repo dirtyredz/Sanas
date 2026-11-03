@@ -1,3 +1,4 @@
+import { interviewProfileSnapshot } from './context/interview-profile/profile'
 import { meetingKeyterms } from './context/meeting-keyterms'
 import { observeMeeting } from './observation'
 import { IPC } from '@shared/ipc'
@@ -58,8 +59,9 @@ const BYTES_PER_SAMPLE = 2 // linear16
 let session: SttSession | null = null
 let sessionGen = 0 // bumped whenever a session is opened or discarded
 let meetingJobId = 0 // remembered so a resume can re-send the job's keyterms
+let meetingProfileText = ''
 let meetingResumeText = '' // this meeting's resume, kept so a resume re-sends its hints
-let practiceWithoutResume = false
+let practiceWithoutBiography = false
 let meetingChannels: ChannelCount = 1
 let paused = false
 let audioMsReceived = 0 // the meeting's clock: audio actually captured, in ms
@@ -114,11 +116,11 @@ export function currentState(): MeetingState {
   const meetingId = liveMeetingId()
   if (meetingId === null) return { meetingId: null, status: 'idle' }
   if (paused)
-    return { meetingId, status: 'paused', ...(practiceWithoutResume ? { noResume: true } : {}) }
+    return { meetingId, status: 'paused', ...(practiceWithoutBiography ? { noResume: true } : {}) }
   return {
     meetingId,
     status: 'live',
-    ...(practiceWithoutResume ? { noResume: true } : {}),
+    ...(practiceWithoutBiography ? { noResume: true } : {}),
     ...(captureHealth.warned ? { captureWarning: CAPTURE_WARNING } : {}),
     ...(assistance.automaticUnavailable()
       ? {
@@ -130,7 +132,7 @@ export function currentState(): MeetingState {
 }
 
 function setState(state: MeetingState): MeetingState {
-  if (state.meetingId !== null && practiceWithoutResume) state = { ...state, noResume: true }
+  if (state.meetingId !== null && practiceWithoutBiography) state = { ...state, noResume: true }
   observeMeeting({ kind: 'state', value: state })
   lastError = state.error
   broadcast(IPC.MeetingState, state)
@@ -265,7 +267,7 @@ async function openSession(apiKey: string, startOffsetMs: number): Promise<SttSe
   return sttProvider.start({
     apiKey,
     channels: meetingChannels,
-    keyterms: meetingKeyterms(meetingJobId, meetingResumeText),
+    keyterms: meetingKeyterms(meetingJobId, meetingResumeText, meetingProfileText),
     startOffsetMs,
     onTranscript: mine(handleTranscript),
     onSignal: mine(handleSignal),
@@ -296,16 +298,20 @@ export function startMeeting(
       })
     }
 
+    const profile = interviewProfileSnapshot(options, settings.interviewProfile)
     const job = jobId ?? ensureDefaultJob()
     const id = createMeeting(
       job,
       `${options.practice ? 'Practice' : 'Meeting'} ${new Date().toLocaleString()}`,
       options,
+      profile,
     )
     captures.meetingChanged() // drafts and feedback belong to one meeting
     setLiveMeeting(id)
+    meetingProfileText = profile
     meetingResumeText = options.resume?.text ?? ''
-    practiceWithoutResume = !!options.practice && !meetingResumeText.trim()
+    practiceWithoutBiography =
+      !!options.practice && !meetingResumeText.trim() && !meetingProfileText
     meetingJobId = job
     meetingChannels = channels
     paused = false

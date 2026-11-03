@@ -2,6 +2,36 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-11-03 — Permanent profile, scoped to interviews
+
+Keep one plain-text Interview profile in the existing local Settings JSON, with the same
+Save/Discard workflow as other settings. This is reusable biography, not job context or a
+resume replacement; a separate profile database/editor would add needless machinery.
+The profile has a 40,000-character limit and guidance for About me, Go-to stories,
+Strengths and weaknesses, Why I'm looking, Rate and availability, and Anything else.
+
+Only main's Start path selects the saved text. Mock always applies it. Live's Interview
+checkbox defaults off, turns on when a resume is attached, and permits an explicit off
+override. Editing an existing attachment preserves that override; a new import enables
+it again. Successful Start resets the draft toggle. Ordinary work meetings receive no
+profile. An omitted service option defaults to resume presence for older Start callers.
+
+Schema v10 stores the selected text with the meeting in the creation transaction and
+rejects later changes with an immutability trigger. Settings edits and historical filing
+never rewrite it. History exposes a profile-used flag rather than copying biography onto
+every renderer meeting object. Profile-bearing merges are refused, as resume merges are,
+until provenance-preserving merging exists.
+
+Grounding precedence is per-meeting resume, then general profile stories, then plausible
+marked filler. Both prompt bases and saved More detail grounding contain the escaped
+snapshot. Profile markup uses the resume's escaping function and is framed as data, never
+instructions. Summaries can use it as background, never evidence of speech. Employer/tech
+hints use the existing heuristic through meetingKeyterms for streaming, resume and batch;
+provider budgets stay behind SttProvider. No new endpoint: selected profile data leaves
+only through the configured assistant and derived STT hints, with existing summary/email
+behavior. The practice cue is now “No resume or profile” only when both are empty.
+Model-backed quality and injection resistance are NOT VERIFIED by deterministic tests.
+
 ## 2026-11-03 — Always a usable answer: plausible filler, marked
 
 Owner decision (chat, 2026-11-03), superseding the Nov 2/3 "never invent personal history"

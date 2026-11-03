@@ -7,6 +7,7 @@ import type { Settings, SettingsView } from '@shared/types'
 // ever sees the masked SettingsView (see CLAUDE.md privacy boundary).
 
 const DEFAULTS: Settings = {
+  interviewProfile: '',
   deepgramApiKey: '',
   anthropicApiKey: '',
   anthropicWorkspaceId: '',

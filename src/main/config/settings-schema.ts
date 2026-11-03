@@ -1,3 +1,4 @@
+import { INTERVIEW_PROFILE_MAX_CHARS } from '@shared/interview-profile'
 import { SETTINGS_LIMITS } from '@shared/settings-limits'
 import type { MeetingSource, Settings, WhisperMode } from '@shared/types'
 
@@ -52,6 +53,10 @@ const bounds: Check<Settings['overlayBounds']> = (v) => {
 }
 
 export const SETTINGS_SCHEMA: { [K in keyof Settings]: Check<Settings[K]> } = {
+  interviewProfile: (v) =>
+    typeof v === 'string' && v.length <= INTERVIEW_PROFILE_MAX_CHARS
+      ? v.replaceAll('\0', '')
+      : undefined,
   deepgramApiKey: text(500),
   anthropicApiKey: text(500),
   anthropicWorkspaceId: text(200),

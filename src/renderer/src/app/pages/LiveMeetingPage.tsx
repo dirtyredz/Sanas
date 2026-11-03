@@ -1,3 +1,4 @@
+import { interviewAfterAttachment } from '../../lib/meeting/resume/interview-selection'
 import type { MeetingResume } from '@shared/meeting-resume'
 import { RESUME_MAX_CHARS } from '@shared/meeting-resume'
 import { MeetingResumeInput } from '../../lib/meeting/resume/MeetingResumeInput'
@@ -46,6 +47,11 @@ export function LiveMeetingPage(): React.JSX.Element {
   const [jobId, setJobId] = useState<number | ''>('')
   const choiceChanged = useRef(false)
   const [resumeAttachment, setResumeAttachment] = useState<MeetingResume | null>(null)
+  const [interview, setInterview] = useState(false)
+  const changeResume = (next: MeetingResume | null): void => {
+    setInterview((current) => interviewAfterAttachment(current, resumeAttachment, next))
+    setResumeAttachment(next)
+  }
   const [importingResume, setImportingResume] = useState(false)
   const [resumeImportError, setResumeImportError] = useState('')
   const importResume = async (): Promise<void> => {
@@ -53,7 +59,10 @@ export function LiveMeetingPage(): React.JSX.Element {
     setResumeImportError('')
     try {
       const attachment = await window.sanas.meeting.importResume()
-      if (attachment) setResumeAttachment(attachment)
+      if (attachment) {
+        setResumeAttachment(attachment)
+        setInterview(true)
+      }
     } catch (error) {
       setResumeImportError(error instanceof Error ? error.message : 'Could not import resume.')
     } finally {
@@ -155,6 +164,7 @@ export function LiveMeetingPage(): React.JSX.Element {
             channels,
             useDeck,
             resumeAttachment,
+            interview,
           ),
         (st) => st.status === 'live',
       )
@@ -162,6 +172,7 @@ export function LiveMeetingPage(): React.JSX.Element {
       const st = opened.result
       if (st.status === 'live') {
         setResumeAttachment(null)
+        setInterview(false)
         micRef.current = mic
         setSysAudio(mic.channels === 2)
         setUserSpeakers(new Set())
@@ -278,6 +289,17 @@ export function LiveMeetingPage(): React.JSX.Element {
             Use presentation deck ({deckCount} slides available)
           </label>
         )}
+        {!active && (
+          <label title="Use your saved Interview profile for this meeting">
+            <input
+              type="checkbox"
+              checked={interview}
+              disabled={busy || importingResume}
+              onChange={(e) => setInterview(e.target.checked)}
+            />{' '}
+            Interview
+          </label>
+        )}
         <div className="segmented" role="radiogroup" aria-label="Where is the meeting?">
           {SOURCES.map(({ value, label, hint, icon: Icon }) => (
             <button
@@ -339,7 +361,7 @@ export function LiveMeetingPage(): React.JSX.Element {
           importError={resumeImportError}
           onImport={importResume}
           value={resumeAttachment}
-          onChange={setResumeAttachment}
+          onChange={changeResume}
           disabled={busy}
         />
       )}

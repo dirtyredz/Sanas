@@ -62,3 +62,7 @@ it('regenerates using recorded titles and actual timestamped speech, never prepa
   expect(f.request?.userContent).toContain('not evidence that anyone said')
   expect((f.request?.system ?? '') + f.request?.userContent).not.toContain('UNSPOKEN_SCRIPT')
 })
+
+vi.mock('../../../db/repos/meeting-interview-profile', () => ({
+  getMeetingInterviewProfile: () => '',
+}))

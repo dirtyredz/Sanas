@@ -536,3 +536,20 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
 - STT hints are heuristic, bounded and potentially incomplete. A glossary and resume together must stay within the provider budget, including after pause/resume and batch re-diarization.
 
 - `unpdf` 2.x is ESM-only: keep its dynamic import externalized in the main build so PDF.js/decoder assets resolve within the installed dependency. Its current PDF proxy releases through `pdf.loadingTask.destroy()`, not `pdf.destroy()`. Node >=24 is declared upstream; Node 22 synthetic extraction passes here, but this does not establish packaged Electron compatibility.
+
+## Interview profile
+
+- The editable Settings value is not live grounding. Resolve it once in main at Start and read
+  the meeting snapshot thereafter, including summary regeneration and batch transcription.
+  Mock always applies it; explicit Live Interview=false must win even with a resume. Omitted
+  choices default to resume presence. Never infer interview intent from a job name or notes.
+- The legacy noResume IPC field now means a practice meeting has neither resume nor profile.
+  The cue reads “No resume or profile”; whitespace-only profiles count as empty. Settings edits
+  during practice cannot change the cue or STT hints. Ordinary meetings have no cue.
+- Escape profile delimiters with the same function as resume data. Include it in both prompt
+  variants and persisted grounding, or deck changes/More detail will lose the story. Prompt
+  assertions prove wiring and instructions only, not model quality or injection resistance.
+- v10 adds an immutable profile column. Disposable migration tests that reconstruct v7/v8/v9
+  from the latest schema must remove the v10 trigger and column before rerunning migrations.
+- Hint normalization must use /\s+/ (whitespace), not /s+/: the latter silently corrupts
+  employer and technology names. Profile hints share the corrected resume/glossary helper.

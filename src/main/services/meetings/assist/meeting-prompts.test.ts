@@ -40,3 +40,7 @@ it.each([false, true])(
     )
   },
 )
+
+vi.mock('../../../db/repos/meeting-interview-profile', () => ({
+  getMeetingInterviewProfile: () => '',
+}))
