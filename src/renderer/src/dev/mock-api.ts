@@ -128,6 +128,7 @@ const api: SanasApi = {
     onGhostState: on(ghostListeners),
   },
   meeting: {
+    importResume: async () => null,
     getState: async () => getMeetingState(),
     start: async (_jobId, channels) => {
       beginMockPresentation(99, _jobId ?? jobs[0].id)

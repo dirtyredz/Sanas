@@ -138,6 +138,6 @@ Initial answers in both automatic and Answer now lanes match the ask: screening,
 
 ## Resume for this meeting
 
-Start accepts optional pasted resume text independently of the job and presentation toggle, including Unsorted calls. The draft shows its name, character count and preview, can be removed, and clears after a successful Start. Empty or over-40,000-character drafts cannot start. Saved text is read-only in meeting history.
+Start accepts an optional PDF/DOCX file (up to 5 MB) or pasted resume text independently of the job and presentation toggle, including Unsorted calls. The draft shows its name, character count and preview, can be removed, and clears after a successful Start. Empty or over-40,000-character drafts cannot start. Saved text is read-only in meeting history.
 
-Candidate facts ground answers with or without slides, survive later deck changes and More detail replay, and supply deterministic terminology hints such as Camunda to transcription. Resumes belong to one meeting; they are not remembered for the next call or shared as a reusable library. PDF/DOCX import is pending parser dependency availability.
+Candidate facts ground answers with or without slides, survive later deck changes and More detail replay, and supply deterministic terminology hints such as Camunda to transcription. Resumes belong to one meeting; they are not remembered for the next call or shared as a reusable library. The native file picker extracts text offline in main, shows the file name, and keeps the existing draft on cancellation or failure. Start and edits wait for import to finish. Empty/scanned PDFs ask the user to paste text; extracted text uses the same 40,000-character validation. No source binary or path is saved.

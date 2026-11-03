@@ -46,6 +46,21 @@ export function LiveMeetingPage(): React.JSX.Element {
   const [jobId, setJobId] = useState<number | ''>('')
   const choiceChanged = useRef(false)
   const [resumeAttachment, setResumeAttachment] = useState<MeetingResume | null>(null)
+  const [importingResume, setImportingResume] = useState(false)
+  const [resumeImportError, setResumeImportError] = useState('')
+  const importResume = async (): Promise<void> => {
+    setImportingResume(true)
+    setResumeImportError('')
+    try {
+      const attachment = await window.sanas.meeting.importResume()
+      if (attachment) setResumeAttachment(attachment)
+    } catch (error) {
+      setResumeImportError(error instanceof Error ? error.message : 'Could not import resume.')
+    } finally {
+      setImportingResume(false)
+    }
+  }
+
   const [useDeck, setUseDeck] = useState(false)
   const [deckCount, setDeckCount] = useState(0)
   const [elapsedMs, setElapsedMs] = useState(0)
@@ -285,6 +300,7 @@ export function LiveMeetingPage(): React.JSX.Element {
             onClick={start}
             disabled={
               busy ||
+              importingResume ||
               !!(
                 resumeAttachment &&
                 (!resumeAttachment.text.trim() || resumeAttachment.text.length > RESUME_MAX_CHARS)
@@ -319,6 +335,9 @@ export function LiveMeetingPage(): React.JSX.Element {
       </div>
       {!active && (
         <MeetingResumeInput
+          importing={importingResume}
+          importError={resumeImportError}
+          onImport={importResume}
           value={resumeAttachment}
           onChange={setResumeAttachment}
           disabled={busy}

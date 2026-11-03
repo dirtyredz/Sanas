@@ -308,6 +308,8 @@ main-process code belongs in a responsibility folder above, not beside them.
 ## Per-meeting resume
 
 - `shared/meeting-resume.ts` owns the text/name contract and limits.
+- `main/ipc/resume-import.ts` owns the native PDF/DOCX picker; the renderer never supplies a filesystem path.
+- `main/services/meetings/resume/import-file.ts` owns bounded local reads and offline parser lifecycle.
 - `main/services/meetings/resume/` owns ingress validation, escaped candidate-fact framing and deterministic bounded terminology extraction.
 - `db/repos/meeting-resume-schema.ts` owns append-only v9 SQL and the immutable-update guard; meeting creation persists the text in the existing transaction.
 - `lib/meeting/resume/MeetingResumeInput.tsx` owns the Start draft; `MeetingView` shows saved text read-only.

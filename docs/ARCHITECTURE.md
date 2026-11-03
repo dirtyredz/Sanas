@@ -353,3 +353,5 @@ Start sends an optional text/name attachment over typed IPC; main validates it b
 `MeetingPrompts` reads the saved resume at Start, escapes markup and appends a delimited candidate-facts block to both ordinary and presentation bases. It is independent of talking-point suppression and is captured in immutable grounding rows for More detail. Summary regeneration includes it as background, never transcript evidence. It is not added to FTS.
 
 Capitalized names, acronyms, mixed-case technology and a small lowercase technology vocabulary become STT hints. Resume terms alternate with job glossary terms, deduplicate case-insensitively and respect conservative count/length/byte limits. Streaming start/resume and batch transcription use `SttProvider`; no new provider or network path exists.
+
+Resume file import: Start invokes a parameterless typed IPC picker. Main reads at most 5 MB plus one sentinel byte, parses PDF/DOCX locally, applies the existing text validation, and returns only the basename and text. Cancellation/errors preserve the draft. The source file is never copied into storage; successful Start uses the same immutable attachment flow as pasted text.

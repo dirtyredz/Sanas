@@ -1,3 +1,4 @@
+import { registerResumeImportIpc } from './resume-import'
 import { validateResume } from '../services/meetings/resume/resume'
 import { registerMockInterviewIpc } from './mock-interview'
 import { registerUpdatesIpc } from './updates'
@@ -56,6 +57,7 @@ import { broadcast } from '../windows/broadcast'
 // Thin handlers only — validate (./validate.ts) and delegate (see STRUCTURE.md).
 
 export function registerIpcHandlers(): void {
+  registerResumeImportIpc()
   registerMockInterviewIpc()
   registerUpdatesIpc()
   registerPresentationIpc()

@@ -6,10 +6,16 @@ export function MeetingResumeInput({
   value,
   onChange,
   disabled,
+  importing,
+  importError,
+  onImport,
 }: {
   value: MeetingResume | null
   onChange: (value: MeetingResume | null) => void
   disabled: boolean
+  importing?: boolean
+  importError?: string
+  onImport: () => void
 }): React.JSX.Element {
   return (
     <details className="card">
@@ -21,15 +27,25 @@ export function MeetingResumeInput({
         Saved with this meeting. Used as candidate facts in assistant prompts and terminology hints
         for transcription.
       </p>
+      <button className="btn btn-ghost" disabled={disabled || importing} onClick={onImport}>
+        {importing ? 'Importing resume...' : 'Choose PDF or DOCX (up to 5 MB)'}
+      </button>
+      {importError && (
+        <p role="alert" className="notice warn">
+          {importError}
+        </p>
+      )}
       <label>
         Paste resume text
         <textarea
           className="field"
           rows={5}
-          disabled={disabled}
+          disabled={disabled || importing}
           value={value?.text ?? ''}
           onChange={(e) =>
-            onChange(e.target.value ? { name: 'Pasted text', text: e.target.value } : null)
+            onChange(
+              e.target.value ? { name: value?.name ?? 'Pasted text', text: e.target.value } : null,
+            )
           }
         />
       </label>
@@ -48,7 +64,11 @@ export function MeetingResumeInput({
             {value.text.slice(0, 240)}
             {value.text.length > 240 ? '…' : ''}
           </p>
-          <button className="btn btn-ghost" disabled={disabled} onClick={() => onChange(null)}>
+          <button
+            className="btn btn-ghost"
+            disabled={disabled || importing}
+            onClick={() => onChange(null)}
+          >
             Remove resume
           </button>
         </>

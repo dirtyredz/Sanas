@@ -518,3 +518,5 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
 - Both ordinary and presentation prompt bases need the same resume block. Adding/clearing a deck must never remove candidate facts or reread a changed attachment. Escape markup before surrounding resume text with delimiters; framing mitigates injection but cannot guarantee model behavior.
 - Merge rejects resume-bearing meetings so candidate identity/history is not silently discarded. Resume content is background for summaries, not evidence that the candidate spoke those facts.
 - STT hints are heuristic, bounded and potentially incomplete. A glossary and resume together must stay within the provider budget, including after pause/resume and batch re-diarization.
+
+- `unpdf` 2.x is ESM-only: keep its dynamic import externalized in the main build so PDF.js/decoder assets resolve within the installed dependency. Its current PDF proxy releases through `pdf.loadingTask.destroy()`, not `pdf.destroy()`. Node >=24 is declared upstream; Node 22 synthetic extraction passes here, but this does not establish packaged Electron compatibility.

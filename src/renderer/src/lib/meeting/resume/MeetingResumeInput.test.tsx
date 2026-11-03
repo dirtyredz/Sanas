@@ -18,6 +18,7 @@ it('shows the name, count, escaped preview and supports replacing and removing a
   const props = {
     value: { name: 'Synthetic.docx', text: '<script>Camunda</script>' },
     onChange,
+    onImport: vi.fn(),
     disabled: false,
   }
   const markup = renderToStaticMarkup(<MeetingResumeInput {...props} />)
@@ -28,8 +29,11 @@ it('shows the name, count, escaped preview and supports replacing and removing a
   all.find((n) => n.type === 'textarea')!.props.onChange!({
     target: { value: 'Pasted Camunda facts' },
   })
-  expect(onChange).toHaveBeenLastCalledWith({ name: 'Pasted text', text: 'Pasted Camunda facts' })
-  all.find((n) => n.type === 'button')!.props.onClick!()
+  expect(onChange).toHaveBeenLastCalledWith({
+    name: 'Synthetic.docx',
+    text: 'Pasted Camunda facts',
+  })
+  all.filter((n) => n.type === 'button').at(-1)!.props.onClick!()
   expect(onChange).toHaveBeenLastCalledWith(null)
 })
 it('shows invalid pasted-text errors instead of silently truncating a resume', () => {
@@ -37,8 +41,27 @@ it('shows invalid pasted-text errors instead of silently truncating a resume', (
     <MeetingResumeInput
       value={{ name: 'Paste', text: 'x'.repeat(40001) }}
       onChange={() => {}}
+      onImport={() => {}}
       disabled={false}
     />,
   )
   expect(markup).toContain('Shorten or remove it before Start')
+})
+
+it('invokes import and shows busy and error feedback with edits disabled during import', () => {
+  const onImport = vi.fn()
+  const props = { value: null, onChange: vi.fn(), disabled: false, onImport }
+  nodes(MeetingResumeInput(props)).find((n) => n.type === 'button')!.props.onClick!()
+  expect(onImport).toHaveBeenCalledOnce()
+  const markup = renderToStaticMarkup(
+    <MeetingResumeInput
+      {...props}
+      importing
+      importError="No text found — paste the text instead."
+    />,
+  )
+  expect(markup).toContain('Importing resume')
+  expect(markup).toContain('No text found')
+  expect(markup).toMatch(/<button[^>]*disabled/)
+  expect(markup).toMatch(/<textarea[^>]*disabled/)
 })

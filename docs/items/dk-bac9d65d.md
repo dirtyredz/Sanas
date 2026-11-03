@@ -2,7 +2,7 @@
 id: dk-bac9d65d
 type: feature
 created: 2026-11-03
-status: todo
+status: done
 since: 2026-11-03
 area:
 priority: P1

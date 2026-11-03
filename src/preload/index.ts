@@ -141,6 +141,7 @@ const api = {
       resume?: MeetingResume | null,
     ): Promise<MeetingState> =>
       ipcRenderer.invoke(IPC.MeetingStart, jobId, channels, usePresentationDeck, resume),
+    importResume: (): Promise<MeetingResume | null> => ipcRenderer.invoke(IPC.MeetingImportResume),
     /** Stop listening but keep the meeting open; resume continues its clock. */
     pause: (): Promise<MeetingState> => ipcRenderer.invoke(IPC.MeetingPause),
     /** Resume with the capture topology now in hand; main refuses if it changed. */

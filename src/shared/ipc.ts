@@ -52,6 +52,7 @@ export const IPC = {
   MeetingGetState: 'meeting:get-state',
   MeetingPause: 'meeting:pause',
   MeetingResume: 'meeting:resume',
+  MeetingImportResume: 'meeting:import-resume',
   MeetingStop: 'meeting:stop',
   MeetingPinSpeaker: 'meeting:pin-speaker',
   // audio stream (renderer → main, fire-and-forget)
