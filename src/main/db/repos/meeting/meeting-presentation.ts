@@ -1,5 +1,5 @@
 import type { PresentationHistory, Slide, SlideEvent } from '@shared/presentation/types'
-import { getDb } from '../index'
+import { getDb } from '../../index'
 import { deckSlides, getMeetingContext } from './meeting-context'
 
 export function hasPresentation(id: number): boolean {

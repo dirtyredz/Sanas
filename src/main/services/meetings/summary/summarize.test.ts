@@ -17,8 +17,10 @@ const f = vi.hoisted(() => ({
 vi.mock('../../../config/settings', () => ({
   loadSettings: () => ({ anthropicApiKey: 'key', answerModel: 'model' }),
 }))
-vi.mock('../../../db/repos/meeting-resume', () => ({ getMeetingResume: () => null }))
-vi.mock('../../../db/repos/meetings', () => ({
+vi.mock('../../../db/repos/meeting/meeting-grounding', () => ({
+  getMeetingGrounding: () => ({ resume: null, interviewProfile: '', hasBiography: false }),
+}))
+vi.mock('../../../db/repos/meeting/meetings', () => ({
   getMeeting: () => ({ id: 1, jobId: 2 }),
   updateMeetingSummary: vi.fn(),
 }))
@@ -34,10 +36,10 @@ vi.mock('../../../db/repos/segments', () => ({
 }))
 vi.mock('../../../db/repos/jobs', () => ({ getJob: () => null, listGlossary: () => [] }))
 vi.mock('../../../db/repos/speakers', () => ({ speakerNameMap: () => new Map() }))
-vi.mock('../../../db/repos/meeting-context', () => ({
+vi.mock('../../../db/repos/meeting/meeting-context', () => ({
   getMeetingContext: () => ({ text: 'OWNER_CORRECTION' }),
 }))
-vi.mock('../../../db/repos/meeting-presentation', () => ({
+vi.mock('../../../db/repos/meeting/meeting-presentation', () => ({
   getPresentationHistory: () => f.history,
 }))
 vi.mock('../status/post-processing', () => ({
@@ -62,7 +64,3 @@ it('regenerates using recorded titles and actual timestamped speech, never prepa
   expect(f.request?.userContent).toContain('not evidence that anyone said')
   expect((f.request?.system ?? '') + f.request?.userContent).not.toContain('UNSPOKEN_SCRIPT')
 })
-
-vi.mock('../../../db/repos/meeting-interview-profile', () => ({
-  getMeetingInterviewProfile: () => '',
-}))

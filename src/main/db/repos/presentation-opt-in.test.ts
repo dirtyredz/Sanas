@@ -6,8 +6,8 @@ const mock = vi.hoisted(() => ({ db: null as unknown as Database }))
 vi.mock('../index', () => ({ getDb: () => mock.db }))
 import { runMigrations } from '../migrations'
 import { createJob } from './jobs'
-import { createMeeting } from './meeting-create'
-import { getPresentationHistory } from './meeting-presentation'
+import { createMeeting } from './meeting/meeting-create'
+import { getPresentationHistory } from './meeting/meeting-presentation'
 
 let sqlite: DatabaseSync
 function database(): void {
@@ -18,7 +18,7 @@ function database(): void {
 afterEach(() => sqlite?.close())
 
 import { replaceJobSlides } from './job-slides'
-import { getMeetingContext } from './meeting-context'
+import { getMeetingContext } from './meeting/meeting-context'
 import { MeetingPrompts } from '../../services/meetings/assist/meeting-prompts'
 import { PresentationSession } from '../../services/meetings/presentation/session'
 import { answerRequest } from '../../services/meetings/assist/suggestion-requests'

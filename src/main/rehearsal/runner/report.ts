@@ -10,7 +10,7 @@ import type { RehearsalScreens } from '../screens/fixture-display'
 import * as meetings from '../../services/meetings'
 import { isPostProcessing } from '../../services/meetings/status/post-processing'
 import { listSegments } from '../../db/repos/segments'
-import { getMeeting } from '../../db/repos/meetings'
+import { getMeeting } from '../../db/repos/meeting/meetings'
 import { sleep } from './clock'
 export async function finishReport({
   options,

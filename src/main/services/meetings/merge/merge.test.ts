@@ -1,42 +1,42 @@
 import { expect, it, vi } from 'vitest'
-const f = vi.hoisted(() => ({ profile: '', transaction: vi.fn(), remove: vi.fn() }))
+const f = vi.hoisted(() => ({
+  grounding: { resume: null as null | { name: string; text: string }, interviewProfile: '' },
+  transaction: vi.fn(),
+  remove: vi.fn(),
+}))
 vi.mock('../../../db', () => ({ getDb: () => ({ transaction: f.transaction }) }))
-vi.mock('../../../db/repos/meetings', () => ({
+vi.mock('../../../db/repos/meeting/meetings', () => ({
   getMeeting: () => ({ id: 1, title: 'Interview' }),
   applyMerge: vi.fn(),
   deleteMeeting: vi.fn(),
 }))
-vi.mock('../../../db/repos/meeting-resume', () => ({
-  getMeetingResume: () => ({ name: 'Paste', text: 'Camunda' }),
+vi.mock('../../../db/repos/meeting/meeting-grounding', () => ({
+  getMeetingGrounding: () => ({
+    ...f.grounding,
+    hasBiography: !!f.grounding.resume || !!f.grounding.interviewProfile,
+  }),
 }))
 vi.mock('../../../db/repos/segments', () => ({ maxSpeaker: vi.fn(), reassignSegments: vi.fn() }))
 vi.mock('../../../db/repos/suggestions', () => ({ reassignSuggestions: vi.fn() }))
 vi.mock('../../../db/repos/speakers', () => ({ reassignSpeakerNames: vi.fn() }))
-vi.mock('../../../db/repos/meeting-context', () => ({ hasAppliedContext: vi.fn() }))
-vi.mock('../../../db/repos/meeting-presentation', () => ({ hasPresentation: vi.fn() }))
+vi.mock('../../../db/repos/meeting/meeting-context', () => ({ hasAppliedContext: vi.fn() }))
+vi.mock('../../../db/repos/meeting/meeting-presentation', () => ({ hasPresentation: vi.fn() }))
 vi.mock('../status/post-processing', () => ({ isPostProcessing: () => false }))
 vi.mock('../remove', () => ({ removeAudioFile: f.remove }))
 import { mergeMeetings } from './merge'
 
-it('refuses resume-bearing merges before touching rows or recordings', () => {
-  expect(() => mergeMeetings([1, 2])).toThrow('Meetings with resumes cannot be merged.')
-  expect(f.transaction).not.toHaveBeenCalled()
-  expect(f.remove).not.toHaveBeenCalled()
-})
-
-vi.mock('../../../db/repos/meeting-interview-profile', () => ({
-  getMeetingInterviewProfile: () => f.profile,
-}))
-
-it('refuses profile-bearing merges before mutating history', () => {
-  f.profile = 'My story'
+it.each([
+  ['resume', { resume: { name: 'Paste', text: 'Camunda' }, interviewProfile: '' }],
+  ['interview profile', { resume: null, interviewProfile: 'My story' }],
+])('refuses %s-bearing merges before touching rows or recordings', (_what, grounding) => {
+  f.grounding = grounding
   try {
     expect(() => mergeMeetings([1, 2])).toThrow(
-      'Meetings with interview profiles cannot be merged.',
+      'Meetings with resumes or interview profiles cannot be merged.',
     )
     expect(f.transaction).not.toHaveBeenCalled()
     expect(f.remove).not.toHaveBeenCalled()
   } finally {
-    f.profile = ''
+    f.grounding = { resume: null, interviewProfile: '' }
   }
 })

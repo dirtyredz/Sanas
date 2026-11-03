@@ -12,7 +12,9 @@ vi.mock('../../../db/repos/jobs', () => ({
   listGlossary: () => [],
 }))
 vi.mock('../../../db/repos/suggestion-grounding', () => ({ saveGrounding: () => 1 }))
-vi.mock('../../../db/repos/meeting-resume', () => ({ getMeetingResume: () => null }))
+vi.mock('../../../db/repos/meeting/meeting-grounding', () => ({
+  getMeetingGrounding: () => ({ resume: null, interviewProfile: '', hasBiography: false }),
+}))
 import { MeetingPrompts } from './meeting-prompts'
 it.each([false, true])(
   'keeps candidate biography when deck active = %s; missing facts get marked filler',
@@ -40,7 +42,3 @@ it.each([false, true])(
     )
   },
 )
-
-vi.mock('../../../db/repos/meeting-interview-profile', () => ({
-  getMeetingInterviewProfile: () => '',
-}))

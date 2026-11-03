@@ -68,8 +68,13 @@ sanas/
 │   │   │   │   ├── live-controls.ts       # context/manual/answer-mode/slide control facade
 │   │   │   │   ├── assist/                # assembly, prompt state, admission, coordinator and runner
 │   │   │   │   ├── capture/               # channel identity and capture health
-│   │   │   │   ├── context/               # prepare/commit/publish meeting-context changes
-│   │   │   │   │   └── resume/            # per-meeting resume: validation, file import, candidate facts, keyterms
+│   │   │   │   ├── context/               # prepare/commit/publish meeting-context changes + meeting grounding
+│   │   │   │   │   ├── start-request.ts   # StartRequest: the renderer-facing Start choices
+│   │   │   │   │   ├── profile.ts         # Interview-profile Start selection
+│   │   │   │   │   ├── candidate-data.ts  # escaping + resume/profile prompt framing
+│   │   │   │   │   ├── meeting-facts.ts   # combined candidate-facts block from a grounding
+│   │   │   │   │   ├── meeting-keyterms.ts # glossary + resume/profile STT hints
+│   │   │   │   │   └── resume/            # per-meeting resume: validation, file import, term extraction
 │   │   │   │   ├── presentation/          # live cursor and historical marker formatting
 │   │   │   │   ├── status/                # live meeting and post-processing guards, historical job filing (filing.ts)
 │   │   │   │   ├── summary/               # summary generation, output parsing and email
@@ -86,6 +91,7 @@ sanas/
 │   │   │   └── screen-capture/             # display choice, one-shot screenshot and encoding
 │   │   ├── db/                             # async open/backup/migrations and SQLite helpers
 │   │   │   ├── repos/                      # entity repositories and all SQL strings
+│   │   │   │   └── meeting/                # meeting row, creation, grounding, context and presentation repos
 │   │   │   └── testing/                    # test-only SQLite adapter (sqlite-test-database.ts)
 │   │   └── config/                         # settings, secrets and exhaustive settings schema
 │   ├── preload/                            # typed contextBridge API
@@ -99,6 +105,7 @@ sanas/
 │   │       │   ├── jobs/                   # job detail tabs and presentation editor
 │   │       │   ├── settings/
 │   │       │   │   ├── sections/           # one component per Settings section + section index (+ pure hotkey/update status)
+│   │       │   │   │   └── InterviewProfileSection.tsx # the one plain-text Interview profile editor
 │   │       │   │   └── frame/              # section list, index, pane, card, useSettingsDraft + patch/validation, save bar
 │   │       │   │       └── paging/         # pure page order + useSettingsPager
 │   │       │   └── styles/                 # tokens → base/controls → shell/transcript/pages/settings; overlay-* layers
@@ -114,12 +121,14 @@ sanas/
 │   │       ├── audio/                      # mic/loopback capture and worklet bridge
 │   │       ├── lib/                        # pure shared renderer helpers (incl. overlay-workspaces.ts: workspace names + local shortcut table)
 │   │       │   ├── meeting/                # meeting/context/presentation state and hooks (start-selection.ts: remembered Start choices)
-│       │   │   └── resume/             # Start-time resume draft input
+│   │       │   │   └── resume/             # Start-time resume draft input
 │   │       │   ├── presentation/           # slide editor and forgiving import
 │   │       │   └── suggestions/            # safe suggestion rendering and history reducer
 │   │       ├── dev/                        # typed browser-preview bridge mocks
 │   │       └── env.d.ts                    # Vite client types
 │   └── shared/                              # cross-process IPC and domain contracts
+│       ├── filler-marker.ts                # ⟨…⟩ improvised-answer marker: constants, split and strip
+│       ├── interview-profile.ts            # Interview profile text limit
 │       ├── mock-interview/                 # typed setup/state/result IPC contracts
 │       ├── presentation/                   # deck and timeline contracts
 │       ├── live-controls/                  # context, admission, suggestion metadata and capture contracts
@@ -186,8 +195,10 @@ sanas/
 - `src/main/services/meetings/` — meeting lifecycle/STT/audio orchestration plus meeting-level facades
 - `src/main/services/meetings/assist/` — per-meeting prompt/grounding state, manual and screen-capture admission, in-memory composer screen drafts (`capture-drafts.ts`), automatic coordination (`question-ledger.ts` carries uncovered stacked questions into one suggestion) and suggestion execution
 - `src/main/services/meetings/capture/` — AUDIO capture-side identity and capture-health policy (screen capture lives in `services/screen-capture/`)
-- `src/main/services/meetings/context/` — pure preparation followed by commit/publication of live context changes; `meeting-keyterms.ts` builds the STT hints (glossary plus resume terms) for streaming and batch
-- `src/main/services/meetings/context/resume/` — per-meeting resume: ingress validation (`resume.ts`), bounded PDF/DOCX parsing (`import-file.ts`), pure term extraction (`keyterms.ts`), and the saved-resume candidate-facts lookup (`meeting-facts.ts`)
+- `src/main/services/meetings/context/` — pure preparation followed by commit/publication of live context changes; `meeting-keyterms.ts` builds the STT hints (glossary plus resume/profile terms) for streaming and batch
+- `src/main/services/meetings/context/resume/` — per-meeting resume: ingress validation (`resume.ts`), bounded PDF/DOCX parsing (`import-file.ts`), pure term extraction (`keyterms.ts`)
+- `src/main/services/meetings/context/candidate-data.ts` — neutral escaping and delimited prompt framing for resume (`candidateFacts`) and Interview profile (`interviewProfileFacts`); so `resume/` and the profile never import each other
+- `src/main/services/meetings/context/meeting-facts.ts` — combines a `MeetingGrounding` into the candidate-facts block (resume first); `profile.ts` — `interviewProfileSnapshot`, Start selection of the Settings profile; `start-request.ts` — `StartRequest`
 - `src/main/services/meetings/presentation/` — current cursor state and historical slide-marker formatting
 - `src/main/services/meetings/status/` — live-meeting identity, post-processing guards and `filing.ts` (historical job filing; refuses a live meeting)
 - `src/main/services/meetings/summary/` — meeting summaries, structured output handling and summary email
@@ -203,7 +214,9 @@ sanas/
 - `src/main/services/screen-capture/` — display selection, one-shot desktop capture, image sizing/encoding; no meeting or provider policy
 - `src/main/db/` — database connection lifecycle, consistent pre-upgrade backup, migrations and SQLite helpers
 - `src/main/db/testing/` — `sqlite-test-database.ts`, the local SQLite transaction adapter shared by repository tests; it does not certify Electron ABI packaging
-- `src/main/db/repos/meeting-create.ts` — `createMeeting(jobId, title, MeetingStartOptions)`, the one meeting-creation transaction (row, version bookkeeping, opt-in deck copy); `meeting-resume.ts` — `getMeetingResume(id)`, the only read of the saved resume
+- `src/main/db/repos/meeting/` — the meeting repos: `meetings.ts` (row), `meeting-create.ts` (`createMeeting(jobId, title, MeetingCreateInput)`, the one creation transaction; the input is main-resolved and carries the profile snapshot), `meeting-grounding.ts` (`getMeetingGrounding(id)`: `{ resume, interviewProfile, hasBiography }`, the only read of both snapshots), `meeting-resume-schema.ts` / `meeting-interview-profile.ts` (append-only v9/v10 SQL and immutable guards), `meeting-context.ts`, `meeting-presentation.ts`
+- `src/shared/filler-marker.ts` — `FILLER_OPEN`/`FILLER_CLOSE` for prompts, `splitFiller`/`stripFillerMarkers` for rendering; `src/shared/interview-profile.ts` — the profile text limit
+- `src/renderer/src/app/settings/sections/InterviewProfileSection.tsx` — the one plain-text Interview profile editor; the Settings draft/pager/save flow owns editing state
 - `src/main/db/repos/` — per-entity repositories (incl. the screen-answer storage codec `manual-kind.ts`); the only place SQL strings live
 - `src/main/config/` — settings/secrets persistence and exhaustive settings validation
 - `src/preload/` — typed contextBridge surface exposed to renderers
@@ -319,24 +332,20 @@ main-process code belongs in a responsibility folder above, not beside them.
 - `main/ipc/resume-import.ts` owns the native PDF/DOCX picker; the renderer never supplies a filesystem path.
 - `main/services/meetings/context/resume/import-file.ts` owns bounded local reads and offline parser lifecycle.
 - `main/services/meetings/context/resume/` owns validation (run once, at IPC ingress), escaped candidate-fact framing and deterministic terminology extraction.
-- `db/repos/meeting-resume-schema.ts` owns append-only v9 SQL and the immutable-update guard; `createMeeting` persists the text in its one transaction. The resume is not on the `Meeting` row: `getMeetingResume(id)` is the only read (prompts, summary, re-diarize, merge guard, and `MeetingView` via `meetings.getResume`).
+- `db/repos/meeting/meeting-resume-schema.ts` owns append-only v9 SQL and the immutable-update guard; `createMeeting` persists the text in its one transaction. The resume is not on the `Meeting` row: `getMeetingGrounding(id).resume` is the only read (`MeetingView` via `meetings.getResume`).
 - `lib/meeting/resume/MeetingResumeInput.tsx` owns the Start draft; `MeetingView` shows saved text read-only.
 - `MeetingPrompts` attaches candidate facts to both job prompt variants before saving grounding. `meetingKeyterms` builds one ordered hint list for streaming and batch STT; the provider applies its own limits.
 
-## Interview profile homes
+## Meeting grounding (resume + Interview profile)
 
-- shared/interview-profile.ts owns the text limit; config/settings.ts and settings-schema.ts
-  own local persistence/defaults and ingress validation.
-- app/settings/sections/InterviewProfileSection.tsx owns the one plain-text editor and guidance;
-  the existing Settings draft/pager/save flow owns editing state.
-- lib/meeting/resume/interview-selection.ts preserves a Live toggle override while editing an
-  attachment. LiveMeetingPage passes the choice through preload/IPC to MeetingStartOptions.
-- services/meetings/context/interview-profile/profile.ts owns Start selection and escaped profile
-  framing. No new siblings were added directly under services/meetings/.
-- db/repos/meeting-interview-profile.ts owns append-only v10 SQL and snapshot reads;
-  meeting-create.ts inserts the main-resolved snapshot in its existing transaction.
-- context/resume/meeting-facts.ts combines saved resume/profile blocks; meeting-prompts.ts freezes
-  both prompt variants. context/meeting-keyterms.ts combines glossary/resume/profile hints;
-  lifecycle and batch consumers use the same helper, with limits still in SttProvider.
-- MeetingView receives interviewProfileUsed through the existing Meeting projection; large profile
-  text stays off the list/history IPC objects. Merge refuses profile-bearing meetings.
+- One concept: `getMeetingGrounding(id)` returns `{ resume, interviewProfile, hasBiography }`. Meeting
+  keyterms (streaming, resume, batch), the candidate-facts block (prompts, summary), re-diarize, the single
+  merge refusal guard, the practice `noResume` cue and the no-biography prompt fallback all read that
+  snapshot; `meetings/index.ts` keeps no resume/profile cache.
+- `config/settings.ts` + `settings-schema.ts` own the mutable profile and its validation; main resolves it at
+  Start (`context/profile.ts`: applies for Mock, an explicit Interview toggle, or an attached resume) and
+  hands `createMeeting` a `MeetingCreateInput`. A `StartRequest` from the renderer cannot carry a profile.
+- `lib/meeting/start-selection.ts` (`interviewAfterAttachment`) preserves a Live toggle override while
+  editing an attachment; LiveMeetingPage passes the choice through preload/IPC to `StartRequest`.
+- `MeetingView` receives `interviewProfileUsed` through the existing Meeting projection; large profile text
+  stays off list/history IPC objects. Merge refuses meetings with a resume or profile.

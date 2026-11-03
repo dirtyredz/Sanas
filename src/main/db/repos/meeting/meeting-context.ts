@@ -1,6 +1,6 @@
 import type { MeetingContext } from '@shared/live-controls/types'
 import type { Slide, SlideEvent } from '@shared/presentation/types'
-import { getDb } from '../index'
+import { getDb } from '../../index'
 
 export function deckSlides(meetingId: number, version: number): Slide[] {
   return getDb()

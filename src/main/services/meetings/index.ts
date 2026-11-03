@@ -1,4 +1,5 @@
-import { interviewProfileSnapshot } from './context/interview-profile/profile'
+import { interviewProfileSnapshot } from './context/profile'
+import type { StartRequest } from './context/start-request'
 import { meetingKeyterms } from './context/meeting-keyterms'
 import { observeMeeting } from './observation'
 import { IPC } from '@shared/ipc'
@@ -9,7 +10,13 @@ import { loadSettings } from '../../config/settings'
 import { sttProvider } from '../stt'
 import type { SttSession, SttSignal, SttTranscript } from '../stt/types'
 import { ensureDefaultJob } from '../../db/repos/jobs'
-import { clearMeetingAudioPath, endMeeting, updateMeetingAudioPath } from '../../db/repos/meetings'
+import {
+  clearMeetingAudioPath,
+  endMeeting,
+  getMeeting,
+  updateMeetingAudioPath,
+} from '../../db/repos/meeting/meetings'
+import { getMeetingGrounding } from '../../db/repos/meeting/meeting-grounding'
 import { discardRecording, startRecording, stopRecording, writeAudio } from '../audio-store'
 import { rediarizeMeeting } from './rediarize/rediarize'
 import { summarizeLines } from './summary/summarize'
@@ -21,8 +28,11 @@ import { CAPTURE_WARNING, CaptureHealth } from './capture/capture-health'
 import { LiveSession } from './assist/live-session'
 import { insertSegment, setSpeakerIsUser } from '../../db/repos/segments'
 import { broadcast } from '../../windows/broadcast'
-import { getPresentationHistory, insertSlideEvent } from '../../db/repos/meeting-presentation'
-import { createMeeting, type MeetingStartOptions } from '../../db/repos/meeting-create'
+import {
+  getPresentationHistory,
+  insertSlideEvent,
+} from '../../db/repos/meeting/meeting-presentation'
+import { createMeeting } from '../../db/repos/meeting/meeting-create'
 import { PresentationSession } from './presentation/session'
 import { createLiveControls } from './live-controls'
 import { CaptureRequests } from './assist/capture-requests'
@@ -59,9 +69,6 @@ const BYTES_PER_SAMPLE = 2 // linear16
 let session: SttSession | null = null
 let sessionGen = 0 // bumped whenever a session is opened or discarded
 let meetingJobId = 0 // remembered so a resume can re-send the job's keyterms
-let meetingProfileText = ''
-let meetingResumeText = '' // this meeting's resume, kept so a resume re-sends its hints
-let practiceWithoutBiography = false
 let meetingChannels: ChannelCount = 1
 let paused = false
 let audioMsReceived = 0 // the meeting's clock: audio actually captured, in ms
@@ -115,12 +122,12 @@ const liveControls = createLiveControls({
 export function currentState(): MeetingState {
   const meetingId = liveMeetingId()
   if (meetingId === null) return { meetingId: null, status: 'idle' }
-  if (paused)
-    return { meetingId, status: 'paused', ...(practiceWithoutBiography ? { noResume: true } : {}) }
+  const noResume = practiceWithoutBiography(meetingId) ? { noResume: true } : {}
+  if (paused) return { meetingId, status: 'paused', ...noResume }
   return {
     meetingId,
     status: 'live',
-    ...(practiceWithoutBiography ? { noResume: true } : {}),
+    ...noResume,
     ...(captureHealth.warned ? { captureWarning: CAPTURE_WARNING } : {}),
     ...(assistance.automaticUnavailable()
       ? {
@@ -131,8 +138,14 @@ export function currentState(): MeetingState {
   }
 }
 
+/** Status cue: a practice session with no resume and no Interview profile to answer from. */
+function practiceWithoutBiography(meetingId: number): boolean {
+  return !!getMeeting(meetingId)?.practice && !getMeetingGrounding(meetingId).hasBiography
+}
+
 function setState(state: MeetingState): MeetingState {
-  if (state.meetingId !== null && practiceWithoutBiography) state = { ...state, noResume: true }
+  if (state.meetingId !== null && practiceWithoutBiography(state.meetingId))
+    state = { ...state, noResume: true }
   observeMeeting({ kind: 'state', value: state })
   lastError = state.error
   broadcast(IPC.MeetingState, state)
@@ -257,7 +270,11 @@ function handleSignal(s: SttSignal): void {
 
 /** Opens an STT connection for the current meeting, continuing the meeting's clock.
  *  Its callbacks are ignored once a newer session exists. */
-async function openSession(apiKey: string, startOffsetMs: number): Promise<SttSession> {
+async function openSession(
+  meetingId: number,
+  apiKey: string,
+  startOffsetMs: number,
+): Promise<SttSession> {
   const gen = ++sessionGen
   const mine =
     <T>(fn: (arg: T) => void) =>
@@ -267,7 +284,7 @@ async function openSession(apiKey: string, startOffsetMs: number): Promise<SttSe
   return sttProvider.start({
     apiKey,
     channels: meetingChannels,
-    keyterms: meetingKeyterms(meetingJobId, meetingResumeText, meetingProfileText),
+    keyterms: meetingKeyterms(meetingJobId, getMeetingGrounding(meetingId)),
     startOffsetMs,
     onTranscript: mine(handleTranscript),
     onSignal: mine(handleSignal),
@@ -280,11 +297,11 @@ async function openSession(apiKey: string, startOffsetMs: number): Promise<SttSe
 export function startMeeting(
   jobId?: number,
   channels: ChannelCount = 1,
-  options: MeetingStartOptions = {},
+  request: StartRequest = {},
 ): Promise<MeetingState> {
   return serialized(async () => {
     if (liveMeetingId() !== null) {
-      if (options.practice)
+      if (request.practice)
         throw new Error('End the current meeting before starting a mock interview.')
       return currentState() // one meeting at a time
     }
@@ -298,20 +315,20 @@ export function startMeeting(
       })
     }
 
-    const profile = interviewProfileSnapshot(options, settings.interviewProfile)
+    const profile = interviewProfileSnapshot(request, settings.interviewProfile)
     const job = jobId ?? ensureDefaultJob()
     const id = createMeeting(
       job,
-      `${options.practice ? 'Practice' : 'Meeting'} ${new Date().toLocaleString()}`,
-      options,
-      profile,
+      `${request.practice ? 'Practice' : 'Meeting'} ${new Date().toLocaleString()}`,
+      {
+        practice: request.practice,
+        usePresentationDeck: request.usePresentationDeck,
+        resume: request.resume,
+        interviewProfile: profile,
+      },
     )
     captures.meetingChanged() // drafts and feedback belong to one meeting
     setLiveMeeting(id)
-    meetingProfileText = profile
-    meetingResumeText = options.resume?.text ?? ''
-    practiceWithoutBiography =
-      !!options.practice && !meetingResumeText.trim() && !meetingProfileText
     meetingJobId = job
     meetingChannels = channels
     paused = false
@@ -327,7 +344,7 @@ export function startMeeting(
     // chunk rather than the file starting after the transcript
     let opened: SttSession
     try {
-      opened = await openSession(settings.deepgramApiKey, 0)
+      opened = await openSession(id, settings.deepgramApiKey, 0)
     } catch (e) {
       // never leave a meeting row open with no way back to it
       assistance.halt()
@@ -410,7 +427,7 @@ export function resumeMeeting(channels: ChannelCount): Promise<MeetingState> {
       })
     }
     try {
-      session = await openSession(deepgramApiKey, Math.round(audioMsReceived))
+      session = await openSession(meetingId, deepgramApiKey, Math.round(audioMsReceived))
     } catch (e) {
       session = null
       return setState({

@@ -1,16 +1,15 @@
 import type { Meeting, MergeResult } from '@shared/types'
 import { getDb } from '../../../db'
-import { applyMerge, deleteMeeting, getMeeting } from '../../../db/repos/meetings'
+import { applyMerge, deleteMeeting, getMeeting } from '../../../db/repos/meeting/meetings'
 import { maxSpeaker, reassignSegments } from '../../../db/repos/segments'
 import { reassignSuggestions } from '../../../db/repos/suggestions'
 import { reassignSpeakerNames } from '../../../db/repos/speakers'
 import { isPostProcessing } from '../status/post-processing'
 import { removeAudioFile } from '../remove'
 import { planMerge, type MergePart } from './merge-plan'
-import { getMeetingInterviewProfile } from '../../../db/repos/meeting-interview-profile'
-import { getMeetingResume } from '../../../db/repos/meeting-resume'
-import { hasAppliedContext } from '../../../db/repos/meeting-context'
-import { hasPresentation } from '../../../db/repos/meeting-presentation'
+import { getMeetingGrounding } from '../../../db/repos/meeting/meeting-grounding'
+import { hasAppliedContext } from '../../../db/repos/meeting/meeting-context'
+import { hasPresentation } from '../../../db/repos/meeting/meeting-presentation'
 
 // Folds several meeting rows into one — the repair for a conversation that a dropped
 // connection split into pieces before Pause existed, and for any stop/start done by hand.
@@ -42,9 +41,8 @@ export function mergeMeetings(ids: number[]): MergeResult {
   const parts = ids.map((id) => {
     const m = getMeeting(id)
     if (!m) throw new Error(`Meeting ${id} no longer exists.`)
-    if (getMeetingInterviewProfile(id))
-      throw new Error('Meetings with interview profiles cannot be merged.')
-    if (getMeetingResume(id)) throw new Error('Meetings with resumes cannot be merged.')
+    if (getMeetingGrounding(id).hasBiography)
+      throw new Error('Meetings with resumes or interview profiles cannot be merged.')
     if (m.practice) throw new Error('Practice sessions cannot be merged.')
     if (isPostProcessing(id)) {
       throw new Error(`"${m.title}" is still being written to — try again in a moment.`)

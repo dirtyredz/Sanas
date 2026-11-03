@@ -1,8 +1,11 @@
-import { interviewAfterAttachment } from '../../lib/meeting/resume/interview-selection'
 import type { MeetingResume } from '@shared/meeting-resume'
 import { RESUME_MAX_CHARS } from '@shared/meeting-resume'
 import { MeetingResumeInput } from '../../lib/meeting/resume/MeetingResumeInput'
-import { rememberedJob, rememberJob } from '../../lib/meeting/start-selection'
+import {
+  interviewAfterAttachment,
+  rememberedJob,
+  rememberJob,
+} from '../../lib/meeting/start-selection'
 import { startCapturedMeeting } from '../../lib/meeting/start-captured-meeting'
 import { MeetingContextEditor } from '../../lib/meeting/MeetingContextEditor'
 import { useEffect, useRef, useState } from 'react'

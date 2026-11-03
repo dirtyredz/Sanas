@@ -2,9 +2,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { CAPTURE_WARNING } from './capture/capture-health'
 import { sttProvider } from '../stt'
 
+const created = vi.hoisted(() => ({
+  input: {} as {
+    practice?: boolean
+    resume?: { name: string; text: string } | null
+    interviewProfile?: string
+  },
+}))
 const fakes = vi.hoisted(() => ({
   profile: '',
-  create: vi.fn(() => 7),
+  create: vi.fn((_job: number, _title: string, input: typeof created.input) => {
+    created.input = input
+    return 7
+  }),
   currentMeetingId: null as number | null,
   onTranscript: null as null | ((transcript: Record<string, unknown>) => void),
   liveFinal: vi.fn(),
@@ -38,17 +48,25 @@ vi.mock('../../db/repos/jobs', () => ({
   ensureDefaultJob: () => 3,
   getGlossaryTerms: () => [],
 }))
-vi.mock('../../db/repos/meetings', () => ({
+vi.mock('../../db/repos/meeting/meetings', () => ({
   clearMeetingAudioPath: vi.fn(),
   endMeeting: vi.fn(),
+  getMeeting: () => ({ practice: !!created.input.practice }),
   updateMeetingAudioPath: vi.fn(),
 }))
-vi.mock('../../db/repos/meeting-context', () => ({
+vi.mock('../../db/repos/meeting/meeting-context', () => ({
   getMeetingContext: vi.fn(),
   saveMeetingContext: vi.fn(),
 }))
-vi.mock('../../db/repos/meeting-create', () => ({ createMeeting: fakes.create }))
-vi.mock('../../db/repos/meeting-presentation', () => ({
+vi.mock('../../db/repos/meeting/meeting-create', () => ({ createMeeting: fakes.create }))
+vi.mock('../../db/repos/meeting/meeting-grounding', () => ({
+  getMeetingGrounding: () => ({
+    resume: created.input.resume ?? null,
+    interviewProfile: created.input.interviewProfile ?? '',
+    hasBiography: !!created.input.resume || !!created.input.interviewProfile,
+  }),
+}))
+vi.mock('../../db/repos/meeting/meeting-presentation', () => ({
   getPresentationHistory: () => ({ slides: fakes.slides, events: [] }),
   insertSlideEvent: fakes.slideEvents,
 }))
@@ -222,8 +240,7 @@ it.each([
       expect(fakes.create).toHaveBeenLastCalledWith(
         3,
         expect.any(String),
-        options,
-        applies ? fakes.profile : '',
+        expect.objectContaining({ interviewProfile: applies ? fakes.profile : '' }),
       )
       expect(currentState().noResume).toBeUndefined()
       const terms = () => vi.mocked(sttProvider.start).mock.calls.at(-1)![0].keyterms

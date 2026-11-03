@@ -1,7 +1,7 @@
 ﻿import { expect, it, vi } from 'vitest'
 const mock = vi.hoisted(() => ({ send: vi.fn(), practice: true }))
 vi.mock('../../../config/settings', () => ({ loadSettings: () => ({ summaryEmailAuto: true }) }))
-vi.mock('../../../db/repos/meetings', () => ({
+vi.mock('../../../db/repos/meeting/meetings', () => ({
   getMeeting: () => ({
     practice: mock.practice,
     jobId: 7,

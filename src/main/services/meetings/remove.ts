@@ -1,5 +1,5 @@
 import { existsSync, unlinkSync } from 'fs'
-import { deleteMeeting, getMeeting } from '../../db/repos/meetings'
+import { deleteMeeting, getMeeting } from '../../db/repos/meeting/meetings'
 import { isLiveMeeting } from './status/live-meeting'
 import { isPostProcessing } from './status/post-processing'
 

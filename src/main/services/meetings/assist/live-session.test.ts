@@ -13,12 +13,14 @@ const f = vi.hoisted(() => ({
 vi.mock('../../../config/settings', () => ({
   loadSettings: () => ({ anthropicApiKey: 'key', whisperMode: 'smart', coachWhileTalking: false }),
 }))
-vi.mock('../../../db/repos/meeting-resume', () => ({ getMeetingResume: () => null }))
+vi.mock('../../../db/repos/meeting/meeting-grounding', () => ({
+  getMeetingGrounding: () => ({ resume: null, interviewProfile: '', hasBiography: false }),
+}))
 vi.mock('../../../db/repos/jobs', () => ({ getJob: () => null, listGlossary: () => [] }))
-vi.mock('../../../db/repos/meeting-presentation', () => ({
+vi.mock('../../../db/repos/meeting/meeting-presentation', () => ({
   getPresentationHistory: () => ({ slides: f.deck, events: [] }),
 }))
-vi.mock('../../../db/repos/meeting-context', () => ({
+vi.mock('../../../db/repos/meeting/meeting-context', () => ({
   getMeetingContext: () => ({
     meetingId: 1,
     revision: 0,
@@ -162,7 +164,3 @@ it('resolves grounding on context changes while snapshots only read the cached i
   })
   expect(f.saveGrounding).toHaveBeenCalledTimes(2)
 })
-
-vi.mock('../../../db/repos/meeting-interview-profile', () => ({
-  getMeetingInterviewProfile: () => '',
-}))

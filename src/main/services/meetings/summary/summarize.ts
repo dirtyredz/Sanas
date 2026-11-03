@@ -1,9 +1,10 @@
-import { meetingCandidateFacts } from '../context/resume/meeting-facts'
-import { getMeetingContext } from '../../../db/repos/meeting-context'
+import { getMeetingGrounding } from '../../../db/repos/meeting/meeting-grounding'
+import { meetingCandidateFacts } from '../context/meeting-facts'
+import { getMeetingContext } from '../../../db/repos/meeting/meeting-context'
 import { meetingContextBlock } from '../../assistant/live-controls/prompts'
 import type { Meeting } from '@shared/types'
 import { loadSettings } from '../../../config/settings'
-import { getMeeting, updateMeetingSummary } from '../../../db/repos/meetings'
+import { getMeeting, updateMeetingSummary } from '../../../db/repos/meeting/meetings'
 import { listSegments } from '../../../db/repos/segments'
 import { getJob, listGlossary } from '../../../db/repos/jobs'
 import { speakerNameMap } from '../../../db/repos/speakers'
@@ -16,7 +17,7 @@ import {
   type TranscriptLine,
 } from '../../assistant/prompts'
 import { splitSummaryOutput } from './summary-output'
-import { getPresentationHistory } from '../../../db/repos/meeting-presentation'
+import { getPresentationHistory } from '../../../db/repos/meeting/meeting-presentation'
 import { presentationTranscript, SLIDE_SUMMARY_INSTRUCTION } from '../presentation/history'
 import { SUMMARY_CHARS } from '../../assistant/prompts'
 
@@ -90,7 +91,7 @@ export async function summarizeStoredMeeting(meetingId: number): Promise<Meeting
     buildSystemPrompt(
       presentation && job ? { ...job, talkingPoints: '' } : job,
       listGlossary(meeting.jobId),
-    ) + meetingCandidateFacts(meetingId)
+    ) + meetingCandidateFacts(getMeetingGrounding(meetingId))
   // marked while it runs: merge must not fold a meeting whose summary is still coming
   await whilePostProcessing(meetingId, () => summarizeLines(meetingId, lines, systemPrompt))
   return getMeeting(meetingId) ?? meeting

@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest'
-vi.mock('../../../db/repos/meetings', () => ({ moveMeetingToJob: vi.fn() }))
-import { moveMeetingToJob } from '../../../db/repos/meetings'
+vi.mock('../../../db/repos/meeting/meetings', () => ({ moveMeetingToJob: vi.fn() }))
+import { moveMeetingToJob } from '../../../db/repos/meeting/meetings'
 import { setLiveMeeting } from './live-meeting'
 import { fileMeeting } from './filing'
 afterEach(() => {

@@ -6,8 +6,8 @@ const mock = vi.hoisted(() => ({ db: null as unknown as Database }))
 vi.mock('../index', () => ({ getDb: () => mock.db }))
 import { runMigrations, schemaVersion } from '../migrations'
 import { createJob } from './jobs'
-import { createMeeting } from './meeting-create'
-import { getMeeting, listMeetings, deleteMeeting } from './meetings'
+import { createMeeting } from './meeting/meeting-create'
+import { getMeeting, listMeetings, deleteMeeting } from './meeting/meetings'
 import { insertSegment, searchSegments } from './segments'
 import { ftsAllOf, ftsAnyOf } from '../fts-query'
 import { listPracticeSessions, saveMockResult } from './practice'

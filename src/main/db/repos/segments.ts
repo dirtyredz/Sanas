@@ -2,7 +2,7 @@ import { getDb } from '../index'
 import type { Meeting, Segment, SearchMatch } from '@shared/types'
 import { MATCH_CLOSE, MATCH_OPEN } from '@shared/search-markers'
 import type { FtsMatch } from '../fts-query'
-import { toMeeting, type MeetingRow } from './meetings'
+import { toMeeting, type MeetingRow } from './meeting/meetings'
 
 export function listSegments(meetingId: number): Segment[] {
   return getDb()

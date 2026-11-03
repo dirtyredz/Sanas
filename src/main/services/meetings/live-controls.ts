@@ -6,7 +6,7 @@ import type {
 } from '@shared/live-controls/types'
 import { IPC } from '@shared/ipc'
 import type { PresentationState } from '@shared/presentation/types'
-import { getMeetingContext, saveMeetingContext } from '../../db/repos/meeting-context'
+import { getMeetingContext, saveMeetingContext } from '../../db/repos/meeting/meeting-context'
 import { broadcast } from '../../windows/broadcast'
 import type { LiveSession } from './assist/live-session'
 import type { CaptureRequests } from './assist/capture-requests'

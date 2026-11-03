@@ -9,8 +9,8 @@ vi.mock('../../services/stt', () => ({ sttProvider: { transcribeFile: mock.trans
 vi.mock('fs', () => ({ existsSync: () => true }))
 import { runMigrations } from '../migrations'
 import { createJob } from './jobs'
-import { createMeeting } from './meeting-create'
-import { updateMeetingAudioPath } from './meetings'
+import { createMeeting } from './meeting/meeting-create'
+import { updateMeetingAudioPath } from './meeting/meetings'
 import { insertSegment, listSegments } from './segments'
 import { setSpeakerName, listSpeakerNames } from './speakers'
 import { rediarizeMeeting } from '../../services/meetings/rediarize/rediarize'
@@ -22,14 +22,10 @@ beforeEach(() => {
   sqlite = opened.sqlite
   mock.db = opened.db
   runMigrations(mock.db)
-  meetingId = createMeeting(
-    createJob('Synthetic interview').id,
-    'Rollback fixture',
-    {
-      resume: { name: 'Synthetic', text: 'Camunda at ExampleCo' },
-    },
-    'At ProfileCo I built PostgreSQL services',
-  )
+  meetingId = createMeeting(createJob('Synthetic interview').id, 'Rollback fixture', {
+    resume: { name: 'Synthetic', text: 'Camunda at ExampleCo' },
+    interviewProfile: 'At ProfileCo I built PostgreSQL services',
+  })
   updateMeetingAudioPath(meetingId, 'synthetic.wav')
   insertSegment({
     meetingId,

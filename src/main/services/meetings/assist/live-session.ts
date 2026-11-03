@@ -1,7 +1,7 @@
 import type { Admission, MeetingContext } from '@shared/live-controls/types'
 import type { AssistSnapshot } from './suggestion-requests'
 import { admitManual, type AssistInput } from './manual-requests'
-import { getMeetingContext } from '../../../db/repos/meeting-context'
+import { getMeetingContext } from '../../../db/repos/meeting/meeting-context'
 import { detailSource, existingDetail } from '../../../db/repos/suggestion-grounding'
 import { IPC } from '@shared/ipc'
 import { loadSettings } from '../../../config/settings'

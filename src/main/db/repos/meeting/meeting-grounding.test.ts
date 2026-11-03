@@ -1,18 +1,18 @@
 import { afterEach, expect, it, vi } from 'vitest'
 import type { DatabaseSync } from 'node:sqlite'
 import type { Database } from 'better-sqlite3'
-import { sqliteTestDatabase } from '../testing/sqlite-test-database'
+import { sqliteTestDatabase } from '../../testing/sqlite-test-database'
 const mock = vi.hoisted(() => ({ db: null as unknown as Database }))
-vi.mock('../index', () => ({ getDb: () => mock.db }))
-import { runMigrations, schemaVersion } from '../migrations'
-import { createJob, ensureDefaultJob } from './jobs'
+vi.mock('../../index', () => ({ getDb: () => mock.db }))
+import { runMigrations, schemaVersion } from '../../migrations'
+import { createJob, ensureDefaultJob } from '../jobs'
 import { createMeeting } from './meeting-create'
-import { getMeetingResume } from './meeting-resume'
+import { getMeetingGrounding } from './meeting-grounding'
 import { getMeeting, moveMeetingToJob } from './meetings'
-import { replaceJobSlides } from './job-slides'
+import { replaceJobSlides } from '../job-slides'
 import { getMeetingContext } from './meeting-context'
-import { MeetingPrompts } from '../../services/meetings/assist/meeting-prompts'
-import { answerRequest } from '../../services/meetings/assist/suggestion-requests'
+import { MeetingPrompts } from '../../../services/meetings/assist/meeting-prompts'
+import { answerRequest } from '../../../services/meetings/assist/suggestion-requests'
 
 let sqlite: DatabaseSync
 function database(): void {
@@ -47,15 +47,15 @@ it('upgrades v8, preserving old meetings and keeping resume text immutable after
   runMigrations(mock.db)
   expect(schemaVersion).toBe(10)
   expect(getMeeting(1)).toMatchObject({ title: 'Before resume' })
-  expect(getMeetingResume(1)).toBeNull()
+  expect(getMeetingGrounding(1).resume).toBeNull()
   const id = createMeeting(job, 'Recruiter', { resume })
   moveMeetingToJob(id, createJob('Filed later').id)
-  expect(getMeetingResume(id)).toEqual(resume)
+  expect(getMeetingGrounding(id).resume).toEqual(resume)
   expect(() =>
     sqlite.prepare('UPDATE meetings SET resume_text = ? WHERE id = ?').run('rewritten', id),
   ).toThrow('immutable')
   runMigrations(mock.db)
-  expect(getMeetingResume(id)).toEqual(resume)
+  expect(getMeetingGrounding(id).resume).toEqual(resume)
 })
 
 it.each([false, true])('grounds assembled Unsorted answer requests with deck = %s', (deck) => {

@@ -1,4 +1,4 @@
-import { getDb } from '../index'
+import { getDb } from '../../index'
 import type { Meeting } from '@shared/types'
 
 export interface MeetingRow {

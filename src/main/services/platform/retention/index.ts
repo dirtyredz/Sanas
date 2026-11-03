@@ -6,7 +6,7 @@ import {
   clearMeetingAudioPath,
   listAudioPaths,
   listMeetingsEndedBefore,
-} from '../../../db/repos/meetings'
+} from '../../../db/repos/meeting/meetings'
 import { toSqliteDateTime } from '../../../db/sqlite-time'
 import { listRecordings } from '../../audio-store'
 import { removeAudioFile, removeMeeting } from '../../meetings/remove'

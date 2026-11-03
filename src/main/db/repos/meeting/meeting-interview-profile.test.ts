@@ -1,19 +1,19 @@
 import { afterEach, expect, it, vi } from 'vitest'
 import type { Database } from 'better-sqlite3'
 import type { DatabaseSync } from 'node:sqlite'
-import { sqliteTestDatabase } from '../testing/sqlite-test-database'
+import { sqliteTestDatabase } from '../../testing/sqlite-test-database'
 const mock = vi.hoisted(() => ({ db: null as unknown as Database }))
-vi.mock('../index', () => ({ getDb: () => mock.db }))
-import { runMigrations } from '../migrations'
-import { ensureDefaultJob, createJob } from './jobs'
+vi.mock('../../index', () => ({ getDb: () => mock.db }))
+import { runMigrations } from '../../migrations'
+import { ensureDefaultJob, createJob } from '../jobs'
 import { createMeeting } from './meeting-create'
-import { getMeetingInterviewProfile } from './meeting-interview-profile'
+import { getMeetingGrounding } from './meeting-grounding'
 import { getMeeting, moveMeetingToJob } from './meetings'
 import { getMeetingContext } from './meeting-context'
-import { MeetingPrompts } from '../../services/meetings/assist/meeting-prompts'
-import { answerRequest } from '../../services/meetings/assist/suggestion-requests'
-import { interviewProfileSnapshot } from '../../services/meetings/context/interview-profile/profile'
-import { meetingKeyterms } from '../../services/meetings/context/meeting-keyterms'
+import { MeetingPrompts } from '../../../services/meetings/assist/meeting-prompts'
+import { answerRequest } from '../../../services/meetings/assist/suggestion-requests'
+import { interviewProfileSnapshot } from '../../../services/meetings/context/profile'
+import { meetingKeyterms } from '../../../services/meetings/context/meeting-keyterms'
 let sqlite: DatabaseSync
 function database(): number {
   const opened = sqliteTestDatabase()
@@ -33,42 +33,34 @@ it('upgrades v9 with empty historical snapshots; freezes new snapshots after edi
   )
   sqlite.prepare('INSERT INTO meetings (job_id, title) VALUES (?, ?)').run(job, 'Old work meeting')
   runMigrations(mock.db)
-  expect(getMeetingInterviewProfile(1)).toBe('')
+  expect(getMeetingGrounding(1).interviewProfile).toBe('')
   expect(getMeeting(1)?.interviewProfileUsed).toBe(false)
   let savedProfile = profile
   const options = { interview: true }
-  const id = createMeeting(
-    job,
-    'Interview',
-    options,
-    interviewProfileSnapshot(options, savedProfile),
-  )
+  const id = createMeeting(job, 'Interview', {
+    interviewProfile: interviewProfileSnapshot(options, savedProfile),
+  })
   savedProfile = 'Edited biography'
   moveMeetingToJob(id, createJob('Filed later').id)
-  expect(getMeetingInterviewProfile(id)).toBe(profile)
+  expect(getMeetingGrounding(id).interviewProfile).toBe(profile)
   expect(getMeeting(id)?.interviewProfileUsed).toBe(true)
   expect(() =>
     sqlite.prepare('UPDATE meetings SET interview_profile = ? WHERE id = ?').run(savedProfile, id),
   ).toThrow('immutable')
-  const next = createMeeting(
-    job,
-    'Next interview',
-    options,
-    interviewProfileSnapshot(options, savedProfile),
-  )
-  expect(getMeetingInterviewProfile(next)).toBe(savedProfile)
+  const next = createMeeting(job, 'Next interview', {
+    interviewProfile: interviewProfileSnapshot(options, savedProfile),
+  })
+  expect(getMeetingGrounding(next).interviewProfile).toBe(savedProfile)
   runMigrations(mock.db)
-  expect(getMeetingInterviewProfile(id)).toBe(profile)
+  expect(getMeetingGrounding(id).interviewProfile).toBe(profile)
 })
 
 it.each([false, true])('assembles resume-first profile grounding, with deck = %s', (deck) => {
   const job = database()
-  const id = createMeeting(
-    job,
-    'Interview',
-    { resume: { name: 'Application', text: 'ResumeCo: Java migration' } },
-    profile,
-  )
+  const id = createMeeting(job, 'Interview', {
+    resume: { name: 'Application', text: 'ResumeCo: Java migration' },
+    interviewProfile: profile,
+  })
   const prompts = new MeetingPrompts()
   const context = getMeetingContext(id)
   prompts.begin(job, context)
@@ -115,8 +107,11 @@ it.each([false, true])('assembles resume-first profile grounding, with deck = %s
 
 it('delivers saved employer and technology hints to the shared streaming/batch helper', () => {
   const job = database()
-  const id = createMeeting(job, 'Interview', { interview: true }, profile)
-  const terms = meetingKeyterms(job, 'ResumeCo Java', getMeetingInterviewProfile(id))
+  const id = createMeeting(job, 'Interview', { interviewProfile: profile })
+  const terms = meetingKeyterms(job, {
+    resume: { name: 'Resume', text: 'ResumeCo Java' },
+    interviewProfile: getMeetingGrounding(id).interviewProfile,
+  })
   expect(terms).toEqual(expect.arrayContaining(['ProfileCo', 'Camunda', 'ResumeCo', 'Java']))
   expect(terms.indexOf('ResumeCo')).toBeLessThan(terms.indexOf('ProfileCo'))
 })

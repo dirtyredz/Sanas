@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest'
-import { candidateFacts, validateResume } from './resume'
+import { validateResume } from './resume'
+import { candidateFacts } from '../candidate-data'
 import { resumeKeyterms, interleaveKeyterms } from './keyterms'
 
 it('validates text without silently truncating candidate facts', () => {

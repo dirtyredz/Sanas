@@ -138,7 +138,7 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
 ## Storage
 
 - **Deleting a meeting is two deletes.** The row (segments, suggestions, names cascade) and
-  the WAV on disk. `db/repos/meetings.deleteMeeting` is row-only by design — go through
+  the WAV on disk. `db/repos/meeting/meetings.deleteMeeting` is row-only by design — go through
   `services/meetings/remove.ts` (`removeMeeting`) from anywhere outside repos, or the file
   stays behind. Retention and the Delete button both use it. If the WAV is locked by another
   program the row is kept too (a file without a row is an orphan): Delete shows "still in use —
@@ -518,7 +518,7 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
 ## Per-meeting candidate facts
 
 - Mock Start has its own IPC path: it must validate and forward the resume through
-  `MeetingStartOptions`, just like ordinary Start. Reuse `MeetingResumeInput`; do not
+  `StartRequest`, just like ordinary Start. Reuse `MeetingResumeInput`; do not
   build another importer. The practice-only “No resume” cue describes attachment absence,
   not whether arbitrary job notes contain biography. Keep it on both fetched and broadcast
   meeting state across pause/resume, and clear it for the next ordinary meeting.

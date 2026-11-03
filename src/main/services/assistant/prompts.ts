@@ -1,3 +1,4 @@
+import { FILLER_CLOSE, FILLER_OPEN } from '@shared/filler-marker'
 import type { GlossaryTerm, Job, WhisperMode } from '@shared/types'
 import {
   renderTranscriptWindow,
@@ -71,8 +72,8 @@ dates or team sizes. Keep uncertain numbers hedged ("about five", "a handful"). 
 unresolved specific with a flat "Yes" or "accurate"; answer in plausible, hedged terms.
 
 Mark the filler. Wrap every phrase that is NOT supported by the supplied facts or the transcript
-in the markers ⟨ and ⟩, for example "I led ⟨a payments integration⟩ where ⟨I owned the API
-layer⟩." Use only those two characters for this, never nest them, and never put them around
+in the markers ${FILLER_OPEN} and ${FILLER_CLOSE}, for example "I led ${FILLER_OPEN}a payments integration${FILLER_CLOSE} where ${FILLER_OPEN}I owned the API
+layer${FILLER_CLOSE}." Use only those two characters for this, never nest them, and never put them around
 supported facts. The overlay shows marked text dimmed so the user can see what is improvised.
 The sentence must still read naturally and be speakable when the markers are removed, so the
 headline never depends on a marked span being read as a label or a note.
@@ -178,9 +179,9 @@ export function buildUserContent(
     full: `Give the actual answer to the current ask, with depth proportional to its purpose.`,
     smart: `Decide whether the current moment contains a concrete ask for code, a query,
 command, number, definition, or formula. If it does, give the actual answer and include the
-minimal exact artifact only when requested or essential to answer it. For open experience asks, give a concrete speakable story within the compact contract, building on supplied facts and marking any filler with ⟨ ⟩. Otherwise give one short, speakable line for the user.`,
+minimal exact artifact only when requested or essential to answer it. For open experience asks, give a concrete speakable story within the compact contract, building on supplied facts and marking any filler with ${FILLER_OPEN} ${FILLER_CLOSE}. Otherwise give one short, speakable line for the user.`,
     points: `Give only a short speakable line or at most two compact supporting points.
-For open experience asks, give the concrete speakable story with filler marked ⟨ ⟩, not advice to pick one. For other asks,
+For open experience asks, give the concrete speakable story with filler marked ${FILLER_OPEN} ${FILLER_CLOSE}, not advice to pick one. For other asks,
 coach the user toward an answer; do not expand into a full answer or code solution.`,
   }[profile.kind]
 

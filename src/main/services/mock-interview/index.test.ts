@@ -22,7 +22,7 @@ vi.mock('../meetings/observation', () => ({ subscribeMeeting: vi.fn() }))
 vi.mock('../meetings/assist/run-observation', () => ({ subscribeRuns: vi.fn() }))
 vi.mock('../meetings/assist/diagnostics', () => ({ subscribeAssistance: vi.fn() }))
 vi.mock('../meetings', async () => {
-  const { createMeeting } = await import('../../db/repos/meeting-create')
+  const { createMeeting } = await import('../../db/repos/meeting/meeting-create')
   return {
     currentState: () => ({ meetingId: null }),
     meetingAudioMs: () => 0,
@@ -56,8 +56,8 @@ vi.mock('./turns/session', () => ({
 }))
 import { runMigrations } from '../../db/migrations'
 import { ensureDefaultJob } from '../../db/repos/jobs'
-import { getMeetingResume } from '../../db/repos/meeting-resume'
-import { getMeeting } from '../../db/repos/meetings'
+import { getMeetingGrounding } from '../../db/repos/meeting/meeting-grounding'
+import { getMeeting } from '../../db/repos/meeting/meetings'
 import { mockStartInput } from '../../ipc/mock-interview-validation'
 import { startMock } from './index'
 
@@ -79,6 +79,6 @@ it.each([true, false])('stores the mock-start resume with attachment = %s', asyn
     {} as WebContents,
     input.resume,
   )
-  expect(getMeetingResume(state.meetingId!)).toEqual(resume)
+  expect(getMeetingGrounding(state.meetingId!).resume).toEqual(resume)
   expect(getMeeting(state.meetingId!)?.practice).toBe(true)
 })

@@ -1,4 +1,5 @@
-import { meetingCandidateFacts } from '../context/resume/meeting-facts'
+import { getMeetingGrounding } from '../../../db/repos/meeting/meeting-grounding'
+import { meetingCandidateFacts } from '../context/meeting-facts'
 import type { MeetingContext } from '@shared/live-controls/types'
 import { getJob, listGlossary } from '../../../db/repos/jobs'
 import { saveGrounding } from '../../../db/repos/suggestion-grounding'
@@ -18,9 +19,10 @@ export class MeetingPrompts {
   begin(jobId: number, context: MeetingContext): void {
     const job = getJob(jobId)
     const glossary = listGlossary(jobId)
-    const facts =
-      meetingCandidateFacts(context.meetingId) ||
-      '\n\nNo resume or interview profile is attached to this meeting. Use any explicitly supplied candidate biography; otherwise answer with plausible, marked filler and do not treat job or practice context as biography.'
+    const grounding = getMeetingGrounding(context.meetingId)
+    const facts = grounding.hasBiography
+      ? meetingCandidateFacts(grounding)
+      : '\n\nNo resume or interview profile is attached to this meeting. Use any explicitly supplied candidate biography; otherwise answer with plausible, marked filler and do not treat job or practice context as biography.'
     this.ordinaryPrompt = buildSystemPrompt(job, glossary) + facts
     this.presentationPrompt =
       buildSystemPrompt(job ? { ...job, talkingPoints: '' } : job, glossary) + facts

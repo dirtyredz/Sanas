@@ -1,6 +1,6 @@
 import { parseSummaryInline, parseSummaryMarkdown } from '@shared/summary-markdown'
 import { loadSettings } from '../../../config/settings'
-import { getMeeting } from '../../../db/repos/meetings'
+import { getMeeting } from '../../../db/repos/meeting/meetings'
 import { getJob } from '../../../db/repos/jobs'
 import { emailProvider, type OutgoingEmail } from '../../platform/email'
 

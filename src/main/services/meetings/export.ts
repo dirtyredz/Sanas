@@ -1,15 +1,15 @@
-import { getMeetingContext } from '../../db/repos/meeting-context'
+import { getMeetingContext } from '../../db/repos/meeting/meeting-context'
 import { dialog } from 'electron'
 import { stripFillerMarkers } from '@shared/filler-marker'
 import { suggestionLabel } from '@shared/suggestion-label'
 import { writeFileSync } from 'fs'
-import { getMeeting } from '../../db/repos/meetings'
+import { getMeeting } from '../../db/repos/meeting/meetings'
 import { listSegments } from '../../db/repos/segments'
 import { listSuggestions } from '../../db/repos/suggestions'
 import { getJob } from '../../db/repos/jobs'
 import { formatClockMs as fmt, speakerLabel } from '../turns/transcript-format'
 import { speakerNameMap } from '../../db/repos/speakers'
-import { getPresentationHistory } from '../../db/repos/meeting-presentation'
+import { getPresentationHistory } from '../../db/repos/meeting/meeting-presentation'
 import { presentationTimeline, slideMarker } from '@shared/presentation/timeline'
 
 /** Builds a markdown export and prompts the user where to save it.

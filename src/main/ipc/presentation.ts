@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron'
 import { IPC } from '@shared/ipc'
 import { getJobSlides, replaceJobSlides } from '../db/repos/job-slides'
-import { getPresentationHistory } from '../db/repos/meeting-presentation'
+import { getPresentationHistory } from '../db/repos/meeting/meeting-presentation'
 import { moveSlide, presentationState } from '../services/meetings'
 import { requireId } from './validate'
 import { requireSlideMove, requireSlides } from './presentation-validation'

@@ -1,4 +1,4 @@
-import { closeMeetingsAt, listUnendedMeetingsExcept } from '../../../db/repos/meetings'
+import { closeMeetingsAt, listUnendedMeetingsExcept } from '../../../db/repos/meeting/meetings'
 import { liveMeetingId } from '../status/live-meeting'
 import { danglingMeetingEndedAt } from './startup-recovery-time'
 

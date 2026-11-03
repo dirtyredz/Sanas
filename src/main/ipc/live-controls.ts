@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron'
 import { IPC } from '@shared/ipc'
-import { getMeetingContext } from '../db/repos/meeting-context'
+import { getMeetingContext } from '../db/repos/meeting/meeting-context'
 import {
   updateMeetingContext,
   requestAssist,
