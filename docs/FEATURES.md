@@ -119,6 +119,13 @@ Claude concept checks from shared screen-delivery checks.
 
 ## Mock interview
 
+Setup offers the shared **Resume for this meeting** input: paste text or import PDF/DOCX.
+The attachment is validated and saved with the practice meeting, and its draft clears only
+after successful Start. A practice meeting without an attachment shows **No resume** in
+the overlay status. Open behavioural answers are instructed to name a concrete project or
+employer from candidate facts, with compact problem/action/result support; absent facts
+produce an explicit limitation notice rather than advice to pick a story.
+
 Implemented; real-device/provider acceptance remains owner-only. Choose **Job interview**
 (behavioural, technical, coding screens; 15-minute cap) or **Client Q&A** (10-minute cap),
 choose a job, then Start. Saved app keys are used; missing keys link to Settings. Headphones

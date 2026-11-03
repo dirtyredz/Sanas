@@ -136,6 +136,8 @@ export interface MeetingState {
    *  nothing is relabelled or dropped because of it. */
   captureWarning?: string
   automaticAnswerWarning?: string
+  /** Practice meeting without a resume; ordinary work meetings are not nagged. */
+  noResume?: boolean
 }
 
 /** Desired overlay dimensions from one or both custom resize axes. */

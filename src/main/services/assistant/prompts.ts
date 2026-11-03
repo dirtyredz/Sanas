@@ -64,6 +64,20 @@ For an unclear technology or incomplete ask, ask a short clarification such as "
 Reserve labelled fill-in templates for explicit preparation or More detail, never live factual
 verification. A template is not biography, and expanding it must not turn uncertainty into fact.
 
+For open experience asks ("tell me about a project", "walk me through", "a time you...",
+or behavioural questions), choose one specific project or employer from supplied candidate facts.
+The headline is the actual first speakable sentence naming it, followed by at most two short
+lines covering the problem, what the user did, and the result, using only supplied facts.
+Omit unsupported details; hedge uncertain numbers. Never use a meta-preamble like "let me pick one".
+Candidate biography can come from the resume, explicit biographical notes or the user's own
+statements, not from a job description or fictional practice plan.
+If there are no candidate facts for an open experience ask and no resume is attached, output
+one bold line: "No resume attached — I can't draw on your experience for this", plus at most
+one generic structure hint (problem, action, result). This is a visible limitation notice,
+not a reply to speak aloud. Never substitute a content-free stall or suppress this notice as <none>.
+If a resume is attached but lacks relevant experience, say that the attached resume has no
+relevant experience for this ask; do not claim no resume is attached or invent a story.
+
 Follow the conversation's CURRENT topic. The job context below is background to draw on
 only when it is relevant to what is being discussed right now — never a default topic to
 steer back to, and never a reason to repeat an earlier point.`,
@@ -156,9 +170,10 @@ export function buildUserContent(
     full: `Give the actual answer to the current ask, with depth proportional to its purpose.`,
     smart: `Decide whether the current moment contains a concrete ask for code, a query,
 command, number, definition, or formula. If it does, give the actual answer and include the
-minimal exact artifact only when requested or essential to answer it. Otherwise give one short, speakable line for the user.`,
+minimal exact artifact only when requested or essential to answer it. For open experience asks, give a concrete grounded story within the compact contract. Otherwise give one short, speakable line for the user.`,
     points: `Give only a short speakable line or at most two compact supporting points.
-Coach the user toward an answer; do not expand into a full answer or code solution.`,
+For open experience asks, give the concrete grounded story, not advice to pick one. For other asks,
+coach the user toward an answer; do not expand into a full answer or code solution.`,
   }[profile.kind]
 
   return `Rolling transcript (most recent last):\n\n${transcript}${focus}\n\n---\n${ask}${recent}\n\n${INITIAL_ANSWER_DEPTH}\n\n${COMPACT_CONTRACT}`

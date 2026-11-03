@@ -46,8 +46,12 @@ function subscribe<T>(channel: string, cb: (value: T) => void): () => void {
 const api = {
   mockInterview: {
     setup: (): Promise<MockSetup> => ipcRenderer.invoke(IPC.MockSetup),
-    start: (plan: MockPlanId, jobId: number, channels: number): Promise<MockState> =>
-      ipcRenderer.invoke(IPC.MockStart, plan, jobId, channels),
+    start: (
+      plan: MockPlanId,
+      jobId: number,
+      channels: number,
+      resume?: MeetingResume | null,
+    ): Promise<MockState> => ipcRenderer.invoke(IPC.MockStart, plan, jobId, channels, resume),
     getState: (): Promise<MockState> => ipcRenderer.invoke(IPC.MockState),
     end: (): Promise<void> => ipcRenderer.invoke(IPC.MockEnd),
     skip: (): Promise<void> => ipcRenderer.invoke(IPC.MockSkip),

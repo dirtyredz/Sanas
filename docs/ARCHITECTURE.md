@@ -348,6 +348,11 @@ Presentation activation is independent of assistance-job selection. Start passes
 
 ## Meeting resumes (v9)
 
+Live and Mock setup share `MeetingResumeInput` and the native resume-import IPC.
+Mock Start validates its optional attachment at ingress and passes it through the normal
+meeting service and `MeetingStartOptions`. Live state exposes a small `noResume` cue for
+practice sessions without attachments; no resume text enters status broadcasts.
+
 Start sends an optional text/name attachment over typed IPC; main validates it once, at IPC ingress, and passes it down as part of `MeetingStartOptions`. `createMeeting` (`db/repos/meeting-create.ts`) stores `resume_name` and `resume_text` in the same transaction as the deck copy. The text is read back only through `getMeetingResume(id)`, never on list rows. The append-only v9 migration uses the existing pre-upgrade SQLite backup flow. A database trigger rejects changes to these fields; job filing leaves them intact. Resume-bearing merges are refused to avoid losing or misattributing candidate facts.
 
 `MeetingPrompts` reads the saved resume at Start, escapes markup and appends a delimited candidate-facts block to both ordinary and presentation bases. It is independent of talking-point suppression and is captured in immutable grounding rows for More detail. Summary regeneration includes it as background, never transcript evidence. It is not added to FTS.

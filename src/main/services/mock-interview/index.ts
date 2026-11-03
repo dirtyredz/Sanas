@@ -1,4 +1,5 @@
 import { type WebContents } from 'electron'
+import type { MeetingResume } from '@shared/meeting-resume'
 import { IPC } from '@shared/ipc'
 import type { MockPlanId, MockSetup, MockState } from '@shared/mock-interview/types'
 import { loadSettings } from '../../config/settings'
@@ -49,6 +50,7 @@ export async function startMock(
   jobId: number,
   channels: number,
   owner: WebContents,
+  resume?: MeetingResume | null,
 ): Promise<MockState> {
   if (channels !== 2)
     throw new Error(
@@ -69,7 +71,7 @@ export async function startMock(
       model: settings.nudgeModel,
     }),
     {
-      start: (id) => startMeeting(id, 2, { practice: true }),
+      start: (id) => startMeeting(id, 2, { practice: true, resume }),
       stop: stopMeeting,
       audioNow: meetingAudioMs,
       open: async (onClose) => {

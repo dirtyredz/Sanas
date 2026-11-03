@@ -18,7 +18,9 @@ export class MeetingPrompts {
   begin(jobId: number, context: MeetingContext): void {
     const job = getJob(jobId)
     const glossary = listGlossary(jobId)
-    const facts = meetingCandidateFacts(context.meetingId)
+    const facts =
+      meetingCandidateFacts(context.meetingId) ||
+      '\n\nNo resume is attached to this meeting. Use any explicitly supplied candidate biography; do not infer it from job or practice context.'
     this.ordinaryPrompt = buildSystemPrompt(job, glossary) + facts
     this.presentationPrompt =
       buildSystemPrompt(job ? { ...job, talkingPoints: '' } : job, glossary) + facts

@@ -59,6 +59,7 @@ let session: SttSession | null = null
 let sessionGen = 0 // bumped whenever a session is opened or discarded
 let meetingJobId = 0 // remembered so a resume can re-send the job's keyterms
 let meetingResumeText = '' // this meeting's resume, kept so a resume re-sends its hints
+let practiceWithoutResume = false
 let meetingChannels: ChannelCount = 1
 let paused = false
 let audioMsReceived = 0 // the meeting's clock: audio actually captured, in ms
@@ -112,10 +113,12 @@ const liveControls = createLiveControls({
 export function currentState(): MeetingState {
   const meetingId = liveMeetingId()
   if (meetingId === null) return { meetingId: null, status: 'idle' }
-  if (paused) return { meetingId, status: 'paused' }
+  if (paused)
+    return { meetingId, status: 'paused', ...(practiceWithoutResume ? { noResume: true } : {}) }
   return {
     meetingId,
     status: 'live',
+    ...(practiceWithoutResume ? { noResume: true } : {}),
     ...(captureHealth.warned ? { captureWarning: CAPTURE_WARNING } : {}),
     ...(assistance.automaticUnavailable()
       ? {
@@ -127,6 +130,7 @@ export function currentState(): MeetingState {
 }
 
 function setState(state: MeetingState): MeetingState {
+  if (state.meetingId !== null && practiceWithoutResume) state = { ...state, noResume: true }
   observeMeeting({ kind: 'state', value: state })
   lastError = state.error
   broadcast(IPC.MeetingState, state)
@@ -301,6 +305,7 @@ export function startMeeting(
     captures.meetingChanged() // drafts and feedback belong to one meeting
     setLiveMeeting(id)
     meetingResumeText = options.resume?.text ?? ''
+    practiceWithoutResume = !!options.practice && !meetingResumeText.trim()
     meetingJobId = job
     meetingChannels = channels
     paused = false

@@ -45,10 +45,17 @@ export function OverlayStatus({
   capture: CaptureStatusModel
 }): React.JSX.Element | null {
   const error = meeting.error ?? (meeting.status === 'error' ? 'Sanas hit an error.' : '')
-  if (!error && !meeting.captureWarning && !meeting.automaticAnswerWarning && !capture.notice)
+  if (
+    !error &&
+    !meeting.captureWarning &&
+    !meeting.automaticAnswerWarning &&
+    !meeting.noResume &&
+    !capture.notice
+  )
     return null
   return (
     <div className="overlay-status" aria-live="polite">
+      {meeting.noResume && <p className="ov-status ov-status--info">No resume</p>}
       {error && <Expandable tone="error" text={error} action={<OpenSanasButton />} />}
       {meeting.automaticAnswerWarning && (
         <Expandable tone="warn" text={meeting.automaticAnswerWarning} />

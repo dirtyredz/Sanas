@@ -96,3 +96,31 @@ it.each([false, true])('grounds assembled Unsorted answer requests with deck = %
   prompts.begin(job, getMeetingContext(next))
   expect(prompts.snapshot().system).not.toContain('ExampleCo')
 })
+
+it.each([true, false])('assembles concrete behavioural policy with resume = %s', (attached) => {
+  database()
+  const job = ensureDefaultJob()
+  const id = createMeeting(job, 'Practice', { practice: true, resume: attached ? resume : null })
+  const prompts = new MeetingPrompts()
+  prompts.begin(job, getMeetingContext(id))
+  const request = answerRequest(
+    { ...prompts.snapshot(), meetingId: id, atMs: 0, window: [], recent: [] },
+    settings,
+    'ambient',
+    {
+      speaker: 'S1',
+      text: 'Tell me about a recent project you owned and the impact you had.',
+      kind: 'request',
+      addressee: 'me',
+    },
+  )
+  expect(request.system).toContain('choose one specific project or employer')
+  expect(request.system).toContain(
+    "No resume attached \u2014 I can't draw on your experience for this",
+  )
+  expect(request.system).toContain(
+    attached ? 'I operated Camunda' : 'No resume is attached to this meeting',
+  )
+  expect(request.userContent).toContain('Behavioural stories are not screening checks')
+  expect(request.userContent).toContain('80-word')
+})

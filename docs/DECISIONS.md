@@ -2,6 +2,24 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-11-03 — Open experience answers need biography, not a stall
+
+Refine the missing-fact policy: open behavioural asks are not short screening checks.
+With supplied candidate facts, name one specific project or employer in the first speakable
+sentence, then give problem → action → result in at most two supporting lines within the
+80-word compact target. Omit unsupported details and preserve uncertainty in numbers.
+Without biography or a resume, show “No resume attached — I can't draw on your experience
+for this”, with at most one structure hint. A resume with no relevant facts gets an honest
+missing-experience notice instead. Explicit biography in notes or speech still counts;
+job descriptions and fictional practice plans do not. Factual verification keeps its short
+clarification policy; More detail remains grounded to its saved source.
+
+Mock setup reuses the existing per-meeting attachment and validation. The persistent
+“No resume” cue is practice-only and depends on attachment absence, not inferred job intent:
+there is no reliable resume-expected flag for ordinary jobs. Ordinary work meetings are not
+nagged. The cue is independent of any biography supplied in notes and survives pause/resume.
+Prompt tests establish instructions and wiring, not paid-model compliance.
+
 ## 2026-11-02 — Mock interview is a product flow with practice records
 
 Owner request: use saved app keys, choose a plan/job and press Start in a Mock interview tab.

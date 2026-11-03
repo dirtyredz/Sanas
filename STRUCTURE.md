@@ -12,6 +12,10 @@ Layout below reflects what exists.
 
 ## Layout
 
+`lib/meeting/resume/MeetingResumeInput.tsx` is shared by Live and Mock setup; both use
+the main-owned resume importer. Mock IPC adds an optional attachment and reuses the
+resume validator before handing it to the ordinary meeting creation path.
+
 Rehearsal homes: `src/main/rehearsal/` owns explicit isolated rehearsal dispatch, scenario
 validation/assertions (`scenario/`) and scripted providers/correlation (`outcomes/`).
 Its `runner/` owns flags, evidence, steps, clock/audio pumping and final checks/report;
