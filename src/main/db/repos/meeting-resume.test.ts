@@ -114,13 +114,17 @@ it.each([true, false])('assembles concrete behavioural policy with resume = %s',
       addressee: 'me',
     },
   )
-  expect(request.system).toContain('choose one specific project or employer')
-  expect(request.system).toContain(
-    "No resume attached \u2014 I can't draw on your experience for this",
+  const system = request.system.replace(/\s+/g, ' ')
+  expect(system).toContain('the headline is the actual first speakable sentence')
+  expect(system).toContain('plausible first-person answer the user can say as-is')
+  expect(system).toContain('Wrap every phrase that is NOT supported')
+  expect(system).toContain('⟨ and ⟩')
+  expect(system).not.toContain('No resume attached')
+  expect(system).not.toContain('Reserve labelled fill-in templates')
+  expect(system).toContain(
+    attached ? 'I operated Camunda' : 'otherwise answer with plausible, marked filler',
   )
-  expect(request.system).toContain(
-    attached ? 'I operated Camunda' : 'No resume is attached to this meeting',
-  )
+  expect(request.userContent).toContain('⟨ ⟩')
   expect(request.userContent).toContain('Behavioural stories are not screening checks')
   expect(request.userContent).toContain('80-word')
 })

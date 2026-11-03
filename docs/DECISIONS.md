@@ -2,6 +2,29 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-11-03 — Always a usable answer: plausible filler, marked
+
+Owner decision (chat, 2026-11-03), superseding the Nov 2/3 "never invent personal history"
+policy and the "No resume attached" limitation notice: "even with no resume, it should still be
+fabricating ambiguous answers, even with a resume it might not have the details to answer a
+question thoroughly." Sanas always gives a speakable answer. Supplied candidate facts come first
+and are never contradicted; with none, or thin ones, the model writes a plausible first-person
+answer in general but concrete-sounding terms ("a payments integration where I owned the API
+layer"), avoiding hard-to-defend specifics (exact metrics, named employers or clients, dates, team
+sizes) and keeping uncertain numbers hedged. No stalling lines, no "Let me check the exact count",
+no fill-in [placeholder] templates in live answers; More detail extends the same story the same way.
+Only a garbled or cut-off ask still earns a short clarification.
+
+Marker: anything not backed by supplied facts or the transcript is wrapped in `⟨…⟩` (U+27E8/27E9).
+Chosen because it is a single pair of characters that never occurs in speech, code or Markdown, so
+no escaping or parser change is needed; the safe renderers dim it (italic, reduced opacity) and
+every plain-text surface (Markdown export, remembered headlines) strips it, leaving speakable prose.
+Stray or unclosed markers (streaming prefixes) degrade safely. The practice-meeting "No resume"
+status cue stays. Prompt tests establish instructions and wiring only; paid-model compliance
+(marker use, restraint on specifics) is NOT VERIFIED.
+
+(Superseded in part: the earlier entry below.)
+
 ## 2026-11-03 — Open experience answers need biography, not a stall
 
 Refine the missing-fact policy: open behavioural asks are not short screening checks.

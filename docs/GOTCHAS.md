@@ -523,8 +523,12 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   not whether arbitrary job notes contain biography. Keep it on both fetched and broadcast
   meeting state across pause/resume, and clear it for the next ordinary meeting.
 - Open behavioural stories need the 80-word compact allowance, not the screening
-  15–40-word target. Missing biography must produce the explicit limitation notice, not
-  “let me pick one”; prompt assertions cannot establish actual model compliance.
+  15–40-word target. Missing biography must produce a plausible answer with ⟨…⟩-marked filler, not a
+  limitation notice or “let me pick one”; prompt assertions cannot establish actual model
+  compliance.
+- The filler marker ⟨…⟩ must be stripped by anything that is not the safe suggestion renderers
+  (`stripFillerMarkers` in `src/shared/filler-marker.ts`): export, remembered headlines, any new
+  copy/summary path. Rendering goes through `FillerText`; never show the raw characters.
 
 - Resume drafts must clear only after successful Start; do not put them in localStorage or settings. The saved attachment is immutable, even if the meeting is later filed under another job.
 - Both ordinary and presentation prompt bases need the same resume block. Adding/clearing a deck must never remove candidate facts or reread a changed attachment. Escape markup before surrounding resume text with delimiters; framing mitigates injection but cannot guarantee model behavior.

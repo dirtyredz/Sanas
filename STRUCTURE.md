@@ -230,7 +230,7 @@ sanas/
 - `src/renderer/src/lib/meeting/` — meeting, context and presentation reducers/hooks; `meeting-context-draft.ts` + `useMeetingContextDraft.ts` are the draft/apply/reload/conflict logic shared by the main window's full editor and the overlay's text-only Context
 - `src/renderer/src/lib/navigation/` — `next-tab-index.ts` and colocated tests: pure orientation-aware wrapping arrows/Home/End rule shared by JobTabs and OverlayNavigation. Settings keeps its distinct clamped, arrow-only page navigation.
 - `src/renderer/src/lib/presentation/` — reusable slide editing and import UI/helpers
-- `src/renderer/src/lib/suggestions/` — text-safe compact/detail renderers and live history state
+- `src/renderer/src/lib/suggestions/` — text-safe compact/detail renderers and live history state (`FillerText` renders the ⟨…⟩ improvised-answer marker; `src/shared/filler-marker.ts` splits/strips it)
 - `src/renderer/src/dev/` — browser-preview implementation of the typed preload bridge: `mock-api.ts` assembles it, `mock-fixtures.ts` holds the static sample data, `mock-live-meeting.ts` the scripted live meeting; `overlay-scenarios.ts` holds the deterministic overlay preview states (`overlay.html?scenario=<name>`) driven through `mockDriver`
 - `src/renderer/public/` — AudioWorklet processors and other unbundled assets
 - `src/shared/` — types shared by main, preload and renderer

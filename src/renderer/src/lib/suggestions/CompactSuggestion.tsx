@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+import { FillerText } from './FillerText'
 
 export interface CompactSuggestionParts {
   headline: string
@@ -57,7 +58,7 @@ function InlineCode({ text }: { text: string }): React.JSX.Element {
         part.startsWith('`') && part.endsWith('`') ? (
           <code key={index}>{part.slice(1, -1)}</code>
         ) : (
-          part
+          <FillerText key={index} text={part} />
         ),
       )}
     </>

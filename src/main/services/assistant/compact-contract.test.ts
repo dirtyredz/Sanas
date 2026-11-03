@@ -33,6 +33,10 @@ describe('recently shown suggestions', () => {
     )
   })
 
+  it('strips filler markers from remembered headlines', () => {
+    expect(headlineOf('**I led ⟨a payments job⟩.**')).toBe('I led a payments job.')
+  })
+
   it('remembers only as many headlines as the prompt carries', () => {
     const shown: string[] = []
     for (const t of ['**a**', '**b**\nmore', '**c**', '**d**']) rememberHeadline(shown, t)

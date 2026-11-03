@@ -1,3 +1,5 @@
+import { FillerText } from './FillerText'
+
 /** Deliberately text-only: preserve all detail paragraphs and code, never interpret HTML. */
 export function DetailedSuggestion({ text }: { text: string }): React.JSX.Element {
   const chunks = text.replace(/\r\n?/g, '\n').split(/(```[^\n]*\n[\s\S]*?(?:```|$))/g)
@@ -19,15 +21,15 @@ export function DetailedSuggestion({ text }: { text: string }): React.JSX.Elemen
             .filter(Boolean)
             .map((paragraph, j) => (
               <p key={`${i}-${j}`} style={{ whiteSpace: 'pre-wrap' }}>
-                {paragraph
-                  .split(/(\*\*[^*]+\*\*)/g)
-                  .map((part, k) =>
-                    part.startsWith('**') && part.endsWith('**') ? (
-                      <strong key={k}>{part.slice(2, -2)}</strong>
-                    ) : (
-                      part
-                    ),
-                  )}
+                {paragraph.split(/(\*\*[^*]+\*\*)/g).map((part, k) =>
+                  part.startsWith('**') && part.endsWith('**') ? (
+                    <strong key={k}>
+                      <FillerText text={part.slice(2, -2)} />
+                    </strong>
+                  ) : (
+                    <FillerText key={k} text={part} />
+                  ),
+                )}
               </p>
             ))
         ),

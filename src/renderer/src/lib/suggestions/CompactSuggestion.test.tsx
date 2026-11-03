@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { CompactSuggestion, parseCompactSuggestion } from './CompactSuggestion'
+import { stripFillerMarkers } from '@shared/filler-marker'
 
 describe('compact suggestion renderer', () => {
   it('parses a headline, one fenced code block, and two follow-up lines', () => {
@@ -33,5 +34,29 @@ describe('compact suggestion renderer', () => {
     expect(html).toContain('<pre><code>npm test</code></pre>')
     expect(html).toContain('aria-live="polite"')
     expect(html).toContain('>Copy</button>')
+  })
+})
+
+describe('filler marker rendering', () => {
+  const text =
+    '**I led ⟨a payments integration⟩ where I owned the API.**\nShipped ⟨on a tight timeline⟩.'
+  it('renders marked filler as a dimmed span and never shows the markers', () => {
+    const html = renderToStaticMarkup(<CompactSuggestion text={text} />)
+    expect(html).toContain(
+      '<span class="filler" title="Improvised — not from your facts">a payments integration</span>',
+    )
+    expect(html).toContain('on a tight timeline</span>')
+    expect(html).not.toMatch(/[⟨⟩]/)
+  })
+  it('degrades to speakable plain text with the markers stripped', () => {
+    expect(stripFillerMarkers(parseCompactSuggestion(text).headline)).toBe(
+      'I led a payments integration where I owned the API.',
+    )
+  })
+  it('tolerates an unclosed marker while streaming', () => {
+    const html = renderToStaticMarkup(<CompactSuggestion text={'**I led ⟨a payments'} />)
+    expect(html).toContain(
+      '<span class="filler" title="Improvised — not from your facts">a payments</span>',
+    )
   })
 })

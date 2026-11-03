@@ -15,7 +15,7 @@ vi.mock('../../../db/repos/suggestion-grounding', () => ({ saveGrounding: () => 
 vi.mock('../../../db/repos/meeting-resume', () => ({ getMeetingResume: () => null }))
 import { MeetingPrompts } from './meeting-prompts'
 it.each([false, true])(
-  'keeps candidate biography when deck active = %s; missing facts stay unresolved',
+  'keeps candidate biography when deck active = %s; missing facts get marked filler',
   (deck) => {
     const context = {
       meetingId: 1,
@@ -33,8 +33,10 @@ it.each([false, true])(
     data.notes = ''
     prompts.begin(1, context)
     expect(prompts.snapshot().system).not.toContain('ExampleCo')
-    expect(prompts.snapshot().system).toContain('Let me check the exact count.')
+    expect(prompts.snapshot().system).toContain('Wrap every phrase that is NOT supported')
     expect(prompts.snapshot().system).toContain('Which technology did you mean?')
-    expect(prompts.snapshot().system).toContain('Do not affirm unresolved specifics')
+    expect(prompts.snapshot().system.replace(/\s+/g, ' ')).toContain(
+      'Do not affirm an unresolved specific',
+    )
   },
 )

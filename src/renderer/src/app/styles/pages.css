@@ -597,3 +597,8 @@
 .job-tab-panel {
   margin-top: 18px;
 }
+
+.filler {
+  font-style: italic;
+  opacity: 0.7;
+}

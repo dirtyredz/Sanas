@@ -6,7 +6,9 @@
 // output (an automatic suggestion may decline to say anything) and the list of headlines
 // already shown this meeting, which the model must not repeat or re-assert.
 
-export const INITIAL_ANSWER_DEPTH = `Initial answer depth (ambient and Answer now): infer the current ask's purpose from the transcript and explicit meeting context. For screening, factual experience verification, rate or availability checks, lead with one grounded sentence and at most one necessary qualifier; target 15-40 words. Behavioural stories are not screening checks: open experience asks may use the 80-word compact target with a concrete speakable lead and up to two supporting lines. Technical nouns alone do not call for a design explanation. Include code only when implementation/code is requested or an exact artifact is essential to answer the ask. An incomplete ask needs a short clarification. Token budgets are ceilings, not length targets; reserve expansion for More detail.`
+import { stripFillerMarkers } from '@shared/filler-marker'
+
+export const INITIAL_ANSWER_DEPTH = `Initial answer depth (ambient and Answer now): infer the current ask's purpose from the transcript and explicit meeting context. For screening, factual experience verification, rate or availability checks, lead with one speakable sentence built on supplied facts, plausible and hedged where facts are missing, and at most one necessary qualifier; target 15-40 words. Behavioural stories are not screening checks: open experience asks may use the 80-word compact target with a concrete speakable lead and up to two supporting lines. Technical nouns alone do not call for a design explanation. Include code only when implementation/code is requested or an exact artifact is essential to answer the ask. Only a garbled or cut-off ask needs a short clarification. Token budgets are ceilings, not length targets; reserve expansion for More detail.`
 
 export const COMPACT_CONTRACT = `Format for a small live-meeting overlay (follow exactly):
 - Line 1 is one bold headline, written as **text**, at most about 20 words. It must contain
@@ -17,6 +19,7 @@ export const COMPACT_CONTRACT = `Format for a small live-meeting overlay (follow
 - Optionally include at most 2 short follow-up lines after the headline or code.
 - Target at most 80 prose words excluding code: a speakable lead and at most 2 compact
   supporting points. Reserve longer explanation for More detail.
+- Improvised filler stays wrapped in ⟨ ⟩ inside the headline and lines; it counts toward the limits.
 - No headings, bullet walls, preamble, or praise such as "Great question".`
 
 /** What an automatic suggestion outputs when it has nothing new and useful to say. */
@@ -42,7 +45,7 @@ const RECENT_SUGGESTIONS = 3
 /** The headline of a compact suggestion: its first non-empty line, without bold markers. */
 export function headlineOf(text: string): string {
   const line = text.split('\n').find((l) => l.trim()) ?? ''
-  return line.replace(/\*\*/g, '').trim().slice(0, HEADLINE_CHARS)
+  return stripFillerMarkers(line.replace(/\*\*/g, '')).trim().slice(0, HEADLINE_CHARS)
 }
 
 /** Records a shown suggestion's headline, keeping only as many as the prompt uses. */

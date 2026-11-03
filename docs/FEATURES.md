@@ -6,8 +6,9 @@ _Capability inventory. Status: ✅ done · 🔨 in progress · 📋 planned · �
 
 Initial automatic, typed and captured-screen answers share a compact prompt contract: a
 speakable lead, at most two supporting points, target 80 prose words excluding one runnable
-minimal code replacement. Missing personal facts use labelled placeholders and a structure
-to fill; longer expansion stays in More detail. These are model instructions, not runtime
+minimal code replacement. Missing personal facts are filled with a plausible first-person answer; improvised
+phrases are wrapped in ⟨…⟩ and shown dimmed in the overlay and history (stripped in exports);
+longer expansion stays in More detail. These are model instructions, not runtime
 truncation or a guarantee of model compliance. Batch transcripts split at speaker changes
 and pauses of at least two seconds; streaming behavior is unchanged.
 
@@ -122,9 +123,8 @@ Claude concept checks from shared screen-delivery checks.
 Setup offers the shared **Resume for this meeting** input: paste text or import PDF/DOCX.
 The attachment is validated and saved with the practice meeting, and its draft clears only
 after successful Start. A practice meeting without an attachment shows **No resume** in
-the overlay status. Open behavioural answers are instructed to name a concrete project or
-employer from candidate facts, with compact problem/action/result support; absent facts
-produce an explicit limitation notice rather than advice to pick a story.
+the overlay status. Open behavioural answers are instructed to name a concrete project from candidate facts
+(or plausible marked filler when there are none), with compact problem/action/result support.
 
 Implemented; real-device/provider acceptance remains owner-only. Choose **Job interview**
 (behavioural, technical, coding screens; 15-minute cap) or **Client Q&A** (10-minute cap),
@@ -139,7 +139,7 @@ word counts and missing-suggestion evidence, and past practice sessions with com
 Practice is excluded from normal history/Search/Ask and auto-email, and cannot be merged.
 The retired `-Tier live` command points here. Scripted/audio harnesses remain gated.
 
-Interview context packs use Notes for verified candidate experience and provenance, Project scope for the target role, Company info for the client and Persona for delivery. The editor shows guidance and an empty-Notes cue. Live missing-fact replies clarify or defer checking; preparation and More detail may offer labelled templates. Fictional practice data is never candidate biography.
+Interview context packs use Notes for verified candidate experience and provenance, Project scope for the target role, Company info for the client and Persona for delivery. The editor shows guidance and an empty-Notes cue. Live answers never stall or defer: missing facts become plausible, hedged filler marked ⟨…⟩. Fictional practice data is never candidate biography.
 
 Initial answers in both automatic and Answer now lanes match the ask: screening, experience, rate and availability checks target 15-40 grounded words. Technical nouns alone do not invite code; implementation requests or essential exact artifacts can. Answer now selects immediate assistance and model capacity, not mandatory elaboration. More detail retains source grounding and its expansion contract.
 
