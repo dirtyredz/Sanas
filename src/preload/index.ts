@@ -1,3 +1,4 @@
+import type { MeetingResume } from '../shared/meeting-resume'
 import type {
   MockPlanId,
   MockSetup,
@@ -137,8 +138,9 @@ const api = {
       jobId?: number,
       channels?: number,
       usePresentationDeck = false,
+      resume?: MeetingResume | null,
     ): Promise<MeetingState> =>
-      ipcRenderer.invoke(IPC.MeetingStart, jobId, channels, usePresentationDeck),
+      ipcRenderer.invoke(IPC.MeetingStart, jobId, channels, usePresentationDeck, resume),
     /** Stop listening but keep the meeting open; resume continues its clock. */
     pause: (): Promise<MeetingState> => ipcRenderer.invoke(IPC.MeetingPause),
     /** Resume with the capture topology now in hand; main refuses if it changed. */

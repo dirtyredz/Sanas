@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { CAPTURE_WARNING } from './capture/capture-health'
+import { sttProvider } from '../stt'
 
 const fakes = vi.hoisted(() => ({
   currentMeetingId: null as number | null,
@@ -121,6 +122,33 @@ describe('meeting capture health', () => {
     fakes.liveFinal.mockClear()
     fakes.slides = []
     fakes.slideEvents.mockClear()
+  })
+
+  it('sends resume hints through SttProvider on start and resume, but not the next meeting', async () => {
+    await startMeeting(undefined, 1, false, false, {
+      name: 'Pasted text',
+      text: 'Used Camunda at ExampleCo.',
+    })
+    expect(sttProvider.start).toHaveBeenLastCalledWith(
+      expect.objectContaining({ keyterms: expect.arrayContaining(['Camunda']) }),
+    )
+    await pauseMeeting()
+    await resumeMeeting(1)
+    expect(sttProvider.start).toHaveBeenLastCalledWith(
+      expect.objectContaining({ keyterms: expect.arrayContaining(['Camunda']) }),
+    )
+    await stopMeeting()
+    await startMeeting()
+    expect(sttProvider.start).toHaveBeenLastCalledWith(expect.objectContaining({ keyterms: [] }))
+    await stopMeeting()
+  })
+
+  it('rejects oversize candidate facts before starting transcription', async () => {
+    vi.mocked(sttProvider.start).mockClear()
+    await expect(
+      startMeeting(undefined, 1, false, false, { name: 'Paste', text: 'x'.repeat(40001) }),
+    ).rejects.toThrow('40,000')
+    expect(sttProvider.start).not.toHaveBeenCalled()
   })
 
   it('records moves against accepted audio and preserves the cursor across pause/resume', async () => {

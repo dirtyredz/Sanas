@@ -582,3 +582,15 @@ Owner decision supersedes October 30 automatic activation: Use presentation deck
 ## 2026-11-03 - Proportional initial answer depth
 
 Ambient and hotkey initial answers share the screening/experience/rate/availability 15-40-word rule. Code is for requested implementation or essential exact artifacts. This refines the November 2 80-word ceiling; it is not a length target. More detail is unchanged.
+
+## 2026-11-03 ? Immutable per-meeting candidate facts
+
+Resumes belong to individual applications/calls, including Unsorted meetings. Store text and a display name with the meeting, never a binary or source path. Validate a 40,000-character limit in main and reject empty text. Freeze the attachment at creation, with an append-only v9 migration and the existing backup-before-upgrade flow; reject merges containing resumes until a provenance-preserving design exists.
+
+Treat the resume as untrusted candidate data in both prompt variants, escaping delimiter characters and explicitly rejecting embedded instructions. This protects delimiter structure, not a guarantee of LLM injection resistance. Persist rendered grounding so More detail uses the same facts.
+
+Privacy: resume text stays local in SQLite and leaves only through existing assistant prompts and derived STT hints to the configured providers. Summary generation can use it as background; resulting summaries follow existing user-configured summary/email behavior. No resume uploads, OCR service or new outbound endpoint is introduced.
+
+Use deterministic name/technology heuristics, not an LLM extraction call. [Deepgram's keyterm documentation](https://developers.deepgram.com/docs/keyterm) specifies a 500-token budget and up to 100 terms. Alternate resume/glossary terms with case-insensitive deduplication; cap at 100 terms, 100 characters each, and 500 UTF-8 bytes including separators as a deliberately conservative tokenizer-independent budget.
+
+PDF/DOCX dependency selection is pending permission to download unavailable packages. The intended parsers are [unpdf](https://github.com/unjs/unpdf) (bundled serverless PDF.js, no native canvas needed for text) and [Mammoth](https://github.com/mwilliamson/mammoth.js) (raw DOCX text rather than HTML). Avoid custom PDF/ZIP/XML parsing and renderer-side document processing.

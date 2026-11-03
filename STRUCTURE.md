@@ -234,8 +234,8 @@ Tests are colocated `*.test.ts`/`*.test.tsx` files (Vitest, `npm test`) beside t
 cover. Coverage includes provider normalization, turn/assistant policy, presentation and live-control
 state/admission/grounding, meeting lifecycle and post-processing, startup/backup/smoke/update wiring,
 IPC validation, renderer reducers/renderers, shared timeline/format helpers, window behavior, and
-release scripts. Repository SQL remains exercised through Electron-ABI diagnostics rather than
-ordinary Vitest loading of `better-sqlite3`.
+release scripts. Repository SQL tests use the local Node SQLite adapter; Electron-ABI diagnostics remain
+a separate check, rather than ordinary Vitest loading of `better-sqlite3`.
 
 Deliberately _not_ homes: the repository root and `src/renderer/src/` itself. `src/main/` is a home
 only for the process entry (`index.ts`) and the display-media handler (`system-audio.ts`); new
@@ -304,3 +304,11 @@ main-process code belongs in a responsibility folder above, not beside them.
 `assistant/failure-diagnostics.ts` allowlists provider failure metadata for classifier diagnostics. The assistance coordinator owns the suspension timer and publishes availability through MeetingState to both surfaces.
 
 - `src/main/db/sqlite-test-database.ts` supplies the local SQLite transaction adapter shared by repository tests; it does not certify Electron ABI packaging.
+
+## Per-meeting resume
+
+- `shared/meeting-resume.ts` owns the text/name contract and limits.
+- `main/services/meetings/resume/` owns ingress validation, escaped candidate-fact framing and deterministic bounded terminology extraction.
+- `db/repos/meeting-resume-schema.ts` owns append-only v9 SQL and the immutable-update guard; meeting creation persists the text in the existing transaction.
+- `lib/meeting/resume/MeetingResumeInput.tsx` owns the Start draft; `MeetingView` shows saved text read-only.
+- `MeetingPrompts` attaches candidate facts to both job prompt variants before saving grounding. Streaming and batch STT merge resume terms through the existing provider seam.

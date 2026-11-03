@@ -345,3 +345,11 @@ match encoded bytes at acquisition and assistant receipt. The report contains ex
 and outcomes, not transcript or credentials. See [REHEARSAL.md](REHEARSAL.md).
 
 Presentation activation is independent of assistance-job selection. Start passes a validated opt-in boolean; the repository snapshots slides and creates the initial event only when selected. History filing goes through meetings/filing.ts, which rejects the current live or paused meeting without rebinding context.
+
+## Meeting resumes (v9)
+
+Start sends an optional text/name attachment over typed IPC; main validates it before creating the meeting. The existing meeting/deck creation transaction stores `resume_name` and `resume_text`. The append-only v9 migration uses the existing pre-upgrade SQLite backup flow. A database trigger rejects changes to these fields; job filing leaves them intact. Resume-bearing merges are refused to avoid losing or misattributing candidate facts.
+
+`MeetingPrompts` reads the saved resume at Start, escapes markup and appends a delimited candidate-facts block to both ordinary and presentation bases. It is independent of talking-point suppression and is captured in immutable grounding rows for More detail. Summary regeneration includes it as background, never transcript evidence. It is not added to FTS.
+
+Capitalized names, acronyms, mixed-case technology and a small lowercase technology vocabulary become STT hints. Resume terms alternate with job glossary terms, deduplicate case-insensitively and respect conservative count/length/byte limits. Streaming start/resume and batch transcription use `SttProvider`; no new provider or network path exists.

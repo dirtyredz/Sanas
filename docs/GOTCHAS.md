@@ -511,3 +511,10 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
 - Classifier failures remain fail-closed. Only allowlisted category, HTTP status, request ID, model and elapsed time enter diagnostics; never raw exception messages, prompts, keys or bodies. The library and overlay show the 30-second suspension with Answer now as the recovery path.
 
 - Re-diarization regression tests use migrated in-memory SQLite and the real batch service/repositories: empty batches preserve rows; insert/name failures roll back deletion; a 22-row replacement commits atomically. These establish ordinary transaction behavior, not recovery of a corrupt reconstructed DB or completeness of a nonempty provider batch.
+
+## Per-meeting candidate facts
+
+- Resume drafts must clear only after successful Start; do not put them in localStorage or settings. The saved attachment is immutable, even if the meeting is later filed under another job.
+- Both ordinary and presentation prompt bases need the same resume block. Adding/clearing a deck must never remove candidate facts or reread a changed attachment. Escape markup before surrounding resume text with delimiters; framing mitigates injection but cannot guarantee model behavior.
+- Merge rejects resume-bearing meetings so candidate identity/history is not silently discarded. Resume content is background for summaries, not evidence that the candidate spoke those facts.
+- STT hints are heuristic, bounded and potentially incomplete. A glossary and resume together must stay within the provider budget, including after pause/resume and batch re-diarization.

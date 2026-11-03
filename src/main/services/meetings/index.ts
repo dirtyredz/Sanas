@@ -1,3 +1,6 @@
+import type { MeetingResume } from '@shared/meeting-resume'
+import { validateResume } from './resume/resume'
+import { mergeKeyterms, resumeKeyterms } from './resume/keyterms'
 import { observeMeeting } from './observation'
 import { IPC } from '@shared/ipc'
 import type { Admission } from '@shared/live-controls/types'
@@ -60,6 +63,7 @@ const BYTES_PER_SAMPLE = 2 // linear16
 let session: SttSession | null = null
 let sessionGen = 0 // bumped whenever a session is opened or discarded
 let meetingJobId = 0 // remembered so a resume can re-send the job's keyterms
+let meetingResumeTerms: string[] = []
 let meetingChannels: ChannelCount = 1
 let paused = false
 let audioMsReceived = 0 // the meeting's clock: audio actually captured, in ms
@@ -262,7 +266,7 @@ async function openSession(apiKey: string, startOffsetMs: number): Promise<SttSe
   return sttProvider.start({
     apiKey,
     channels: meetingChannels,
-    keyterms: getGlossaryTerms(meetingJobId),
+    keyterms: mergeKeyterms(getGlossaryTerms(meetingJobId), meetingResumeTerms),
     startOffsetMs,
     onTranscript: mine(handleTranscript),
     onSignal: mine(handleSignal),
@@ -277,6 +281,7 @@ export function startMeeting(
   channels: ChannelCount = 1,
   practice = false,
   usePresentationDeck = false,
+  resume?: MeetingResume | null,
 ): Promise<MeetingState> {
   return serialized(async () => {
     if (liveMeetingId() !== null) {
@@ -293,15 +298,18 @@ export function startMeeting(
       })
     }
 
+    const attachment = validateResume(resume)
     const job = jobId ?? ensureDefaultJob()
     const id = createPresentationMeeting(
       job,
       `${practice ? 'Practice' : 'Meeting'} ${new Date().toLocaleString()}`,
       practice,
       usePresentationDeck,
+      attachment,
     )
     captures.meetingChanged() // drafts and feedback belong to one meeting
     setLiveMeeting(id)
+    meetingResumeTerms = resumeKeyterms(attachment?.text ?? '')
     meetingJobId = job
     meetingChannels = channels
     paused = false

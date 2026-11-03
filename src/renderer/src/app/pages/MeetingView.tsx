@@ -104,6 +104,17 @@ export function MeetingView({
     speakerDisplay(s.speaker, s.isUser, names)
   return (
     <div className="meeting-view">
+      {current.resume && (
+        <details className="card">
+          <summary>
+            Resume for this meeting ? {current.resume.name} (
+            {current.resume.text.length.toLocaleString()} characters)
+          </summary>
+          <pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
+            {current.resume.text}
+          </pre>
+        </details>
+      )}
       <div className="detail-header">
         <button className="btn btn-ghost" onClick={onBack}>
           ← Back

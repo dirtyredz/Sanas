@@ -12,6 +12,7 @@ vi.mock('../../../db/repos/jobs', () => ({
   listGlossary: () => [],
 }))
 vi.mock('../../../db/repos/suggestion-grounding', () => ({ saveGrounding: () => 1 }))
+vi.mock('../../../db/repos/meetings', () => ({ getMeeting: () => null }))
 import { MeetingPrompts } from './meeting-prompts'
 it.each([false, true])(
   'keeps candidate biography when deck active = %s; missing facts stay unresolved',

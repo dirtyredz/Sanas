@@ -1,3 +1,4 @@
+import { validateResume } from '../services/meetings/resume/resume'
 import { registerMockInterviewIpc } from './mock-interview'
 import { registerUpdatesIpc } from './updates'
 import { ipcMain } from 'electron'
@@ -75,7 +76,7 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(
     IPC.MeetingStart,
-    (_e, jobId: unknown, channels: unknown, usePresentationDeck: unknown) =>
+    (_e, jobId: unknown, channels: unknown, usePresentationDeck: unknown, resume: unknown) =>
       // validate at ingress: an optional job id, and only 1 or 2 are meaningful capture topologies
       startMeeting(
         jobId === undefined || jobId === null ? undefined : requireId(jobId, 'job id'),
@@ -84,6 +85,7 @@ export function registerIpcHandlers(): void {
         usePresentationDeck === undefined
           ? false
           : requireBool(usePresentationDeck, 'use presentation deck'),
+        validateResume(resume),
       ),
   )
   ipcMain.handle(IPC.MeetingGetState, () => currentState())

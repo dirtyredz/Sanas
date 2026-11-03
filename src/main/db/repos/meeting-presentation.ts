@@ -1,3 +1,4 @@
+import type { MeetingResume } from '@shared/meeting-resume'
 import type { PresentationHistory, Slide, SlideEvent } from '@shared/presentation/types'
 import { getDb } from '../index'
 import { deckSlides, getMeetingContext } from './meeting-context'
@@ -8,10 +9,11 @@ export function createPresentationMeeting(
   title: string,
   practice = false,
   usePresentationDeck = false,
+  resume: MeetingResume | null = null,
 ): number {
   const db = getDb()
   return db.transaction(() => {
-    const id = createMeeting(jobId, title, practice)
+    const id = createMeeting(jobId, title, practice, resume)
     db.prepare('INSERT INTO meeting_deck_versions VALUES (?, 0)').run(id)
     db.prepare("INSERT INTO meeting_context_revisions VALUES (?, 0, '', 0, 0)").run(id)
     if (usePresentationDeck)

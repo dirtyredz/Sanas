@@ -1,3 +1,6 @@
+import type { MeetingResume } from '@shared/meeting-resume'
+import { RESUME_MAX_CHARS } from '@shared/meeting-resume'
+import { MeetingResumeInput } from '../../lib/meeting/resume/MeetingResumeInput'
 import { rememberedJob, rememberJob } from '../../lib/meeting/start-selection'
 import { startCapturedMeeting } from '../../lib/meeting/start-captured-meeting'
 import { MeetingContextEditor } from '../../lib/meeting/MeetingContextEditor'
@@ -42,6 +45,7 @@ export function LiveMeetingPage(): React.JSX.Element {
   const [jobs, setJobs] = useState<Job[]>([])
   const [jobId, setJobId] = useState<number | ''>('')
   const choiceChanged = useRef(false)
+  const [resumeAttachment, setResumeAttachment] = useState<MeetingResume | null>(null)
   const [useDeck, setUseDeck] = useState(false)
   const [deckCount, setDeckCount] = useState(0)
   const [elapsedMs, setElapsedMs] = useState(0)
@@ -131,12 +135,18 @@ export function LiveMeetingPage(): React.JSX.Element {
       const opened = await startCapturedMeeting(
         source,
         (channels) =>
-          window.sanas.meeting.start(jobId === '' ? undefined : jobId, channels, useDeck),
+          window.sanas.meeting.start(
+            jobId === '' ? undefined : jobId,
+            channels,
+            useDeck,
+            resumeAttachment,
+          ),
         (st) => st.status === 'live',
       )
       mic = opened.capture
       const st = opened.result
       if (st.status === 'live') {
+        setResumeAttachment(null)
         micRef.current = mic
         setSysAudio(mic.channels === 2)
         setUserSpeakers(new Set())
@@ -270,7 +280,17 @@ export function LiveMeetingPage(): React.JSX.Element {
           ))}
         </div>
         {!active && (
-          <button className="btn btn-primary" onClick={start} disabled={busy}>
+          <button
+            className="btn btn-primary"
+            onClick={start}
+            disabled={
+              busy ||
+              !!(
+                resumeAttachment &&
+                (!resumeAttachment.text.trim() || resumeAttachment.text.length > RESUME_MAX_CHARS)
+              )
+            }
+          >
             ● Start listening
           </button>
         )}
@@ -297,6 +317,13 @@ export function LiveMeetingPage(): React.JSX.Element {
           </span>
         )}
       </div>
+      {!active && (
+        <MeetingResumeInput
+          value={resumeAttachment}
+          onChange={setResumeAttachment}
+          disabled={busy}
+        />
+      )}
       {!active && <p className="muted source-hint">{sourceHint}</p>}
 
       {micError && <p className="notice warn">{micError}</p>}

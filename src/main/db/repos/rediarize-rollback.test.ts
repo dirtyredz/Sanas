@@ -21,7 +21,10 @@ beforeEach(() => {
   sqlite = opened.sqlite
   mock.db = opened.db
   runMigrations(mock.db)
-  meetingId = createMeeting(createJob('Synthetic interview').id, 'Rollback fixture')
+  meetingId = createMeeting(createJob('Synthetic interview').id, 'Rollback fixture', false, {
+    name: 'Synthetic',
+    text: 'Camunda at ExampleCo',
+  })
   updateMeetingAudioPath(meetingId, 'synthetic.wav')
   insertSegment({
     meetingId,
@@ -78,6 +81,10 @@ it.each(['segments', 'speakers'])(
 
 it('commits all 22 replacement rows and reports structural user/other counts', async () => {
   expect(await rediarizeMeeting(meetingId, 2)).toBe(true)
+  expect(mock.transcribe).toHaveBeenLastCalledWith(
+    'synthetic.wav',
+    expect.objectContaining({ keyterms: expect.arrayContaining(['Camunda']) }),
+  )
   const rows = listSegments(meetingId)
   expect(rows.map((s) => s.text)).toEqual(Array.from({ length: 22 }, (_, i) => `replacement ${i}`))
   expect(rows.filter((s) => s.isUser)).toHaveLength(11)
