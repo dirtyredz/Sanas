@@ -302,3 +302,5 @@ main-process code belongs in a responsibility folder above, not beside them.
 `meetings/filing.ts` guards historical job filing; `lib/meeting/start-selection.ts` owns remembered Start selection persistence.
 
 `assistant/failure-diagnostics.ts` allowlists provider failure metadata for classifier diagnostics. The assistance coordinator owns the suspension timer and publishes availability through MeetingState to both surfaces.
+
+- `src/main/db/sqlite-test-database.ts` supplies the local SQLite transaction adapter shared by repository tests; it does not certify Electron ABI packaging.
