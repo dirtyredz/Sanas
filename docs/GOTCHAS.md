@@ -504,3 +504,5 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   `scripts/owner/owner-run.ps1` is a different local API; this change does not migrate its callers.
 - Vitest now DOES configure the `@shared` alias in `vitest.config.ts`; the older overlay note
   above saying otherwise is stale. Electron imports still need mocks in CI.
+
+- A remembered job is assistance context, not consent to present its deck. Start defaults deck use off each meeting. Unsorted clears the remembered job; late job loading must not replace a newer selection. Filing an ended meeting changes organization only, never saved grounding. Live corrections use Apply.

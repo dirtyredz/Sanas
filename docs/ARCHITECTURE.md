@@ -343,3 +343,5 @@ No normal retention/updater/email/hotkey startup runs. Main-only observation col
 suggestion and health evidence; live storage is checked before batch replacement. Screen checks
 match encoded bytes at acquisition and assistant receipt. The report contains expectation IDs
 and outcomes, not transcript or credentials. See [REHEARSAL.md](REHEARSAL.md).
+
+Presentation activation is independent of assistance-job selection. Start passes a validated opt-in boolean; the repository snapshots slides and creates the initial event only when selected. History filing goes through meetings/filing.ts, which rejects the current live or paused meeting without rebinding context.

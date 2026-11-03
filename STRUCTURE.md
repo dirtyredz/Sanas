@@ -298,3 +298,5 @@ main-process code belongs in a responsibility folder above, not beside them.
   for all secrets should be one future change if required.
 - `EmailProvider.send(config, mail)` takes an SMTP-shaped configuration. A non-SMTP transport would
   change the seam and its caller; do not abstract it before a second transport exists.
+
+`meetings/filing.ts` guards historical job filing; `lib/meeting/start-selection.ts` owns remembered Start selection persistence.

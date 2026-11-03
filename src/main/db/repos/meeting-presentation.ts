@@ -3,15 +3,21 @@ import { getDb } from '../index'
 import { deckSlides, getMeetingContext } from './meeting-context'
 import { createMeeting } from './meetings'
 
-export function createPresentationMeeting(jobId: number, title: string, practice = false): number {
+export function createPresentationMeeting(
+  jobId: number,
+  title: string,
+  practice = false,
+  usePresentationDeck = false,
+): number {
   const db = getDb()
   return db.transaction(() => {
     const id = createMeeting(jobId, title, practice)
     db.prepare('INSERT INTO meeting_deck_versions VALUES (?, 0)').run(id)
     db.prepare("INSERT INTO meeting_context_revisions VALUES (?, 0, '', 0, 0)").run(id)
-    db.prepare(
-      'INSERT INTO meeting_slides SELECT ?, 0, ordinal, title, talking_point, script, key_facts FROM job_slides WHERE job_id = ?',
-    ).run(id, jobId)
+    if (usePresentationDeck)
+      db.prepare(
+        'INSERT INTO meeting_slides SELECT ?, 0, ordinal, title, talking_point, script, key_facts FROM job_slides WHERE job_id = ?',
+      ).run(id, jobId)
     if (hasPresentation(id)) insertSlideEvent(id, { ordinal: 0, revision: 1, tMs: 0 })
     return id
   })()

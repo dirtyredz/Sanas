@@ -572,3 +572,7 @@ use a fixture window baseline and compare both fixture-content and protected-ove
 Canned image replies establish byte delivery, not vision competence; Claude is owner-selectable.
 Profiles/reports remain under the worktree for inspection; provider output is suppressed and
 keys are cleared on normal teardown. A hard kill can leave private credentials in that profile.
+
+## 2026-11-03 ? Presentation is a per-meeting opt-in
+
+Owner decision supersedes October 30 automatic activation: Use presentation deck defaults off at every Start, even for a remembered job with slides. Apply can deliberately add slides later. Selected presentation position is relevant only to deck discussion; off-topic coaching declines. Live and paused meetings cannot be filed under another job. Historical filing preserves saved answer grounding. Source-job provenance migration is deferred in dk-b7dedbdd.

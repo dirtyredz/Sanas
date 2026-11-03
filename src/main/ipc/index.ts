@@ -38,7 +38,8 @@ import {
   addGlossaryTerm,
   removeGlossaryTerm,
 } from '../db/repos/jobs'
-import { listMeetings, getMeeting, renameMeeting, moveMeetingToJob } from '../db/repos/meetings'
+import { listMeetings, getMeeting, renameMeeting } from '../db/repos/meetings'
+import { fileMeeting } from '../services/meetings/filing'
 import { removeMeeting } from '../services/meetings/remove'
 import { mergeMeetings } from '../services/meetings/merge/merge'
 import { previewRetention, runRetention } from '../services/platform/retention'
@@ -72,12 +73,18 @@ export function registerIpcHandlers(): void {
     return view
   })
 
-  ipcMain.handle(IPC.MeetingStart, (_e, jobId: unknown, channels: unknown) =>
-    // validate at ingress: an optional job id, and only 1 or 2 are meaningful capture topologies
-    startMeeting(
-      jobId === undefined || jobId === null ? undefined : requireId(jobId, 'job id'),
-      channels === 2 ? 2 : 1,
-    ),
+  ipcMain.handle(
+    IPC.MeetingStart,
+    (_e, jobId: unknown, channels: unknown, usePresentationDeck: unknown) =>
+      // validate at ingress: an optional job id, and only 1 or 2 are meaningful capture topologies
+      startMeeting(
+        jobId === undefined || jobId === null ? undefined : requireId(jobId, 'job id'),
+        channels === 2 ? 2 : 1,
+        false,
+        usePresentationDeck === undefined
+          ? false
+          : requireBool(usePresentationDeck, 'use presentation deck'),
+      ),
   )
   ipcMain.handle(IPC.MeetingGetState, () => currentState())
   ipcMain.handle(IPC.MeetingPause, () => pauseMeeting())
@@ -133,7 +140,7 @@ export function registerIpcHandlers(): void {
     renameMeeting(requireId(id, 'meeting id'), requireText(title, 'title', 200)),
   )
   ipcMain.handle(IPC.MeetingsMove, (_e, id: unknown, jobId: unknown) =>
-    moveMeetingToJob(requireId(id, 'meeting id'), requireId(jobId, 'job id')),
+    fileMeeting(requireId(id, 'meeting id'), requireId(jobId, 'job id')),
   )
   ipcMain.handle(IPC.MeetingsExport, (_e, id: unknown) =>
     exportMeetingMarkdown(requireId(id, 'meeting id')),

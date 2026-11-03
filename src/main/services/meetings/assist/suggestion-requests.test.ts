@@ -45,7 +45,7 @@ describe('presentation request lanes', () => {
     for (const lane of ['ambient', 'hotkey'] as const) {
       const req = answerRequest(snapshot(), settings, lane)
       expect(req.system).toContain('THIRD_SENTINEL')
-      expect(req.userContent).toContain('Where the talk is now: slide 1')
+      expect(req.userContent).toContain('Selected presentation position: slide 1')
       expect(req.presentationRevision).toBeUndefined()
       expect(req.userContent).not.toContain('deferral')
     }

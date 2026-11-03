@@ -267,6 +267,7 @@ export function startMeeting(
   jobId?: number,
   channels: ChannelCount = 1,
   practice = false,
+  usePresentationDeck = false,
 ): Promise<MeetingState> {
   return serialized(async () => {
     if (liveMeetingId() !== null) {
@@ -288,6 +289,7 @@ export function startMeeting(
       job,
       `${practice ? 'Practice' : 'Meeting'} ${new Date().toLocaleString()}`,
       practice,
+      usePresentationDeck,
     )
     captures.meetingChanged() // drafts and feedback belong to one meeting
     setLiveMeeting(id)

@@ -133,8 +133,12 @@ const api = {
   },
   meeting: {
     getState: (): Promise<MeetingState> => ipcRenderer.invoke(IPC.MeetingGetState),
-    start: (jobId?: number, channels?: number): Promise<MeetingState> =>
-      ipcRenderer.invoke(IPC.MeetingStart, jobId, channels),
+    start: (
+      jobId?: number,
+      channels?: number,
+      usePresentationDeck = false,
+    ): Promise<MeetingState> =>
+      ipcRenderer.invoke(IPC.MeetingStart, jobId, channels, usePresentationDeck),
     /** Stop listening but keep the meeting open; resume continues its clock. */
     pause: (): Promise<MeetingState> => ipcRenderer.invoke(IPC.MeetingPause),
     /** Resume with the capture topology now in hand; main refuses if it changed. */

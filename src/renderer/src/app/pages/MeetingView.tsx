@@ -162,7 +162,8 @@ export function MeetingView({
           Job
           <select
             value={jobId}
-            aria-label="Move to job"
+            aria-label="File under job"
+            title="Filing changes history organization. Saved answers preserve their original context."
             onChange={(e) => {
               const target = Number(e.target.value)
               setJobId(target)

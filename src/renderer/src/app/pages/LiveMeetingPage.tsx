@@ -1,3 +1,4 @@
+import { rememberedJob, rememberJob } from '../../lib/meeting/start-selection'
 import { startCapturedMeeting } from '../../lib/meeting/start-captured-meeting'
 import { MeetingContextEditor } from '../../lib/meeting/MeetingContextEditor'
 import { useEffect, useRef, useState } from 'react'
@@ -40,6 +41,9 @@ export function LiveMeetingPage(): React.JSX.Element {
   const [userSpeakers, setUserSpeakers] = useState<Set<number>>(new Set())
   const [jobs, setJobs] = useState<Job[]>([])
   const [jobId, setJobId] = useState<number | ''>('')
+  const choiceChanged = useRef(false)
+  const [useDeck, setUseDeck] = useState(false)
+  const [deckCount, setDeckCount] = useState(0)
   const [elapsedMs, setElapsedMs] = useState(0)
   // elapsed counts listening time only: a pause folds the run so far into `banked`
   const banked = useRef(0)
@@ -54,11 +58,26 @@ export function LiveMeetingPage(): React.JSX.Element {
     window.sanas.jobs.list().then((all) => {
       setJobs(all)
       // remember last-used job across sessions
-      const last = Number(localStorage.getItem('sanas.lastJobId'))
-      if (all.some((j) => j.id === last)) setJobId(last)
+      if (!choiceChanged.current) setJobId(rememberedJob(localStorage, all))
     })
     window.sanas.settings.get().then((s) => setSource(s.meetingSource))
   }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    setUseDeck(false)
+    setDeckCount(0)
+    if (jobId !== '')
+      window.sanas.presentation.getJobSlides(jobId).then((slides) => {
+        if (!cancelled) setDeckCount(slides.length)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [jobId])
+  useEffect(() => {
+    if (!active) setUseDeck(false)
+  }, [active])
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
@@ -106,11 +125,11 @@ export function LiveMeetingPage(): React.JSX.Element {
     // open with nothing holding a reference to it
     let mic: CaptureSession | null = null
     try {
-      if (jobId !== '') localStorage.setItem('sanas.lastJobId', String(jobId))
       // capture first — the meeting needs to know mono vs stereo (loopback)
       const opened = await startCapturedMeeting(
         source,
-        (channels) => window.sanas.meeting.start(jobId === '' ? undefined : jobId, channels),
+        (channels) =>
+          window.sanas.meeting.start(jobId === '' ? undefined : jobId, channels, useDeck),
         (st) => st.status === 'live',
       )
       mic = opened.capture
@@ -207,7 +226,12 @@ export function LiveMeetingPage(): React.JSX.Element {
           value={jobId}
           disabled={active}
           aria-label="Job"
-          onChange={(e) => setJobId(e.target.value === '' ? '' : Number(e.target.value))}
+          onChange={(e) => {
+            choiceChanged.current = true
+            const value = e.target.value
+            rememberJob(localStorage, value)
+            setJobId(value === '' ? '' : Number(value))
+          }}
         >
           <option value="">Unsorted</option>
           {jobs.map((j) => (
@@ -216,6 +240,17 @@ export function LiveMeetingPage(): React.JSX.Element {
             </option>
           ))}
         </select>
+        {!active && (
+          <label>
+            <input
+              type="checkbox"
+              checked={useDeck}
+              disabled={!deckCount}
+              onChange={(e) => setUseDeck(e.target.checked)}
+            />{' '}
+            Use presentation deck ({deckCount} slides available)
+          </label>
+        )}
         <div className="segmented" role="radiogroup" aria-label="Where is the meeting?">
           {SOURCES.map(({ value, label, hint, icon: Icon }) => (
             <button
