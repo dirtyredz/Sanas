@@ -58,7 +58,9 @@ export function LiveMeetingPage(): React.JSX.Element {
     window.sanas.jobs.list().then((all) => {
       setJobs(all)
       // remember last-used job across sessions
-      if (!choiceChanged.current) setJobId(rememberedJob(localStorage, all))
+      setJobId((current) =>
+        rememberedJob(localStorage, all, choiceChanged.current ? current : undefined),
+      )
     })
     window.sanas.settings.get().then((s) => setSource(s.meetingSource))
   }, [])

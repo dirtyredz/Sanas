@@ -16,3 +16,20 @@ it('Unsorted replaces the remembered deck job across remounts', () => {
   rememberJob(storage, '')
   expect(rememberedJob(storage, [{ id: 7 }])).toBe('')
 })
+it.each(['', 9] as const)('late job loading preserves newer selection %s', async (choice) => {
+  const storage = { getItem: () => '7', setItem: () => {}, removeItem: () => {} }
+  let resolve!: (jobs: { id: number }[]) => void
+  const loading = new Promise<{ id: number }[]>((done) => {
+    resolve = done
+  })
+  let selection: number | '' = ''
+  let changed = false
+  const loaded = loading.then((jobs) => {
+    selection = rememberedJob(storage, jobs, changed ? selection : undefined)
+  })
+  selection = choice
+  changed = true
+  resolve([{ id: 7 }, { id: 9 }])
+  await loaded
+  expect(selection).toBe(choice)
+})

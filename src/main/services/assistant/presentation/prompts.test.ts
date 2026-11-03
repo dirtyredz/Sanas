@@ -2,6 +2,29 @@ import { describe, expect, it } from 'vitest'
 import { presentationCoachContent } from './prompts'
 
 describe('presentation coaching boundary', () => {
+  it('tells the coach to decline unrelated recruiter talk', () => {
+    const text = presentationCoachContent(
+      {
+        meetingId: 1,
+        revision: 0,
+        ordinal: 0,
+        count: 1,
+        current: {
+          title: 'Sandbox deployment',
+          talkingPoint: 'Branches',
+          script: '',
+          keyFacts: '',
+        },
+        next: null,
+      },
+      'Me: We ran about five GraphQL subgraphs at my previous employer.',
+      false,
+    )
+    expect(text).toContain(
+      'If the conversation is off-topic or unrelated to this deck, output exactly <none>',
+    )
+    expect(text).toContain('unrelated speech is not evidence of a skipped slide')
+  })
   it('uses complete current content and restricted lookahead, never later slides', () => {
     const current = {
       title: 'One',
