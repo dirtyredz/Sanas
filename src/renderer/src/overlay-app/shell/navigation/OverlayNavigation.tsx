@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { nextTabIndex } from '../../../lib/navigation/next-tab-index'
 import {
   IconAnswer,
   IconAsk,
@@ -36,20 +37,10 @@ export function OverlayNavigation({
   }
   const onKeyDown = (event: React.KeyboardEvent): void => {
     const index = WORKSPACES.indexOf(workspace)
-    const last = WORKSPACES.length - 1
-    const target =
-      event.key === 'ArrowDown'
-        ? WORKSPACES[index === last ? 0 : index + 1]
-        : event.key === 'ArrowUp'
-          ? WORKSPACES[index === 0 ? last : index - 1]
-          : event.key === 'Home'
-            ? WORKSPACES[0]
-            : event.key === 'End'
-              ? WORKSPACES[last]
-              : null
-    if (!target) return
+    const target = nextTabIndex(event.key, index, WORKSPACES.length, 'vertical')
+    if (target === null) return
     event.preventDefault()
-    move(target)
+    move(WORKSPACES[target])
   }
   return (
     <nav className="overlay-rail" aria-label="Overlay workspaces">

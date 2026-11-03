@@ -7,7 +7,7 @@ import { JobOverview } from '../jobs/JobOverview'
 import { JobEmail } from '../jobs/JobEmail'
 import { JobMeetings } from '../jobs/JobMeetings'
 
-const TABS = ['Overview', 'Presentation', 'Email', 'Meetings'] as const
+import { JobTabs } from '../jobs/JobTabs'
 
 export function JobDetail({
   jobId,
@@ -18,7 +18,7 @@ export function JobDetail({
 }): React.JSX.Element {
   const [job, setJob] = useState<Job | null>(null)
 
-  const [tab, setTab] = useState<(typeof TABS)[number]>('Overview')
+  const [tab, setTab] = useState(0)
   const [meetings, setMeetings] = useState<Meeting[]>([])
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState('')
@@ -87,62 +87,26 @@ export function JobDetail({
         </div>
       </div>
 
-      <div className="segmented" role="tablist" aria-label="Job details">
-        {TABS.map((name, index) => (
-          <button
-            key={name}
-            id={`job-tab-${name}`}
-            role="tab"
-            className={tab === name ? 'active' : ''}
-            aria-selected={tab === name}
-            aria-controls={`job-panel-${name}`}
-            tabIndex={tab === name ? 0 : -1}
-            onClick={() => setTab(name)}
-            onKeyDown={(event) => {
-              const next =
-                event.key === 'ArrowRight'
-                  ? (index + 1) % TABS.length
-                  : event.key === 'ArrowLeft'
-                    ? (index + TABS.length - 1) % TABS.length
-                    : event.key === 'Home'
-                      ? 0
-                      : event.key === 'End'
-                        ? TABS.length - 1
-                        : null
-              if (next === null) return
-              event.preventDefault()
-              setTab(TABS[next])
-              document.getElementById(`job-tab-${TABS[next]}`)?.focus()
-            }}
-          >
-            {name}
-          </button>
-        ))}
-      </div>
-      {/* Keep local editor/import drafts mounted while another tab is visible. */}
-      {TABS.map((name) => (
-        <div
-          key={name}
-          id={`job-panel-${name}`}
-          role="tabpanel"
-          aria-labelledby={`job-tab-${name}`}
-          hidden={tab !== name}
-          tabIndex={0}
-          className="job-tab-panel"
-        >
-          {name === 'Overview' && <JobOverview job={job} setJob={setJob} />}
-          {name === 'Presentation' && <PresentationEditor key={jobId} jobId={jobId} />}
-          {name === 'Email' && <JobEmail job={job} setJob={setJob} />}
-          {name === 'Meetings' && (
-            <JobMeetings
-              jobId={jobId}
-              meetings={meetings}
-              setMeetings={setMeetings}
-              setOpenMeeting={setOpenMeeting}
-            />
-          )}
-        </div>
-      ))}
+      <JobTabs
+        active={tab}
+        onSelect={setTab}
+        tabs={[
+          { name: 'Overview', render: () => <JobOverview job={job} setJob={setJob} /> },
+          { name: 'Presentation', render: () => <PresentationEditor key={jobId} jobId={jobId} /> },
+          { name: 'Email', render: () => <JobEmail job={job} setJob={setJob} /> },
+          {
+            name: 'Meetings',
+            render: () => (
+              <JobMeetings
+                jobId={jobId}
+                meetings={meetings}
+                setMeetings={setMeetings}
+                setOpenMeeting={setOpenMeeting}
+              />
+            ),
+          },
+        ]}
+      />
     </div>
   )
 }

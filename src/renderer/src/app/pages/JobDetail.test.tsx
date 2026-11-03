@@ -2,6 +2,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { isValidElement, type ReactElement, type ReactNode } from 'react'
 import type { Job } from '@shared/types'
 import { jobs } from '../../dev/mock-fixtures'
+import { JobTabs } from '../jobs/JobTabs'
 import { JobDetail } from './JobDetail'
 import { JobOverview } from '../jobs/JobOverview'
 import { JobEmail } from '../jobs/JobEmail'
@@ -40,6 +41,8 @@ type Props = {
 function nodes(node: ReactNode): ReactElement<Props>[] {
   if (Array.isArray(node)) return node.flatMap(nodes)
   if (!isValidElement<Props>(node)) return []
+  if (node.type === JobTabs)
+    return nodes(JobTabs(node.props as unknown as Parameters<typeof JobTabs>[0]))
   return [node, ...nodes(node.props.children)]
 }
 
