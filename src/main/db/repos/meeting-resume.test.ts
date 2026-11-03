@@ -1,12 +1,13 @@
 import { afterEach, expect, it, vi } from 'vitest'
 import type { DatabaseSync } from 'node:sqlite'
 import type { Database } from 'better-sqlite3'
-import { sqliteTestDatabase } from '../sqlite-test-database'
+import { sqliteTestDatabase } from '../testing/sqlite-test-database'
 const mock = vi.hoisted(() => ({ db: null as unknown as Database }))
 vi.mock('../index', () => ({ getDb: () => mock.db }))
 import { runMigrations, schemaVersion } from '../migrations'
 import { createJob, ensureDefaultJob } from './jobs'
-import { createPresentationMeeting } from './meeting-presentation'
+import { createMeeting } from './meeting-create'
+import { getMeetingResume } from './meeting-resume'
 import { getMeeting, moveMeetingToJob } from './meetings'
 import { replaceJobSlides } from './job-slides'
 import { getMeetingContext } from './meeting-context'
@@ -45,22 +46,23 @@ it('upgrades v8, preserving old meetings and keeping resume text immutable after
   sqlite.prepare('INSERT INTO meetings (job_id, title) VALUES (?, ?)').run(job, 'Before resume')
   runMigrations(mock.db)
   expect(schemaVersion).toBe(9)
-  expect(getMeeting(1)).toMatchObject({ title: 'Before resume', resume: null })
-  const id = createPresentationMeeting(job, 'Recruiter', false, false, resume)
+  expect(getMeeting(1)).toMatchObject({ title: 'Before resume' })
+  expect(getMeetingResume(1)).toBeNull()
+  const id = createMeeting(job, 'Recruiter', { resume })
   moveMeetingToJob(id, createJob('Filed later').id)
-  expect(getMeeting(id)?.resume).toEqual(resume)
+  expect(getMeetingResume(id)).toEqual(resume)
   expect(() =>
     sqlite.prepare('UPDATE meetings SET resume_text = ? WHERE id = ?').run('rewritten', id),
   ).toThrow('immutable')
   runMigrations(mock.db)
-  expect(getMeeting(id)?.resume).toEqual(resume)
+  expect(getMeetingResume(id)).toEqual(resume)
 })
 
 it.each([false, true])('grounds assembled Unsorted answer requests with deck = %s', (deck) => {
   database()
   const job = ensureDefaultJob()
   replaceJobSlides(job, [{ title: 'Interview', talkingPoint: '', script: '', keyFacts: '' }])
-  const id = createPresentationMeeting(job, 'Recruiter', false, deck, resume)
+  const id = createMeeting(job, 'Recruiter', { usePresentationDeck: deck, resume })
   const prompts = new MeetingPrompts()
   const context = getMeetingContext(id)
   prompts.begin(job, context)
@@ -90,7 +92,7 @@ it.each([false, true])('grounds assembled Unsorted answer requests with deck = %
   })
   expect(prompts.snapshot().system).toContain('I operated Camunda and five subgraphs')
   // A subsequent meeting must never inherit the attachment.
-  const next = createPresentationMeeting(job, 'Next call')
+  const next = createMeeting(job, 'Next call')
   prompts.begin(job, getMeetingContext(next))
   expect(prompts.snapshot().system).not.toContain('ExampleCo')
 })

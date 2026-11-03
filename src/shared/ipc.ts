@@ -82,6 +82,7 @@ export const IPC = {
   /** Fold several meetings into their earliest one; resolves with the merged meeting. */
   MeetingsMerge: 'meetings:merge',
   MeetingsGet: 'meetings:get',
+  MeetingsGetResume: 'meetings:get-resume',
   /** Re-run the summary from the stored transcript; resolves with the updated meeting. */
   MeetingsSummarize: 'meetings:summarize',
   /** Email the stored summary to the configured address. */

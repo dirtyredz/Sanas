@@ -34,7 +34,6 @@ vi.mock('../../db/repos/jobs', () => ({
 }))
 vi.mock('../../db/repos/meetings', () => ({
   clearMeetingAudioPath: vi.fn(),
-  createMeeting: () => 7,
   endMeeting: vi.fn(),
   updateMeetingAudioPath: vi.fn(),
 }))
@@ -42,8 +41,8 @@ vi.mock('../../db/repos/meeting-context', () => ({
   getMeetingContext: vi.fn(),
   saveMeetingContext: vi.fn(),
 }))
+vi.mock('../../db/repos/meeting-create', () => ({ createMeeting: () => 7 }))
 vi.mock('../../db/repos/meeting-presentation', () => ({
-  createPresentationMeeting: () => 7,
   getPresentationHistory: () => ({ slides: fakes.slides, events: [] }),
   insertSlideEvent: fakes.slideEvents,
 }))
@@ -125,9 +124,8 @@ describe('meeting capture health', () => {
   })
 
   it('sends resume hints through SttProvider on start and resume, but not the next meeting', async () => {
-    await startMeeting(undefined, 1, false, false, {
-      name: 'Pasted text',
-      text: 'Used Camunda at ExampleCo.',
+    await startMeeting(undefined, 1, {
+      resume: { name: 'Pasted text', text: 'Used Camunda at ExampleCo.' },
     })
     expect(sttProvider.start).toHaveBeenLastCalledWith(
       expect.objectContaining({ keyterms: expect.arrayContaining(['Camunda']) }),
@@ -141,14 +139,6 @@ describe('meeting capture health', () => {
     await startMeeting()
     expect(sttProvider.start).toHaveBeenLastCalledWith(expect.objectContaining({ keyterms: [] }))
     await stopMeeting()
-  })
-
-  it('rejects oversize candidate facts before starting transcription', async () => {
-    vi.mocked(sttProvider.start).mockClear()
-    await expect(
-      startMeeting(undefined, 1, false, false, { name: 'Paste', text: 'x'.repeat(40001) }),
-    ).rejects.toThrow('40,000')
-    expect(sttProvider.start).not.toHaveBeenCalled()
   })
 
   it('records moves against accepted audio and preserves the cursor across pause/resume', async () => {

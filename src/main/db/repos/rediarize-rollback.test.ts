@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import type { DatabaseSync } from 'node:sqlite'
-import { sqliteTestDatabase } from '../sqlite-test-database'
+import { sqliteTestDatabase } from '../testing/sqlite-test-database'
 import type { Database } from 'better-sqlite3'
 const mock = vi.hoisted(() => ({ db: null as unknown as Database, transcribe: vi.fn() }))
 vi.mock('../index', () => ({ getDb: () => mock.db }))
@@ -9,7 +9,8 @@ vi.mock('../../services/stt', () => ({ sttProvider: { transcribeFile: mock.trans
 vi.mock('fs', () => ({ existsSync: () => true }))
 import { runMigrations } from '../migrations'
 import { createJob } from './jobs'
-import { createMeeting, updateMeetingAudioPath } from './meetings'
+import { createMeeting } from './meeting-create'
+import { updateMeetingAudioPath } from './meetings'
 import { insertSegment, listSegments } from './segments'
 import { setSpeakerName, listSpeakerNames } from './speakers'
 import { rediarizeMeeting } from '../../services/meetings/rediarize/rediarize'
@@ -21,9 +22,8 @@ beforeEach(() => {
   sqlite = opened.sqlite
   mock.db = opened.db
   runMigrations(mock.db)
-  meetingId = createMeeting(createJob('Synthetic interview').id, 'Rollback fixture', false, {
-    name: 'Synthetic',
-    text: 'Camunda at ExampleCo',
+  meetingId = createMeeting(createJob('Synthetic interview').id, 'Rollback fixture', {
+    resume: { name: 'Synthetic', text: 'Camunda at ExampleCo' },
   })
   updateMeetingAudioPath(meetingId, 'synthetic.wav')
   insertSegment({

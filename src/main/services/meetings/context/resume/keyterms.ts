@@ -29,31 +29,18 @@ export function resumeKeyterms(text: string): string[] {
   ]
 }
 
-/** Alternate sources so a large job glossary cannot starve meeting-specific names.
- * Deepgram allows 100 hints / 500 tokens. UTF-8 bytes + separators deliberately
- * overestimate token cost without depending on an undocumented provider tokenizer. */
-export function mergeKeyterms(glossary: string[], resume: string[]): string[] {
+/** Alternate sources, resume first, deduped case-insensitively, so a large job glossary
+ * cannot starve meeting-specific names. Ordering only: the provider trims to its own
+ * limits (see services/stt/keyterm-budget.ts). */
+export function interleaveKeyterms(glossary: string[], resume: string[]): string[] {
   const result: string[] = []
   const seen = new Set<string>()
-  let budget = 500
   for (let i = 0; i < Math.max(glossary.length, resume.length); i++) {
     for (const raw of [resume[i], glossary[i]]) {
-      if (!raw) continue
-      const term = raw.trim().replace(/\s+/g, ' ')
-      const key = term.toLowerCase()
-      const cost = Buffer.byteLength(term, 'utf8') + 1
-      if (
-        !term ||
-        term.length > 100 ||
-        [...term].some((c) => c.charCodeAt(0) < 32) ||
-        seen.has(key)
-      )
-        continue
-      seen.add(key)
-      if (cost > budget) continue
+      const term = raw?.trim().replace(/s+/g, ' ')
+      if (!term || seen.has(term.toLowerCase())) continue
+      seen.add(term.toLowerCase())
       result.push(term)
-      budget -= cost
-      if (result.length === 100) return result
     }
   }
   return result

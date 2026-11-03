@@ -44,13 +44,13 @@ sanas/
 │   │   ├── diagnostics/                   # isolated packaged smoke diagnostics
 │   │   ├── windows/                       # BrowserWindow builders and main → all-windows broadcast
 │   │   │   └── interviewer-window.ts      # restricted mock output window
-│   │   ├── ipc/                           # validated typed IPC handlers; delegate only
+│   │   ├── ipc/                           # validated typed IPC handlers; delegate only (resume-import.ts: native resume picker)
 │   │   ├── system-audio.ts                # display-media loopback handler
 │   │   ├── services/
-│   │   │   ├── stt/                       # SttProvider seam, Deepgram sessions and event normalization
+│   │   │   ├── stt/                       # SttProvider seam, Deepgram sessions, event normalization and keyterm budget
 │   │   │   ├── turns/                     # pure completed-turn assembly
 │   │   │   │   └── transcript-format.ts   # canonical transcript formatting/windowing
-│   │   │   ├── assistant/                 # AssistantProvider seam, Claude, prompts, classifier, triggers
+│   │   │   ├── assistant/                 # AssistantProvider seam, Claude, prompts, classifier, triggers, failure-diagnostics.ts
 │   │   │   │   ├── coach/                 # next-point policy and prompts
 │   │   │   │   ├── presentation/          # deck context, location hints and restricted coach prompt
 │   │   │   │   └── live-controls/         # typed/detail/audience prompt instructions
@@ -65,8 +65,9 @@ sanas/
 │   │   │   │   ├── assist/                # assembly, prompt state, admission, coordinator and runner
 │   │   │   │   ├── capture/               # channel identity and capture health
 │   │   │   │   ├── context/               # prepare/commit/publish meeting-context changes
+│   │   │   │   │   └── resume/            # per-meeting resume: validation, file import, candidate facts, keyterms
 │   │   │   │   ├── presentation/          # live cursor and historical marker formatting
-│   │   │   │   ├── status/                # live meeting and post-processing guards
+│   │   │   │   ├── status/                # live meeting and post-processing guards, historical job filing (filing.ts)
 │   │   │   │   ├── summary/               # summary generation, output parsing and email
 │   │   │   │   ├── rediarize/             # batch pass and speaker carry-over
 │   │   │   │   ├── merge/                 # pure merge planning and DB apply
@@ -80,7 +81,8 @@ sanas/
 │   │   │   ├── audio-store/                # WAV recording of accepted capture audio
 │   │   │   └── screen-capture/             # display choice, one-shot screenshot and encoding
 │   │   ├── db/                             # async open/backup/migrations and SQLite helpers
-│   │   │   └── repos/                      # entity repositories and all SQL strings
+│   │   │   ├── repos/                      # entity repositories and all SQL strings
+│   │   │   └── testing/                    # test-only SQLite adapter (sqlite-test-database.ts)
 │   │   └── config/                         # settings, secrets and exhaustive settings schema
 │   ├── preload/                            # typed contextBridge API
 │   ├── renderer/
@@ -107,7 +109,8 @@ sanas/
 │   │       │   └── capture/                # capture action, status subscription and composer attachment state
 │   │       ├── audio/                      # mic/loopback capture and worklet bridge
 │   │       ├── lib/                        # pure shared renderer helpers (incl. overlay-workspaces.ts: workspace names + local shortcut table)
-│   │       │   ├── meeting/                # meeting/context/presentation state and hooks
+│   │       │   ├── meeting/                # meeting/context/presentation state and hooks (start-selection.ts: remembered Start choices)
+│       │   │   └── resume/             # Start-time resume draft input
 │   │       │   ├── presentation/           # slide editor and forgiving import
 │   │       │   └── suggestions/            # safe suggestion rendering and history reducer
 │   │       ├── dev/                        # typed browser-preview bridge mocks
@@ -166,7 +169,11 @@ sanas/
 - `src/main/ipc/` — typed IPC handlers; validate ingress and delegate, with no business logic (`windows.ts`: overlay toggle/resize/ghost, compose handshake and the parameterless Open Sanas)
 - `src/main/` — process entry (`index.ts`, normal vs `--smoke` dispatch) and the display-media loopback handler (`system-audio.ts`)
 - `src/main/services/` — main-process services and provider seams
-- `src/main/services/stt/` — the swappable STT seam, Deepgram implementation and message normalization
+- `src/main/services/stt/` — the swappable STT seam, Deepgram implementation and message normalization; `keyterm-budget.ts` holds Deepgram's keyterm limits so callers pass an ordered list and never a vendor budget
+- `src/main/services/assistant/failure-diagnostics.ts` — allowlists provider failure metadata for classifier diagnostics; the assistance coordinator owns the suspension timer and publishes availability through MeetingState
+- `src/main/ipc/resume-import.ts` — the native PDF/DOCX picker handler; the renderer never supplies a filesystem path
+- `src/renderer/src/lib/meeting/start-selection.ts` — remembered Start selection persistence
+- `src/renderer/src/lib/meeting/resume/` — `MeetingResumeInput`, the Start-time resume draft
 - `src/main/services/turns/` — pure turn assembly and identity-role types; no I/O or timers
 - `src/main/services/assistant/` — the swappable assistant seam and shared answer/classification logic
 - `src/main/services/assistant/coach/` — next-point eligibility policy and coach prompt construction
@@ -175,9 +182,10 @@ sanas/
 - `src/main/services/meetings/` — meeting lifecycle/STT/audio orchestration plus meeting-level facades
 - `src/main/services/meetings/assist/` — per-meeting prompt/grounding state, manual and screen-capture admission, in-memory composer screen drafts (`capture-drafts.ts`), automatic coordination (`question-ledger.ts` carries uncovered stacked questions into one suggestion) and suggestion execution
 - `src/main/services/meetings/capture/` — AUDIO capture-side identity and capture-health policy (screen capture lives in `services/screen-capture/`)
-- `src/main/services/meetings/context/` — pure preparation followed by commit/publication of live context changes
+- `src/main/services/meetings/context/` — pure preparation followed by commit/publication of live context changes; `meeting-keyterms.ts` builds the STT hints (glossary plus resume terms) for streaming and batch
+- `src/main/services/meetings/context/resume/` — per-meeting resume: ingress validation (`resume.ts`), bounded PDF/DOCX parsing (`import-file.ts`), pure term extraction (`keyterms.ts`), and the saved-resume candidate-facts lookup (`meeting-facts.ts`)
 - `src/main/services/meetings/presentation/` — current cursor state and historical slide-marker formatting
-- `src/main/services/meetings/status/` — live-meeting identity and post-processing guards
+- `src/main/services/meetings/status/` — live-meeting identity, post-processing guards and `filing.ts` (historical job filing; refuses a live meeting)
 - `src/main/services/meetings/summary/` — meeting summaries, structured output handling and summary email
 - `src/main/services/meetings/rediarize/` — batch re-diarization and speaker identity/name carry-over
 - `src/main/services/meetings/merge/` — split-recording merge planning and application
@@ -190,6 +198,8 @@ sanas/
 - `src/main/services/audio-store/` — WAV recording for accepted capture audio
 - `src/main/services/screen-capture/` — display selection, one-shot desktop capture, image sizing/encoding; no meeting or provider policy
 - `src/main/db/` — database connection lifecycle, consistent pre-upgrade backup, migrations and SQLite helpers
+- `src/main/db/testing/` — `sqlite-test-database.ts`, the local SQLite transaction adapter shared by repository tests; it does not certify Electron ABI packaging
+- `src/main/db/repos/meeting-create.ts` — `createMeeting(jobId, title, MeetingStartOptions)`, the one meeting-creation transaction (row, version bookkeeping, opt-in deck copy); `meeting-resume.ts` — `getMeetingResume(id)`, the only read of the saved resume
 - `src/main/db/repos/` — per-entity repositories (incl. the screen-answer storage codec `manual-kind.ts`); the only place SQL strings live
 - `src/main/config/` — settings/secrets persistence and exhaustive settings validation
 - `src/preload/` — typed contextBridge surface exposed to renderers
@@ -299,18 +309,12 @@ main-process code belongs in a responsibility folder above, not beside them.
 - `EmailProvider.send(config, mail)` takes an SMTP-shaped configuration. A non-SMTP transport would
   change the seam and its caller; do not abstract it before a second transport exists.
 
-`meetings/filing.ts` guards historical job filing; `lib/meeting/start-selection.ts` owns remembered Start selection persistence.
-
-`assistant/failure-diagnostics.ts` allowlists provider failure metadata for classifier diagnostics. The assistance coordinator owns the suspension timer and publishes availability through MeetingState to both surfaces.
-
-- `src/main/db/sqlite-test-database.ts` supplies the local SQLite transaction adapter shared by repository tests; it does not certify Electron ABI packaging.
-
 ## Per-meeting resume
 
 - `shared/meeting-resume.ts` owns the text/name contract and limits.
 - `main/ipc/resume-import.ts` owns the native PDF/DOCX picker; the renderer never supplies a filesystem path.
-- `main/services/meetings/resume/import-file.ts` owns bounded local reads and offline parser lifecycle.
-- `main/services/meetings/resume/` owns ingress validation, escaped candidate-fact framing and deterministic bounded terminology extraction.
-- `db/repos/meeting-resume-schema.ts` owns append-only v9 SQL and the immutable-update guard; meeting creation persists the text in the existing transaction.
+- `main/services/meetings/context/resume/import-file.ts` owns bounded local reads and offline parser lifecycle.
+- `main/services/meetings/context/resume/` owns validation (run once, at IPC ingress), escaped candidate-fact framing and deterministic terminology extraction.
+- `db/repos/meeting-resume-schema.ts` owns append-only v9 SQL and the immutable-update guard; `createMeeting` persists the text in its one transaction. The resume is not on the `Meeting` row: `getMeetingResume(id)` is the only read (prompts, summary, re-diarize, merge guard, and `MeetingView` via `meetings.getResume`).
 - `lib/meeting/resume/MeetingResumeInput.tsx` owns the Start draft; `MeetingView` shows saved text read-only.
-- `MeetingPrompts` attaches candidate facts to both job prompt variants before saving grounding. Streaming and batch STT merge resume terms through the existing provider seam.
+- `MeetingPrompts` attaches candidate facts to both job prompt variants before saving grounding. `meetingKeyterms` builds one ordered hint list for streaming and batch STT; the provider applies its own limits.

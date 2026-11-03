@@ -1,10 +1,7 @@
-import type { MeetingResume } from '@shared/meeting-resume'
 import { getDb } from '../index'
 import type { Meeting } from '@shared/types'
 
 export interface MeetingRow {
-  resume_name: string
-  resume_text: string
   practice: number
   id: number
   job_id: number
@@ -29,7 +26,6 @@ export interface MeetingClosure {
 
 export function toMeeting(r: MeetingRow): Meeting {
   return {
-    resume: r.resume_text ? { name: r.resume_name, text: r.resume_text } : null,
     id: r.id,
     jobId: r.job_id,
     practice: r.practice === 1,
@@ -40,20 +36,6 @@ export function toMeeting(r: MeetingRow): Meeting {
     summary: r.summary,
     actionItems: r.action_items,
   }
-}
-
-export function createMeeting(
-  jobId: number,
-  title: string,
-  practice = false,
-  resume: MeetingResume | null = null,
-): number {
-  const res = getDb()
-    .prepare(
-      `INSERT INTO meetings (job_id, title, practice, resume_name, resume_text) VALUES (?, ?, ?, ?, ?)`,
-    )
-    .run(jobId, title, practice ? 1 : 0, resume?.name ?? '', resume?.text ?? '')
-  return Number(res.lastInsertRowid)
 }
 
 export function endMeeting(meetingId: number): void {

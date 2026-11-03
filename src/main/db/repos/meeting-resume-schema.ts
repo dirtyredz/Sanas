@@ -1,4 +1,6 @@
-/** v9: extracted text and display name only. No update path, even after filing. */
+/** v9: extracted text and display name only. No update path, even after filing.
+ *  Frozen migration: the 40000 in the CHECK mirrors RESUME_MAX_CHARS at the time it shipped
+ *  and must not be edited; the app-level limit lives in shared/meeting-resume.ts. */
 export const meetingResumeSchema = `
   ALTER TABLE meetings ADD COLUMN resume_name TEXT NOT NULL DEFAULT '';
   ALTER TABLE meetings ADD COLUMN resume_text TEXT NOT NULL DEFAULT ''

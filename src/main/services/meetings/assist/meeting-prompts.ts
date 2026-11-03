@@ -1,5 +1,4 @@
-import { getMeeting } from '../../../db/repos/meetings'
-import { candidateFacts } from '../resume/resume'
+import { meetingCandidateFacts } from '../context/resume/meeting-facts'
 import type { MeetingContext } from '@shared/live-controls/types'
 import { getJob, listGlossary } from '../../../db/repos/jobs'
 import { saveGrounding } from '../../../db/repos/suggestion-grounding'
@@ -19,7 +18,7 @@ export class MeetingPrompts {
   begin(jobId: number, context: MeetingContext): void {
     const job = getJob(jobId)
     const glossary = listGlossary(jobId)
-    const facts = candidateFacts(getMeeting(context.meetingId)?.resume?.text ?? '')
+    const facts = meetingCandidateFacts(context.meetingId)
     this.ordinaryPrompt = buildSystemPrompt(job, glossary) + facts
     this.presentationPrompt =
       buildSystemPrompt(job ? { ...job, talkingPoints: '' } : job, glossary) + facts

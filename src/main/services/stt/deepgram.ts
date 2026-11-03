@@ -1,4 +1,5 @@
 import { readFileSync } from 'fs'
+import { fitKeyterms } from './keyterm-budget'
 import type {
   SttBatchOptions,
   SttBatchTranscript,
@@ -49,7 +50,7 @@ export function buildStreamUrl(keyterms: string[], channels: number): string {
     utterance_end_ms: '1000',
     vad_events: 'true',
   })
-  for (const term of keyterms) params.append('keyterm', term) // repeatable
+  for (const term of fitKeyterms(keyterms)) params.append('keyterm', term) // repeatable
   return `${WS_BASE}?${params}`
 }
 
@@ -179,7 +180,7 @@ export const deepgramProvider: SttProvider = {
       smart_format: 'true',
       multichannel: opts.channels > 1 ? 'true' : 'false',
     })
-    for (const term of opts.keyterms) params.append('keyterm', term)
+    for (const term of fitKeyterms(opts.keyterms)) params.append('keyterm', term)
 
     const res = await fetch(`https://api.deepgram.com/v1/listen?${params}`, {
       method: 'POST',

@@ -1,4 +1,4 @@
-import { candidateFacts } from '../resume/resume'
+import { meetingCandidateFacts } from '../context/resume/meeting-facts'
 import { getMeetingContext } from '../../../db/repos/meeting-context'
 import { meetingContextBlock } from '../../assistant/live-controls/prompts'
 import type { Meeting } from '@shared/types'
@@ -90,7 +90,7 @@ export async function summarizeStoredMeeting(meetingId: number): Promise<Meeting
     buildSystemPrompt(
       presentation && job ? { ...job, talkingPoints: '' } : job,
       listGlossary(meeting.jobId),
-    ) + candidateFacts(meeting.resume?.text ?? '')
+    ) + meetingCandidateFacts(meetingId)
   // marked while it runs: merge must not fold a meeting whose summary is still coming
   await whilePostProcessing(meetingId, () => summarizeLines(meetingId, lines, systemPrompt))
   return getMeeting(meetingId) ?? meeting

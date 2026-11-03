@@ -42,7 +42,9 @@ it('extracts synthetic PDF text and returns only a source basename', async () =>
 
 it('extracts raw DOCX paragraphs without HTML', async () => {
   expect(
-    await importResumeFile(resolve('src/main/services/meetings/resume/fixtures/synthetic.docx')),
+    await importResumeFile(
+      resolve('src/main/services/meetings/context/resume/fixtures/synthetic.docx'),
+    ),
   ).toEqual({ name: 'synthetic.docx', text: 'Synthetic Candidate\n\nCamunda engineer' })
 })
 

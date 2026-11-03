@@ -201,7 +201,7 @@ objection | none`. It **fails closed**: timeout, cancel, malformed output or pro
   after launch and every 6 h; Settings shows what is past its limit and can run it now.
   Live meetings are never touched. Deleting a meeting by hand goes through the same
   `removeMeeting` (file + row).
-- Schema (current v8: v1 base, v2 `speakers`, v3 `jobs.summary_email`, v4 `segments_fts`, v5 `suggestions.purpose`, v6 presentation, v7 live context/grounding, v8 practice/results; later tables described below):
+- Schema (current v9: v1 base, v2 `speakers`, v3 `jobs.summary_email`, v4 `segments_fts`, v5 `suggestions.purpose`, v6 presentation, v7 live context/grounding, v8 practice/results, v9 `meetings.resume_name`/`resume_text` with an immutability trigger; later tables described below):
 
 ```
 jobs        (id, name, company_info, project_scope, notes,
@@ -344,11 +344,11 @@ suggestion and health evidence; live storage is checked before batch replacement
 match encoded bytes at acquisition and assistant receipt. The report contains expectation IDs
 and outcomes, not transcript or credentials. See [REHEARSAL.md](REHEARSAL.md).
 
-Presentation activation is independent of assistance-job selection. Start passes a validated opt-in boolean; the repository snapshots slides and creates the initial event only when selected. History filing goes through meetings/filing.ts, which rejects the current live or paused meeting without rebinding context.
+Presentation activation is independent of assistance-job selection. Start passes a validated opt-in boolean; the repository snapshots slides and creates the initial event only when selected. History filing goes through meetings/status/filing.ts, which rejects the current live or paused meeting without rebinding context.
 
 ## Meeting resumes (v9)
 
-Start sends an optional text/name attachment over typed IPC; main validates it before creating the meeting. The existing meeting/deck creation transaction stores `resume_name` and `resume_text`. The append-only v9 migration uses the existing pre-upgrade SQLite backup flow. A database trigger rejects changes to these fields; job filing leaves them intact. Resume-bearing merges are refused to avoid losing or misattributing candidate facts.
+Start sends an optional text/name attachment over typed IPC; main validates it once, at IPC ingress, and passes it down as part of `MeetingStartOptions`. `createMeeting` (`db/repos/meeting-create.ts`) stores `resume_name` and `resume_text` in the same transaction as the deck copy. The text is read back only through `getMeetingResume(id)`, never on list rows. The append-only v9 migration uses the existing pre-upgrade SQLite backup flow. A database trigger rejects changes to these fields; job filing leaves them intact. Resume-bearing merges are refused to avoid losing or misattributing candidate facts.
 
 `MeetingPrompts` reads the saved resume at Start, escapes markup and appends a delimited candidate-facts block to both ordinary and presentation bases. It is independent of talking-point suppression and is captured in immutable grounding rows for More detail. Summary regeneration includes it as background, never transcript evidence. It is not added to FTS.
 

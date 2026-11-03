@@ -16,7 +16,8 @@ export interface SttSessionOptions {
   apiKey: string
   /** 1 = mono mic; 2 = interleaved mic + loopback (transcribed per channel). */
   channels: number
-  /** Glossary terms boosted for recognition (the sanas double-duty). */
+  /** Terms boosted for recognition, most important first. The provider trims the list
+   *  to its own limits, so callers never encode a vendor budget. */
   keyterms: string[]
   /** Audio time this session starts at, so a resumed meeting keeps one clock.
    *  Provider clocks restart at zero per connection; this is added to them. The caller
@@ -50,6 +51,7 @@ export interface SttSession {
 export interface SttBatchOptions {
   apiKey: string
   channels: number
+  /** Most important first; the provider trims to its own limits. */
   keyterms: string[]
 }
 

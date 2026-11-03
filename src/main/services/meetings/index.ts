@@ -1,6 +1,4 @@
-import type { MeetingResume } from '@shared/meeting-resume'
-import { validateResume } from './resume/resume'
-import { mergeKeyterms, resumeKeyterms } from './resume/keyterms'
+import { meetingKeyterms } from './context/meeting-keyterms'
 import { observeMeeting } from './observation'
 import { IPC } from '@shared/ipc'
 import type { Admission } from '@shared/live-controls/types'
@@ -9,7 +7,7 @@ import type { ChannelCount, MeetingState, Settings, TranscriptEvent } from '@sha
 import { loadSettings } from '../../config/settings'
 import { sttProvider } from '../stt'
 import type { SttSession, SttSignal, SttTranscript } from '../stt/types'
-import { ensureDefaultJob, getGlossaryTerms } from '../../db/repos/jobs'
+import { ensureDefaultJob } from '../../db/repos/jobs'
 import { clearMeetingAudioPath, endMeeting, updateMeetingAudioPath } from '../../db/repos/meetings'
 import { discardRecording, startRecording, stopRecording, writeAudio } from '../audio-store'
 import { rediarizeMeeting } from './rediarize/rediarize'
@@ -22,11 +20,8 @@ import { CAPTURE_WARNING, CaptureHealth } from './capture/capture-health'
 import { LiveSession } from './assist/live-session'
 import { insertSegment, setSpeakerIsUser } from '../../db/repos/segments'
 import { broadcast } from '../../windows/broadcast'
-import {
-  createPresentationMeeting,
-  getPresentationHistory,
-  insertSlideEvent,
-} from '../../db/repos/meeting-presentation'
+import { getPresentationHistory, insertSlideEvent } from '../../db/repos/meeting-presentation'
+import { createMeeting, type MeetingStartOptions } from '../../db/repos/meeting-create'
 import { PresentationSession } from './presentation/session'
 import { createLiveControls } from './live-controls'
 import { CaptureRequests } from './assist/capture-requests'
@@ -63,7 +58,7 @@ const BYTES_PER_SAMPLE = 2 // linear16
 let session: SttSession | null = null
 let sessionGen = 0 // bumped whenever a session is opened or discarded
 let meetingJobId = 0 // remembered so a resume can re-send the job's keyterms
-let meetingResumeTerms: string[] = []
+let meetingResumeText = '' // this meeting's resume, kept so a resume re-sends its hints
 let meetingChannels: ChannelCount = 1
 let paused = false
 let audioMsReceived = 0 // the meeting's clock: audio actually captured, in ms
@@ -266,7 +261,7 @@ async function openSession(apiKey: string, startOffsetMs: number): Promise<SttSe
   return sttProvider.start({
     apiKey,
     channels: meetingChannels,
-    keyterms: mergeKeyterms(getGlossaryTerms(meetingJobId), meetingResumeTerms),
+    keyterms: meetingKeyterms(meetingJobId, meetingResumeText),
     startOffsetMs,
     onTranscript: mine(handleTranscript),
     onSignal: mine(handleSignal),
@@ -279,13 +274,12 @@ async function openSession(apiKey: string, startOffsetMs: number): Promise<SttSe
 export function startMeeting(
   jobId?: number,
   channels: ChannelCount = 1,
-  practice = false,
-  usePresentationDeck = false,
-  resume?: MeetingResume | null,
+  options: MeetingStartOptions = {},
 ): Promise<MeetingState> {
   return serialized(async () => {
     if (liveMeetingId() !== null) {
-      if (practice) throw new Error('End the current meeting before starting a mock interview.')
+      if (options.practice)
+        throw new Error('End the current meeting before starting a mock interview.')
       return currentState() // one meeting at a time
     }
 
@@ -298,18 +292,15 @@ export function startMeeting(
       })
     }
 
-    const attachment = validateResume(resume)
     const job = jobId ?? ensureDefaultJob()
-    const id = createPresentationMeeting(
+    const id = createMeeting(
       job,
-      `${practice ? 'Practice' : 'Meeting'} ${new Date().toLocaleString()}`,
-      practice,
-      usePresentationDeck,
-      attachment,
+      `${options.practice ? 'Practice' : 'Meeting'} ${new Date().toLocaleString()}`,
+      options,
     )
     captures.meetingChanged() // drafts and feedback belong to one meeting
     setLiveMeeting(id)
-    meetingResumeTerms = resumeKeyterms(attachment?.text ?? '')
+    meetingResumeText = options.resume?.text ?? ''
     meetingJobId = job
     meetingChannels = channels
     paused = false

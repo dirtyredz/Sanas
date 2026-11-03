@@ -225,6 +225,9 @@ const api = {
       ipcRenderer.invoke(IPC.MeetingsExport, meetingId),
     get: (meetingId: number): Promise<Meeting | null> =>
       ipcRenderer.invoke(IPC.MeetingsGet, meetingId),
+    /** The saved resume, kept off Meeting rows because it can be tens of thousands of characters. */
+    getResume: (meetingId: number): Promise<MeetingResume | null> =>
+      ipcRenderer.invoke(IPC.MeetingsGetResume, meetingId),
     /** Folds the given meetings into their earliest one. Irreversible; rejects with a
      *  readable message when they cannot be merged (different jobs, one still running). */
     merge: (meetingIds: number[]): Promise<MergeResult> =>

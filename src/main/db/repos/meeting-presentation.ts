@@ -1,29 +1,6 @@
-import type { MeetingResume } from '@shared/meeting-resume'
 import type { PresentationHistory, Slide, SlideEvent } from '@shared/presentation/types'
 import { getDb } from '../index'
 import { deckSlides, getMeetingContext } from './meeting-context'
-import { createMeeting } from './meetings'
-
-export function createPresentationMeeting(
-  jobId: number,
-  title: string,
-  practice = false,
-  usePresentationDeck = false,
-  resume: MeetingResume | null = null,
-): number {
-  const db = getDb()
-  return db.transaction(() => {
-    const id = createMeeting(jobId, title, practice, resume)
-    db.prepare('INSERT INTO meeting_deck_versions VALUES (?, 0)').run(id)
-    db.prepare("INSERT INTO meeting_context_revisions VALUES (?, 0, '', 0, 0)").run(id)
-    if (usePresentationDeck)
-      db.prepare(
-        'INSERT INTO meeting_slides SELECT ?, 0, ordinal, title, talking_point, script, key_facts FROM job_slides WHERE job_id = ?',
-      ).run(id, jobId)
-    if (hasPresentation(id)) insertSlideEvent(id, { ordinal: 0, revision: 1, tMs: 0 })
-    return id
-  })()
-}
 
 export function hasPresentation(id: number): boolean {
   return !!getDb().prepare('SELECT 1 FROM meeting_slides WHERE meeting_id = ? LIMIT 1').get(id)

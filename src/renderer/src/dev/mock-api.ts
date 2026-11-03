@@ -261,6 +261,7 @@ const api: SanasApi = {
     },
     export: async () => 'C:\\Users\\you\\Documents\\Northwind weekly sync.md',
     get: async (meetingId) => meetings.find((m) => m.id === meetingId) ?? null,
+    getResume: async () => null,
     merge: async (ids) => {
       const parts = meetings
         .filter((m) => ids.includes(m.id))

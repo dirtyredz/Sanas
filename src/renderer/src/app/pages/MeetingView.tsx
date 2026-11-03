@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Job, Meeting, Segment, Suggestion } from '@shared/types'
+import type { MeetingResume } from '@shared/meeting-resume'
 import { suggestionLabel, suggestionOrigin } from '@shared/suggestion-label'
 import { speakerDisplay } from '../../lib/speaker-label'
 import { formatClock, formatWhen } from '../../lib/format-time'
@@ -31,6 +32,18 @@ export function MeetingView({
       .catch((e) => {
         if (active) setNotice({ kind: 'warn', text: String(e) })
       })
+    return () => {
+      active = false
+    }
+  }, [meeting.id])
+  const [resume, setResume] = useState<MeetingResume | null>(null)
+  useEffect(() => {
+    let active = true
+    setResume(null)
+    window.sanas.meetings
+      .getResume(meeting.id)
+      .then((saved) => active && setResume(saved))
+      .catch(() => undefined) // the resume is supplementary; the record still opens without it
     return () => {
       active = false
     }
@@ -104,15 +117,13 @@ export function MeetingView({
     speakerDisplay(s.speaker, s.isUser, names)
   return (
     <div className="meeting-view">
-      {current.resume && (
+      {resume && (
         <details className="card">
           <summary>
-            Resume for this meeting ? {current.resume.name} (
-            {current.resume.text.length.toLocaleString()} characters)
+            Resume for this meeting ? {resume.name} ({resume.text.length.toLocaleString()}{' '}
+            characters)
           </summary>
-          <pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
-            {current.resume.text}
-          </pre>
+          <pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{resume.text}</pre>
         </details>
       )}
       <div className="detail-header">

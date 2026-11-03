@@ -1,11 +1,11 @@
-import { mergeKeyterms, resumeKeyterms } from '../resume/keyterms'
+import { meetingKeyterms } from '../context/meeting-keyterms'
+import { getMeetingResume } from '../../../db/repos/meeting-resume'
 import { existsSync } from 'fs'
 import { loadSettings } from '../../../config/settings'
 import { sttProvider } from '../../stt'
 import { getMeeting } from '../../../db/repos/meetings'
 import { deleteSegmentsForMeeting, insertSegment, listSegments } from '../../../db/repos/segments'
 import { clearSpeakerNames, setSpeakerName, speakerNameMap } from '../../../db/repos/speakers'
-import { getGlossaryTerms } from '../../../db/repos/jobs'
 import { getDb } from '../../../db'
 import { resolveSpeakerIdentity } from '../capture/channel-identity'
 import { carrySpeakerNames, carryUserIdentity } from './speaker-carryover'
@@ -28,10 +28,7 @@ export async function rediarizeMeeting(meetingId: number, channels: number): Pro
     const transcripts = await sttProvider.transcribeFile(meeting.audioPath, {
       apiKey: deepgramApiKey,
       channels,
-      keyterms: mergeKeyterms(
-        getGlossaryTerms(meeting.jobId),
-        resumeKeyterms(meeting.resume?.text ?? ''),
-      ),
+      keyterms: meetingKeyterms(meeting.jobId, getMeetingResume(meetingId)?.text ?? ''),
     })
     if (transcripts.length === 0) return false // don't wipe real segments for an empty result
 

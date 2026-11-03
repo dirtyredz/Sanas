@@ -69,7 +69,7 @@ export async function startMock(
       model: settings.nudgeModel,
     }),
     {
-      start: (id) => startMeeting(id, 2, true),
+      start: (id) => startMeeting(id, 2, { practice: true }),
       stop: stopMeeting,
       audioNow: meetingAudioMs,
       open: async (onClose) => {

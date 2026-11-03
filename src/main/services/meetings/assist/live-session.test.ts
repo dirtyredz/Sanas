@@ -13,7 +13,7 @@ const f = vi.hoisted(() => ({
 vi.mock('../../../config/settings', () => ({
   loadSettings: () => ({ anthropicApiKey: 'key', whisperMode: 'smart', coachWhileTalking: false }),
 }))
-vi.mock('../../../db/repos/meetings', () => ({ getMeeting: () => null }))
+vi.mock('../../../db/repos/meeting-resume', () => ({ getMeetingResume: () => null }))
 vi.mock('../../../db/repos/jobs', () => ({ getJob: () => null, listGlossary: () => [] }))
 vi.mock('../../../db/repos/meeting-presentation', () => ({
   getPresentationHistory: () => ({ slides: f.deck, events: [] }),

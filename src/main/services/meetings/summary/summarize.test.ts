@@ -17,6 +17,7 @@ const f = vi.hoisted(() => ({
 vi.mock('../../../config/settings', () => ({
   loadSettings: () => ({ anthropicApiKey: 'key', answerModel: 'model' }),
 }))
+vi.mock('../../../db/repos/meeting-resume', () => ({ getMeetingResume: () => null }))
 vi.mock('../../../db/repos/meetings', () => ({
   getMeeting: () => ({ id: 1, jobId: 2 }),
   updateMeetingSummary: vi.fn(),

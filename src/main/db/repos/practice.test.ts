@@ -1,12 +1,12 @@
 import { afterEach, expect, it, vi } from 'vitest'
 import type { DatabaseSync } from 'node:sqlite'
-import { sqliteTestDatabase } from '../sqlite-test-database'
+import { sqliteTestDatabase } from '../testing/sqlite-test-database'
 import type { Database } from 'better-sqlite3'
 const mock = vi.hoisted(() => ({ db: null as unknown as Database }))
 vi.mock('../index', () => ({ getDb: () => mock.db }))
 import { runMigrations, schemaVersion } from '../migrations'
 import { createJob } from './jobs'
-import { createPresentationMeeting } from './meeting-presentation'
+import { createMeeting } from './meeting-create'
 import { getMeeting, listMeetings, deleteMeeting } from './meetings'
 import { insertSegment, searchSegments } from './segments'
 import { ftsAllOf, ftsAnyOf } from '../fts-query'
@@ -25,8 +25,8 @@ it('migrates legacy meetings as normal, excludes practice from both history retr
   runMigrations(mock.db)
   expect(schemaVersion).toBe(9)
   const job = createJob('Role')
-  const normal = createPresentationMeeting(job.id, 'Real meeting')
-  const practice = createPresentationMeeting(job.id, 'Mock interview', true)
+  const normal = createMeeting(job.id, 'Real meeting')
+  const practice = createMeeting(job.id, 'Mock interview', { practice: true })
   expect(getMeeting(normal)?.practice).toBe(false)
   expect(getMeeting(practice)?.practice).toBe(true)
   for (const meetingId of [normal, practice])

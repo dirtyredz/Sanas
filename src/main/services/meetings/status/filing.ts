@@ -1,5 +1,5 @@
-import { moveMeetingToJob } from '../../db/repos/meetings'
-import { isLiveMeeting } from './status/live-meeting'
+import { moveMeetingToJob } from '../../../db/repos/meetings'
+import { isLiveMeeting } from './live-meeting'
 /** History filing never changes saved answer grounding. Paused meetings remain live. */
 export function fileMeeting(meetingId: number, jobId: number): void {
   if (isLiveMeeting(meetingId))

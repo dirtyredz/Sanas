@@ -2,9 +2,12 @@ import { expect, it, vi } from 'vitest'
 const f = vi.hoisted(() => ({ transaction: vi.fn(), remove: vi.fn() }))
 vi.mock('../../../db', () => ({ getDb: () => ({ transaction: f.transaction }) }))
 vi.mock('../../../db/repos/meetings', () => ({
-  getMeeting: () => ({ id: 1, title: 'Interview', resume: { name: 'Paste', text: 'Camunda' } }),
+  getMeeting: () => ({ id: 1, title: 'Interview' }),
   applyMerge: vi.fn(),
   deleteMeeting: vi.fn(),
+}))
+vi.mock('../../../db/repos/meeting-resume', () => ({
+  getMeetingResume: () => ({ name: 'Paste', text: 'Camunda' }),
 }))
 vi.mock('../../../db/repos/segments', () => ({ maxSpeaker: vi.fn(), reassignSegments: vi.fn() }))
 vi.mock('../../../db/repos/suggestions', () => ({ reassignSuggestions: vi.fn() }))

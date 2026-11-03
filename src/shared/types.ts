@@ -1,4 +1,3 @@
-import type { MeetingResume } from './meeting-resume'
 import type { SuggestionMetadata } from './live-controls/types'
 
 // Domain types shared between main and renderer.
@@ -25,7 +24,6 @@ export interface GlossaryTerm {
 }
 
 export interface Meeting {
-  resume?: MeetingResume | null
   /** True for saved mock sessions; absent on legacy callers means false. */
   practice?: boolean
   id: number

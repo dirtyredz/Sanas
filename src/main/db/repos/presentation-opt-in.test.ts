@@ -1,12 +1,13 @@
 import { afterEach, expect, it, vi } from 'vitest'
 import type { DatabaseSync } from 'node:sqlite'
-import { sqliteTestDatabase } from '../sqlite-test-database'
+import { sqliteTestDatabase } from '../testing/sqlite-test-database'
 import type { Database } from 'better-sqlite3'
 const mock = vi.hoisted(() => ({ db: null as unknown as Database }))
 vi.mock('../index', () => ({ getDb: () => mock.db }))
 import { runMigrations } from '../migrations'
 import { createJob } from './jobs'
-import { createPresentationMeeting, getPresentationHistory } from './meeting-presentation'
+import { createMeeting } from './meeting-create'
+import { getPresentationHistory } from './meeting-presentation'
 
 let sqlite: DatabaseSync
 function database(): void {
@@ -38,12 +39,12 @@ it('requires per-meeting deck opt-in and clears prior presentation request conte
   replaceJobSlides(job.id, [
     { title: 'Constellation deck', talkingPoint: 'branches', script: '', keyFacts: '' },
   ])
-  const first = createPresentationMeeting(job.id, 'Presentation', false, true)
+  const first = createMeeting(job.id, 'Presentation', { usePresentationDeck: true })
   expect(getPresentationHistory(first).slides).toHaveLength(1)
-  const off = createPresentationMeeting(job.id, 'Screening')
+  const off = createMeeting(job.id, 'Screening')
   expect(getPresentationHistory(off)).toMatchObject({ slides: [], events: [] })
   const unsorted = createJob('Unsorted')
-  const next = createPresentationMeeting(unsorted.id, 'Recruiter')
+  const next = createMeeting(unsorted.id, 'Recruiter')
   const prompts = new MeetingPrompts()
   const presentation = new PresentationSession(
     () => {},

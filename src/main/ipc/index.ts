@@ -1,5 +1,5 @@
 import { registerResumeImportIpc } from './resume-import'
-import { validateResume } from '../services/meetings/resume/resume'
+import { validateResume } from '../services/meetings/context/resume/resume'
 import { registerMockInterviewIpc } from './mock-interview'
 import { registerUpdatesIpc } from './updates'
 import { ipcMain } from 'electron'
@@ -40,8 +40,9 @@ import {
   addGlossaryTerm,
   removeGlossaryTerm,
 } from '../db/repos/jobs'
+import { getMeetingResume } from '../db/repos/meeting-resume'
 import { listMeetings, getMeeting, renameMeeting } from '../db/repos/meetings'
-import { fileMeeting } from '../services/meetings/filing'
+import { fileMeeting } from '../services/meetings/status/filing'
 import { removeMeeting } from '../services/meetings/remove'
 import { mergeMeetings } from '../services/meetings/merge/merge'
 import { previewRetention, runRetention } from '../services/platform/retention'
@@ -83,11 +84,13 @@ export function registerIpcHandlers(): void {
       startMeeting(
         jobId === undefined || jobId === null ? undefined : requireId(jobId, 'job id'),
         channels === 2 ? 2 : 1,
-        false,
-        usePresentationDeck === undefined
-          ? false
-          : requireBool(usePresentationDeck, 'use presentation deck'),
-        validateResume(resume),
+        {
+          usePresentationDeck:
+            usePresentationDeck === undefined
+              ? false
+              : requireBool(usePresentationDeck, 'use presentation deck'),
+          resume: validateResume(resume),
+        },
       ),
   )
   ipcMain.handle(IPC.MeetingGetState, () => currentState())
@@ -150,6 +153,9 @@ export function registerIpcHandlers(): void {
     exportMeetingMarkdown(requireId(id, 'meeting id')),
   )
   ipcMain.handle(IPC.MeetingsGet, (_e, id: unknown) => getMeeting(requireId(id, 'meeting id')))
+  ipcMain.handle(IPC.MeetingsGetResume, (_e, id: unknown) =>
+    getMeetingResume(requireId(id, 'meeting id')),
+  )
   ipcMain.handle(IPC.MeetingsMerge, (_e, ids: unknown) =>
     mergeMeetings(requireIdList(ids, 'meeting ids', 2)),
   )
