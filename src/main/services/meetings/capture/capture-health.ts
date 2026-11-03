@@ -11,7 +11,7 @@
 // Time is AUDIO time (counted from the samples), not wall time, so a pause cannot age it.
 
 export const CAPTURE_WARNING =
-  'No system audio detected — voices heard by the mic will be labeled Me. Check which speaker your call app plays to.'
+  'No system audio detected: voices heard by the mic will be labeled Me. Check that the call output matches the captured default output. For a call on another device, end and restart as Elsewhere, then pin your own voice.'
 
 /** Continuous exact-zero system audio before warning. */
 export const SILENT_WARN_MS = 5_000

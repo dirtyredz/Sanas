@@ -71,7 +71,7 @@ export async function rediarizeMeeting(meetingId: number, channels: number): Pro
     })()
     console.log(
       `[sanas] re-diarized meeting ${meetingId}: ${transcripts.length} segments, ` +
-        `${names.size} name(s) carried, ${userSpeakers.size} voice(s) kept as me`,
+        `${names.size} name(s) carried, ${userSpeakers.size} mono pins carried; ${next.filter((s) => s.isUser || userSpeakers.has(s.speaker)).length} user / ${next.filter((s) => !s.isUser && !userSpeakers.has(s.speaker)).length} other segments`,
     )
     return true
   } catch (e) {

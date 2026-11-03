@@ -506,3 +506,6 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   above saying otherwise is stale. Electron imports still need mocks in CI.
 
 - A remembered job is assistance context, not consent to present its deck. Start defaults deck use off each meeting. Unsorted clears the remembered job; late job loading must not replace a newer selection. Filing an ended meeting changes organization only, never saved grounding. Live corrections use Apply.
+
+- This PC assumes counterpart speech arrives on captured system output. Check Teams/Zoom output against the captured default device. For another-device calls, end and restart as Elsewhere, then pin your voice; Resume cannot change topology. Brief system sound is not proof of counterpart capture. Batch logs distinguish mono pins carried from user/other segment counts.
+- Classifier failures remain fail-closed. Only allowlisted category, HTTP status, request ID, model and elapsed time enter diagnostics; never raw exception messages, prompts, keys or bodies. The library and overlay show the 30-second suspension with Answer now as the recovery path.

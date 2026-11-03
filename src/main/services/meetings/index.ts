@@ -77,6 +77,7 @@ const presentation = new PresentationSession(
 const live = new LiveSession(
   () => audioMsReceived,
   () => presentation.state(),
+  () => setState({ ...currentState(), ...(lastError ? { error: lastError } : {}) }),
 )
 const assistance = live.assistance
 
@@ -113,9 +114,17 @@ export function currentState(): MeetingState {
   const meetingId = liveMeetingId()
   if (meetingId === null) return { meetingId: null, status: 'idle' }
   if (paused) return { meetingId, status: 'paused' }
-  return captureHealth.warned
-    ? { meetingId, status: 'live', captureWarning: CAPTURE_WARNING }
-    : { meetingId, status: 'live' }
+  return {
+    meetingId,
+    status: 'live',
+    ...(captureHealth.warned ? { captureWarning: CAPTURE_WARNING } : {}),
+    ...(assistance.automaticUnavailable()
+      ? {
+          automaticAnswerWarning:
+            'Automatic answers temporarily unavailable; Answer now still works.',
+        }
+      : {}),
+  }
 }
 
 function setState(state: MeetingState): MeetingState {

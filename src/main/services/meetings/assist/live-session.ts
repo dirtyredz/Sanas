@@ -44,6 +44,7 @@ export class LiveSession {
   constructor(
     private readonly clockMs: () => number,
     private readonly presentation: () => PresentationState,
+    availabilityChanged?: () => void,
   ) {
     const runner = (this.runner = new SuggestionRunner({
       provider: assistantProvider,
@@ -65,6 +66,7 @@ export class LiveSession {
       setTimer: (fn, ms) => setTimeout(fn, ms),
       clearTimer: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
       settings: loadSettings,
+      availabilityChanged,
       classify: (req) => classifyTurn(assistantProvider, req),
       runner,
       snapshot: (this.snapshot = () => {

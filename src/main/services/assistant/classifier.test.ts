@@ -40,7 +40,7 @@ describe('turn classifier', () => {
 
   it('sends one bounded, non-streaming, zero-retry request with the chosen model', async () => {
     const { p, calls } = provider(async () => 'question me')
-    await expect(classifyTurn(p, request())).resolves.toEqual({
+    await expect(classifyTurn(p, request())).resolves.toMatchObject({
       status: 'classified',
       kind: 'question',
       addressee: 'me',
@@ -67,7 +67,7 @@ describe('turn classifier', () => {
     ['none', { kind: 'none' }],
   ])('accepts %s', async (token, verdict) => {
     const { p } = provider(async () => ` ${token}\n`)
-    await expect(classifyTurn(p, request())).resolves.toEqual({
+    await expect(classifyTurn(p, request())).resolves.toMatchObject({
       status: 'classified',
       ...verdict,
     })
@@ -85,7 +85,7 @@ describe('turn classifier', () => {
     'yes',
   ])('fails closed on malformed output %j', async (text) => {
     const { p } = provider(async () => text)
-    await expect(classifyTurn(p, request())).resolves.toEqual({
+    await expect(classifyTurn(p, request())).resolves.toMatchObject({
       status: 'failed',
       reason: 'malformed',
     })
@@ -95,7 +95,7 @@ describe('turn classifier', () => {
     const { p, calls } = provider(async () => {
       throw new Error('overloaded')
     })
-    await expect(classifyTurn(p, request())).resolves.toEqual({
+    await expect(classifyTurn(p, request())).resolves.toMatchObject({
       status: 'failed',
       reason: 'provider',
     })
@@ -112,10 +112,10 @@ describe('turn classifier', () => {
     )
     const outcome = classifyTurn(p, request())
     await vi.advanceTimersByTimeAsync(CLASSIFIER_DEADLINE_MS)
-    await expect(outcome).resolves.toEqual({ status: 'failed', reason: 'timeout' })
+    await expect(outcome).resolves.toMatchObject({ status: 'failed', reason: 'timeout' })
     expect(calls[0].signal?.aborted).toBe(true)
     resolveLate('question me') // too late: the outcome is already settled
-    await expect(outcome).resolves.toEqual({ status: 'failed', reason: 'timeout' })
+    await expect(outcome).resolves.toMatchObject({ status: 'failed', reason: 'timeout' })
   })
 
   it('reports cancellation from the caller', async () => {
@@ -123,12 +123,12 @@ describe('turn classifier', () => {
     const controller = new AbortController()
     const outcome = classifyTurn(p, request({ signal: controller.signal }))
     controller.abort()
-    await expect(outcome).resolves.toEqual({ status: 'failed', reason: 'cancelled' })
+    await expect(outcome).resolves.toMatchObject({ status: 'failed', reason: 'cancelled' })
     expect(calls[0].signal?.aborted).toBe(true)
 
     const already = new AbortController()
     already.abort()
-    await expect(classifyTurn(p, request({ signal: already.signal }))).resolves.toEqual({
+    await expect(classifyTurn(p, request({ signal: already.signal }))).resolves.toMatchObject({
       status: 'failed',
       reason: 'cancelled',
     })

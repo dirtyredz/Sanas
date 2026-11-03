@@ -135,6 +135,7 @@ export interface MeetingState {
    *  mic heard sound, so remote voices are probably being labelled as the user. Advisory:
    *  nothing is relabelled or dropped because of it. */
   captureWarning?: string
+  automaticAnswerWarning?: string
 }
 
 /** Desired overlay dimensions from one or both custom resize axes. */

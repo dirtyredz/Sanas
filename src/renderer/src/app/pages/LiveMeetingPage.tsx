@@ -19,7 +19,7 @@ const SOURCES: {
   {
     value: 'this-pc',
     label: 'This PC',
-    hint: 'The call plays through this PC. Sanas taps that signal, so the mic is only you.',
+    hint: 'This PC requires the other participant to arrive through captured system output. Check the call output device.',
     icon: IconLaptop,
   },
   {
@@ -299,6 +299,9 @@ export function LiveMeetingPage(): React.JSX.Element {
 
       {micError && <p className="notice warn">{micError}</p>}
       {state.error && <p className="notice warn">{state.error}</p>}
+      {state.automaticAnswerWarning && (
+        <p className="notice warn">{state.automaticAnswerWarning}</p>
+      )}
       {state.captureWarning && <p className="notice warn">{state.captureWarning}</p>}
       {notice && <p className="notice warn">{notice}</p>}
 

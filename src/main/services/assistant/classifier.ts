@@ -1,3 +1,4 @@
+import { failureDiagnostic, type FailureDiagnostic } from './failure-diagnostics'
 import type { AssistantProvider } from './types'
 import { boundedExcerpt } from './excerpt'
 
@@ -17,7 +18,11 @@ export type ClassifierVerdict = { kind: 'none' } | { kind: ResponseKind; address
 
 export type ClassifierOutcome =
   | ({ status: 'classified' } & ClassifierVerdict)
-  | { status: 'failed'; reason: 'timeout' | 'cancelled' | 'malformed' | 'provider' }
+  | {
+      status: 'failed'
+      reason: 'timeout' | 'cancelled' | 'malformed' | 'provider'
+      diagnostic?: FailureDiagnostic
+    }
 
 export interface ClassifierTurn {
   /** Display label ("S2", "Sarah", "Me", "?"). */
@@ -82,6 +87,8 @@ export async function classifyTurn(
   req: ClassifyRequest,
   deadlineMs = CLASSIFIER_DEADLINE_MS,
 ): Promise<ClassifierOutcome> {
+  const started = performance.now()
+  let providerError: unknown
   if (req.signal?.aborted) return { status: 'failed', reason: 'cancelled' }
   const controller = new AbortController()
   const onCancel = (): void => controller.abort()
@@ -121,17 +128,31 @@ export async function classifyTurn(
         ? { status: 'failed', reason: 'malformed' }
         : { status: 'classified', ...verdict }
     })
-    .catch((): ClassifierOutcome => ({
-      status: 'failed',
-      reason: controller.signal.aborted
-        ? req.signal?.aborted
-          ? 'cancelled'
-          : 'timeout'
-        : 'provider',
-    }))
+    .catch((error): ClassifierOutcome => {
+      providerError = error
+      return {
+        status: 'failed',
+        reason: controller.signal.aborted
+          ? req.signal?.aborted
+            ? 'cancelled'
+            : 'timeout'
+          : 'provider',
+      }
+    })
   try {
     // whichever settles first wins; a result arriving after the deadline is discarded
-    return await Promise.race([call, deadline, cancelled])
+    const result = await Promise.race([call, deadline, cancelled])
+    return result.status === 'failed'
+      ? {
+          ...result,
+          diagnostic: failureDiagnostic(
+            result.reason,
+            req.model === req.apiKey ? 'custom' : req.model,
+            performance.now() - started,
+            providerError,
+          ),
+        }
+      : result
   } finally {
     if (timer) clearTimeout(timer)
     req.signal?.removeEventListener('abort', onCancel)

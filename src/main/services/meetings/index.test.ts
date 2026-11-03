@@ -69,6 +69,7 @@ vi.mock('./status/live-meeting', () => ({
 vi.mock('./assist/live-session', () => ({
   LiveSession: class {
     assistance = {
+      automaticUnavailable: () => false,
       answerNow: vi.fn(),
       activity: vi.fn(),
       boundary: vi.fn(),

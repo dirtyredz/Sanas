@@ -300,3 +300,5 @@ main-process code belongs in a responsibility folder above, not beside them.
   change the seam and its caller; do not abstract it before a second transport exists.
 
 `meetings/filing.ts` guards historical job filing; `lib/meeting/start-selection.ts` owns remembered Start selection persistence.
+
+`assistant/failure-diagnostics.ts` allowlists provider failure metadata for classifier diagnostics. The assistance coordinator owns the suspension timer and publishes availability through MeetingState to both surfaces.

@@ -19,6 +19,7 @@ it.each([false, true])(
     const context = {
       meetingId: 1,
       revision: 0,
+      initialSlides: [],
       deckVersion: 0,
       text: '',
       slides: deck ? [{ title: 'Deck', talkingPoint: '', script: '', keyFacts: '' }] : [],

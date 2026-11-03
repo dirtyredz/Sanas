@@ -1,3 +1,4 @@
+import { CAPTURE_WARNING } from './capture-health'
 import { describe, expect, it } from 'vitest'
 import { CaptureHealth, MIC_ACTIVE_PEAK } from './capture-health'
 
@@ -82,4 +83,10 @@ describe('capture health', () => {
     h.push(chunk, 2)
     expect(chunk.equals(copy)).toBe(true)
   })
+})
+
+it('offers routing recovery without suggesting a topology change through Resume', () => {
+  expect(CAPTURE_WARNING).toContain('captured default output')
+  expect(CAPTURE_WARNING).toContain('end and restart as Elsewhere')
+  expect(CAPTURE_WARNING).not.toContain('Resume')
 })

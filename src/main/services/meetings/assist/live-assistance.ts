@@ -54,6 +54,7 @@ export interface LiveAssistanceDeps {
   runner: Pick<SuggestionRunner, 'canStart' | 'start'>
   /** The live meeting right now, or null when there is none. */
   snapshot(): AssistSnapshot | null
+  availabilityChanged?(): void
   log(message: string): void
 }
 
@@ -97,6 +98,16 @@ export class LiveAssistance {
   private queued: Candidate | null = null
   private ready: Candidate | null = null
   private lastClassifierStartAt: number | null = null
+  private suspensionTimer: unknown
+  automaticUnavailable(): boolean {
+    return this.active && this.deps.now() < this.suspendedUntil
+  }
+  private clearSuspension(): void {
+    if (this.suspensionTimer !== undefined) this.deps.clearTimer(this.suspensionTimer)
+    this.suspensionTimer = undefined
+    this.suspendedUntil = 0
+    this.deps.availabilityChanged?.()
+  }
   private suspendedUntil = 0
   private lastAnswerAt: number | null = null
   private coachRun: SuggestionHandle | null = null
@@ -116,7 +127,7 @@ export class LiveAssistance {
       this.recentTurns = []
       this.lastAnswerAt = null
       this.lastClassifierStartAt = null
-      this.suspendedUntil = 0
+      this.clearSuspension()
     })
   }
 
@@ -125,6 +136,7 @@ export class LiveAssistance {
   halt(): void {
     this.guard(() => {
       this.active = false
+      this.clearSuspension()
       this.invalidate('stop-or-pause')
     })
   }
@@ -348,8 +360,16 @@ export class LiveAssistance {
       if (outcome.status === 'failed') {
         if (outcome.reason === 'provider' || outcome.reason === 'timeout') {
           this.suspendedUntil = this.deps.now() + CLASSIFIER_SUSPEND_MS
+          this.deps.availabilityChanged?.()
+          if (this.suspensionTimer !== undefined) this.deps.clearTimer(this.suspensionTimer)
+          this.suspensionTimer = this.deps.setTimer(
+            () => this.clearSuspension(),
+            CLASSIFIER_SUSPEND_MS,
+          )
         }
-        this.logFailure(`turn classifier ${outcome.reason}; failing closed`)
+        this.logFailure(
+          `turn classifier ${outcome.reason}; failing closed ${JSON.stringify(outcome.diagnostic ?? {})}`,
+        )
       } else if (
         outcome.kind !== 'none' &&
         (outcome.addressee !== 'other' || this.answerEveryQuestion)
