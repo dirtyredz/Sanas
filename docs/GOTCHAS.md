@@ -428,6 +428,7 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
 ## Releases, upgrades and recovery
 
 - Vitest runs on Linux in CI, so PowerShell-dependent tests must be Windows-guarded; the Windows build job still runs the packaged smoke.
+- Never hard-code the schema version in release scripts/tests: smoke.ts reports `expectedSchemaVersion` (from migrations.ts) and smoke.ps1 compares `schemaVersion` to it (a literal 8 broke Release when v9 landed).
 - Dev and installed Sanas share APPDATA/sanas. Close both before owner installation/backup; never run
   an older schema build after an upgrade. Future-schema startup fails instead of replacing data.
 - Before migration, backups go under APPDATA/sanas/backups with unique names. SQLite backup includes

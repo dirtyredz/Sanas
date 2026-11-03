@@ -11,6 +11,7 @@ vi.mock('electron', () => ({
 }))
 vi.mock('node:fs', () => ({ writeFileSync: mock.write }))
 vi.mock('../db', () => ({ openDb: mock.open, closeDb: mock.close }))
+vi.mock('../db/migrations', () => ({ schemaVersion: 7 }))
 vi.mock('../db/repos/diagnostics', () => ({ diagnosticProbe: mock.probe }))
 import { runSmoke } from './smoke'
 const argv = [...process.argv]
@@ -46,6 +47,7 @@ it('reports a successful packaged native probe and closes before exit', async ()
       packaged: true,
       version: '0.1.0',
       schemaVersion: 7,
+      expectedSchemaVersion: 7,
       result: 'ok',
       bindingPath: key,
     })

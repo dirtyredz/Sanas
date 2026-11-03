@@ -2,6 +2,7 @@ import { app } from 'electron'
 import { writeFileSync } from 'node:fs'
 import { openDb, closeDb } from '../db'
 import { diagnosticProbe } from '../db/repos/diagnostics'
+import { schemaVersion } from '../db/migrations'
 
 export async function runSmoke(): Promise<void> {
   const reportPath = process.argv
@@ -22,6 +23,8 @@ export async function runSmoke(): Promise<void> {
     const db = await openDb()
     diagnosticProbe()
     report.schemaVersion = db.pragma('user_version', { simple: true })
+    // Single source of truth for the release smoke: the build's own migration count.
+    report.expectedSchemaVersion = schemaVersion
     report.bindingPath = Object.keys(require.cache).find((path) =>
       path.endsWith('better_sqlite3.node'),
     )

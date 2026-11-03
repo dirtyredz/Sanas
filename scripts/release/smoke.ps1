@@ -31,7 +31,7 @@ try {
   if (-not (Test-Path -LiteralPath $report)) { throw 'Packaged smoke report missing' }
   $result = Get-Content -LiteralPath $report -Raw | ConvertFrom-Json
   $version = (Get-Content -LiteralPath (Join-Path $root 'package.json') -Raw | ConvertFrom-Json).version
-  if ($result.result -ne 'ok' -or -not $result.packaged -or $result.version -ne $version -or $result.arch -ne 'x64' -or $result.schemaVersion -ne 8 -or -not $result.electron -or -not $result.abi -or $result.bindingPath -notmatch 'better_sqlite3.node$') { throw 'Invalid smoke report' }
+  if ($result.result -ne 'ok' -or -not $result.packaged -or $result.version -ne $version -or $result.arch -ne 'x64' -or $result.schemaVersion -ne $result.expectedSchemaVersion -or $result.expectedSchemaVersion -lt 1 -or -not $result.electron -or -not $result.abi -or $result.bindingPath -notmatch 'better_sqlite3.node$') { throw 'Invalid smoke report' }
   Write-Output "OK packaged smoke: $report"
 } finally {
   if ($started -and -not $process.HasExited) { $process.Kill(); $process.WaitForExit() }
