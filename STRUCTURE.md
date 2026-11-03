@@ -90,7 +90,7 @@ sanas/
 │   │       │   ├── shell/                  # app header (identity, page tabs, meeting status, overlay toggle)
 │   │       │   ├── controls/               # Switch, FieldRow, Badge, KeyBadge — the library's small control components
 │   │       │   ├── pages/                  # route/page components
-│   │       │   ├── jobs/                   # job presentation editor
+│   │       │   ├── jobs/                   # job detail tabs and presentation editor
 │   │       │   ├── settings/
 │   │       │   │   ├── sections/           # one component per Settings section + section index (+ pure hotkey/update status)
 │   │       │   │   └── frame/              # section list, index, pane, card, useSettingsDraft + patch/validation, save bar
@@ -197,7 +197,7 @@ sanas/
 - `src/renderer/src/app/shell/` — the library window frame: `AppHeader` (also the window title bar — drag region, see GOTCHAS), the `Page` union + `NAV` table (`pages.ts`) and the pure meeting-status wording
 - `src/renderer/src/app/controls/` — small shared library controls (`Switch`, `FieldRow`, `Badge`, `KeyBadge`); styles live in `styles/controls.css`
 - `src/renderer/src/app/pages/` — one component per library route/page; `SettingsPage` is layout and wiring only (its state is `useSettingsDraft`)
-- `src/renderer/src/app/jobs/` — job-specific editors, currently the presentation deck editor
+- `src/renderer/src/app/jobs/` — `JobOverview` (name, context, glossary), `PresentationEditor` (deck), `JobEmail` (recipient), and `JobMeetings` (history/merge). `pages/JobDetail` owns the shared job draft/save and keeps tab panels mounted so local drafts survive switching
 - `src/renderer/src/app/settings/` — only the cross-section tests (`settings-pages.test.tsx`, `settings-controls.test.tsx`); everything else is in the folders below
 - `src/renderer/src/app/settings/sections/` — one component per Settings section, including independent update state, plus pure status wording (`hotkey-status.ts`, `update-status.ts`); `SettingsSectionPage.tsx` is the section index that renders the selected section
 - `src/renderer/src/app/settings/frame/` — what every section shares: the section list (`settings-sections.ts`), card (`SettingsSection`), the index (`SettingsNav`, Up/Down), the animated scrolling pane (`SettingsPane`, owner of `SETTINGS_PANE_ID`), the draft state (`useSettingsDraft`: load, externally changed keys, save state machine), the pure patch/dirty/validation logic and page-ownership lists (`settings-draft.ts`) and the save bar

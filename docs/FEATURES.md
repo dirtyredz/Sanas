@@ -41,15 +41,15 @@ and pauses of at least two seconds; streaming behavior is unchanged.
 
 ## Organization
 
-| Feature                                                                            | Status | Notes                                                                                               |
-| ---------------------------------------------------------------------------------- | ------ | --------------------------------------------------------------------------------------------------- |
-| Jobs (create/edit/archive)                                                         | ✅     | archive UI pending, repo supports it                                                                |
-| Job context pack: company info, project scope, notes, talking points, persona/tone | ✅     | feeds AI in Phase 3                                                                                 |
-| Per-job glossary (terms + notes)                                                   | ✅     | bulk paste on the glossary row; feeds STT now and AI in Phase 3                                     |
-| Meetings under a job; transcript view                                              | ✅     | job picker on Live, history per job, rename, move to another job                                    |
-| Post-meeting knowledge summary + action items                                      | ✅     | sectioned Markdown knowledge extract; detail scales with transcript length; fire-and-forget on stop |
-| On-demand summary (Summarize / Regenerate)                                         | ✅     | stored transcript (capped ~120k chars) + job context; timeout-safe generation                       |
-| Email summary to the job's address                                                 | ✅     | recipient per job; SMTP (nodemailer); button + auto-send on stop                                    |
+| Feature                                                                            | Status | Notes                                                                                                                  |
+| ---------------------------------------------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------- |
+| Jobs (create/edit/archive)                                                         | ✅     | Overview (name/context/glossary), Presentation, Email, Meetings sub-tabs; drafts survive switching; archive UI pending |
+| Job context pack: company info, project scope, notes, talking points, persona/tone | ✅     | feeds AI in Phase 3                                                                                                    |
+| Per-job glossary (terms + notes)                                                   | ✅     | bulk paste on the glossary row; feeds STT now and AI in Phase 3                                                        |
+| Meetings under a job; transcript view                                              | ✅     | job picker on Live, history per job, rename, move to another job                                                       |
+| Post-meeting knowledge summary + action items                                      | ✅     | sectioned Markdown knowledge extract; detail scales with transcript length; fire-and-forget on stop                    |
+| On-demand summary (Summarize / Regenerate)                                         | ✅     | stored transcript (capped ~120k chars) + job context; timeout-safe generation                                          |
+| Email summary to the job's address                                                 | ✅     | recipient per job; SMTP (nodemailer); button + auto-send on stop                                                       |
 
 ## App
 

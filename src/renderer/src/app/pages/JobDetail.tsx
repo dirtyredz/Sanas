@@ -1,18 +1,13 @@
 import { useEffect, useState } from 'react'
-import type { GlossaryTerm, Job, Meeting } from '@shared/types'
+import type { Job, Meeting } from '@shared/types'
 import { MeetingView } from './MeetingView'
-import { formatWhen } from '../../lib/format-time'
 import { errorText } from '../../lib/ipc-error'
-import { parseGlossaryInput } from '../../lib/glossary-input'
 import { PresentationEditor } from '../jobs/PresentationEditor'
+import { JobOverview } from '../jobs/JobOverview'
+import { JobEmail } from '../jobs/JobEmail'
+import { JobMeetings } from '../jobs/JobMeetings'
 
-const PACK_FIELDS = [
-  { key: 'companyInfo', label: 'Company info', hint: 'Who they are, org quirks, key people' },
-  { key: 'projectScope', label: 'Project scope', hint: 'What you are building or doing for them' },
-  { key: 'notes', label: 'Notes', hint: 'Anything else the assistant should know' },
-  { key: 'talkingPoints', label: 'Talking points', hint: 'Things to steer toward (or avoid)' },
-  { key: 'persona', label: 'Persona / tone', hint: 'How you want to come across' },
-] as const
+const TABS = ['Overview', 'Presentation', 'Email', 'Meetings'] as const
 
 export function JobDetail({
   jobId,
@@ -22,31 +17,17 @@ export function JobDetail({
   onBack: () => void
 }): React.JSX.Element {
   const [job, setJob] = useState<Job | null>(null)
-  const [terms, setTerms] = useState<GlossaryTerm[]>([])
+
+  const [tab, setTab] = useState<(typeof TABS)[number]>('Overview')
   const [meetings, setMeetings] = useState<Meeting[]>([])
-  const [newTerm, setNewTerm] = useState('')
-  const [glossaryNotice, setGlossaryNotice] = useState('')
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [openMeeting, setOpenMeeting] = useState<Meeting | null>(null)
-  // merging folds split recordings back into one meeting; it cannot be undone, so the
-  // button asks once before it runs
-  const [picked, setPicked] = useState<Set<number>>(new Set())
-  const [confirmMerge, setConfirmMerge] = useState(false)
-  const [mergeError, setMergeError] = useState('')
-  const [mergeNotice, setMergeNotice] = useState('')
 
   useEffect(() => {
     window.sanas.jobs.list().then((all) => setJob(all.find((j) => j.id === jobId) ?? null))
-    window.sanas.glossary.list(jobId).then(setTerms)
     window.sanas.meetings.list(jobId).then(setMeetings)
   }, [jobId])
-
-  useEffect(() => {
-    if (!glossaryNotice) return
-    const timeout = window.setTimeout(() => setGlossaryNotice(''), 3000)
-    return () => window.clearTimeout(timeout)
-  }, [glossaryNotice])
 
   if (openMeeting) {
     return (
@@ -85,70 +66,13 @@ export function JobDetail({
     }
   }
 
-  const addTerm = async (): Promise<void> => {
-    const parsed = parseGlossaryInput(
-      newTerm,
-      terms.map((term) => term.term),
-    )
-    if (parsed.terms.length === 0 && parsed.alreadyThere === 0) return
-
-    const added: GlossaryTerm[] = []
-    for (const term of parsed.terms) {
-      added.push(await window.sanas.glossary.add(jobId, term, ''))
-    }
-
-    setTerms((prev) => [...prev, ...added].sort((a, b) => a.term.localeCompare(b.term)))
-    setNewTerm('')
-    setGlossaryNotice(`Added ${added.length} · ${parsed.alreadyThere} already there`)
-  }
-
-  const togglePick = (id: number): void => {
-    setConfirmMerge(false)
-    setMergeError('')
-    setMergeNotice('')
-    setPicked((prev) => {
-      const next = new Set(prev)
-      if (!next.delete(id)) next.add(id)
-      return next
-    })
-  }
-
-  const merge = async (): Promise<void> => {
-    setMergeError('')
-    setMergeNotice('')
-    try {
-      const { meeting, recordingsLeftBehind } = await window.sanas.meetings.merge([...picked])
-      setPicked(new Set())
-      setConfirmMerge(false)
-      setMeetings(await window.sanas.meetings.list(jobId))
-      if (recordingsLeftBehind > 0) {
-        // stay on the list so the warning is actually read; the merged meeting is one click away
-        setMergeNotice(
-          `Merged into "${meeting.title}". ${recordingsLeftBehind} recording(s) are still in use ` +
-            'by another program — clean-up will remove them later.',
-        )
-      } else {
-        setOpenMeeting(meeting) // show the result straight away
-      }
-    } catch (e) {
-      setConfirmMerge(false)
-      setMergeError(errorText(e))
-    }
-  }
-
   return (
     <div className="job-detail">
       <div className="detail-header">
         <button className="btn btn-ghost" onClick={onBack}>
           ← Jobs
         </button>
-        <input
-          className="title-input"
-          value={job.name}
-          maxLength={120}
-          aria-label="Job name"
-          onChange={(e) => setJob({ ...job, name: e.target.value })}
-        />
+        <h2>{job.name}</h2>
         <div className="actions">
           {saveError && <span className="warn">{saveError}</span>}
           {saved && <span className="ok">Saved ✓</span>}
@@ -163,145 +87,62 @@ export function JobDetail({
         </div>
       </div>
 
-      <div className="detail-columns">
-        <PresentationEditor key={jobId} jobId={jobId} />
-        <section className="pack">
-          <div>
-            <span className="eyebrow">Context pack</span>
-            <p className="hint">Fed to the AI on every suggestion and summary for this job.</p>
-          </div>
-          {PACK_FIELDS.map((f) => (
-            <label key={f.key} className="field">
-              <span className="label">{f.label}</span>
-              <textarea
-                rows={f.key === 'persona' ? 2 : 4}
-                placeholder={f.hint}
-                value={job[f.key]}
-                onChange={(e) => setJob({ ...job, [f.key]: e.target.value })}
-              />
-            </label>
-          ))}
-        </section>
-
-        <aside className="side">
-          <section>
-            <span className="eyebrow">Summary email</span>
-            <label className="field">
-              <input
-                type="email"
-                placeholder="client@example.com"
-                value={job.summaryEmail}
-                onChange={(e) => setJob({ ...job, summaryEmail: e.target.value })}
-              />
-              <small>Meeting summaries for this job go here. Blank means no email.</small>
-            </label>
-          </section>
-
-          <section>
-            <span className="eyebrow">Glossary</span>
-            <p className="hint">
-              Jargon, product names, acronyms — these also boost transcription.
-            </p>
-            <div className="row glossary-add">
-              <textarea
-                rows={2}
-                placeholder="Add term…"
-                value={newTerm}
-                onChange={(e) => setNewTerm(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault()
-                    void addTerm()
-                  }
-                }}
-              />
-              <button
-                className="btn btn-sm"
-                onClick={() => void addTerm()}
-                disabled={!newTerm.trim()}
-              >
-                Add
-              </button>
-            </div>
-            {glossaryNotice && <p className="hint glossary-notice">{glossaryNotice}</p>}
-            <div className="term-list">
-              {terms.map((t) => (
-                <span key={t.id} className="chip">
-                  {t.term}
-                  <button
-                    className="x"
-                    aria-label={`Remove ${t.term}`}
-                    onClick={() => {
-                      window.sanas.glossary.remove(t.id)
-                      setTerms((prev) => prev.filter((p) => p.id !== t.id))
-                    }}
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-          </section>
-
-          <section>
-            <span className="eyebrow">Meetings</span>
-            {meetings.length === 0 && <p className="hint">None yet.</p>}
-            {meetings.length > 1 && (
-              <p className="hint">Tick two or more to fold a split recording back into one.</p>
-            )}
-            <div className="meeting-list">
-              {meetings.map((m) => (
-                <div key={m.id} className="meeting-pick">
-                  {meetings.length > 1 && (
-                    <input
-                      type="checkbox"
-                      checked={picked.has(m.id)}
-                      aria-label={`Select ${m.title} for merging`}
-                      onChange={() => togglePick(m.id)}
-                    />
-                  )}
-                  <button className="meeting-row" onClick={() => setOpenMeeting(m)}>
-                    <span>{m.title}</span>
-                    <span className="when">{formatWhen(m.startedAt)}</span>
-                  </button>
-                </div>
-              ))}
-            </div>
-            {picked.size >= 2 && (
-              <div className="row merge-bar">
-                {confirmMerge ? (
-                  <>
-                    <span className="warn">
-                      Fold {picked.size} into the earliest? This cannot be undone.
-                    </span>
-                    <button className="btn btn-sm btn-stop" onClick={merge}>
-                      Merge
-                    </button>
-                    <button className="btn btn-sm btn-ghost" onClick={() => setConfirmMerge(false)}>
-                      Cancel
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button className="btn btn-sm" onClick={() => setConfirmMerge(true)}>
-                      Merge {picked.size} meetings
-                    </button>
-                    <button
-                      className="btn btn-sm btn-ghost"
-                      onClick={() => setPicked(new Set())}
-                      title="Clear the selection"
-                    >
-                      Clear
-                    </button>
-                  </>
-                )}
-              </div>
-            )}
-            {mergeError && <p className="notice warn">{mergeError}</p>}
-            {mergeNotice && <p className="notice warn">{mergeNotice}</p>}
-          </section>
-        </aside>
+      <div className="segmented" role="tablist" aria-label="Job details">
+        {TABS.map((name, index) => (
+          <button
+            key={name}
+            id={`job-tab-${name}`}
+            role="tab"
+            className={tab === name ? 'active' : ''}
+            aria-selected={tab === name}
+            aria-controls={`job-panel-${name}`}
+            tabIndex={tab === name ? 0 : -1}
+            onClick={() => setTab(name)}
+            onKeyDown={(event) => {
+              const next =
+                event.key === 'ArrowRight'
+                  ? (index + 1) % TABS.length
+                  : event.key === 'ArrowLeft'
+                    ? (index + TABS.length - 1) % TABS.length
+                    : event.key === 'Home'
+                      ? 0
+                      : event.key === 'End'
+                        ? TABS.length - 1
+                        : null
+              if (next === null) return
+              event.preventDefault()
+              setTab(TABS[next])
+              document.getElementById(`job-tab-${TABS[next]}`)?.focus()
+            }}
+          >
+            {name}
+          </button>
+        ))}
       </div>
+      {/* Keep local editor/import drafts mounted while another tab is visible. */}
+      {TABS.map((name) => (
+        <div
+          key={name}
+          id={`job-panel-${name}`}
+          role="tabpanel"
+          aria-labelledby={`job-tab-${name}`}
+          hidden={tab !== name}
+          tabIndex={0}
+          className="job-tab-panel"
+        >
+          {name === 'Overview' && <JobOverview job={job} setJob={setJob} />}
+          {name === 'Presentation' && <PresentationEditor key={jobId} jobId={jobId} />}
+          {name === 'Email' && <JobEmail job={job} setJob={setJob} />}
+          {name === 'Meetings' && (
+            <JobMeetings
+              jobId={jobId}
+              meetings={meetings}
+              setMeetings={setMeetings}
+              setOpenMeeting={setOpenMeeting}
+            />
+          )}
+        </div>
+      ))}
     </div>
   )
 }

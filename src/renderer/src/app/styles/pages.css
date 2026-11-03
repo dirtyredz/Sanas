@@ -593,3 +593,7 @@
   display: grid;
   gap: 14px;
 }
+
+.job-tab-panel {
+  margin-top: 18px;
+}
