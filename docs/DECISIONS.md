@@ -52,8 +52,10 @@ against a scripted rubric. First-visible retains the existing broadcast timing p
 Diagnosis follow-up (owner ruling): keep the existing ledger clearing and fail-closed policy.
 Five absent paid answers lack enough retained evidence to identify their suppression paths.
 Add correlated outcomes before considering policy changes; canned success is not paid acceptance.
-Initial answers must never invent the user's history: label missing-fact placeholders, target
-80 prose words with at most two supporting points, and give one runnable code replacement.
+Initial answers must never invent the user's history. Revised November 3: live factual
+verification uses a short clarification or "let me check" for missing specifics, never an
+affirmation followed by blanks. Labelled fill-in templates are for explicit preparation or
+More detail only. Notes hold verified biography even when a deck suppresses talking points.
 Detail remains expanded and grounded to its original source.
 
 Owner decision, from the rapid-qa rehearsal: with 8 back-to-back questions the ambient lane

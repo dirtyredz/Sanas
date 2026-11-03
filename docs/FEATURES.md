@@ -131,3 +131,5 @@ library, Stop/Pause or End stops it. The tab shows question-by-question delivery
 word counts and missing-suggestion evidence, and past practice sessions with complete records.
 Practice is excluded from normal history/Search/Ask and auto-email, and cannot be merged.
 The retired `-Tier live` command points here. Scripted/audio harnesses remain gated.
+
+Interview context packs use Notes for verified candidate experience and provenance, Project scope for the target role, Company info for the client and Persona for delivery. The editor shows guidance and an empty-Notes cue. Live missing-fact replies clarify or defer checking; preparation and More detail may offer labelled templates. Fictional practice data is never candidate biography.
