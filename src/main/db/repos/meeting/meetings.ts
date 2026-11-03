@@ -1,8 +1,9 @@
 import { getDb } from '../../index'
 import type { Meeting } from '@shared/types'
+import { meetingColumns } from './meeting-columns'
 
 export interface MeetingRow {
-  interview_profile: string
+  interview_profile_used: number
   practice: number
   id: number
   job_id: number
@@ -30,7 +31,7 @@ export function toMeeting(r: MeetingRow): Meeting {
     id: r.id,
     jobId: r.job_id,
     practice: r.practice === 1,
-    interviewProfileUsed: !!r.interview_profile?.trim(),
+    interviewProfileUsed: r.interview_profile_used === 1,
     title: r.title,
     startedAt: r.started_at,
     endedAt: r.ended_at,
@@ -78,8 +79,9 @@ export function closeMeetingsAt(closures: MeetingClosure[]): number {
 }
 
 export function getMeeting(meetingId: number): Meeting | null {
-  const row = getDb().prepare(`SELECT * FROM meetings WHERE id = ?`).get(meetingId) as
-    MeetingRow | undefined
+  const row = getDb()
+    .prepare(`SELECT ${meetingColumns()} FROM meetings WHERE id = ?`)
+    .get(meetingId) as MeetingRow | undefined
   return row ? toMeeting(row) : null
 }
 
@@ -124,7 +126,9 @@ export function applyMerge(
 
 export function listMeetings(jobId: number): Meeting[] {
   const rows = getDb()
-    .prepare(`SELECT * FROM meetings WHERE job_id = ? AND practice = 0 ORDER BY started_at DESC`)
+    .prepare(
+      `SELECT ${meetingColumns()} FROM meetings WHERE job_id = ? AND practice = 0 ORDER BY started_at DESC`,
+    )
     .all(jobId) as MeetingRow[]
   return rows.map(toMeeting)
 }
@@ -149,7 +153,9 @@ export function deleteMeeting(meetingId: number): void {
  *  a meeting still running has no ended_at and is never returned. */
 export function listMeetingsEndedBefore(cutoff: string): Meeting[] {
   const rows = getDb()
-    .prepare(`SELECT * FROM meetings WHERE ended_at IS NOT NULL AND ended_at < ? ORDER BY ended_at`)
+    .prepare(
+      `SELECT ${meetingColumns()} FROM meetings WHERE ended_at IS NOT NULL AND ended_at < ? ORDER BY ended_at`,
+    )
     .all(cutoff) as MeetingRow[]
   return rows.map(toMeeting)
 }

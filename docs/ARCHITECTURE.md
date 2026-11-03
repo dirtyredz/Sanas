@@ -373,8 +373,8 @@ meeting; a trigger prevents updates. Old rows default empty.
 MeetingPrompts reads only that saved snapshot for ordinary and presentation bases, so
 Apply/deck changes, More detail and summaries cannot see later Settings edits. Resume facts
 precede profile facts; the profile block directs story selection and reserves marked filler
-for gaps. Both use shared delimiter escaping. Streaming stores snapshot hints in lifecycle
-state across pause/resume; batch re-diarization reads the snapshot from SQLite. Both call
+for gaps. Both use shared delimiter escaping. Streaming open/resume and batch
+re-diarization both read the snapshot through getMeetingGrounding. Both call
 meetingKeyterms; SttProvider retains budget enforcement. Meeting rows expose only a boolean
 interviewProfileUsed for history. Mock's noResume state field now means neither resume nor
 profile is present, including fetched and broadcast state.

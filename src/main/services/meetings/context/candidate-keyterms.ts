@@ -15,7 +15,7 @@ const technologies = new Set(
   ),
 )
 
-export function resumeKeyterms(text: string): string[] {
+export function candidateKeyterms(text: string): string[] {
   const words = text.match(/[\p{L}][\p{L}\p{N}]*(?:[.+#-][\p{L}\p{N}]+|[+#]+)*/gu) ?? []
   return [
     ...new Set(

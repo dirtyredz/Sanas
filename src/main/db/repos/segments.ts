@@ -2,6 +2,7 @@ import { getDb } from '../index'
 import type { Meeting, Segment, SearchMatch } from '@shared/types'
 import { MATCH_CLOSE, MATCH_OPEN } from '@shared/search-markers'
 import type { FtsMatch } from '../fts-query'
+import { meetingColumns } from './meeting/meeting-columns'
 import { toMeeting, type MeetingRow } from './meeting/meetings'
 
 export function listSegments(meetingId: number): Segment[] {
@@ -48,7 +49,7 @@ export function searchSegments(
   if (!match) return []
   const rows = getDb()
     .prepare(
-      `SELECT m.*, j.name AS job_name, s.id AS segment_id, s.t_start_ms AS t_start,
+      `SELECT ${meetingColumns('m')}, j.name AS job_name, s.id AS segment_id, s.t_start_ms AS t_start,
               snippet(segments_fts, 0, ?, ?, '…', 14) AS snippet
        FROM segments_fts f
        JOIN segments s ON s.id = f.rowid

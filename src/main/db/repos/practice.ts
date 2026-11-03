@@ -1,4 +1,5 @@
 import { getDb } from '../index'
+import { meetingColumns } from './meeting/meeting-columns'
 import { toMeeting, type MeetingRow } from './meeting/meetings'
 import type { MockResult, PracticeSession } from '@shared/mock-interview/types'
 
@@ -20,7 +21,7 @@ export function saveMockResult(result: MockResult): void {
 export function listPracticeSessions(): PracticeSession[] {
   const rows = getDb()
     .prepare(
-      `SELECT m.*, r.result FROM meetings m
+      `SELECT ${meetingColumns('m')}, r.result FROM meetings m
     LEFT JOIN mock_results r ON r.meeting_id = m.id
     WHERE m.practice = 1 ORDER BY m.started_at DESC, m.id DESC LIMIT 100`,
     )

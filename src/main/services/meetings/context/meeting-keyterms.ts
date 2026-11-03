@@ -1,6 +1,6 @@
 import type { MeetingGrounding } from '../../../db/repos/meeting/meeting-grounding'
 import { getGlossaryTerms } from '../../../db/repos/jobs'
-import { interleaveKeyterms, resumeKeyterms } from './resume/keyterms'
+import { interleaveKeyterms, candidateKeyterms } from './candidate-keyterms'
 
 /** The recognition hints for one meeting, streaming or batch: the job glossary plus names
  *  pulled from the meeting's immutable resume/profile, resume first within candidate hints. The STT provider applies its
@@ -12,8 +12,8 @@ export function meetingKeyterms(
   return interleaveKeyterms(
     getGlossaryTerms(jobId),
     interleaveKeyterms(
-      resumeKeyterms(grounding.interviewProfile),
-      resumeKeyterms(grounding.resume?.text ?? ''),
+      candidateKeyterms(grounding.interviewProfile),
+      candidateKeyterms(grounding.resume?.text ?? ''),
     ),
   )
 }

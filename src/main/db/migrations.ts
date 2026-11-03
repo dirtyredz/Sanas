@@ -1,4 +1,4 @@
-import { meetingInterviewProfileSchema } from './repos/meeting/meeting-interview-profile'
+import { meetingInterviewProfileSchema } from './repos/meeting/meeting-interview-profile-schema'
 import { meetingResumeSchema } from './repos/meeting/meeting-resume-schema'
 import { practiceSchema } from './repos/practice'
 import type { Database } from 'better-sqlite3'

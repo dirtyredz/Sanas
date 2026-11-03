@@ -10,9 +10,12 @@ export interface FillerPart {
   filler: boolean
 }
 
+const escapeRegExp = (text: string): string => text.replace(/[\\^$.*+?()[\]{}|-]/g, '\\$&')
+const MARKER_PATTERN = new RegExp(`[${escapeRegExp(FILLER_OPEN + FILLER_CLOSE)}]`, 'g')
+
 /** Plain text with the markers removed. Tolerates unbalanced or stray markers. */
 export function stripFillerMarkers(text: string): string {
-  return text.replace(/[⟨⟩]/g, '')
+  return text.replace(MARKER_PATTERN, '')
 }
 
 /** Splits text into plain and filler runs. An unclosed marker (a streaming prefix) makes the
