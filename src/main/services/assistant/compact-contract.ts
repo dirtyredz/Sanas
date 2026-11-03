@@ -6,10 +6,12 @@
 // output (an automatic suggestion may decline to say anything) and the list of headlines
 // already shown this meeting, which the model must not repeat or re-assert.
 
+export const INITIAL_ANSWER_DEPTH = `Initial answer depth (ambient and Answer now): infer the current ask's purpose from the transcript and explicit meeting context. For screening, experience, rate or availability checks, lead with one grounded sentence and at most one necessary qualifier; target 15-40 words. Technical nouns alone do not call for a design explanation. Include code only when implementation/code is requested or an exact artifact is essential to answer the ask. An incomplete ask needs a short clarification. Token budgets are ceilings, not length targets; reserve expansion for More detail.`
+
 export const COMPACT_CONTRACT = `Format for a small live-meeting overlay (follow exactly):
 - Line 1 is one bold headline, written as **text**, at most about 20 words. It must contain
   the thing to say or the answer, not a label.
-- Optionally include ONE fenced code block after it. Keep it minimal, runnable, and at most
+- Only when the ask requests implementation or requires an exact artifact, include ONE fenced code block after it. Keep it minimal, runnable, and at most
   25 lines. Give one runnable minimal replacement. Alternatives belong in prose or must be
   commented out; never redeclare the same binding in a runnable block.
 - Optionally include at most 2 short follow-up lines after the headline or code.

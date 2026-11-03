@@ -578,3 +578,7 @@ keys are cleared on normal teardown. A hard kill can leave private credentials i
 ## 2026-11-03 ? Presentation is a per-meeting opt-in
 
 Owner decision supersedes October 30 automatic activation: Use presentation deck defaults off at every Start, even for a remembered job with slides. Apply can deliberately add slides later. Selected presentation position is relevant only to deck discussion; off-topic coaching declines. Live and paused meetings cannot be filed under another job. Historical filing preserves saved answer grounding. Source-job provenance migration is deferred in dk-b7dedbdd.
+
+## 2026-11-03 - Proportional initial answer depth
+
+Ambient and hotkey initial answers share the screening/experience/rate/availability 15-40-word rule. Code is for requested implementation or essential exact artifacts. This refines the November 2 80-word ceiling; it is not a length target. More detail is unchanged.

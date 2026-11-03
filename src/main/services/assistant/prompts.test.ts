@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+﻿import { describe, expect, it } from 'vitest'
 import {
   assistProfile,
   buildSummaryPrompt,
@@ -89,12 +89,12 @@ describe('whisper prompt modes', () => {
 
   it('includes recently shown suggestions so automatic answers do not repeat them', () => {
     const recent = [
-      'I’ll verify AS9 writeback in sandbox after the catalog change; report back.',
+      'Iâ€™ll verify AS9 writeback in sandbox after the catalog change; report back.',
       'Ask which context window the catalog lists.',
     ]
     const prompt = buildUserContent(window, 'ambient', 'smart', { recent })
     expect(prompt).toContain(
-      '- I’ll verify AS9 writeback in sandbox after the catalog change; report back.\n- Ask which context window the catalog lists.',
+      '- Iâ€™ll verify AS9 writeback in sandbox after the catalog change; report back.\n- Ask which context window the catalog lists.',
     )
     expect(prompt).toContain('Do not repeat or re-assert these.')
     expect(prompt).toContain('output exactly <none>')
@@ -128,7 +128,9 @@ describe('whisper prompt modes', () => {
   it('always includes the compact output contract', () => {
     const prompt = buildUserContent(window, 'ambient', 'smart')
     expect(prompt).toContain('Line 1 is one bold headline')
-    expect(prompt).toContain('Optionally include ONE fenced code block')
+    expect(prompt).toContain(
+      'Only when the ask requests implementation or requires an exact artifact',
+    )
     expect(prompt).toContain('at most 2 short follow-up lines')
     expect(prompt).toContain('No headings, bullet walls, preamble')
   })

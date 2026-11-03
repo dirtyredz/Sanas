@@ -133,3 +133,5 @@ Practice is excluded from normal history/Search/Ask and auto-email, and cannot b
 The retired `-Tier live` command points here. Scripted/audio harnesses remain gated.
 
 Interview context packs use Notes for verified candidate experience and provenance, Project scope for the target role, Company info for the client and Persona for delivery. The editor shows guidance and an empty-Notes cue. Live missing-fact replies clarify or defer checking; preparation and More detail may offer labelled templates. Fictional practice data is never candidate biography.
+
+Initial answers in both automatic and Answer now lanes match the ask: screening, experience, rate and availability checks target 15-40 grounded words. Technical nouns alone do not invite code; implementation requests or essential exact artifacts can. Answer now selects immediate assistance and model capacity, not mandatory elaboration. More detail retains source grounding and its expansion contract.

@@ -4,7 +4,12 @@ import {
   type FormattableLine,
   type SpeakerNames,
 } from '../turns/transcript-format'
-import { COMPACT_CONTRACT, NO_SUGGESTION, recentSuggestionsBlock } from './compact-contract'
+import {
+  COMPACT_CONTRACT,
+  INITIAL_ANSWER_DEPTH,
+  NO_SUGGESTION,
+  recentSuggestionsBlock,
+} from './compact-contract'
 import { boundedExcerpt } from './excerpt'
 import type { ResponseKind } from './classifier'
 
@@ -148,16 +153,15 @@ export function buildUserContent(
   const recent = opts.recent ? `\n\n${recentSuggestionsBlock(opts.recent)}` : ''
   const profile = assistProfile(trigger, mode)
   const ask = {
-    full: `Give the actual answer to the current ask. Be complete enough to use immediately.
-If code, a query, command, formula, or other exact artifact is useful, include it.`,
+    full: `Give the actual answer to the current ask, with depth proportional to its purpose.`,
     smart: `Decide whether the current moment contains a concrete ask for code, a query,
 command, number, definition, or formula. If it does, give the actual answer and include the
-minimal exact artifact when useful. Otherwise give one short, speakable line for the user.`,
+minimal exact artifact only when requested or essential to answer it. Otherwise give one short, speakable line for the user.`,
     points: `Give only a short speakable line or at most two compact supporting points.
 Coach the user toward an answer; do not expand into a full answer or code solution.`,
   }[profile.kind]
 
-  return `Rolling transcript (most recent last):\n\n${transcript}${focus}\n\n---\n${ask}${recent}\n\n${COMPACT_CONTRACT}`
+  return `Rolling transcript (most recent last):\n\n${transcript}${focus}\n\n---\n${ask}${recent}\n\n${INITIAL_ANSWER_DEPTH}\n\n${COMPACT_CONTRACT}`
 }
 
 /** Ask-your-history: answers come from excerpts only, with citations. */

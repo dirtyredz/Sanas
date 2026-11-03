@@ -67,3 +67,25 @@ describe('presentation request lanes', () => {
     expect(req.userContent).not.toContain('mutated')
   })
 })
+
+it.each(['points', 'smart', 'full'] as const)(
+  'uses proportionate initial depth in both lanes in %s mode',
+  (whisperMode) => {
+    for (const lane of ['ambient', 'hotkey'] as const) {
+      for (const text of [
+        'They want three to four subgraphs. I had about five.',
+        'Can you implement a linked list in JavaScript?',
+        'Did you use the unclear technology?',
+      ]) {
+        const snap = snapshot()
+        snap.window = [{ speaker: 1, isUser: false, text }]
+        const request = answerRequest(snap, { ...settings, whisperMode }, lane)
+        expect(request.userContent).toContain('15-40 words')
+        expect(request.userContent).toContain('Technical nouns alone')
+        expect(request.userContent).toContain('only when implementation/code is requested')
+        expect(request.userContent).not.toContain('artifact is useful')
+        expect(request.userContent).not.toContain('artifact when useful')
+      }
+    }
+  },
+)
