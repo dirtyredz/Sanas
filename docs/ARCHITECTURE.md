@@ -224,13 +224,14 @@ objection | none`. It **fails closed**: timeout, cancel, malformed output or pro
   after launch and every 6 h; Settings shows what is past its limit and can run it now.
   Live meetings are never touched. Deleting a meeting by hand goes through the same
   `removeMeeting` (file + row).
-- Schema (current v10: v1 base, v2 `speakers`, v3 `jobs.summary_email`, v4 `segments_fts`, v5 `suggestions.purpose`, v6 presentation, v7 live context/grounding, v8 practice/results, v9 `meetings.resume_name`/`resume_text` with an immutability trigger, v10 immutable meetings.interview_profile; later tables described below):
+- Schema (current v11: v1 base, v2 `speakers`, v3 `jobs.summary_email`, v4 `segments_fts`, v5 `suggestions.purpose`, v6 presentation, v7 live context/grounding, v8 practice/results, v9 `meetings.resume_name`/`resume_text` with an immutability trigger, v10 immutable meetings.interview_profile, v11 `job_resumes`; later tables described below):
 
 ```
 jobs        (id, name, company_info, project_scope, notes,
              talking_points, persona, created_at, archived,
              summary_email)                 -- per-job recipient (v3)
 glossary    (id, job_id, term, note)
+job_resumes (job_id PK, name, text)          -- saved job resume, copied at Start (v11)
 meetings    (id, job_id, title, started_at, ended_at,
              audio_path, summary, action_items, practice)
 segments    (id, meeting_id, t_start_ms, t_end_ms, speaker,
@@ -369,27 +370,37 @@ and outcomes, not transcript or credentials. See [REHEARSAL.md](REHEARSAL.md).
 
 Presentation activation is independent of assistance-job selection. Start passes a validated opt-in boolean; the repository snapshots slides and creates the initial event only when selected. History filing goes through meetings/status/filing.ts, which rejects the current live or paused meeting without rebinding context.
 
-## Meeting resumes (v9)
+## Resumes: saved on the job (v11), snapshotted on the meeting (v9)
 
-Live and Mock setup share `MeetingResumeInput` and the native resume-import IPC.
-Mock Start validates its optional attachment at ingress and passes it through the normal
-meeting service and `StartRequest`. Live state exposes a small `noResume` cue for
-practice sessions without attachments; no resume text enters status broadcasts.
+The job owns the editable resume: `job_resumes` (v11, one optional row per job, cascades with
+the job) via `db/repos/job/job-resume.ts`. The Jobs page's Resume tab (`app/jobs/JobResume.tsx`)
+reads and writes it through `jobs.getResume(jobId)` / `jobs.setResume(jobId, resume | null)`
+(`ipc/job-resume/`, validated by `validateResume`, returns the normalized stored value) and
+imports drafts through `jobs.importResume()`. The full text never rides on `jobs.list()` or any
+meeting/status broadcast; Live only asks `getResume` for availability (Interview default).
 
-Start sends an optional text/name attachment over typed IPC; main validates it once, at IPC ingress, and passes it down as part of `StartRequest`. The service resolves the Interview profile from Settings and hands `createMeeting` (`db/repos/meeting/meeting-create.ts`) a main-built `MeetingCreateInput`; it stores `resume_name` and `resume_text` in the same transaction as the deck copy. The resume and profile snapshots are read back only through `getMeetingGrounding(id)` (`{ resume, interviewProfile, hasBiography }`), never on list rows; STT hints, candidate facts, re-diarize, the merge guard, the `noResume` cue and the prompt block all go through it. The append-only v9 migration uses the existing pre-upgrade SQLite backup flow. A database trigger rejects changes to these fields; job filing leaves them intact. Resume-bearing merges are refused to avoid losing or misattributing candidate facts.
+Start carries no resume. `meeting.start(jobId, channels, usePresentationDeck, interview?)` and
+`mockInterview.start(plan, jobId, channels)` both reach `startMeeting`, which, inside the
+serialized Start and with no await before `createMeeting`, calls
+`resolveStartGrounding` (`services/meetings/context/start-grounding.ts`): the selected job's
+saved resume (none when no job was chosen, resolved before `ensureDefaultJob()` supplies the
+Unsorted bucket) and the Interview profile (`practice || (interview ?? hasSavedResume)`).
+Live state exposes a small `noResume` cue for practice sessions with neither resume nor profile.
+
+The meeting snapshot: the service hands `createMeeting` (`db/repos/meeting/meeting-create.ts`) a main-built `MeetingCreateInput`; it stores `resume_name` and `resume_text` in the same transaction as the deck copy. The resume and profile snapshots are read back only through `getMeetingGrounding(id)` (`{ resume, interviewProfile, hasBiography }`), never on list rows; STT hints, candidate facts, re-diarize, the merge guard, the `noResume` cue and the prompt block all go through it. The append-only v9 migration uses the existing pre-upgrade SQLite backup flow. A database trigger rejects changes to these fields; job filing leaves them intact. Resume-bearing merges are refused to avoid losing or misattributing candidate facts.
 
 `MeetingPrompts` reads the saved resume at Start, escapes markup and appends a delimited candidate-facts block to both ordinary and presentation bases. It is independent of talking-point suppression and is captured in immutable grounding rows for More detail. Summary regeneration includes it as background, never transcript evidence. It is not added to FTS.
 
 Capitalized names, acronyms, mixed-case technology and a small lowercase technology vocabulary become STT hints. Resume terms alternate with job glossary terms, deduplicate case-insensitively and respect conservative count/length/byte limits. Streaming start/resume and batch transcription use `SttProvider`; no new provider or network path exists.
 
-Resume file import: Start invokes a parameterless typed IPC picker. Main reads at most 5 MB plus one sentinel byte, parses PDF/DOCX locally, applies the existing text validation, and returns only the basename and text. Cancellation/errors preserve the draft. The source file is never copied into storage; successful Start uses the same immutable attachment flow as pasted text.
+Resume file import: the job Resume tab invokes a parameterless typed IPC picker (`jobs.importResume`). Main reads at most 5 MB plus one sentinel byte, parses PDF/DOCX locally, applies the existing text validation, and returns only the basename and text as an unsaved draft. Cancellation/errors preserve the draft. The source file is never copied into storage; Save resume stores the same name/text shape as pasted text.
 
 ## Interview profile lifecycle
 
 Settings owns the editable, local interviewProfile string. Typed Settings IPC validates its
-40,000-character limit. Live Start passes an optional Interview choice beside the existing
-resume and deck arguments; main resolves it once (explicit false wins over the resume
-default, practice always wins) before creating the meeting. Work meetings capture an empty
+40,000-character limit. Live Start passes an optional Interview choice beside the deck
+argument; main resolves it once (explicit false wins over the saved-job-resume default,
+practice always wins) before creating the meeting. Work meetings capture an empty
 string. Schema v10 inserts the profile snapshot in the same transaction as the resume and
 meeting; a trigger prevents updates. Old rows default empty.
 

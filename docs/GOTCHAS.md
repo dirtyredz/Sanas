@@ -553,12 +553,23 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
 
 - Re-diarization regression tests use migrated in-memory SQLite and the real batch service/repositories: empty batches preserve rows; insert/name failures roll back deletion; a 22-row replacement commits atomically. These establish ordinary transaction behavior, not recovery of a corrupt reconstructed DB or completeness of a nonempty provider batch.
 
-## Per-meeting candidate facts
+## Candidate facts (job resume → meeting snapshot)
 
-- Mock Start has its own IPC path: it must validate and forward the resume through
-  `StartRequest`, just like ordinary Start. Reuse `MeetingResumeInput`; do not
-  build another importer. The practice-only “No resume” cue describes attachment absence,
-  not whether arbitrary job notes contain biography. Keep it on both fetched and broadcast
+- The resume is saved on the job and only an explicit **Save resume** stores it; the job
+  header's Save does not. Import is a draft. Never read `job_resumes` for a running or past
+  meeting: prompts, summaries, STT (streaming, reconnect, batch), history, More detail and the
+  merge guard read the meeting snapshot through `getMeetingGrounding` only.
+- Start resolves the job resume in main (`resolveStartGrounding`) with no await before
+  `createMeeting`, so the snapshot is exactly what was saved at Start. No job selected
+  (Unsorted) resolves to no resume **before** `ensureDefaultJob()`; do not reorder that, or
+  the bucket job's saved resume would leak into Unsorted calls. Mock reaches the same path;
+  neither Start accepts a renderer resume any more.
+- Live is always mounted. Its "job has a resume" flag is re-read when the page is shown again
+  (`useJobHasResume`), and only counts for the job it was read for, so a resume saved on the
+  Jobs page counts on return and a stale reply cannot flip a newer selection. The Interview
+  override resets on job change and after a successful Start, never on a same-job refresh.
+- The practice-only “No resume or profile” cue means both meeting snapshots are empty, not
+  whether arbitrary job notes contain biography. Keep it on both fetched and broadcast
   meeting state across pause/resume, and clear it for the next ordinary meeting.
 - Open behavioural stories need the 80-word compact allowance, not the screening
   15–40-word target. Missing biography must produce a plausible answer with ⟨…⟩-marked filler, not a
@@ -568,7 +579,7 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   (`stripFillerMarkers` in `src/shared/filler-marker.ts`): export, remembered headlines, any new
   copy/summary path. Rendering goes through `FillerText`; never show the raw characters.
 
-- Resume drafts must clear only after successful Start; do not put them in localStorage or settings. The saved attachment is immutable, even if the meeting is later filed under another job.
+- Resume drafts never go in localStorage or settings. The meeting's copy is immutable, even if the job's resume is later edited or removed, or the meeting is filed under another job.
 - Both ordinary and presentation prompt bases need the same resume block. Adding/clearing a deck must never remove candidate facts or reread a changed attachment. Escape markup before surrounding resume text with delimiters; framing mitigates injection but cannot guarantee model behavior.
 - Merge rejects resume-bearing meetings so candidate identity/history is not silently discarded. Resume content is background for summaries, not evidence that the candidate spoke those facts.
 - STT hints are heuristic, bounded and potentially incomplete. A glossary and resume together must stay within the provider budget, including after pause/resume and batch re-diarization.
@@ -580,15 +591,17 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
 - The editable Settings value is not live grounding. Resolve it once in main at Start and read
   the meeting snapshot thereafter, including summary regeneration and batch transcription.
   Mock always applies it; explicit Live Interview=false must win even with a resume. Omitted
-  choices default to resume presence. Never infer interview intent from a job name or notes.
+  choices default to the job's saved-resume presence at Start. Never infer interview intent
+  from a job name or notes.
 - The legacy noResume IPC field now means a practice meeting has neither resume nor profile.
   The cue reads “No resume or profile”; whitespace-only profiles count as empty. Settings edits
   during practice cannot change the cue or STT hints. Ordinary meetings have no cue.
 - Escape profile delimiters with the same function as resume data. Include it in both prompt
   variants and persisted grounding, or deck changes/More detail will lose the story. Prompt
   assertions prove wiring and instructions only, not model quality or injection resistance.
-- v10 adds an immutable profile column. Disposable migration tests that reconstruct v7/v8/v9
-  from the latest schema must remove the v10 trigger and column before rerunning migrations.
+- v10 adds an immutable profile column and v11 the `job_resumes` table. Disposable migration
+  tests that reconstruct v7/v8/v9/v10 from the latest schema must drop `job_resumes` and the v10
+  trigger and column before rerunning migrations.
 - Hint normalization must use /\s+/ (whitespace), not /s+/: the latter silently corrupts
   employer and technology names. Profile hints share the corrected resume/glossary helper.
 - Short-output model calls never think: `claude.ts` turns thinking off whenever `maxTokens <= 500` (`SHORT_BUDGET_MAX_TOKENS`, module-private; classifier 64, points 220, coach 220, interviewer 220, smart 500; full answers at 1200 keep the model default). The rule lives only in the provider; callers do nothing. **The off value is per model and the API 400s on the wrong one** (live probes 2026-11-03): Haiku 5.5 takes `{type:'disabled'}` (`between_tools` 400s); Sonnet 5.5 takes `{type:'between_tools'}` plus `output_config.effort` (`disabled` 400s; effort alone still emits a thinking block); Opus 5.5 rejects both ("use thinking.type.adaptive and output_config.effort"), so it gets no thinking param; unknown/custom ids get none. A wrong value fails every automatic answer. Haiku 5.5 sometimes emits a thinking block first, spends the whole budget on it, and returns no text (stop_reason max_tokens); the provider throws `TokenBudgetError` with no HTTP status, so every classification failed closed and automatic answers stayed suspended while Answer now (large budget) still worked. Diagnostics now log `errorName` and a `connection` category.

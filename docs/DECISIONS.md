@@ -2,6 +2,35 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-11-04 — The resume lives on the job (owner reversal)
+
+Owner ruling: one job per interview, so the resume belongs to the job, not to each Start.
+Supersedes the ownership part of 2026-11-03 "Immutable per-meeting candidate facts" (a draft
+attached at every Start, including Unsorted). Plan: `docs/plans/job-resume.md`.
+
+- **Saved per job.** Schema v11 `job_resumes` (one optional row per job: display name + extracted
+  text, never the binary or path). Edited on the job's own **Resume** tab with an explicit
+  **Save resume**, like Presentation; the header Save does not cover it. No row = no resume.
+- **Snapshotted at Start.** Main reads the selected job's saved resume inside serialized Start
+  (`context/start-grounding.ts`) and copies it onto the meeting through the unchanged v9 columns
+  and immutability trigger. Editing or removing the job's resume affects only later meetings;
+  live, paused and past meetings keep theirs. Live and Mock share this path; neither Start
+  accepts an attachment any more.
+- **Unsorted gets none.** Starting with no job resolves the resume to null before the fallback
+  bucket job is supplied. (Explicitly choosing a stored job named "Unsorted" is ordinary job
+  selection; the Live picker hides that row.)
+- **Interview default.** Live's checkbox defaults on when the selected job has a saved resume;
+  an explicit choice wins and is sent; an untouched box sends nothing and main decides from what
+  is saved at Start. Mock always applies the profile. Precedence (resume, then profile) unchanged.
+- **Assumed defaults (plan §7):** no backfill from past meetings into jobs; Mock uses the saved job
+  resume with no per-session override.
+- Kept from 2026-11-03: immutable meeting snapshots, merge refusal, untrusted-data framing,
+  local-only privacy, deterministic STT hints, offline PDF/DOCX import (now a draft on the Resume
+  tab).
+- Rejected: reading the job's resume live during a meeting (history and grounding would change
+  under the user); a reusable resume library (one job per interview makes it unnecessary);
+  auto-saving on import (an import is a draft until saved).
+
 ## 2026-11-04 — The mock interviewer waits for the candidate's answer
 
 Owner report (v0.1.13): "the mock interview is moving too fast". Silence was measured from the end
@@ -62,7 +91,8 @@ Strengths and weaknesses, Why I'm looking, Rate and availability, and Anything e
 Only main's Start path selects the saved text. Mock always applies it. Live's Interview
 checkbox defaults off, turns on when a resume is attached, and permits an explicit off
 override. Editing an existing attachment preserves that override; a new import enables
-it again. Successful Start resets the draft toggle. Ordinary work meetings receive no
+it again. Successful Start resets the draft toggle. _(Since 2026-11-04 the default follows
+the selected job's saved resume; see that entry.)_ Ordinary work meetings receive no
 profile. An omitted service option defaults to resume presence for older Start callers.
 
 Schema v10 stores the selected text with the meeting in the creation transaction and
@@ -704,6 +734,9 @@ Owner decision supersedes October 30 automatic activation: Use presentation deck
 Ambient and hotkey initial answers share the screening/experience/rate/availability 15-40-word rule. Code is for requested implementation or essential exact artifacts. This refines the November 2 80-word ceiling; it is not a length target. More detail is unchanged.
 
 ## 2026-11-03 ? Immutable per-meeting candidate facts
+
+_Ownership superseded 2026-11-04: the resume is saved on the job and snapshotted at Start;
+Unsorted calls get none. The snapshot, privacy, framing and hint rules below still hold._
 
 Resumes belong to individual applications/calls, including Unsorted meetings. Store text and a display name with the meeting, never a binary or source path. Validate a 40,000-character limit in main and reject empty text. Freeze the attachment at creation, with an append-only v9 migration and the existing backup-before-upgrade flow; reject merges containing resumes until a provenance-preserving design exists.
 

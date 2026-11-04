@@ -120,10 +120,10 @@ Claude concept checks from shared screen-delivery checks.
 
 ## Mock interview
 
-Setup offers the shared **Resume for this meeting** input: paste text or import PDF/DOCX.
-The attachment is validated and saved with the practice meeting, and its draft clears only
-after successful Start. A practice meeting without an attachment shows **No resume** in
-the overlay status. Open behavioural answers are instructed to name a concrete project from candidate facts
+Setup has no resume input: the practice meeting snapshots the selected job's saved resume
+(Jobs → job → **Resume**) at Start, with no per-session override. A practice meeting with
+neither a resume nor an Interview profile shows **No resume or profile** in the overlay
+status. Open behavioural answers are instructed to name a concrete project from candidate facts
 (or plausible marked filler when there are none), with compact problem/action/result support.
 
 Implemented; real-device/provider acceptance remains owner-only. Choose **Job interview**
@@ -144,11 +144,21 @@ Interview context packs use Notes for verified candidate experience and provenan
 
 Initial answers in both automatic and Answer now lanes match the ask: screening, experience, rate and availability checks target 15-40 grounded words. Technical nouns alone do not invite code; implementation requests or essential exact artifacts can. Answer now selects immediate assistance and model capacity, not mandatory elaboration. More detail retains source grounding and its expansion contract.
 
-## Resume for this meeting
+## Job resume — implemented
 
-Start accepts an optional PDF/DOCX file (up to 5 MB) or pasted resume text independently of the job and presentation toggle, including Unsorted calls. The draft shows its name, character count and preview, can be removed, and clears after a successful Start. Empty or over-40,000-character drafts cannot start. Saved text is read-only in meeting history.
+Each job has an optional saved resume on its **Resume** tab (after Overview): paste text or
+import a PDF/DOCX (up to 5 MB), name it, see the character count and a preview, replace or
+remove it, then **Save resume** (its own button, like Presentation; the header Save does not
+cover it). Import and edits are a draft until saved; a cancelled or failed import, or a failed
+save, keeps the draft. Empty or over-40,000-character drafts cannot be saved. One job per
+interview: the resume belongs to the job, not to each Start.
 
-Candidate facts ground answers with or without slides, survive later deck changes and More detail replay, and supply deterministic terminology hints such as Camunda to transcription. Resumes belong to one meeting; they are not remembered for the next call or shared as a reusable library. The native file picker extracts text offline in main, shows the file name, and keeps the existing draft on cancellation or failure. Start and edits wait for import to finish. Empty/scanned PDFs ask the user to paste text; extracted text uses the same 40,000-character validation. No source binary or path is saved.
+Every new Live or Mock meeting for that job copies the saved resume at Start. Live and Mock
+setup have no resume input. Unsorted (no job) meetings start without one. Later edits or
+removal change only future meetings; the meeting's copy is read-only in history, including
+meetings recorded before job resumes existed. Past meetings are not copied into jobs.
+
+Candidate facts ground answers with or without slides, survive later deck changes and More detail replay, and supply deterministic terminology hints such as Camunda to transcription. The native file picker extracts text offline in main and shows the file name. Empty/scanned PDFs ask the user to paste text. No source binary or path is saved.
 
 ## Interview profile — implemented
 
@@ -157,10 +167,11 @@ Go-to stories (problem / what I did / result), Strengths and weaknesses, Why I'm
 Rate and availability, and Anything else. Save once, then edit when your experience changes.
 
 Mock interview always uses the saved profile. Live Start has an Interview checkbox beside
-the deck checkbox: attaching/importing a resume enables it, and you can switch it off.
+the deck checkbox: it defaults on when the selected job has a saved resume (off for
+Unsorted), and your explicit choice wins; choosing another job resets it to that job's default.
 Ordinary work meetings do not receive the profile. Each applicable Start saves an immutable
 snapshot; later profile edits do not change past meetings. History shows when one was used.
-Per-meeting resume facts win over general profile stories, and marked plausible filler fills
+The meeting's resume facts win over general profile stories, and marked plausible filler fills
 remaining gaps. Employer and technology terms also feed transcription hints. Practice shows
 “No resume or profile” only when both are empty. Deterministic wiring is tested; model-backed
 quality is NOT VERIFIED.
