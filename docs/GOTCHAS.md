@@ -579,7 +579,7 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   (`stripFillerMarkers` in `src/shared/filler-marker.ts`): export, remembered headlines, any new
   copy/summary path. Rendering goes through `FillerText`; never show the raw characters.
 
-- Resume drafts never go in localStorage or settings. The meeting's copy is immutable, even if the job's resume is later edited or removed, or removed. Filing the meeting under a _different_ job is the one exception: it clears the resume and profile snapshot (`moveMeetingToJob`, guarded by `meeting_snapshot_clear`; v12 triggers). Never UPDATE those columns anywhere else.
+- Resume drafts never go in localStorage or settings. The meeting's copy is immutable, even if the job's resume is later edited or removed. Filing the meeting under a _different_ job is the one exception: it clears the resume and profile snapshot (`moveMeetingToJob`, guarded by `meeting_snapshot_clear`; v12 triggers). Never UPDATE those columns anywhere else.
 - Both ordinary and presentation prompt bases need the same resume block. Adding/clearing a deck must never remove candidate facts or reread a changed attachment. Escape markup before surrounding resume text with delimiters; framing mitigates injection but cannot guarantee model behavior.
 - Merge rejects resume-bearing meetings so candidate identity/history is not silently discarded (moving a meeting to another job removes its snapshots, which unblocks merging). Resume content is background for summaries, not evidence that the candidate spoke those facts.
 - STT hints are heuristic, bounded and potentially incomplete. A glossary and resume together must stay within the provider budget, including after pause/resume and batch re-diarization.
