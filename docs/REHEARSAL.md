@@ -42,7 +42,7 @@ Do not subsequently launch an older schema build against the upgraded profile.
 2. Choose Job interview or Client Q&A and the job whose context should ground Sanas.
 3. Use headphones and press Start. Real mic + system audio start automatically; mono fallback
    is refused. A separate interviewer window opens, speaks a question and shows its caption.
-4. Answer aloud and pause. Finals plus 2.5 seconds without owner activity allow a follow-up
+4. Answer aloud and pause. Once you have started speaking, 4 seconds without candidate speech allow a follow-up
    or next topic. The interviewer never sees Sanas's suggestions. Invalid/failed generation
    uses the next planned question. Use the overlay for suggestions and real Screen capture;
    position the overlay on the same display as the interviewer for screen questions.

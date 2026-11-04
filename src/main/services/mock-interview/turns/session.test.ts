@@ -90,7 +90,7 @@ it('starts normal capture once, persists only final conversation evidence, share
   f.final(false, 'When can we ship?')
   f.final(true, 'interim only', false)
   await vi.advanceTimersByTimeAsync(1000)
-  expect(f.session.state().caption).toBe('When can we ship?')
+  expect(f.session.state().caption).toBe('Why Friday?') // interim user speech starts the answer
   f.final(true, 'Friday.')
   await vi.advanceTimersByTimeAsync(500)
   expect(f.session.state().share).toBe('data:dashboard')

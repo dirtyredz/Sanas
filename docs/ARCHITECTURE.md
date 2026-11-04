@@ -18,8 +18,7 @@ A separate interviewer BrowserWindow shows persona, captions, speaking/listening
 status, shares and controls. Local-only speechSynthesis plays through default output, acknowledged
 by that window with a bounded deadline; no PowerShell child. The window receives only mock state,
 never transcript/suggestion broadcasts. The interviewer AssistantProvider consumer receives an
-explicit projection of plan + finalized conversation, never Sanas answers. Interims/VAD only
-postpone owner silence; calls have deadlines, bounded follow-ups and planned-question fallback.
+explicit projection of plan + finalized conversation, never Sanas answers. Silence only counts after the candidate (user role) has spoken (`turns/answer-wait.ts`): 4 s then advances; one 30 s idle prompt if they never start. VAD alone extends but never starts an answer; calls have deadlines, bounded follow-ups and planned-question fallback.
 
 Optional main-only meeting/run/assistance subscriptions collect outcome evidence without changing
 admission policy. Shared pure outcome code correlates automatic requests by recognized audio spans.

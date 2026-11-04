@@ -162,7 +162,7 @@ sanas/
 - `scripts/rehearsal/fixtures/` — rehearsal-only slide and standup screens.
 - `src/main/services/platform/` — email, updates, retention and global-hotkey integrations.
 - `src/main/services/turns/transcript-format.ts` — canonical main-side transcript labels/windowing.
-- `src/main/services/mock-interview/turns/` — interviewer consumer, serialized engine and session lifecycle.
+- `src/main/services/mock-interview/turns/` — interviewer consumer, serialized engine, `answer-wait.ts` (candidate-answer silence/idle-prompt clock) and session lifecycle.
 - `src/main/services/mock-interview/plans/` — bundled JSON validated by pure validatePlan in the production catalog.
 - `src/main/services/mock-interview/fixtures/` — canonical screen PNGs shared by product and rehearsal scenarios.
 - `src/main/services/mock-interview/shortcuts.ts` — mock-only shortcut registration/release.

@@ -2,6 +2,20 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-11-04 — The mock interviewer waits for the candidate's answer
+
+Owner report (v0.1.13): "the mock interview is moving too fast". Silence was measured from the end
+of the question, so reading a suggestion or thinking got cut off.
+
+- **Silence counts only after the candidate has spoken** (user-role interim or final text; raw mic
+  VAD only extends an answer, never starts one; interviewer speech never counts). Then 4000 ms of
+  candidate silence (`silenceMs` in both live plans, was 2500) advances.
+- **Safety net:** if the candidate never speaks, one gentle spoken prompt after 30 s ("Take your
+  time — whenever you are ready."), not a transcript turn; Skip (Ctrl+Alt+Right) and the plan's
+  duration limit still apply.
+- Rejected: counting silence from the end of the question with a longer value (still cuts off
+  thinkers); repeating the prompt (nagging).
+
 ## 2026-11-04 — Speculative answers and a 150 ms turn grace (answer latency)
 
 The owner found automatic answers slow. The path was serial: endpoint + 350 ms grace + Haiku

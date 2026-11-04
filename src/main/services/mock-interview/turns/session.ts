@@ -160,7 +160,7 @@ export class MockSession {
             t.tEndMs,
           )
         this.persist()
-      } else if (t.isUser) this.engine.activity()
+      } else if (t.isUser) this.engine.candidateSpeech()
     }
   }
   skip(): void {

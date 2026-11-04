@@ -4,7 +4,7 @@
   "name": "Job interview",
   "persona": "You are a friendly but rigorous senior engineering interviewer. Explore the candidate's own experience, technical reasoning, and communication. Ask about evidence and tradeoffs. Never invent their history or provide a solution. Use the ordered questions and at most the allowed short follow-ups.",
   "durationMs": 900000,
-  "silenceMs": 2500,
+  "silenceMs": 4000,
   "topics": [
     {
       "id": "introduction",

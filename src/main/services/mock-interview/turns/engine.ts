@@ -1,4 +1,5 @@
 import type { LivePlan } from '../plan'
+import { AnswerWait, IDLE_PROMPT_TEXT } from './answer-wait'
 import { interviewRequest, type Interviewer, type ConversationFinal } from './interviewer'
 
 export interface LiveTurn {
@@ -29,8 +30,7 @@ export class LiveEngine {
   private index = -1
   private followUps = 0
   private started = 0
-  private lastOwnerActivity = 0
-  private ownerFinal = false
+  private wait = new AnswerWait()
   private skipPending = false
   private controller?: AbortController
   private task?: Promise<void>
@@ -45,16 +45,18 @@ export class LiveEngine {
     this.started = this.effects.now()
     this.launch(true)
   }
+  /** Raw candidate-mic activity: extends an answer already begun, never starts one. */
   activity(): void {
-    if (this.state === 'waiting') this.lastOwnerActivity = this.effects.now()
+    if (this.state === 'waiting') this.wait.heard(this.effects.now(), false)
+  }
+  /** Candidate interim or final text: the answer has begun. */
+  candidateSpeech(): void {
+    if (this.state === 'waiting') this.wait.heard(this.effects.now(), true)
   }
   final(role: 'owner' | 'interviewer', text: string, startMs: number, endMs: number): void {
     if (!text.trim()) return
     this.finals.push({ role, text })
-    if (role === 'owner' && this.state === 'waiting') {
-      this.ownerFinal = true
-      this.activity()
-    }
+    if (role === 'owner') this.candidateSpeech()
     if (role === 'interviewer') {
       // Late provider finals belong to the speech window in audio time, not the
       // question currently thinking/speaking when that final happens to arrive.
@@ -68,7 +70,7 @@ export class LiveEngine {
     }
   }
   reset(): void {
-    this.ownerFinal = false
+    this.wait.clearSpoke()
     this.activity()
   }
   tick(): void {
@@ -77,12 +79,10 @@ export class LiveEngine {
       this.end('duration')
       return
     }
-    if (
-      this.state === 'waiting' &&
-      this.ownerFinal &&
-      this.effects.now() - this.lastOwnerActivity >= this.plan.silenceMs
-    )
-      this.launch(false)
+    if (this.state !== 'waiting') return
+    const now = this.effects.now()
+    if (this.wait.advanceDue(now, this.plan.silenceMs)) this.launch(false)
+    else if (this.wait.promptDue(now)) this.prompt(now)
   }
   skip(): void {
     if (this.state === 'ended' || this.state === 'idle') return
@@ -102,8 +102,23 @@ export class LiveEngine {
   }
   private launch(forceNext: boolean): void {
     if (this.task || this.state === 'ended') return
-    this.ownerFinal = false
-    this.task = this.advance(forceNext)
+    this.run(this.advance(forceNext))
+  }
+  /** Gentle one-off nudge when the candidate never starts; not a turn, not in the transcript. */
+  private prompt(now: number): void {
+    if (this.task || this.state === 'ended') return
+    this.wait.markPrompted(now)
+    this.run(this.nudge())
+  }
+  private async nudge(): Promise<void> {
+    const controller = (this.controller = new AbortController())
+    this.state = 'speaking'
+    await this.effects.speak(IDLE_PROMPT_TEXT, controller.signal)
+    if (controller.signal.aborted) return
+    this.state = 'waiting'
+  }
+  private run(work: Promise<void>): void {
+    this.task = work
       .catch(() => {
         if (this.state !== 'ended' && !this.skipPending) this.end('output-failed')
       })
@@ -182,8 +197,7 @@ export class LiveEngine {
     await this.effects.speak(turn.text, controller.signal)
     if (controller.signal.aborted) return
     turn.spokenMs = this.effects.now()
-    this.ownerFinal = false
-    this.lastOwnerActivity = this.effects.now()
+    this.wait.open(this.effects.now())
     this.state = 'waiting'
   }
 }

@@ -133,6 +133,7 @@ are recommended because the raw mic has no echo cancellation. A separate intervi
 speaks using a local Windows voice, shows captions/status and shared fixtures, and offers
 Skip / End / Dismiss share. Replies use the real mic and follow-ups use only finalized speech.
 
+The interviewer waits for the candidate: silence does not count until the candidate has spoken (user-role interim or final text), then it moves on after 4 s of candidate silence. If nobody speaks for 30 s it prompts once ("Take your time — whenever you are ready."); Skip (Ctrl+Alt+Right) always works.
 Start creates a normal This PC practice meeting automatically. Closing the interviewer or
 library, Stop/Pause or End stops it. The tab shows question-by-question delivery, latency,
 word counts and missing-suggestion evidence, and past practice sessions with complete records.

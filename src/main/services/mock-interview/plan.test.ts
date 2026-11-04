@@ -5,7 +5,7 @@ const loadLivePlan = (path: string) => validatePlan(JSON.parse(readFileSync(path
 
 it.each(['interview', 'client-qa'])('loads the shipped %s plan and local fixtures', (name) => {
   const p = loadLivePlan(`src/main/services/mock-interview/plans/${name}.json`)
-  expect(p.silenceMs).toBe(2500)
+  expect(p.silenceMs).toBe(4000)
   expect(p.topics.length).toBeGreaterThan(3)
   expect(p.topics.some((t) => t.screen)).toBe(true)
 })

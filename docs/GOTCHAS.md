@@ -500,8 +500,10 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   mic too (`echoCancellation: false`), potentially counting the interviewer as an owner reply.
 - Only local OS speech voices are accepted; no network voice or PowerShell fallback. Missing
   voices/playback errors end the mock. Actual output/loopback needs owner Windows acceptance.
-- Owner silence uses received finals/activity, not provider audio time. Interims/VAD never enter
-  the conversation or persistence. No loopback final means missing evidence, not proof of hearing.
+- Owner silence uses received candidate speech, not provider audio time, and only counts after the
+  candidate (user role) has spoken: an interim or final starts the answer; raw VAD only extends it.
+  Interviewer finals never start it (guard is role, not volume). Interim text never enters the
+  conversation or persistence. No loopback final means missing evidence, not proof of hearing.
 - Result first-visible is the main broadcast proxy, not renderer paint. Late answers may update
   results for 65 seconds after End. Manual screen requests have no guessed question association.
 - Live and Mock pages must remain mounted across navigation; unmounting stops the device owner.
