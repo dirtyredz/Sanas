@@ -46,6 +46,8 @@ import {
 export const CANDIDATE_LIFETIME_MS = 6_000
 export const CLASSIFIER_SPACING_MS = 1_000
 export const CLASSIFIER_SUSPEND_MS = 30_000
+/** One slow or failed check fails closed for its own turn; this many in a row suspend. */
+export const CLASSIFIER_SUSPEND_AFTER = 3
 /** New speech must pass the candidate's end by this much to count as "after" it. */
 const AFTER_TOLERANCE_MS = 250
 /** A user final this short ("yeah", "good question") is not the user answering yet. */
@@ -114,9 +116,12 @@ export class LiveAssistance {
     if (this.suspensionTimer !== undefined) this.deps.clearTimer(this.suspensionTimer)
     this.suspensionTimer = undefined
     this.suspendedUntil = 0
+    this.classifierFailures = 0
     this.deps.availabilityChanged?.()
   }
   private suspendedUntil = 0
+  /** Consecutive provider/timeout classifier failures; a success resets it. */
+  private classifierFailures = 0
   private lastAnswerAt: number | null = null
   private coachRun: SuggestionHandle | null = null
   private timers = new Map<TimerName, unknown>()
@@ -390,19 +395,29 @@ export class LiveAssistance {
     if (this.classifying === c) this.classifying = null
     let accepted = false
     if (epoch === this.epoch && !c.dropped) {
+      if (outcome.status === 'classified') this.classifierFailures = 0
       if (outcome.status === 'failed') {
+        let suspended = false
         if (outcome.reason === 'provider' || outcome.reason === 'timeout') {
-          this.suspendedUntil = this.deps.now() + CLASSIFIER_SUSPEND_MS
-          this.deps.availabilityChanged?.()
-          if (this.suspensionTimer !== undefined) this.deps.clearTimer(this.suspensionTimer)
-          this.suspensionTimer = this.deps.setTimer(
-            () => this.clearSuspension(),
-            CLASSIFIER_SUSPEND_MS,
-          )
+          this.classifierFailures++
+          if (this.classifierFailures >= CLASSIFIER_SUSPEND_AFTER) {
+            suspended = true
+            this.suspendedUntil = this.deps.now() + CLASSIFIER_SUSPEND_MS
+            this.deps.availabilityChanged?.()
+            if (this.suspensionTimer !== undefined) this.deps.clearTimer(this.suspensionTimer)
+            this.suspensionTimer = this.deps.setTimer(
+              () => this.clearSuspension(),
+              CLASSIFIER_SUSPEND_MS,
+            )
+            this.deps.log(
+              `turn classifier ${this.classifierFailures} consecutive failures; automatic answers suspended ${CLASSIFIER_SUSPEND_MS / 1000}s`,
+            )
+          }
         }
-        this.logFailure(
-          `turn classifier ${outcome.reason}; failing closed ${JSON.stringify(outcome.diagnostic ?? {})}`,
-        )
+        if (!suspended)
+          this.logFailure(
+            `turn classifier ${outcome.reason}; failing closed (${this.classifierFailures} consecutive) ${JSON.stringify(outcome.diagnostic ?? {})}`,
+          )
       } else if (
         outcome.kind !== 'none' &&
         (outcome.addressee !== 'other' || this.answerEveryQuestion)

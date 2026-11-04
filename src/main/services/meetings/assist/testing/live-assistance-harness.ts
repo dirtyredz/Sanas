@@ -49,6 +49,7 @@ export function setup(over: Partial<AssistSettings> = {}, opts: { speculate?: bo
   const stored: unknown[] = []
   const logs: string[] = []
   let holds = 0
+  let availabilityChanges = 0
   const runner = new SuggestionRunner({
     provider: {
       complete: (req) => {
@@ -97,6 +98,7 @@ export function setup(over: Partial<AssistSettings> = {}, opts: { speculate?: bo
       recent,
     }),
     log: (m) => logs.push(m),
+    availabilityChanged: () => availabilityChanges++,
   })
   assist.start()
   const classify = async (i: number, outcome: ClassifierOutcome): Promise<void> => {
@@ -121,6 +123,7 @@ export function setup(over: Partial<AssistSettings> = {}, opts: { speculate?: bo
     stored,
     logs,
     holds: () => holds,
+    availabilityChanges: () => availabilityChanges,
   }
 }
 

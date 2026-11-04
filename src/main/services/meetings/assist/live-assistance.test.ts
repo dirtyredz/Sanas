@@ -87,27 +87,90 @@ describe('live assistance: answers to completed turns', () => {
     expect(t.classifications).toHaveLength(0)
   })
 
+  const fail = (reason: 'provider' | 'timeout') => ({ status: 'failed', reason }) as const
+  const ask = async (t: ReturnType<typeof setup>, i: number): Promise<void> => {
+    await vi.advanceTimersByTimeAsync(1_000)
+    await otherTurn(t.assist, `Any thoughts ${i}?`, i * 10_000, i * 10_000 + 800, i + 1)
+  }
+
   it.each(['provider', 'timeout'] as const)(
-    'fails closed and records suspension after %s',
+    'one %s failure fails that turn closed only: no suspension, next question is answered',
     async (reason) => {
-      const t = setup()
+      const t = setup({}, { speculate: true })
+      const base = t.availabilityChanges()
       await otherTurn(t.assist, 'Any thoughts?', 0, 800)
-      await t.classify(0, { status: 'failed', reason })
+      expect(t.generations).toHaveLength(1) // speculative answer started
+      await t.classify(0, fail(reason))
       expect(diagnostics).toHaveBeenCalledWith(
         expect.objectContaining({ event: 'classified', reason }),
       )
-      expect(t.generations).toHaveLength(0)
-      await vi.advanceTimersByTimeAsync(2_000)
-      await otherTurn(t.assist, 'Any other thoughts?', 3_000, 3_800)
-      expect(t.classifications).toHaveLength(1) // suspended
-      expect(diagnostics).toHaveBeenCalledWith(
+      expect(t.events).toEqual([]) // speculation discarded silently
+      expect(t.generations[0].req.signal?.aborted).toBe(true)
+      expect(t.assist.automaticUnavailable()).toBe(false)
+      expect(t.availabilityChanges()).toBe(base)
+      await ask(t, 1)
+      expect(t.classifications).toHaveLength(2)
+      expect(diagnostics).not.toHaveBeenCalledWith(
         expect.objectContaining({ event: 'not-classified', reason: 'suspended' }),
       )
-      await vi.advanceTimersByTimeAsync(CLASSIFIER_SUSPEND_MS)
-      await otherTurn(t.assist, 'Thoughts now?', 40_000, 40_800)
-      expect(t.classifications).toHaveLength(2)
+      await t.classify(1, t.question)
+      expect(t.generations.length).toBeGreaterThan(1)
     },
   )
+
+  it('three consecutive failures suspend for CLASSIFIER_SUSPEND_MS and publish availability', async () => {
+    const t = setup()
+    const base = t.availabilityChanges()
+    await otherTurn(t.assist, 'Any thoughts?', 0, 800)
+    await t.classify(0, fail('timeout'))
+    await ask(t, 1)
+    await t.classify(1, fail('provider'))
+    expect(t.assist.automaticUnavailable()).toBe(false)
+    expect(t.availabilityChanges()).toBe(base)
+    await ask(t, 2)
+    await t.classify(2, fail('timeout'))
+    expect(t.assist.automaticUnavailable()).toBe(true)
+    expect(t.availabilityChanges()).toBe(base + 1)
+    expect(t.logs.some((l) => l.includes('3 consecutive failures'))).toBe(true)
+    await vi.advanceTimersByTimeAsync(1_000)
+    await otherTurn(t.assist, 'Another one?', 40_000, 40_800, 9)
+    expect(t.classifications).toHaveLength(3)
+    expect(diagnostics).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'not-classified', reason: 'suspended' }),
+    )
+    await vi.advanceTimersByTimeAsync(CLASSIFIER_SUSPEND_MS)
+    expect(t.assist.automaticUnavailable()).toBe(false)
+    await otherTurn(t.assist, 'Thoughts now?', 80_000, 80_800, 10)
+    expect(t.classifications).toHaveLength(4)
+  })
+
+  it('a successful classification resets the failure count', async () => {
+    const t = setup()
+    await otherTurn(t.assist, 'Any thoughts?', 0, 800)
+    await t.classify(0, fail('timeout'))
+    await ask(t, 1)
+    await t.classify(1, fail('timeout'))
+    await ask(t, 2)
+    await t.classify(2, t.none)
+    await ask(t, 3)
+    await t.classify(3, fail('timeout'))
+    await ask(t, 4)
+    await t.classify(4, fail('timeout'))
+    expect(t.assist.automaticUnavailable()).toBe(false)
+  })
+
+  it('halt and start clear the failure count', async () => {
+    const t = setup()
+    await otherTurn(t.assist, 'Any thoughts?', 0, 800)
+    await t.classify(0, fail('timeout'))
+    await ask(t, 1)
+    await t.classify(1, fail('timeout'))
+    t.assist.halt()
+    t.assist.start()
+    await ask(t, 2)
+    await t.classify(2, fail('timeout'))
+    expect(t.assist.automaticUnavailable()).toBe(false)
+  })
 
   it('runs one classifier at a time and keeps only the newest waiting candidate', async () => {
     const t = setup()

@@ -2,6 +2,10 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-11-04 — One slow classifier check must not blank automatic answers
+
+Owner report (v0.1.15): a single 2.5 s Haiku timeout suspended all automatic answers for 30 s and showed the unavailable banner. A failed or slow check now fails closed for its own turn only; suspension (30 s, banner) needs 3 consecutive failures, and any success resets the count. Deadline stays 2.5 s. Rejected: raising the deadline (adds latency to every answer).
+
 ## 2026-11-04 — The resume lives on the job (owner reversal)
 
 Owner ruling: one job per interview, so the resume belongs to the job, not to each Start.

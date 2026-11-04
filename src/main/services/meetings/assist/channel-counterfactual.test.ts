@@ -67,11 +67,16 @@ it('the same question classifies and answers only on counterpart loopback, never
     [1, 1],
   ])
 })
-it('surfaces the 30-second suspension, keeps Answer now working, and recovers', async () => {
+it('surfaces the 30-second suspension after 3 failures, keeps Answer now working, and recovers', async () => {
   vi.useFakeTimers()
   vi.setSystemTime(10000)
   const s = setup(true)
   await question(s.assist, 1)
+  await vi.advanceTimersByTimeAsync(1500)
+  await question(s.assist, 1, 2000)
+  expect(s.assist.automaticUnavailable()).toBe(false)
+  await vi.advanceTimersByTimeAsync(1500)
+  await question(s.assist, 1, 4000)
   expect(s.assist.automaticUnavailable()).toBe(true)
   expect(s.availabilityChanged).toHaveBeenCalledTimes(2)
   s.assist.answerNow()
@@ -79,7 +84,7 @@ it('surfaces the 30-second suspension, keeps Answer now working, and recovers', 
   await vi.advanceTimersByTimeAsync(30000)
   expect(s.assist.automaticUnavailable()).toBe(false)
   await question(s.assist, 1, 40000)
-  expect(s.classify).toHaveBeenCalledTimes(2)
+  expect(s.classify).toHaveBeenCalledTimes(4)
   s.assist.halt()
   expect(vi.getTimerCount()).toBe(0)
 })

@@ -168,7 +168,7 @@ Mic (getUserMedia, renderer)
 - **Classifier** (`assistant/classifier.ts`): one non-streaming call with `classifierModel`
   (default Haiku), 64 tokens, 2.5 s hard deadline, answering one of `question | request |
 objection | none`. It **fails closed**: timeout, cancel, malformed output or provider error
-  means no automatic answer. Provider failures suspend classification for 30 s (rate-limited
+  means no automatic answer. A single provider failure or timeout skips only its turn; 3 consecutive ones suspend classification for 30 s (rate-limited
   sanitized diagnostics without transcript text, with library/overlay availability status).
 - **Admission:** one classifier at a time, one newest replacement candidate, ≥1 s between
   starts; a candidate lives 6 s from completion (checked before classifying and before

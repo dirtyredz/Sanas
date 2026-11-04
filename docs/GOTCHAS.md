@@ -346,7 +346,7 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   starts at the STT final's receipt, `spokenVisibleLatencyMs` at TTS playback finishing (closest to
   speech end). "Visible" is the main-process broadcast, not paint. Never subtract across origins.
 - **The classifier fails closed.** An Anthropic outage or slow call silences automatic answers
-  (and suspends classification for 30 s); "Answer now" still works. Effort is not sent to Haiku or
+  for that turn only; 3 consecutive failures (`CLASSIFIER_SUSPEND_AFTER`; a success resets) suspend classification for 30 s with the unavailable banner. "Answer now" always works. Effort is not sent to Haiku or
   unknown model IDs (only Opus/Sonnet 5.x), so the classifier's "low effort" is a no-op on it; its
   budget is protected by the short-budget no-thinking rule instead (see the thinking gotcha below).
 - **Interim vs final results:** interims mutate/replace; only persist finals or the
@@ -549,7 +549,7 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
 - A remembered job is assistance context, not consent to present its deck. Start defaults deck use off each meeting. Unsorted clears the remembered job; late job loading must not replace a newer selection. Filing an ended meeting changes organization only, never saved grounding. Live corrections use Apply.
 
 - This PC assumes counterpart speech arrives on captured system output. Check Teams/Zoom output against the captured default device. For another-device calls, end and restart as Elsewhere, then pin your voice; Resume cannot change topology. Brief system sound is not proof of counterpart capture. Batch logs distinguish mono pins carried from user/other segment counts.
-- Classifier failures remain fail-closed. Only allowlisted category (provider, timeout, `connection`, ...), error class name (`errorName`), HTTP status, request ID, model and elapsed time enter diagnostics; never raw exception messages, prompts, keys or bodies. The library and overlay show the 30-second suspension with Answer now as the recovery path.
+- Classifier failures remain fail-closed. Only allowlisted category (provider, timeout, `connection`, ...), error class name (`errorName`), HTTP status, request ID, model and elapsed time enter diagnostics; never raw exception messages, prompts, keys or bodies. The library and overlay show the 30-second suspension (only after 3 consecutive failures; a single timeout just skips its turn) with Answer now as the recovery path.
 
 - Re-diarization regression tests use migrated in-memory SQLite and the real batch service/repositories: empty batches preserve rows; insert/name failures roll back deletion; a 22-row replacement commits atomically. These establish ordinary transaction behavior, not recovery of a corrupt reconstructed DB or completeness of a nonempty provider batch.
 
