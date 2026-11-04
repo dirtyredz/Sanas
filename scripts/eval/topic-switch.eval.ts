@@ -6,20 +6,16 @@ import { claudeProvider } from '../../src/main/services/assistant/claude'
 import { candidateFacts } from '../../src/main/services/meetings/context/candidate-data'
 import * as current from '../../src/main/services/meetings/assist/suggestion-requests'
 import { buildSystemPrompt } from '../../src/main/services/assistant/prompts'
-import { rememberHeadline } from '../../src/main/services/assistant/compact-contract'
-import {
-  rememberStory,
-  type ToldStory,
-} from '../../src/main/services/assistant/answer-context/told-stories'
+import { ShownLedger } from '../../src/main/services/assistant/answer-context/shown-ledger'
 import {
   TOPIC_SWITCH_EXCHANGES,
   TOPIC_SWITCH_JOB,
   TOPIC_SWITCH_RESUME,
-  carriedTerms,
   topicSwitchWindow,
   type TimedLine,
   type TopicSwitchExchange,
-} from '../../src/main/services/assistant/answer-context/testing/topic-switch'
+} from '../../src/main/services/assistant/answer-context/topic-switch-fixture'
+import { carriedTerms } from './carried-terms'
 import type { CompletedTurn } from '../../src/main/services/turns/types'
 import type { SuggestionRequest } from '../../src/main/services/meetings/assist/suggestion-runner'
 
@@ -94,16 +90,14 @@ function completedTurn(text: string, startMs: number, endMs: number): CompletedT
 }
 
 function newVersion(): Version {
-  const recent: string[] = []
-  const told: ToldStory[] = []
+  const shown = new ShownLedger()
   const system = buildSystemPrompt(TOPIC_SWITCH_JOB, []) + facts
   const snap = (window: TimedLine[]): current.AssistSnapshot => ({
     meetingId: 1,
     atMs: 0,
     system,
     window,
-    recent: [...recent],
-    told: [...told],
+    ...shown.snapshot(),
   })
   return {
     name: 'new',
@@ -113,14 +107,9 @@ function newVersion(): Version {
         t,
       ]),
     answerNow: (w, q) => current.answerNowRequest(snap(w), settings, { speaker: 0, ...q }),
-    remember: (text) => {
-      rememberHeadline(recent, text)
-      rememberStory(told, text)
-    },
-    reset: () => {
-      recent.length = 0
-      told.length = 0
-    },
+    // both lanes produce answers the user may say aloud (the production persist path)
+    remember: (text) => shown.record({ text, purpose: 'answer' }),
+    reset: () => shown.reset(),
   }
 }
 
@@ -302,7 +291,7 @@ function report(rows: Row[], sizes: string[]): string {
     '',
     `Generated ${new Date().toISOString()}. Old tree: ${env.EVAL_OLD_REF ?? '?'}; new: working tree.`,
     `Models: automatic ${settings.nudgeModel}, Answer now ${settings.answerModel}. Samples per version: ${samples}.`,
-    'Fixture: invented (src/main/services/assistant/answer-context/testing/topic-switch.ts). Exchange 0 seeds the story and is not scored.',
+    'Fixture: invented (src/main/services/assistant/answer-context/topic-switch-fixture.ts). Exchange 0 seeds the story and is not scored.',
     '',
     '| version | scored answers | carryover (strict) | carryover (corrected) | missed asked term | factual over 40 words | avg words | avg prompt chars | avg system chars |',
     '|---|---|---|---|---|---|---|---|---|',
@@ -310,7 +299,7 @@ function report(rows: Row[], sizes: string[]): string {
     '',
     'Strict carryover also counts a bare employer name (Acme). Corrected counts only earlier-topic technology/story terms and ignores terms from the exchange a question refers back to.',
     '',
-    'Pass bar (review.md section 5): old shows carryover in at least half its samples; new shows 0 corrected carryovers, factual answers at most 40 words.',
+    'Pass bar (docs/DECISIONS.md, 2026-11-04 anchoring entry): old shows carryover in at least half its samples; new shows 0 corrected carryovers, factual answers at most 40 words.',
     '',
     '## Prompt size, long meeting (rolling window full; six answers already told)',
     '',

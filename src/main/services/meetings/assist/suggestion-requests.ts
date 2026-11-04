@@ -9,10 +9,10 @@ import type { Addressee, ResponseKind } from '../../assistant/classifier'
 import {
   assistProfile,
   buildUserContent,
-  type LatestQuestion,
+  type AnswerFocus,
   type TranscriptLine,
-  type TriggeringTurn,
 } from '../../assistant/prompts'
+import type { LatestQuestion } from '../../assistant/answer-context/anchor'
 import type { ToldStory } from '../../assistant/answer-context/told-stories'
 import type { QuestionTurn } from '../../turns/latest-question'
 import {
@@ -63,14 +63,13 @@ export type AssistSettings = Pick<
 >
 
 /** An answer: automatic (to a classified turn) or requested ("Answer now"). Streams.
- *  Both name the question they answer when there is one, and see the stories already told;
- *  only an automatic answer may decline with the no-op. */
+ *  Both name the question they answer when there is one (`focus`), and see the stories
+ *  already told; only an automatic answer may decline with the no-op. */
 export function answerRequest(
   snap: AssistSnapshot,
   s: AssistSettings,
   trigger: SuggestionTrigger,
-  turn?: TriggeringTurn,
-  latest?: LatestQuestion,
+  focus?: AnswerFocus,
 ): SuggestionRequest {
   const profile = assistProfile(trigger, s.whisperMode)
   const automatic = trigger === 'ambient'
@@ -89,8 +88,7 @@ export function answerRequest(
     userContent:
       buildUserContent(snap.window, trigger, s.whisperMode, {
         names: snap.names,
-        turn,
-        latest,
+        focus,
         told: snap.told,
       }) +
       (snap.presentation ? presentationHint(snap.presentation) : '') +
@@ -118,21 +116,32 @@ export function automaticAnswerRequest(
   const earlier = asked.filter((t) => t !== turn)
   return {
     ...answerRequest(snap, s, 'ambient', {
-      speaker: label(turn),
-      text: turn.text,
-      kind: verdict.kind,
-      addressee: verdict.addressee,
-      earlier: earlier.length
-        ? earlier.map((t) => ({ speaker: label(t), text: t.text }))
-        : undefined,
-      startMs: Math.min(turn.startMs, ...earlier.map((t) => t.startMs)),
+      kind: 'turn',
+      turn: {
+        speaker: label(turn),
+        text: turn.text,
+        kind: verdict.kind,
+        addressee: verdict.addressee,
+        earlier: earlier.length
+          ? earlier.map((t) => ({ speaker: label(t), text: t.text }))
+          : undefined,
+        startMs: Math.min(turn.startMs, ...earlier.map((t) => t.startMs)),
+      },
     }),
     diagnosticTurns: asked,
   }
 }
 
-function questionLabel(snap: AssistSnapshot, q: QuestionTurn): string {
-  return speakerLabel({ speaker: q.speaker, isUser: false }, snap.names)
+/** The one place a turns-side `QuestionTurn` becomes the prompt's `LatestQuestion` (speaker
+ *  label resolved from the meeting's names). Answer now uses all of it; a next point reads
+ *  the speaker, text and start. */
+function promptQuestion(snap: AssistSnapshot, q: QuestionTurn): LatestQuestion {
+  return {
+    speaker: speakerLabel({ speaker: q.speaker, isUser: false }, snap.names),
+    text: q.text,
+    startMs: q.startMs,
+    open: q.open,
+  }
 }
 
 /** "Answer now": anchored on the most recent question when there is one (F1, DECISIONS
@@ -146,15 +155,7 @@ export function answerNowRequest(
     snap,
     s,
     'hotkey',
-    undefined,
-    question
-      ? {
-          speaker: questionLabel(snap, question),
-          text: question.text,
-          startMs: question.startMs,
-          open: question.open,
-        }
-      : undefined,
+    question ? { kind: 'latest', question: promptQuestion(snap, question) } : undefined,
   )
 }
 
@@ -222,13 +223,7 @@ export function coachRequest(
             window: snap.window,
             names: snap.names,
             recent: snap.recent,
-            question: input.question
-              ? {
-                  speaker: questionLabel(snap, input.question),
-                  text: input.question.text,
-                  startMs: input.question.startMs,
-                }
-              : undefined,
+            question: input.question ? promptQuestion(snap, input.question) : undefined,
           })),
     maxTokens: COACH_PROFILE.maxTokens,
     effort: COACH_PROFILE.effort,

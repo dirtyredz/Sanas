@@ -10,6 +10,13 @@ import { boundedExcerpt } from './excerpt'
 import type { ResponseKind } from './classifier'
 import { renderConversation } from './answer-context/conversation-window'
 import { toldStoriesBlock, type ToldStory } from './answer-context/told-stories'
+import {
+  ANCHOR_REMINDER,
+  CURRENT_QUESTION_RULE,
+  QUESTION_CHARS,
+  latestBlock,
+  type LatestQuestion,
+} from './answer-context/anchor'
 
 // Prompt assembly: stable system prompt (cacheable, per meeting) + volatile
 // transcript in the user turn: the current exchange plus a capped, labelled background
@@ -17,8 +24,7 @@ import { toldStoriesBlock, type ToldStory } from './answer-context/told-stories'
 
 export type TranscriptLine = FormattableLine
 
-const TURN_CHARS = 4000 // the triggering turn, opening + ending kept
-const EARLIER_TURN_CHARS = 600 // each carried-forward question
+const EARLIER_QUESTION_CHARS = 600 // each carried-forward question
 export const SUMMARY_CHARS = 120_000 // enough for a long technical meeting, while still bounded
 const MIN_SUMMARY_TOKENS = 1500
 const MAX_SUMMARY_TOKENS = 8000
@@ -81,10 +87,8 @@ project or role, followed by at most two short lines covering the problem, what 
 and the result. Never use a meta-preamble like "let me pick one". If the supplied resume and
 Interview profile lack relevant experience, build the answer the same way with marked filler.
 Factual or inventory checks ("level of experience with X", "what services have you used",
-"have you used X", "which version") are not open experience asks: answer them directly in 40
-words or fewer in total (aim for about 30), naming the things asked, without telling a project
-story or touring employers. A "have you used X" or "do you ever X" check is one speakable
-sentence that answers it, plus at most one short supporting line. If the current question looks cut off, answer what its words and the
+"have you used X", "which version") are not open experience asks: answer them directly, without telling a project
+story or touring employers. If the current question looks cut off, answer what its words and the
 current exchange support and never invent the rest of it; a short clarification such as
 "Which technology did you mean?" is allowed only when the subject itself is missing. A question that
 names its subject is not cut off just because it trails off (in a TypeScript discussion "any"
@@ -120,27 +124,6 @@ question — never a default topic to steer back to, and never a reason to repea
 
   return parts.join('\n\n')
 }
-/** The anchor rule for every answer (DECISIONS 2026-11-04): the current question decides the
- *  topic; earlier conversation and earlier suggestions are background. */
-export const CURRENT_QUESTION_RULE = `Answer the current question. The prompt marks the current exchange (the question being
-answered and Me's reply so far); everything earlier is background. Answer the technology and
-subject the current question names. Earlier turns are background: do not bring in a technology,
-employer or project story from earlier in the conversation, or from an earlier suggestion,
-unless the current question asks for it. If Me has already started answering, continue Me's
-answer (same employer, project and technology) rather than swapping in a different resume
-story; what Me has just said about this topic outranks a resume line that merely matches more
-of its keywords. Statements Me made about an earlier topic are background, not commitments
-for this one.
-
-When the asked technology appears in several resume roles, pick the role or project that best
-matches it (the one whose line is mainly about that technology, not a side detail of a bigger
-project) and that is not already in the list of stories given. If the only match was already
-told, answer at the level of the technology (what you build with it and how) without re-telling
-that story or naming its other technologies. A word like "recently" or "last" is not a reason to go
-back to the role already told: prefer the untold role even when it is older. Do not add a second role or a closing "more
-recently, at ..." line to round the answer out. A question that refers back ("a service like that",
-"that one") means what the immediately preceding exchange was about, not an older story.`
-
 /** The completed turn an automatic answer responds to, so generation answers THAT turn
  *  rather than whichever line happens to be the latest in the window. */
 export interface TriggeringTurn {
@@ -158,29 +141,18 @@ export interface TriggeringTurn {
   startMs?: number
 }
 
-/** Answer now: the most recent other-speaker question, picked without a classifier. */
-export interface LatestQuestion {
-  speaker: string
-  text: string
-  /** Audio time of its first word: where the current exchange starts. */
-  startMs: number
-  /** Still being spoken when Answer now was pressed: it may be cut off. */
-  open: boolean
-}
+/** What an answer prompt is anchored on: an automatic answer's classified turn, or Answer
+ *  now's latest question. No focus answers from the rolling window alone. */
+export type AnswerFocus =
+  { kind: 'turn'; turn: TriggeringTurn } | { kind: 'latest'; question: LatestQuestion }
 
 export interface UserContentOptions {
   names?: SpeakerNames
-  /** Automatic answers: the turn being answered. */
-  turn?: TriggeringTurn
-  /** Answer now: the latest question, when one was asked recently. */
-  latest?: LatestQuestion
+  focus?: AnswerFocus
   /** Answers already told this meeting. Automatic answers may decline with the no-op when
    *  theirs would repeat one; a requested one never does. */
   told?: readonly ToldStory[]
 }
-
-const ANCHOR_REMINDER = `Answer the technology and subject THAT question names; earlier conversation is background. If
-Me has already started answering, continue Me's answer rather than starting a different story.`
 
 function focusBlock(turn: TriggeringTurn): string {
   const who =
@@ -193,8 +165,8 @@ exactly ${NO_SUGGESTION}.`
         : 'It was put to Me.'
   if (turn.earlier?.length) {
     const lines = [
-      ...turn.earlier.map((e) => ({ ...e, text: boundedExcerpt(e.text, EARLIER_TURN_CHARS) })),
-      { speaker: turn.speaker, text: boundedExcerpt(turn.text, TURN_CHARS) },
+      ...turn.earlier.map((e) => ({ ...e, text: boundedExcerpt(e.text, EARLIER_QUESTION_CHARS) })),
+      { speaker: turn.speaker, text: boundedExcerpt(turn.text, QUESTION_CHARS) },
     ].map((q, i) => `${i + 1}. ${q.speaker}: ${q.text}`)
     const list = lines.join('\n')
     return `Questions to answer (oldest first; the last is the newest, a ${turn.kind}):
@@ -204,18 +176,8 @@ order, in ONE suggestion the user can scan mid-conversation: one short labelled 
 per question, no preamble. ${who}`
   }
   return `Respond to this completed turn (a ${turn.kind}):
-${turn.speaker}: ${boundedExcerpt(turn.text, TURN_CHARS)}
+${turn.speaker}: ${boundedExcerpt(turn.text, QUESTION_CHARS)}
 Answer THAT turn, about the topic being discussed now. ${ANCHOR_REMINDER} ${who}`
-}
-
-function latestBlock(q: LatestQuestion): string {
-  const cut = q.open
-    ? ` It may still be cut off: answer what its words and the current exchange support, and do
-not invent the rest of the question.`
-    : ''
-  return `The most recent question (Me asked for an answer to it now):
-${q.speaker}: ${boundedExcerpt(q.text, TURN_CHARS)}
-Answer THAT question. ${ANCHOR_REMINDER}${cut}`
 }
 
 export function buildUserContent(
@@ -224,13 +186,10 @@ export function buildUserContent(
   mode: WhisperMode,
   opts: UserContentOptions = {},
 ): string {
-  const exchangeStartMs = opts.turn?.startMs ?? opts.latest?.startMs
+  const f = opts.focus
+  const exchangeStartMs = f?.kind === 'turn' ? f.turn.startMs : f?.question.startMs
   const transcript = renderConversation(window, exchangeStartMs, opts.names)
-  const focus = opts.turn
-    ? `\n\n${focusBlock(opts.turn)}`
-    : opts.latest
-      ? `\n\n${latestBlock(opts.latest)}`
-      : ''
+  const focus = f ? `\n\n${f.kind === 'turn' ? focusBlock(f.turn) : latestBlock(f.question)}` : ''
   const told = opts.told ? `\n\n${toldStoriesBlock(opts.told, trigger === 'ambient')}` : ''
   const profile = assistProfile(trigger, mode)
   const ask = {

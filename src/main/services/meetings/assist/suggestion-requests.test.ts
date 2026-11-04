@@ -11,7 +11,7 @@ import type { CompletedTurn } from '../../turns/types'
 import type { AssistImage } from '../../assistant/types'
 import type { SuggestionRequest } from './suggestion-runner'
 import { deckContext } from '../../assistant/presentation/prompts'
-import { topicSwitchWindow } from '../../assistant/answer-context/testing/topic-switch'
+import { topicSwitchWindow } from '../../assistant/answer-context/topic-switch-fixture'
 const settings: AssistSettings = {
   anthropicApiKey: 'key',
   anthropicWorkspaceId: '',

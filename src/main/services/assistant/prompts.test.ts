@@ -7,19 +7,18 @@ import {
   SUMMARY_CHARS,
   summaryMaxTokens,
   type TranscriptLine,
-  CURRENT_QUESTION_RULE,
 } from './prompts'
+import { CURRENT_QUESTION_RULE } from './answer-context/anchor'
 import {
   BACKGROUND_CHARS,
   BACKGROUND_LABEL,
   CURRENT_EXCHANGE_LABEL,
 } from './answer-context/conversation-window'
 import {
-  carriedTerms,
   TOPIC_SWITCH_EXCHANGES,
   TOPIC_SWITCH_JOB,
   topicSwitchWindow,
-} from './answer-context/testing/topic-switch'
+} from './answer-context/topic-switch-fixture'
 
 const window: TranscriptLine[] = [
   { speaker: 1, isUser: false, text: 'Can you make me a linked list in JavaScript?' },
@@ -69,11 +68,14 @@ describe('whisper prompt modes', () => {
       { speaker: -1, isUser: true, text: 'Sure, one second.' },
     ]
     const prompt = buildUserContent(lines, 'ambient', 'smart', {
-      turn: {
-        speaker: 'S2',
-        text: 'Can you make me a linked list in JavaScript?',
-        kind: 'request',
-        addressee: 'me',
+      focus: {
+        kind: 'turn',
+        turn: {
+          speaker: 'S2',
+          text: 'Can you make me a linked list in JavaScript?',
+          kind: 'request',
+          addressee: 'me',
+        },
       },
     })
     expect(prompt).toContain(
@@ -88,11 +90,14 @@ describe('whisper prompt modes', () => {
 
   it('lets an open-floor question yield a suggestion only if it is genuinely useful', () => {
     const prompt = buildUserContent(window, 'ambient', 'smart', {
-      turn: {
-        speaker: 'S1',
-        text: 'So any questions about the use of these models?',
-        kind: 'question',
-        addressee: 'room',
+      focus: {
+        kind: 'turn',
+        turn: {
+          speaker: 'S1',
+          text: 'So any questions about the use of these models?',
+          kind: 'question',
+          addressee: 'room',
+        },
       },
     })
     expect(prompt).toContain('It was put to the room, not to Me specifically.')
@@ -185,12 +190,15 @@ describe('knowledge summary prompt', () => {
 describe('buildUserContent: stacked questions', () => {
   it('lists carried questions in order and asks for one combined suggestion', () => {
     const prompt = buildUserContent([], 'ambient', 'smart', {
-      turn: {
-        speaker: 'S2',
-        text: 'Who owns the rollout?',
-        kind: 'question',
-        addressee: 'me',
-        earlier: [{ speaker: 'S2', text: 'What is the delivery date?' }],
+      focus: {
+        kind: 'turn',
+        turn: {
+          speaker: 'S2',
+          text: 'Who owns the rollout?',
+          kind: 'question',
+          addressee: 'me',
+          earlier: [{ speaker: 'S2', text: 'What is the delivery date?' }],
+        },
       },
     })
     expect(prompt).toContain('1. S2: What is the delivery date?\n2. S2: Who owns the rollout?')
@@ -211,7 +219,7 @@ describe('topic switch: answers anchor on the current question (DECISIONS 2026-1
   }
 
   it('isolates the current question and keeps the earlier story only as capped background', () => {
-    const prompt = buildUserContent(lines, 'ambient', 'smart', { turn })
+    const prompt = buildUserContent(lines, 'ambient', 'smart', { focus: { kind: 'turn', turn } })
     const background = prompt.slice(
       prompt.indexOf(BACKGROUND_LABEL),
       prompt.indexOf(CURRENT_EXCHANGE_LABEL),
@@ -234,36 +242,34 @@ describe('topic switch: answers anchor on the current question (DECISIONS 2026-1
     expect(system).toContain('never invent the rest of it')
   })
 
-  it('picks the best untold resume role and keeps factual checks to 40 words', () => {
+  it('keeps the role-picking rule with the told stories, and the factual-check limit once', () => {
     const system = buildSystemPrompt(TOPIC_SWITCH_JOB, [])
-    expect(system).toContain('appears in several resume roles')
-    expect(system).toContain('answer at the level of the technology')
     expect(system).toContain('refers back')
-    expect(system).toContain('40\nwords or fewer in total')
-    expect(buildUserContent(lines, 'ambient', 'smart', { turn })).toContain(
-      'never more than 40 words in total for factual or inventory checks',
-    )
-  })
-
-  it('scores carryover: a bare employer is strict-only, a referenced exchange is exempt', () => {
-    const aws = TOPIC_SWITCH_EXCHANGES[1]
-    expect(carriedTerms('At Acme our services ran on EKS.', aws)).toEqual([])
-    expect(carriedTerms('At Acme our services ran on EKS.', aws, { strict: true })).toEqual([
-      'acme',
-    ])
-    expect(carriedTerms('The subgraph used Kafka.', aws)).toEqual(['subgraph', 'kafka'])
-    const test = TOPIC_SWITCH_EXCHANGES[5]
-    expect(carriedTerms('Replay Kafka events.', test)).toEqual(['kafka'])
-    expect(carriedTerms('Replay Kafka events.', test, { referenced: 'a Kafka consumer' })).toEqual(
-      [],
-    )
+    // the role rule and the 40-word limit are NOT in the cached system prompt
+    for (const moved of ['appears in several resume roles', 'in total (aim for about 30)'])
+      expect(system).not.toContain(moved)
+    const content = buildUserContent(lines, 'ambient', 'smart', {
+      focus: { kind: 'turn', turn },
+      told: [],
+    }).replace(/\s+/g, ' ')
+    expect(content).toContain('appears in several resume roles')
+    expect(content).toContain('answer at the level of the technology')
+    expect(content.match(/40 words in total/g)).toHaveLength(1)
   })
 
   it('marks a question still being spoken as possibly cut off, without inventing the rest', () => {
     const cut = TOPIC_SWITCH_EXCHANGES[3]
     const at = topicSwitchWindow(3)
     const prompt = buildUserContent(at.window, 'hotkey', 'smart', {
-      latest: { speaker: 'S1', text: cut.cutQuestion!, startMs: at.question.startMs, open: true },
+      focus: {
+        kind: 'latest',
+        question: {
+          speaker: 'S1',
+          text: cut.cutQuestion!,
+          startMs: at.question.startMs,
+          open: true,
+        },
+      },
     })
     expect(prompt).toContain(
       `The most recent question (Me asked for an answer to it now):\nS1: ${cut.cutQuestion}`,

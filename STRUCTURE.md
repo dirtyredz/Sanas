@@ -59,7 +59,7 @@ sanas/
 │   │   │   ├── turns/                     # pure completed-turn assembly (latest-question.ts: Answer now question pick)
 │   │   │   │   └── transcript-format.ts   # canonical transcript formatting/windowing
 │   │   │   ├── assistant/                 # AssistantProvider seam, Claude, prompts, classifier, triggers, failure-diagnostics.ts
-│   │   │   │   ├── answer-context/        # answer prompt context: background/current-exchange window, told stories (testing/: invented fixture)
+│   │   │   │   ├── answer-context/        # answer prompt context: window split, anchor text (anchor.ts), told stories, ShownLedger, invented topic-switch fixture
 │   │   │   │   ├── coach/                 # next-point policy and prompts
 │   │   │   │   ├── presentation/          # deck context, location hints and restricted coach prompt
 │   │   │   │   └── live-controls/         # typed/detail/audience prompt instructions
@@ -198,7 +198,7 @@ sanas/
 - `src/renderer/src/lib/meeting/resume/` — `useJobHasResume`, whether the selected job has a saved resume (Live's Interview default), stale-reply safe
 - `src/main/services/turns/` — pure turn assembly and identity-role types; no I/O or timers; `latest-question.ts` picks the question Answer now answers
 - `src/main/services/assistant/` — the swappable assistant seam and shared answer/classification logic
-- `src/main/services/assistant/answer-context/` — answer prompt context: current-exchange/background window split, told stories; `testing/` holds the invented topic-switch fixture
+- `src/main/services/assistant/answer-context/` — answer prompt context: current-exchange/background window split, anchor text (`anchor.ts`: `CURRENT_QUESTION_RULE`, `ANCHOR_REMINDER`, `LatestQuestion`), told stories, `ShownLedger` (`shown-ledger.ts`: the one place a shown suggestion is routed into the recent/told/coach memories, used by `LiveSession` and the eval), and `topic-switch-fixture.ts` (invented data + window builder; scoring lives in `scripts/eval/carried-terms.ts`)
 - `src/main/services/assistant/coach/` — next-point eligibility policy and coach prompt construction
 - `src/main/services/assistant/presentation/` — presentation answer context, current-location hints and scoped coaching prompts
 - `src/main/services/assistant/live-controls/` — typed, detail, audience and screen-capture request instructions

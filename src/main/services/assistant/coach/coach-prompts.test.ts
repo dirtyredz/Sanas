@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { COACH_INSTRUCTION, COACH_PROFILE, buildCoachUserContent } from './coach-prompts'
 import { BACKGROUND_LABEL } from '../answer-context/conversation-window'
-import { TOPIC_SWITCH_EXCHANGES, topicSwitchWindow } from '../answer-context/testing/topic-switch'
+import { TOPIC_SWITCH_EXCHANGES, topicSwitchWindow } from '../answer-context/topic-switch-fixture'
 
 const window = [
   { speaker: 0, isUser: false, text: 'How does the export API respond?' },

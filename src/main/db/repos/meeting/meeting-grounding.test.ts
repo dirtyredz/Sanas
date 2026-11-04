@@ -109,10 +109,13 @@ it.each([true, false])('assembles concrete behavioural policy with resume = %s',
     settings,
     'ambient',
     {
-      speaker: 'S1',
-      text: 'Tell me about a recent project you owned and the impact you had.',
-      kind: 'request',
-      addressee: 'me',
+      kind: 'turn',
+      turn: {
+        speaker: 'S1',
+        text: 'Tell me about a recent project you owned and the impact you had.',
+        kind: 'request',
+        addressee: 'me',
+      },
     },
   )
   const system = request.system.replace(/\s+/g, ' ')

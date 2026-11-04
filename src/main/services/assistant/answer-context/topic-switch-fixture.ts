@@ -1,10 +1,11 @@
 import type { Job } from '@shared/types'
-import type { FormattableLine } from '../../../turns/transcript-format'
+import type { FormattableLine } from '../../turns/transcript-format'
 
 // An INVENTED interview with the "broken record" pattern (DECISIONS 2026-11-04): a long,
 // stack-heavy story first, then quick topic switches whose answers should not drag that story
 // back in. Every name, company and line here is fictional; no real meeting text belongs here.
-// Shared by the prompt tests and the paid old-vs-new eval (scripts/eval/topic-switch.ps1).
+// Shared by the prompt tests and the paid old-vs-new eval (scripts/eval/topic-switch.ps1);
+// the eval owns the scoring of these fixtures (scripts/eval/carried-terms.ts).
 
 export interface TopicSwitchExchange {
   /** The interviewer's question, as transcribed. */
@@ -25,11 +26,6 @@ export interface TopicSwitchExchange {
 }
 
 const FEDERATION_TERMS = ['federat', 'subgraph', 'kafka', 'apollo', 'invoic', 'postgres']
-/** Employers whose bare name counts only in the STRICT tally. The resume has the asked
- *  technology at Acme (Node, TypeScript, EKS/Aurora/MSK on AWS), so naming it is not a
- *  broken record; the earlier story's technology terms are. */
-const STRICT_EMPLOYER_TERMS = ['acme']
-
 export const TOPIC_SWITCH_EXCHANGES: TopicSwitchExchange[] = [
   {
     question: 'Walk me through the federated graph you built at your last role.',
@@ -183,19 +179,4 @@ export function topicSwitchWindow(
     }
   })
   return { window, question: question as unknown as TopicSwitchQuestion }
-}
-
-/** Lower-case carryover terms an answer brought in that its question did not name. `strict`
- *  also counts a bare employer name; `referenced` is the text of the exchange a back-referring
- *  question points at (terms from it are not carryover). */
-export function carriedTerms(
-  answer: string,
-  ex: TopicSwitchExchange,
-  opts: { strict?: boolean; referenced?: string } = {},
-): string[] {
-  const a = answer.toLowerCase()
-  const q = ex.question.toLowerCase()
-  const ref = (opts.referenced ?? '').toLowerCase()
-  const terms = opts.strict ? [...ex.carryover, ...STRICT_EMPLOYER_TERMS] : ex.carryover
-  return terms.filter((t) => a.includes(t) && !q.includes(t) && !ref.includes(t))
 }

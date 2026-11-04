@@ -6,7 +6,7 @@ import {
   renderConversation,
   splitAtExchange,
 } from './conversation-window'
-import { topicSwitchWindow } from './testing/topic-switch'
+import { topicSwitchWindow } from './topic-switch-fixture'
 
 describe('conversation window split', () => {
   it('puts the question and what follows in the current exchange, earlier lines in background', () => {

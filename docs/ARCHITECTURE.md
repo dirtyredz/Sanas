@@ -145,10 +145,12 @@ Mic (getUserMedia, renderer)
   other-speaker turn of >= 3 words (an open turn from `TurnAssembler.openTurns()` wins and is
   marked "may be cut off"), else the last completed one within 90 s (`ANSWER_NOW_QUESTION_MS`);
   with none it falls back to the old rolling 6,000-char window. The system prompt's
-  `CURRENT_QUESTION_RULE` makes earlier turns/answers background. `told-stories.ts` keeps the
-  last 6 answers (headline + first prose line; automatic, Answer now, More detail, typed; not
-  next points, audience or capture) per meeting in `LiveSession`; automatic and Answer now
-  prompts show them as "do not re-tell", and only automatic answers may still decline with
+  `CURRENT_QUESTION_RULE` (`answer-context/anchor.ts`) makes earlier turns/answers background.
+  `told-stories.ts` keeps the last 6 answers (headline + first prose line; automatic, Answer
+  now, More detail, typed; not next points, audience or capture) per meeting, held with the
+  other shown-suggestion memories by `ShownLedger` in `LiveSession`; automatic and Answer now
+  prompts show them as "do not re-tell" (the block also carries the pick-an-untold-resume-role
+  rule), and only automatic answers may still decline with
   `<none>`. Next points use the same background/question/explanation shape and keep the
   3-headline list.
 - **Answering completed turns:** STT → existing final persistence/broadcast → identity

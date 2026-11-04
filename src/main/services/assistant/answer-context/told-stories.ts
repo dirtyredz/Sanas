@@ -77,6 +77,13 @@ ${list}
 Do not re-tell these stories or bring back their projects, employers or technologies unless the
 current question asks about them. If the current question really needs the same project, refer
 back to it in one short clause (for example "like the project I mentioned") and add only what
-the question asks. When the asked technology also appears in a resume role not listed here,
-use that role instead, even if it is older. ${end}`
+the question asks.
+
+When the asked technology appears in several resume roles, pick the role or project that best
+matches it (the one whose line is mainly about that technology, not a side detail of a bigger
+project) and that is not listed here, even if it is older. A word like "recently" or "last" is
+not a reason to go back to a role already told. If the only match was already told, answer at
+the level of the technology (what you build with it and how) without re-telling that story or
+naming its other technologies. Do not add a second role or a closing "more recently, at ..."
+line to round the answer out. ${end}`
 }

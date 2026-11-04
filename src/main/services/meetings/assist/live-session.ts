@@ -9,12 +9,7 @@ import { insertSuggestion } from '../../../db/repos/suggestions'
 import { speakerNameMap } from '../../../db/repos/speakers'
 import { assistantProvider } from '../../assistant/provider'
 import { classifyTurn } from '../../assistant/classifier'
-import { rememberHeadline } from '../../assistant/compact-contract'
-import {
-  rememberStory,
-  tellsStory,
-  type ToldStory,
-} from '../../assistant/answer-context/told-stories'
+import { ShownLedger } from '../../assistant/answer-context/shown-ledger'
 import type { TranscriptLine } from '../../assistant/prompts'
 import type { TurnFinal } from '../../turns/types'
 import { broadcast } from '../../../windows/broadcast'
@@ -38,12 +33,10 @@ const WINDOW_LINES = 200 // rolling finals kept for prompt assembly
 export class LiveSession {
   readonly assistance: LiveAssistance
   private readonly window: TranscriptLine[] = []
-  private readonly shownHeadlines: string[] = []
-  private readonly told: ToldStory[] = []
+  private readonly shown = new ShownLedger()
   private readonly runner: SuggestionRunner
   private snapshot: () => AssistSnapshot | null = () => null
   private readonly evidence = new PresentationEvidence()
-  private readonly coachHeadlines: string[] = []
   private readonly prompts = new MeetingPrompts()
 
   /** `clockMs` is the meeting's audio clock, so suggestions line up with the transcript. */
@@ -58,11 +51,7 @@ export class LiveSession {
       persist: (s) => {
         const id = insertSuggestion(s)
         // a late answer from a meeting that has since ended must not leak into the next one
-        if (isLiveMeeting(s.meetingId)) rememberHeadline(this.shownHeadlines, s.text)
-        if (isLiveMeeting(s.meetingId) && tellsStory(s.purpose, s.manualKind))
-          rememberStory(this.told, s.text)
-        if (isLiveMeeting(s.meetingId) && s.purpose === 'next-point')
-          rememberHeadline(this.coachHeadlines, s.text)
+        if (isLiveMeeting(s.meetingId)) this.shown.record(s)
         return id
       },
       hold: markPostProcessing,
@@ -92,11 +81,9 @@ export class LiveSession {
           atMs: Math.round(clockMs()),
           window: [...this.window],
           names,
-          recent: [...this.shownHeadlines],
-          told: [...this.told],
+          ...this.shown.snapshot(),
           presentation: this.presentation(),
           coachEvidence: this.evidence.snapshot(),
-          coachRecent: [...this.coachHeadlines],
         }
       }),
       log: (message) => console.warn(`[sanas] ${message}`),
@@ -107,9 +94,7 @@ export class LiveSession {
    *  assistance started. A resume keeps all of it and only restarts assistance. */
   begin(jobId: number): void {
     this.window.length = 0
-    this.shownHeadlines.length = 0
-    this.told.length = 0
-    this.coachHeadlines.length = 0
+    this.shown.reset()
     this.evidence.reset(0)
     this.assistance.presentationChanged(0)
     this.assistance.start()
@@ -153,7 +138,7 @@ export class LiveSession {
 
   presentationChanged(atMs: number): void {
     this.evidence.reset(atMs)
-    this.coachHeadlines.length = 0
+    this.shown.clearCoach()
     this.assistance.presentationChanged(atMs)
   }
 
@@ -163,7 +148,7 @@ export class LiveSession {
     for (const line of this.window) if (line.speaker === speaker) line.isUser = isUser
     this.assistance.identityChanged()
     this.evidence.identityChanged(this.clockMs())
-    this.coachHeadlines.length = 0
+    this.shown.clearCoach()
   }
 
   /** What the post-stop summary reads: a copy of the window and the meeting's prompt. */

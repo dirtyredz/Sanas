@@ -7,7 +7,7 @@ scripts/eval/topic-switch.eval.ts through vitest: each version answers the same 
 interview (6 exchanges, an automatic answer and an Answer now each = 12 calls per version per
 sample) and a side-by-side Markdown report lands in .tmp/eval/. Scoring is deterministic:
 earlier-topic terms carried into a later answer, the asked term missing, factual answers over
-40 words. Uses only the fixture in src/main/services/assistant/answer-context/testing/; it
+40 words. Uses only the fixture in src/main/services/assistant/answer-context/topic-switch-fixture.ts; it
 never opens the Sanas database or any meeting data. Runs from any directory and logs to
 .tmp/owner-runs/. Live runs call the Anthropic API (paid); -DryRun makes no calls.
 .PARAMETER OldRef

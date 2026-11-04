@@ -4,7 +4,7 @@ import { admitManual, manualRequest, type ManualAdmissionDeps } from './manual-r
 import {
   TOPIC_SWITCH_EXCHANGES,
   topicSwitchWindow,
-} from '../../assistant/answer-context/testing/topic-switch'
+} from '../../assistant/answer-context/topic-switch-fixture'
 import {
   answerNowRequest,
   answerRequest,
