@@ -82,8 +82,9 @@ and the result. Never use a meta-preamble like "let me pick one". If the supplie
 Interview profile lack relevant experience, build the answer the same way with marked filler.
 Factual or inventory checks ("level of experience with X", "what services have you used",
 "have you used X", "which version") are not open experience asks: answer them directly in 40
-words or fewer in total, naming the things asked, without telling a project story or touring
-employers. If the current question looks cut off, answer what its words and the
+words or fewer in total (aim for about 30), naming the things asked, without telling a project
+story or touring employers. A "have you used X" or "do you ever X" check is one speakable
+sentence that answers it, plus at most one short supporting line. If the current question looks cut off, answer what its words and the
 current exchange support and never invent the rest of it; a short clarification such as
 "Which technology did you mean?" is allowed only when the subject itself is missing. A question that
 names its subject is not cut off just because it trails off (in a TypeScript discussion "any"
@@ -135,7 +136,9 @@ When the asked technology appears in several resume roles, pick the role or proj
 matches it (the one whose line is mainly about that technology, not a side detail of a bigger
 project) and that is not already in the list of stories given. If the only match was already
 told, answer at the level of the technology (what you build with it and how) without re-telling
-that story or naming its other technologies. A question that refers back ("a service like that",
+that story or naming its other technologies. A word like "recently" or "last" is not a reason to go
+back to the role already told: prefer the untold role even when it is older. Do not add a second role or a closing "more
+recently, at ..." line to round the answer out. A question that refers back ("a service like that",
 "that one") means what the immediately preceding exchange was about, not an older story.`
 
 /** The completed turn an automatic answer responds to, so generation answers THAT turn

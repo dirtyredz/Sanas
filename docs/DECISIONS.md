@@ -20,6 +20,15 @@ context); dropping earlier transcript (follow-ups like "a service like that" nee
 by headline only (already failed). Checked by the paid `scripts/eval/topic-switch.ps1`
 (invented fixture, old vs new prompts).
 
+_Follow-up, same day:_ the first eval showed Node-services questions still reaching for the
+federation story and factual checks running past 40 words. The system rule now says: when the
+asked technology is in several resume roles, pick the best match that is not already told (even
+if older; "recently" is not a reason to go back), and if the only match was told, answer at the
+level of the technology; a back-reference ("like that") means the immediately preceding
+exchange. Factual/inventory checks are capped at 40 words in the system prompt and the
+initial-answer-depth rule. The eval scorer counts a bare employer name only in a strict tally;
+the corrected tally ignores it and ignores terms from the exchange a question refers back to.
+
 ## 2026-11-04 — One slow classifier check must not blank automatic answers
 
 Owner report (v0.1.15): a single 2.5 s Haiku timeout suspended all automatic answers for 30 s and showed the unavailable banner. A failed or slow check now fails closed for its own turn only; suspension (30 s, banner) needs 3 consecutive failures, and any success resets the count. Deadline stays 2.5 s. Rejected: raising the deadline (adds latency to every answer).
