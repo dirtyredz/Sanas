@@ -5,6 +5,9 @@ export interface AssistDiagnostic {
   event: string
   turn?: CompletedTurn
   reason?: string
+  /** The run this event concerns (answer start, speculation): correlates the candidate turn
+   *  with its suggestion events and request records. */
+  suggestionId?: number
 }
 let observer: ((event: AssistDiagnostic) => void) | undefined
 export function observeRehearsalAssistance(next?: (event: AssistDiagnostic) => void): void {

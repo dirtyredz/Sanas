@@ -254,3 +254,96 @@ describe('suggestion runner', () => {
     expect(holds.size).toBe(0)
   })
 })
+
+describe('suggestion runner: speculative answers', () => {
+  beforeEach(() => vi.useFakeTimers())
+  afterEach(() => vi.useRealTimers())
+
+  const auto = (over: Partial<SuggestionRequest> = {}): SuggestionRequest =>
+    answer({ allowNoop: true, ...over })
+
+  it('owns the ambient lane and holds the meeting, but shows nothing until promoted', async () => {
+    const { runner, pending, events, stored, holds } = harness()
+    const run = runner.speculate(auto())!
+    expect(runner.canStart('ambient')).toBe(false)
+    expect(runner.canStart('hotkey')).toBe(true)
+    expect(holds.get(7)).toBe(1)
+    pending[0].req.onDelta?.('**Use a key**')
+    expect(events).toEqual([])
+    expect(run.promote()).toBe(true)
+    expect(events.map((e) => [e.kind, e.text])).toEqual([
+      ['start', ''],
+      ['delta', '**Use a key**'],
+    ])
+    pending[0].req.onDelta?.(' per request.')
+    pending[0].resolve('**Use a key** per request.')
+    await expect(run.done).resolves.toBe('done')
+    expect(stored).toHaveLength(1)
+    expect(holds.get(7)).toBe(0)
+    run.cancel() // promoted: no longer withdrawable
+    expect(events.at(-1)?.kind).toBe('done')
+  })
+
+  it('keeps a complete result unstored until promoted', async () => {
+    const { runner, pending, events, stored } = harness()
+    const run = runner.speculate(auto())!
+    pending[0].resolve('**Two weeks.**')
+    await vi.advanceTimersByTimeAsync(0)
+    expect(stored).toEqual([])
+    expect(run.promote()).toBe(true)
+    await expect(run.done).resolves.toBe('done')
+    expect(events.map((e) => e.kind)).toEqual(['start', 'done'])
+    expect(stored).toHaveLength(1)
+  })
+
+  it.each([false, true])(
+    'discards silently (provider finished first: %s), releasing everything once',
+    async (finishFirst) => {
+      const { runner, pending, events, stored, holds } = harness()
+      const run = runner.speculate(auto())!
+      pending[0].req.onDelta?.('**Text**')
+      if (finishFirst) {
+        pending[0].resolve('**Text**')
+        await vi.advanceTimersByTimeAsync(0)
+      }
+      run.cancel()
+      expect(runner.canStart('ambient')).toBe(true) // freed at once
+      const next = runner.start(answer())!
+      pending[0].req.onDelta?.(' late') // ignored
+      await expect(run.done).resolves.toBe('discarded')
+      expect(run.promote()).toBe(false)
+      expect(runner.canStart('ambient')).toBe(false) // the stale run did not free the new owner
+      expect(events.every((e) => e.suggestionId === next.id)).toBe(true)
+      expect(stored).toEqual([])
+      expect(holds.get(7)).toBe(1) // only the new run's hold remains
+    },
+  )
+
+  it('ends silently on provider failure or timeout, and then refuses promotion', async () => {
+    const t = harness()
+    const failed = t.runner.speculate(auto())!
+    t.pending[0].reject(new Error('overloaded'))
+    await expect(failed.done).resolves.toBe('discarded')
+    expect(failed.promote()).toBe(false)
+    const held = t.runner.speculate(auto({ timeoutMs: 1_000 }))!
+    t.pending[1].resolve('**Held.**')
+    await vi.advanceTimersByTimeAsync(1_000)
+    await expect(held.done).resolves.toBe('discarded')
+    expect(held.promote()).toBe(false)
+    expect(t.events).toEqual([])
+    expect(t.stored).toEqual([])
+    expect(t.holds.get(7)).toBe(0)
+    expect(t.runner.canStart('ambient')).toBe(true)
+  })
+
+  it('only speculates streamed ambient requests with a key on a free lane', () => {
+    const { runner, events, holds } = harness()
+    expect(runner.speculate(auto({ trigger: 'hotkey' }))).toBeNull()
+    expect(runner.speculate(coach())).toBeNull()
+    expect(runner.speculate(auto({ apiKey: '' }))).toBeNull()
+    expect(events).toEqual([]) // no missing-key card for a speculation
+    runner.start(answer())
+    expect(runner.speculate(auto())).toBeNull()
+    expect(holds.get(7)).toBe(1)
+  })
+})

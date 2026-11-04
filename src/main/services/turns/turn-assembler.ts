@@ -15,7 +15,8 @@ import type { CompletedTurn, IdentityRole, TurnCompletion, TurnFinal } from './t
 //  - with no usable boundary, a turn closes after a stretch without advancing speech;
 //  - reset discards everything unfinished (pause, stop, reconnect, identity change).
 
-export const CONTINUATION_GRACE_MS = 350
+/** Kept short: it adds to every answer's latency (DECISIONS 2026-11-04, was 350). */
+export const CONTINUATION_GRACE_MS = 150
 export const SILENCE_FALLBACK_MS = 1_800
 export const TURN_TEXT_CAP = 12_000
 const HEAD_CHARS = 4_000

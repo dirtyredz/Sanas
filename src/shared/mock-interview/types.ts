@@ -7,7 +7,11 @@ export interface MockQuestionResult {
   followUp: boolean
   fallback: boolean
   producedSuggestion: boolean
+  /** STT final receipt to first broadcast text. */
   firstVisibleLatencyMs: number | null
+  /** Interviewer speech finished (playback acknowledged) to first broadcast text. Absent in
+   *  results saved before it existed. */
+  spokenVisibleLatencyMs?: number | null
   completionLatencyMs: number | null
   words: number
   reason: string

@@ -16,6 +16,7 @@ export function collectEvidence(scenario: Scenario, model: RehearsalAssistant, n
     stepIds: string[]
     turnId?: number
     reason?: string
+    suggestionId?: number
   }[] = []
   observeRehearsalAssistance((e) => {
     const stepIds = e.turn ? turnSteps(scenario.steps, [e.turn]) : []
@@ -26,6 +27,7 @@ export function collectEvidence(scenario: Scenario, model: RehearsalAssistant, n
       turnId: e.turn?.id,
       stepIds,
       reason: e.reason,
+      suggestionId: e.suggestionId,
     })
   })
   const finals: TranscriptEvent[] = []

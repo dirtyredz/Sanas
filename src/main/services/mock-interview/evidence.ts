@@ -26,7 +26,13 @@ export class MockEvidence {
     const id = event.kind === 'visible' ? event.event.suggestionId : event.id
     const r = this.requests.find((r) => r.id === id)
     if (!r) return
-    if (event.kind === 'visible') {
+    if (event.kind === 'first-text') r.firstDeltaMs ??= this.now()
+    else if (event.kind === 'promoted') return
+    else if (event.kind === 'settled' && event.outcome === 'discarded') {
+      // an unpublished speculation was never an answer: it stays out of the per-question
+      // report (its count lives in the assistance transitions)
+      this.requests.splice(this.requests.indexOf(r), 1)
+    } else if (event.kind === 'visible') {
       const e = event.event
       if ((e.kind === 'delta' && e.text) || e.kind === 'done') r.firstVisibleMs ??= this.now()
       if (e.kind === 'done') {
@@ -57,6 +63,7 @@ export class MockEvidence {
         fallback: t.fallback,
         producedSuggestion: t.producedSuggestion,
         firstVisibleLatencyMs: t.firstVisibleLatencyMs,
+        spokenVisibleLatencyMs: t.spokenVisibleLatencyMs,
         completionLatencyMs: t.completionLatencyMs,
         words: t.requests.reduce((n, r) => n + (r.proseWords ?? 0), 0),
         reason: t.producedSuggestion

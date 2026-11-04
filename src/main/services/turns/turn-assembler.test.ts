@@ -57,6 +57,26 @@ describe('turn assembly', () => {
     expect(a.tick(500 + CONTINUATION_GRACE_MS)[0].text).toBe('So the question is how we ship it?')
   })
 
+  it('uses a 150 ms grace: speech arriving after it starts a new turn', () => {
+    // the deliberate latency tradeoff (DECISIONS 2026-11-04): 200 ms faster on every
+    // boundary-completed turn, a 200 ms narrower window for the speaker to carry on
+    expect(CONTINUATION_GRACE_MS).toBe(150)
+    const a = new TurnAssembler()
+    a.final(them('Is that clear?', 0, 1_000), 600)
+    a.boundary(0, 1_000, 'endpoint', 600)
+    a.activity(0, 1_300, 600 + 149) // an interim inside the grace still continues the turn
+    expect(a.tick(600 + 150)).toEqual([])
+
+    const b = new TurnAssembler()
+    b.final(them('Is that clear?', 0, 1_000), 600)
+    b.boundary(0, 1_000, 'endpoint', 600)
+    expect(b.tick(600 + 150)[0].text).toBe('Is that clear?')
+    b.activity(0, 1_300, 600 + 200) // too late: the question already completed alone
+    b.final(them('Any questions?', 1_300, 2_000), 900)
+    b.boundary(0, 2_000, 'endpoint', 900)
+    expect(b.tick(900 + 150)[0].text).toBe('Any questions?')
+  })
+
   it('emits a turn once however many boundaries repeat', () => {
     const a = new TurnAssembler()
     a.final(them('Any thoughts?', 0, 700), 0)

@@ -4,10 +4,19 @@ import { imageDigest } from './outcomes'
 import { CLASSIFIER_SYSTEM } from '../../services/assistant/classifier'
 import type { AssistRequest } from '../../services/assistant/types'
 import type { Step } from '../scenario/scenario'
-import { TurnAssembler } from '../../services/turns/turn-assembler'
+import { CONTINUATION_GRACE_MS, TurnAssembler } from '../../services/turns/turn-assembler'
 
 it('keeps a multi-question turn open while retimed scripted speech is still advancing', async () => {
-  const provider = new ScriptedSttProvider()
+  const first = { ...utterance, atMs: 0, durationMs: 2100 }
+  const second = {
+    ...utterance,
+    id: 'two',
+    atMs: 2300,
+    durationMs: 1900,
+    text: 'When can you start?',
+  }
+  // speech resumes 200 ms after the first question: like Deepgram, no endpoint in between
+  const provider = new ScriptedSttProvider([first, second])
   const turns = new TurnAssembler()
   let clock = 0
   await provider.start({
@@ -25,22 +34,21 @@ it('keeps a multi-question turn open while retimed scripted speech is still adva
       else if (signal.kind === 'activity') turns.activity(signal.channel, signal.atMs, clock)
     },
   })
-  provider.utterance({ ...utterance, atMs: 0, durationMs: 2100 })
-  for (clock = 0; clock <= 2100; clock += 100) provider.tick(clock)
-  clock = 2300
-  provider.utterance({
-    ...utterance,
-    id: 'two',
-    atMs: 2300,
-    durationMs: 1900,
-    text: 'When can you start?',
-  })
+  provider.utterance(first)
+  for (clock = 0; clock <= 2100; clock += 100) {
+    provider.tick(clock)
+    expect(turns.tick(clock)).toEqual([])
+  }
+  for (clock = 2100; clock < 2300; clock += 50) expect(turns.tick(clock)).toEqual([])
+  provider.utterance(second)
   for (; clock < 4200; clock += 100) {
     provider.tick(clock)
     expect(turns.tick(clock)).toEqual([])
   }
   provider.tick(clock)
-  expect(turns.tick(clock + 350)[0].text).toBe(utterance.text + ' When can you start?')
+  expect(turns.tick(clock + CONTINUATION_GRACE_MS)[0].text).toBe(
+    utterance.text + ' When can you start?',
+  )
 })
 
 afterEach(() => vi.useRealTimers())

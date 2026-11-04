@@ -33,6 +33,10 @@ export function liveTurnReport(
       producedSuggestion: completed.length > 0,
       firstVisibleLatencyMs:
         t.finalMs === undefined || !visible.length ? null : Math.min(...visible) - t.finalMs,
+      // from the interviewer finishing speaking (TTS acknowledged), not from the STT final:
+      // the closest this harness gets to speech end, kept separate from the receipt metric
+      spokenVisibleLatencyMs:
+        t.spokenMs === undefined || !visible.length ? null : Math.min(...visible) - t.spokenMs,
       completionLatencyMs:
         t.finalMs === undefined || !completed.length ? null : Math.min(...completed) - t.finalMs,
       requests: correlated.map(publicOutcome),

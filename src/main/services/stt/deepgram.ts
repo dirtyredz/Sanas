@@ -32,6 +32,8 @@ import {
 const WS_BASE = 'wss://api.deepgram.com/v1/listen'
 const KEEPALIVE_MS = 5000 // socket dies after ~10s of silence (GOTCHAS.md)
 const RECONNECT_DELAYS_MS = [1000, 2000, 4000, 8000, 8000] // then give up
+/** Silence Deepgram needs before it reports an endpoint. Speech resuming sooner gets none. */
+export const ENDPOINTING_MS = 600
 
 /** Streaming query. Endpointing and utterance-end give turn assembly its boundary evidence;
  *  VAD events give it speech activity. */
@@ -46,7 +48,7 @@ export function buildStreamUrl(keyterms: string[], channels: number): string {
     diarize: 'true',
     interim_results: 'true',
     smart_format: 'true',
-    endpointing: '600',
+    endpointing: String(ENDPOINTING_MS),
     utterance_end_ms: '1000',
     vad_events: 'true',
   })

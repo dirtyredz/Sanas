@@ -3,7 +3,9 @@ import type { Settings } from '@shared/types'
 import type { PresentationState } from '@shared/presentation/types'
 import { presentationCoachContent, presentationHint } from '../../assistant/presentation/prompts'
 import { COMPACT_CONTRACT, recentSuggestionsBlock } from '../../assistant/compact-contract'
-import type { SpeakerNames } from '../../turns/transcript-format'
+import { speakerLabel, type SpeakerNames } from '../../turns/transcript-format'
+import type { CompletedTurn } from '../../turns/types'
+import type { Addressee, ResponseKind } from '../../assistant/classifier'
 import {
   assistProfile,
   buildUserContent,
@@ -92,6 +94,32 @@ export function answerRequest(
     timeoutMs: suggestionTimeoutMs(trigger, profile.kind === 'full'),
     delivery: 'stream',
     allowNoop: automatic,
+  }
+}
+
+/** The automatic answer to a classified turn, carrying the still-unanswered questions
+ *  `asked` (oldest first; may include `turn` itself, which is always the focus). */
+export function automaticAnswerRequest(
+  snap: AssistSnapshot,
+  s: AssistSettings,
+  turn: CompletedTurn,
+  verdict: { kind: ResponseKind; addressee: Addressee },
+  asked: CompletedTurn[],
+): SuggestionRequest {
+  const label = (t: CompletedTurn): string =>
+    speakerLabel({ speaker: t.speaker, isUser: false }, snap.names)
+  const earlier = asked.filter((t) => t !== turn)
+  return {
+    ...answerRequest(snap, s, 'ambient', {
+      speaker: label(turn),
+      text: turn.text,
+      kind: verdict.kind,
+      addressee: verdict.addressee,
+      earlier: earlier.length
+        ? earlier.map((t) => ({ speaker: label(t), text: t.text }))
+        : undefined,
+    }),
+    diagnosticTurns: asked,
   }
 }
 

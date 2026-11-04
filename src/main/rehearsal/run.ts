@@ -46,7 +46,7 @@ export async function runRehearsal(): Promise<void> {
     await openDb()
     let epoch = performance.now()
     const now = (): number => Math.round(performance.now() - epoch)
-    const stt = new ScriptedSttProvider()
+    const stt = new ScriptedSttProvider(scenario.steps)
     const { installRehearsalStt } = await import('../services/stt')
     const { deepgramProvider } = await import('../services/stt/deepgram')
     let batchCount = 0
@@ -125,6 +125,12 @@ export async function runRehearsal(): Promise<void> {
       assistant,
       requests: model.requests.map(publicOutcome),
       transitions,
+      // extra answer spend: every speculation is a paid call, promoted or not
+      speculation: {
+        started: transitions.filter((t) => t.event === 'speculation-started').length,
+        promoted: transitions.filter((t) => t.event === 'speculation-promoted').length,
+        discarded: transitions.filter((t) => t.event === 'speculation-discarded').length,
+      },
       admissions,
       finalReceipts: Object.fromEntries(finalReceipts),
       turnCompletions: Object.fromEntries(turnCompletions),

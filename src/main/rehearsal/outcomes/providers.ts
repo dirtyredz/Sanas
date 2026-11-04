@@ -10,12 +10,21 @@ import type {
 import type { Step } from '../scenario/scenario'
 import { beginOutcome, turnSteps, type RequestOutcome } from './outcomes'
 import { isNoSuggestion } from '../../services/assistant/compact-contract'
+import { ENDPOINTING_MS } from '../../services/stt/deepgram'
 
-/** Driven by the harness clock; no independent timers can leak beyond Stop. */
+type Utterance = Extract<Step, { kind: 'utterance' }>
+
+/** Driven by the harness clock; no independent timers can leak beyond Stop.
+ *
+ *  Like Deepgram, it reports an endpoint only after ENDPOINTING_MS of silence: when the
+ *  scenario resumes speech on the same channel sooner, the final carries no boundary, so a
+ *  scripted burst assembles into one turn as live speech would, whatever the turn grace. The
+ *  final itself still arrives at utterance end (no endpointing latency is modelled). */
 export class ScriptedSttProvider implements SttProvider {
+  constructor(private readonly steps: Step[] = []) {}
   private opts: SttSessionOptions | null = null
   private finals: SttBatchTranscript[] = []
-  private pending: Extract<Step, { kind: 'utterance' }>[] = []
+  private pending: Utterance[] = []
   private disconnectedUntil = -1
   batchCalls = 0
   reconnects = 0
@@ -29,7 +38,7 @@ export class ScriptedSttProvider implements SttProvider {
       },
     }
   }
-  utterance(step: Extract<Step, { kind: 'utterance' }>): void {
+  utterance(step: Utterance): void {
     if (!this.opts || step.atMs < this.disconnectedUntil) return
     this.opts.onTranscript({
       ...this.line(step),
@@ -39,7 +48,7 @@ export class ScriptedSttProvider implements SttProvider {
     })
     this.pending.push(step)
   }
-  private line(step: Extract<Step, { kind: 'utterance' }>): SttBatchTranscript {
+  private line(step: Utterance): SttBatchTranscript {
     return {
       channel: step.channel === 'me' ? 0 : 1,
       speaker: step.speaker,
@@ -64,6 +73,7 @@ export class ScriptedSttProvider implements SttProvider {
       const line = this.line(step)
       this.finals.push(line)
       this.opts.onTranscript({ ...line, isFinal: true })
+      if (this.resumesBeforeEndpoint(step)) continue
       this.opts.onSignal?.({
         kind: 'boundary',
         channel: line.channel,
@@ -71,6 +81,18 @@ export class ScriptedSttProvider implements SttProvider {
         source: 'endpoint',
       })
     }
+  }
+  private resumesBeforeEndpoint(step: Utterance): boolean {
+    const end = step.atMs + step.durationMs
+    return this.steps.some(
+      (s) =>
+        s.kind === 'utterance' &&
+        s !== step &&
+        s.id !== step.id &&
+        s.channel === step.channel &&
+        s.atMs > step.atMs &&
+        s.atMs < end + ENDPOINTING_MS,
+    )
   }
   drop(now: number, durationMs: number): void {
     this.pending = []

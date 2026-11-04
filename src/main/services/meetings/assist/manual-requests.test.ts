@@ -168,7 +168,7 @@ it('audience prompts request one question and use their bounded profile', () => 
 
 it('preserves manual admission ordering and outcomes', () => {
   const admitted = vi.fn()
-  const start = vi.fn(() => ({ done: Promise.resolve('done' as const), cancel: vi.fn() }))
+  const start = vi.fn(() => ({ id: 1, done: Promise.resolve('done' as const), cancel: vi.fn() }))
   const deps: ManualAdmissionDeps = {
     canStart: () => true,
     settings: () => settings,

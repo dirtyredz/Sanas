@@ -15,6 +15,13 @@ import { canStartSuggestion, type SuggestionInFlight } from './suggestion-in-fli
 // lane at once so an answer can take it, and the cancelled run's late `finally` cannot
 // release the newer owner. An answer that started before Stop still finishes and persists
 // (that is why the hold exists); only buffered next points are cancellable.
+//
+// A speculative answer (`speculate`) is an automatic answer started before the classifier
+// has agreed it is wanted. It owns the ambient lane and the meeting hold like any run, but it
+// is UNPUBLISHED: no visible event and no persistence until `promote()`. Until then
+// `cancel()` discards it silently, whatever the provider already returned, and a provider
+// failure or timeout ends it with nothing shown. Once promoted it is an ordinary streamed
+// answer and, like one, can no longer be withdrawn.
 
 export interface SuggestionRequest extends SuggestionMetadata {
   diagnosticTurns?: readonly { startMs: number; endMs: number; completedAt: number }[]
@@ -48,11 +55,24 @@ export interface SuggestionRequest extends SuggestionMetadata {
   accept?: (text: string) => boolean
 }
 
-export type SuggestionOutcome = 'done' | 'noop' | 'cancelled' | 'timeout' | 'error'
+/** 'discarded': a speculative answer that ended unpublished (rejected, failed, timed out or
+ *  superseded). Nothing was shown or stored for it. */
+export type SuggestionOutcome = 'done' | 'noop' | 'cancelled' | 'timeout' | 'error' | 'discarded'
 
 export interface SuggestionHandle {
+  /** The suggestion id its events carry; correlates diagnostics with the run. */
+  readonly id: number
   readonly done: Promise<SuggestionOutcome>
   /** Abort and free the lane now. Nothing further is published for this request. */
+  cancel(): void
+}
+
+export interface SpeculativeHandle extends SuggestionHandle {
+  /** Publish it as an ordinary streamed answer: held text is shown once it cannot be the
+   *  no-op, a held complete result is stored and shown. False when the run already ended
+   *  unpublished (failed, timed out, discarded): the caller takes the ordinary path. */
+  promote(): boolean
+  /** Discards it while unpublished (nothing shown or stored); a no-op once promoted. */
   cancel(): void
 }
 
@@ -92,6 +112,18 @@ export class SuggestionRunner {
 
   /** Starts a request, or returns null when its lane is taken or there is no API key. */
   start(request: SuggestionRequest): SuggestionHandle | null {
+    return this.launch(request, false)
+  }
+
+  /** Starts a streamed automatic answer unpublished, or returns null when the ambient lane is
+   *  taken or there is no API key (silently: a speculation never shows an error). */
+  speculate(request: SuggestionRequest): SpeculativeHandle | null {
+    if (request.trigger !== 'ambient' || request.delivery !== 'stream' || !request.apiKey)
+      return null
+    return this.launch(request, true)
+  }
+
+  private launch(request: SuggestionRequest, speculative: boolean): SpeculativeHandle | null {
     const req = { ...request } // the snapshot this run uses, whatever the caller does next
     if (!this.canStart(req.trigger)) return null
     const sid = ++this.seq
@@ -109,6 +141,7 @@ export class SuggestionRunner {
       meetingId: req.meetingId,
       purpose: req.purpose,
       spans: req.diagnosticTurns ?? [],
+      ...(speculative ? { speculative: true } : {}),
     })
     const emit = (kind: SuggestionEvent['kind'], text: string): void => {
       const event: SuggestionEvent = {
@@ -141,24 +174,42 @@ export class SuggestionRunner {
     }
     let cancelled = false
     const controller = new AbortController()
+    // a speculation waits here, after its provider call, until it is promoted or discarded
+    let published = !speculative
+    let ended = false
+    let decide: (promoted: boolean) => void = () => undefined
+    const decision = new Promise<boolean>((resolve) => (decide = resolve))
 
-    // a streamed answer that may decline is held back until it visibly is not the no-op
-    let shown = streamed && !req.allowNoop
+    // a streamed answer that may decline is held back until it visibly is not the no-op;
+    // an unpublished speculation holds everything
+    let shown = false
     let held = ''
-    if (shown) emit('start', '')
-    const onDelta = (delta: string): void => {
-      if (shown) return emit('delta', delta)
-      held += delta
-      if (couldBeNoSuggestion(held)) return
+    let sawText = false
+    const reveal = (): void => {
+      if (shown || !published || (req.allowNoop && couldBeNoSuggestion(held))) return
       shown = true
       emit('start', '')
-      emit('delta', held)
+      if (held) emit('delta', held)
+    }
+    if (streamed) reveal()
+    const onDelta = (delta: string): void => {
+      if (cancelled) return // late text from a discarded speculation
+      if (!sawText && delta) {
+        sawText = true
+        observeRun({ kind: 'first-text', id: sid, meetingId: req.meetingId })
+      }
+      if (shown) return emit('delta', delta)
+      held += delta
+      reveal()
     }
     // the request outlives the call that started it and ends in an insert against this
     // meeting, so it holds the meeting like any other background write. Everything after
     // this line is inside the try: a leaked hold makes the meeting un-mergeable forever.
     this.deps.hold(req.meetingId)
-    const timeout = setTimeout(() => controller.abort(), req.timeoutMs)
+    const timeout = setTimeout(() => {
+      controller.abort()
+      decide(false) // a held, unpromoted result never outlives the request deadline
+    }, req.timeoutMs)
 
     const run = async (): Promise<SuggestionOutcome> => {
       try {
@@ -183,6 +234,7 @@ export class SuggestionRunner {
           maxRetries: req.maxRetries,
           onDelta: streamed ? onDelta : undefined,
         })
+        if (!published && !(await decision)) return 'discarded'
         if (cancelled) return 'cancelled'
         // declined: nothing displayed, nothing persisted; the lane frees in `finally`
         if (req.allowNoop && !shown && isNoSuggestion(text)) return 'noop'
@@ -201,6 +253,7 @@ export class SuggestionRunner {
         emit('done', text)
         return 'done'
       } catch (e) {
+        if (!published) return 'discarded' // never shown, so never an error card either
         if (cancelled) return 'cancelled'
         const timedOut = controller.signal.aborted
         if (streamed) {
@@ -218,6 +271,7 @@ export class SuggestionRunner {
         }
         return timedOut ? 'timeout' : 'error'
       } finally {
+        ended = true
         clearTimeout(timeout)
         this.deps.release(req.meetingId)
         releaseLane()
@@ -229,12 +283,24 @@ export class SuggestionRunner {
       return outcome
     })
     return {
+      id: sid,
       done,
+      promote: () => {
+        if (published) return !cancelled
+        if (cancelled || ended) return false
+        published = true
+        decide(true)
+        observeRun({ kind: 'promoted', id: sid, meetingId: req.meetingId })
+        reveal() // text already held is shown now, unless it could still be the no-op
+        return true
+      },
       cancel: () => {
-        if (streamed || cancelled) return // answers are never withdrawn once started
+        // answers are never withdrawn once published; next points and speculations are
+        if ((streamed && published) || cancelled) return
         cancelled = true
         releaseLane()
         controller.abort()
+        decide(false)
       },
     }
   }

@@ -13,8 +13,10 @@ import { QuestionLedger } from './question-ledger'
 import { CoachPolicy } from '../../assistant/coach/coach-policy'
 import { speakerLabel } from '../../turns/transcript-format'
 import type { SuggestionHandle, SuggestionRunner } from './suggestion-runner'
+import { SPECULATED_VERDICT, SpeculativeAnswer } from './speculative-answer'
 import {
   answerRequest,
+  automaticAnswerRequest,
   coachRequest,
   type AssistSettings,
   type AssistSnapshot,
@@ -34,6 +36,12 @@ import {
 // Every invalidation (pause, stop, reconnect, pin change) bumps `epoch` and discards the
 // unfinished turn and all pending automatic work; anything that resolves for an older epoch
 // is ignored. Interims and VAD only ever count as activity — never as transcript text.
+//
+// When the classifier starts on a free ambient lane, the answer a `question me` verdict would
+// get starts with it, unpublished (./speculative-answer.ts), so classifier latency overlaps
+// the answer's time to first text. The verdict promotes it when the ordinary request would be
+// the same prompt, or it is discarded silently and the ordinary path runs. Every way a
+// candidate ends (drop, verdict, expiry, invalidation) discards it.
 
 export const CANDIDATE_LIFETIME_MS = 6_000
 export const CLASSIFIER_SPACING_MS = 1_000
@@ -51,7 +59,9 @@ export interface LiveAssistanceDeps {
   clearTimer(handle: unknown): void
   settings(): AssistSettings
   classify(req: ClassifyRequest): Promise<ClassifierOutcome>
-  runner: Pick<SuggestionRunner, 'canStart' | 'start'>
+  /** Without `speculate`, answers start only after the verdict (the ordinary path). */
+  runner: Pick<SuggestionRunner, 'canStart' | 'start'> &
+    Partial<Pick<SuggestionRunner, 'speculate'>>
   /** The live meeting right now, or null when there is none. */
   snapshot(): AssistSnapshot | null
   availabilityChanged?(): void
@@ -114,7 +124,11 @@ export class LiveAssistance {
   private timers = new Map<TimerName, unknown>()
   private lastFailureLogAt = Number.NEGATIVE_INFINITY
 
-  constructor(private deps: LiveAssistanceDeps) {}
+  private speculation: SpeculativeAnswer
+
+  constructor(private deps: LiveAssistanceDeps) {
+    this.speculation = new SpeculativeAnswer(deps.runner)
+  }
 
   // ── lifecycle ──────────────────────────────────────────────────────────────────────
 
@@ -138,6 +152,8 @@ export class LiveAssistance {
       this.active = false
       this.clearSuspension()
       this.invalidate('stop-or-pause')
+      const counts = this.speculation.takeCounts()
+      if (counts) this.deps.log(`speculative answers: ${counts}`) // spend visibility; no text
     })
   }
 
@@ -270,6 +286,7 @@ export class LiveAssistance {
     observeAssistance({ event: 'invalidated', turn: c.turn, reason })
     c.dropped = true
     c.abort?.abort()
+    this.speculation.discard(c.turn, reason)
     if (this.queued === c) this.queued = null
     if (this.ready === c) this.ready = null
   }
@@ -330,6 +347,8 @@ export class LiveAssistance {
       text: t.text,
     })
     const epoch = this.epoch
+    observeAssistance({ event: 'classifier-started', turn: c.turn })
+    this.speculate(c, snap, s, now)
     void this.deps
       .classify({
         diagnosticTurn: c.turn,
@@ -344,18 +363,29 @@ export class LiveAssistance {
       .then((outcome) => this.guard(() => this.onClassified(c, epoch, outcome)))
   }
 
+  /** Starts the `question me` answer alongside the classifier when the ambient lane is free.
+   *  Expiry, suspension, key and cooldown checks have already passed; nothing here consumes
+   *  the cooldown or the ledger — only a promotion does. */
+  private speculate(c: Candidate, snap: AssistSnapshot, s: AssistSettings, now: number): void {
+    if (!this.deps.runner.speculate || !this.deps.runner.canStart('ambient')) return
+    const asked = this.unanswered.select(now)
+    const handle = this.speculation.begin(
+      c.turn,
+      automaticAnswerRequest(snap, s, c.turn, SPECULATED_VERDICT, asked),
+    )
+    if (handle) this.afterRun(handle) // when it ends, a waiting candidate or next point may go
+  }
+
   private onClassified(c: Candidate, epoch: number, outcome: ClassifierOutcome): void {
-    observeAssistance({
-      event: 'classified',
-      turn: c.turn,
-      reason:
-        outcome.status === 'failed'
-          ? outcome.reason
-          : outcome.kind === 'none'
-            ? 'none'
-            : outcome.kind + ' ' + outcome.addressee,
-    })
+    const verdict =
+      outcome.status === 'failed'
+        ? outcome.reason
+        : outcome.kind === 'none'
+          ? 'none'
+          : outcome.kind + ' ' + outcome.addressee
+    observeAssistance({ event: 'classified', turn: c.turn, reason: verdict })
     if (this.classifying === c) this.classifying = null
+    let accepted = false
     if (epoch === this.epoch && !c.dropped) {
       if (outcome.status === 'failed') {
         if (outcome.reason === 'provider' || outcome.reason === 'timeout') {
@@ -378,9 +408,13 @@ export class LiveAssistance {
         c.kind = outcome.kind
         c.addressee = outcome.addressee
         this.ready = c
-        this.tryGenerate()
+        accepted = true
       }
     }
+    // a rejected, failed or stale verdict ends the speculation silently; an accepted one
+    // promotes or discards it in tryGenerate
+    if (accepted) this.tryGenerate()
+    else this.speculation.discard(c.turn, 'verdict ' + verdict)
     this.tryClassify()
     if (this.active) this.evaluateCoach(this.deps.now())
   }
@@ -401,37 +435,43 @@ export class LiveAssistance {
         reason: this.expired(c, now) ? 'expired' : 'addressee-or-cooldown',
       })
       this.ready = null
+      this.speculation.discard(c.turn, 'not-generated')
       return
     }
-    if (!this.deps.runner.canStart('ambient')) {
+    const busy = (): boolean => {
+      if (this.deps.runner.canStart('ambient')) return false
       observeAssistance({ event: 'waiting', turn: c.turn, reason: 'busy-lane' })
-      return
-    } // retried when the lane frees
+      return true // retried when the lane frees
+    }
+    // the lane a speculation holds is this candidate's own
+    if (!this.speculation.pendingFor(c.turn) && busy()) return
     const snap = this.deps.snapshot()
-    this.ready = null
-    if (!snap) return
     const asked = this.unanswered.select(now)
-    const earlier = asked.filter((t) => t !== c.turn)
-    const label = (t: CompletedTurn): string =>
-      speakerLabel({ speaker: t.speaker, isUser: false }, snap.names)
-    const handle = this.deps.runner.start({
-      ...answerRequest(snap, s, 'ambient', {
-        speaker: label(c.turn),
-        text: c.turn.text,
-        kind: c.kind,
-        addressee: c.addressee,
-        earlier: earlier.length
-          ? earlier.map((t) => ({ speaker: label(t), text: t.text }))
-          : undefined,
-      }),
-      diagnosticTurns: asked,
-    })
+    const request =
+      snap &&
+      automaticAnswerRequest(snap, s, c.turn, { kind: c.kind, addressee: c.addressee }, asked)
+    // a speculation is published only when it is exactly this request; otherwise it is
+    // discarded here (freeing the lane) and this request starts in its place
+    let handle: SuggestionHandle | null = null
+    if (request) handle = this.speculation.promote(c.turn, request)
+    else this.speculation.discard(c.turn, 'no-snapshot')
+    const promoted = handle !== null
+    if (!promoted && busy()) return
+    this.ready = null
+    if (!request) return
+    handle ??= this.deps.runner.start(request)
     if (!handle) return
+    observeAssistance({
+      event: 'answer-started',
+      turn: c.turn,
+      suggestionId: handle.id,
+      reason: promoted ? 'speculative' : 'ordinary',
+    })
     this.unanswered.cover(asked) // started: answered, or deliberately declined — never re-asked
     // consumed when an answer starts — and kept even if it declines with the no-op, so a
     // model with nothing new to say cannot be asked again and again
     this.lastAnswerAt = now
-    this.afterRun(handle)
+    if (!promoted) this.afterRun(handle) // a speculation's was attached when it began
   }
 
   /** When any run ends its lane frees: a waiting candidate or a next point may go next. */
@@ -560,6 +600,7 @@ export class LiveAssistance {
     for (const name of this.timers.keys()) this.clearTimer(name)
     for (const c of [this.classifying, this.queued, this.ready])
       if (c) this.dropCandidate(c, reason)
+    this.speculation.discard(null, reason) // already gone with its candidate; never leaked
     this.unanswered.clear()
     this.cancelCoach()
     this.assembler.reset()
