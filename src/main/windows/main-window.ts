@@ -1,4 +1,4 @@
-import { BrowserWindow } from 'electron'
+import { app, BrowserWindow } from 'electron'
 import { join } from 'path'
 import { mainWindowChromeOptions } from './window-chrome'
 
@@ -34,7 +34,13 @@ export function createMainWindow(): BrowserWindow {
   })
 
   mainWindow.on('ready-to-show', () => mainWindow?.show())
-  mainWindow.on('closed', () => (mainWindow = null))
+  // The main window is the app: the overlay and mock windows are BrowserWindows too, so
+  // 'window-all-closed' never fires while one is open. Closing it quits Sanas (the
+  // before-quit path in lifecycle/start.ts still ends a running mock first).
+  mainWindow.on('closed', () => {
+    mainWindow = null
+    app.quit()
+  })
 
   if (process.env.ELECTRON_RENDERER_URL) {
     mainWindow.loadURL(`${process.env.ELECTRON_RENDERER_URL}/index.html`)

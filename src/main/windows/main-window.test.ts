@@ -10,8 +10,10 @@ const f = vi.hoisted(() => ({
   loadURL: vi.fn(),
   loadFile: vi.fn(),
   closed: null as (() => void) | null,
+  quit: vi.fn(),
 }))
 vi.mock('electron', () => ({
+  app: { quit: f.quit },
   BrowserWindow: class {
     constructor() {
       f.created++
@@ -66,6 +68,13 @@ it('only focuses a window that is already visible', () => {
   expect(f.restore).not.toHaveBeenCalled()
   expect(f.show).not.toHaveBeenCalled()
   expect(f.focus).toHaveBeenCalledOnce()
+})
+
+it('quits the app when the main window closes, so no overlay or mock window outlives it', () => {
+  createMainWindow()
+  expect(f.quit).not.toHaveBeenCalled()
+  f.closed?.()
+  expect(f.quit).toHaveBeenCalledOnce()
 })
 
 it('recreates the window after it was closed', () => {

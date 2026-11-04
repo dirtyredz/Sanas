@@ -38,7 +38,7 @@ import { createLiveControls } from './live-controls'
 import { CaptureRequests } from './assist/capture-requests'
 import { createScreenCapture } from '../screen-capture'
 import { CaptureDrafts } from './assist/capture-drafts'
-import { overlayBounds } from '../../windows/overlay-window'
+import { hideOverlay, overlayBounds } from '../../windows/overlay-window'
 
 // Orchestrates one live meeting at a time: STT session, persistence, event fan-out, and
 // lifecycle. Live assistance — the prompt window, shown headlines, system prompt and the
@@ -486,6 +486,7 @@ export function stopMeeting(): Promise<MeetingState> {
       ]).then(() => clearPostProcessing(endedId))
     }
     presentation.clear()
+    hideOverlay() // the meeting is over (Stop, overlay Stop, end of a mock); Pause never gets here
     return setState({ meetingId: null, status: 'idle' })
   })
 }

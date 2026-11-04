@@ -157,6 +157,12 @@ export function toggleOverlay(): void {
   else overlay.showInactive()
 }
 
+/** Hides the overlay (kept alive for a quick re-show). Called when a meeting stops;
+ *  pausing does not hide it. */
+export function hideOverlay(): void {
+  if (overlay && !overlay.isDestroyed() && overlay.isVisible()) overlay.hide()
+}
+
 export function showOverlay(): void {
   if (!overlay || overlay.isDestroyed()) {
     createOverlay().once('ready-to-show', () => overlay?.showInactive())

@@ -20,6 +20,7 @@ const fakes = vi.hoisted(() => ({
   liveFinal: vi.fn(),
   slides: [] as { title: string; talkingPoint: string; script: string; keyFacts: string }[],
   slideEvents: vi.fn(),
+  hideOverlay: vi.fn(),
 }))
 
 vi.mock('@shared/ipc', () => ({
@@ -118,7 +119,10 @@ vi.mock('../../windows/broadcast', () => ({ broadcast: vi.fn() }))
 vi.mock('../screen-capture', () => ({
   createScreenCapture: () => ({ target: vi.fn(), acquire: vi.fn() }),
 }))
-vi.mock('../../windows/overlay-window', () => ({ overlayBounds: vi.fn(() => null) }))
+vi.mock('../../windows/overlay-window', () => ({
+  overlayBounds: vi.fn(() => null),
+  hideOverlay: fakes.hideOverlay,
+}))
 
 import {
   currentState,
@@ -163,6 +167,16 @@ describe('meeting capture health', () => {
     await startMeeting()
     expect(sttProvider.start).toHaveBeenLastCalledWith(expect.objectContaining({ keyterms: [] }))
     await stopMeeting()
+  })
+
+  it('hides the overlay when the meeting stops, never on pause or resume', async () => {
+    fakes.hideOverlay.mockClear()
+    await startMeeting()
+    await pauseMeeting()
+    await resumeMeeting(1)
+    expect(fakes.hideOverlay).not.toHaveBeenCalled()
+    await stopMeeting()
+    expect(fakes.hideOverlay).toHaveBeenCalledOnce()
   })
 
   it('records moves against accepted audio and preserves the cursor across pause/resume', async () => {
