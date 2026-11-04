@@ -30,7 +30,7 @@ export function App(): React.JSX.Element {
       />
       <main className={`content content--${page}`}>
         <div className="live-page-host" hidden={page !== 'live'}>
-          <LiveMeetingPage />
+          <LiveMeetingPage visible={page === 'live'} />
         </div>
         <div hidden={page !== 'mock'}>
           <MockInterviewPage visible={page === 'mock'} onSettings={() => setPage('settings')} />

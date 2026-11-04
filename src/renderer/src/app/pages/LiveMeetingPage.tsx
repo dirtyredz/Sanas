@@ -1,11 +1,8 @@
 import type { MeetingResume } from '@shared/meeting-resume'
 import { RESUME_MAX_CHARS } from '@shared/meeting-resume'
 import { MeetingResumeInput } from '../../lib/meeting/resume/MeetingResumeInput'
-import {
-  interviewAfterAttachment,
-  rememberedJob,
-  rememberJob,
-} from '../../lib/meeting/start-selection'
+import { interviewAfterAttachment, rememberJob } from '../../lib/meeting/start-selection'
+import { applyJobList, startableJobs } from '../../lib/meeting/job-choices'
 import { startCapturedMeeting } from '../../lib/meeting/start-captured-meeting'
 import { MeetingContextEditor } from '../../lib/meeting/MeetingContextEditor'
 import { useEffect, useRef, useState } from 'react'
@@ -37,7 +34,7 @@ const SOURCES: {
   },
 ]
 
-export function LiveMeetingPage(): React.JSX.Element {
+export function LiveMeetingPage({ visible = true }: { visible?: boolean }): React.JSX.Element {
   const { lines, state } = useTranscript()
   const micRef = useRef<CaptureSession | null>(null)
   const [source, setSource] = useState<MeetingSource>('elsewhere')
@@ -86,15 +83,18 @@ export function LiveMeetingPage(): React.JSX.Element {
   const active = live || paused
 
   useEffect(() => {
+    // this page stays mounted while hidden, so reload the jobs each time it is shown
+    if (!visible) return
     window.sanas.jobs.list().then((all) => {
-      setJobs(all)
+      setJobs(startableJobs(all))
       // remember last-used job across sessions
-      setJobId((current) =>
-        rememberedJob(localStorage, all, choiceChanged.current ? current : undefined),
+      setJobId(
+        (current) =>
+          applyJobList(localStorage, all, choiceChanged.current ? current : undefined).jobId,
       )
     })
     window.sanas.settings.get().then((s) => setSource(s.meetingSource))
-  }, [])
+  }, [visible])
 
   useEffect(() => {
     let cancelled = false
