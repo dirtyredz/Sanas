@@ -12,8 +12,7 @@ Layout below reflects what exists.
 
 ## Layout
 
-Resumes are owned by the job: `db/repos/job/` (`job-resume.ts` + v11 schema, beside
-`job-slides.ts`), `ipc/job-resume/` (get/set + the main-owned PDF/DOCX import picker) and the
+Resumes are owned by the job: `db/repos/job/` (`job-resume.ts` + v11 schema), `ipc/job-resume/` (get/set + the main-owned PDF/DOCX import picker) and the
 job page's Resume tab (`app/jobs/JobResume.tsx`, `ResumeDraftEditor.tsx`, `resume-draft.ts`).
 Start resolves the snapshot in `services/meetings/context/start-grounding.ts` for both Live
 and Mock; `lib/meeting/resume/useJobHasResume.ts` gives Live its Interview default. The
@@ -34,7 +33,7 @@ rubrics, and `screens/geometry.ts` DIP-to-thumbnail mapping. The optional main-o
 `services/meetings/assist/diagnostics.ts` reports decisions without changing assistance policy.
 `scripts/rehearsal/credentials.ps1` owns selective 1Password reads and environment cleanup;
 `scripts/rehearsal/` owns owner entry points and the verbatim owner-run 1.0.0 template
-from `~/.claude/templates/scripts/`; its `scenarios/` holds JSON and `fixtures/` only slide/standup PNGs.
+from `~/.claude/templates/scripts/`; its `scenarios/` holds JSON and `fixtures/` only the standup PNG.
 Shared interview screens live in `services/mock-interview/fixtures/`.
 
 ```
@@ -61,7 +60,6 @@ sanas/
 │   │   │   ├── assistant/                 # AssistantProvider seam, Claude, prompts, classifier, triggers, failure-diagnostics.ts
 │   │   │   │   ├── answer-context/        # answer prompt context: window split, anchor text (anchor.ts), told stories, ShownLedger, invented topic-switch fixture
 │   │   │   │   ├── coach/                 # next-point policy and prompts
-│   │   │   │   ├── presentation/          # deck context, location hints and restricted coach prompt
 │   │   │   │   └── live-controls/         # typed/detail/audience prompt instructions
 │   │   │   ├── mock-interview/            # product plans/fixtures, interviewer, turn engine, session/results
 │   │   │   │   ├── shortcuts.ts          # mock-only shortcut registration/release
@@ -70,7 +68,7 @@ sanas/
 │   │   │   │   └── fixtures/             # canonical interview/dashboard PNGs
 │   │   │   ├── meetings/                  # live lifecycle/STT/audio orchestrator, export and removal
 │   │   │   │   ├── index.ts               # lifecycle, STT wiring, audio and final persistence
-│   │   │   │   ├── live-controls.ts       # context/manual/answer-mode/slide control facade
+│   │   │   │   ├── live-controls.ts       # context/manual/answer-mode control facade
 │   │   │   │   ├── assist/                # assembly, prompt state, admission, coordinator and runner
 │   │   │   │   ├── capture/               # channel identity and capture health
 │   │   │   │   ├── context/               # prepare/commit/publish meeting-context changes + meeting grounding
@@ -81,7 +79,7 @@ sanas/
 │   │   │   │   │   ├── meeting-facts.ts   # combined candidate-facts block from a grounding
 │   │   │   │   │   ├── meeting-keyterms.ts # glossary + resume/profile STT hints
 │   │   │   │   │   └── resume/            # resume validation, file import, term extraction
-│   │   │   │   ├── presentation/          # live cursor and historical marker formatting
+│   │   │   │   ├── presentation/          # historical slide-marker formatting (read-only)
 │   │   │   │   ├── status/                # live meeting and post-processing guards, historical job filing (filing.ts)
 │   │   │   │   ├── summary/               # summary generation, output parsing and email
 │   │   │   │   ├── rediarize/             # batch pass and speaker carry-over
@@ -97,8 +95,8 @@ sanas/
 │   │   │   └── screen-capture/             # display choice, one-shot screenshot and encoding
 │   │   ├── db/                             # async open/backup/migrations and SQLite helpers
 │   │   │   ├── repos/                      # entity repositories and all SQL strings
-│   │   │   │   ├── job/                    # job-owned content: saved resume (v11) and slide deck
-│   │   │   │   └── meeting/                # meeting row, creation, grounding, context and presentation repos
+│   │   │   │   ├── job/                    # job-owned content: saved resume (v11)
+│   │   │   │   └── meeting/                # meeting row, creation, grounding, context and historical slide readers
 │   │   │   └── testing/                    # test-only SQLite adapter (sqlite-test-database.ts)
 │   │   └── config/                         # settings, secrets and exhaustive settings schema
 │   ├── preload/                            # typed contextBridge API
@@ -109,7 +107,7 @@ sanas/
 │   │       │   ├── shell/                  # app header (identity, page tabs, meeting status, overlay toggle)
 │   │       │   ├── controls/               # Switch, FieldRow, Badge, KeyBadge — the library's small control components
 │   │       │   ├── pages/                  # route/page components
-│   │       │   ├── jobs/                   # job detail tabs, presentation and resume editors
+│   │       │   ├── jobs/                   # job detail tabs and the resume editor
 │   │       │   ├── settings/
 │   │       │   │   ├── sections/           # one component per Settings section + section index (+ pure hotkey/update status)
 │   │       │   │   │   └── InterviewProfileSection.tsx # the one plain-text Interview profile editor
@@ -121,15 +119,14 @@ sanas/
 │   │       │   ├── shell/                  # session composition, layout, header, status, preferences
 │   │       │   │   └── navigation/         # workspace reducer, local shortcuts, rail, compose handshake
 │   │       │   ├── suggestions/            # answer surface, history coordination, manual requests
-│   │       │   ├── workspaces/             # frame + secondary views (Screen, Slide, Transcript, Context); composer/ (Ask)
+│   │       │   ├── workspaces/             # frame + secondary views (Screen, Transcript, Context); composer/ (Ask)
 │   │       │   ├── controls/               # OverlayButton, OverlayTextArea, OpenSanasButton, overlay icons
 │   │       │   ├── layout/                 # opacity, divider ratio/drag, resize grips
 │   │       │   └── capture/                # capture action, status subscription and composer attachment state
 │   │       ├── audio/                      # mic/loopback capture and worklet bridge
 │   │       ├── lib/                        # pure shared renderer helpers (incl. overlay-workspaces.ts: workspace names + local shortcut table)
-│   │       │   ├── meeting/                # meeting/context/presentation state and hooks (start-selection.ts: remembered Start choices)
+│   │       │   ├── meeting/                # meeting/context state and hooks (start-selection.ts: Start choices and options)
 │   │       │   │   └── resume/             # useJobHasResume: Live's Interview default
-│   │       │   ├── presentation/           # slide editor and forgiving import
 │   │       │   └── suggestions/            # safe suggestion rendering and history reducer
 │   │       ├── dev/                        # typed browser-preview bridge mocks
 │   │       └── env.d.ts                    # Vite client types
@@ -137,7 +134,7 @@ sanas/
 │       ├── filler-marker.ts                # ⟨…⟩ improvised-answer marker: constants, split and strip
 │       ├── interview-profile.ts            # Interview profile text limit
 │       ├── mock-interview/                 # typed setup/state/result IPC contracts
-│       ├── presentation/                   # deck and timeline contracts
+│       ├── presentation/                   # historical slide and timeline contracts (read-only)
 │       ├── live-controls/                  # context, admission, suggestion metadata and capture contracts
 │       ├── hotkeys/                        # global shortcut actions and registration status
 │       └── updates/                        # sanitized updater snapshots
@@ -146,7 +143,7 @@ sanas/
 │   ├── eval/                               # paid prompt evals (owner-run .ps1 + vitest-run .eval.ts)
 │   ├── rehearsal/                        # runner, credentials and fixture rendering
 │   │   ├── scenarios/                    # scripted/audio JSON
-│   │   └── fixtures/                     # slide.png and standup.png only
+│   │   └── fixtures/                     # standup.png only
 │   └── owner/                              # redacted owner operation dispatch/logging
 ├── .github/
 │   ├── workflows/                          # CI and manual release workflows
@@ -168,7 +165,7 @@ sanas/
 - `scripts/eval/` — paid prompt evals: `topic-switch.ps1` (old vs new prompt builders on an invented fixture; `-DryRun` is free) and `.eval.ts`
 - `scripts/rehearsal/` — owner runner, credentials and offline fixture rendering.
 - `scripts/rehearsal/scenarios/` — versioned scripted/audio scenarios.
-- `scripts/rehearsal/fixtures/` — rehearsal-only slide and standup screens.
+- `scripts/rehearsal/fixtures/` — the rehearsal-only standup screen.
 - `src/main/services/platform/` — email, updates, retention and global-hotkey integrations.
 - `src/main/services/turns/transcript-format.ts` — canonical main-side transcript labels/windowing.
 - `src/main/services/mock-interview/turns/` — interviewer consumer, serialized engine, `answer-wait.ts` (candidate-answer silence/idle-prompt clock) and session lifecycle.
@@ -188,7 +185,7 @@ sanas/
 - `src/main/lifecycle/` — userData identity, capped/redacted main logging and normal startup wiring; normal startup is not loaded by smoke
 - `src/main/diagnostics/` — isolated, headless packaged diagnostics used by `--smoke`
 - `src/main/windows/` — BrowserWindow builders and the main → all-windows broadcast (`overlay-bounds.ts`: pure on-screen fitting of saved overlay bounds; `main-window.ts`: create or reveal — restore/show/focus, never reload; `window-chrome.ts`: the hidden title bar + caption-button colours mirrored from tokens.css)
-- `src/main/ipc/` — typed IPC handlers; validate ingress and delegate, with no business logic (`windows.ts`: overlay toggle/resize/ghost, compose handshake and the parameterless Open Sanas)
+- `src/main/ipc/` — typed IPC handlers; validate ingress and delegate, with no business logic (`windows.ts`: overlay toggle/resize/ghost, compose handshake and the parameterless Open Sanas; `validate.ts` also owns `requireMeetingStart`, the Start options check; `presentation-history.ts`: read-only historical slide markers; `hotkeys.ts`: global-shortcut status)
 - `src/main/` — process entry (`index.ts`, normal vs `--smoke` dispatch) and the display-media loopback handler (`system-audio.ts`)
 - `src/main/services/` — main-process services and provider seams
 - `src/main/services/stt/` — the swappable STT seam, Deepgram implementation and message normalization; `keyterm-budget.ts` holds Deepgram's keyterm limits so callers pass an ordered list and never a vendor budget; `endpointing.ts` the shared endpointing silence the scripted STT mirrors
@@ -200,7 +197,6 @@ sanas/
 - `src/main/services/assistant/` — the swappable assistant seam and shared answer/classification logic
 - `src/main/services/assistant/answer-context/` — answer prompt context: current-exchange/background window split, anchor text (`anchor.ts`: `CURRENT_QUESTION_RULE`, `ANCHOR_REMINDER`, `LatestQuestion`), told stories, `ShownLedger` (`shown-ledger.ts`: the one place a shown suggestion is routed into the recent/told/coach memories, used by `LiveSession` and the eval), and `topic-switch-fixture.ts` (invented data + window builder; scoring lives in `scripts/eval/carried-terms.ts`)
 - `src/main/services/assistant/coach/` — next-point eligibility policy and coach prompt construction
-- `src/main/services/assistant/presentation/` — presentation answer context, current-location hints and scoped coaching prompts
 - `src/main/services/assistant/live-controls/` — typed, detail, audience and screen-capture request instructions
 - `src/main/services/meetings/` — meeting lifecycle/STT/audio orchestration plus meeting-level facades
 - `src/main/services/meetings/assist/` — per-meeting prompt/grounding state, manual and screen-capture admission, in-memory composer screen drafts (`capture-drafts.ts`), automatic coordination (`question-ledger.ts` carries uncovered stacked questions into one suggestion; `speculative-answer.ts` owns the one unpublished answer started alongside the classifier and its promote/discard rule; `samePrompt` in `suggestion-requests.ts` decides when two requests are the same prompt, comparing every field except an explicit short list) and suggestion execution (`suggestion-runner.ts` owns lanes, deadline and persistence; `run-publication.ts` the per-run held-text and publish gate)
@@ -209,8 +205,8 @@ sanas/
 - `src/main/services/meetings/context/` — pure preparation followed by commit/publication of live context changes; `meeting-keyterms.ts` builds the STT hints (glossary plus resume/profile terms) for streaming and batch
 - `src/main/services/meetings/context/resume/` — resume (job-saved and meeting snapshot): ingress validation (`resume.ts`), bounded PDF/DOCX parsing (`import-file.ts`); (term extraction lives beside `candidate-data.ts` in `context/candidate-keyterms.ts`: `candidateKeyterms`, shared by resume and profile)
 - `src/main/services/meetings/context/candidate-data.ts` (and `candidate-keyterms.ts`: STT term extraction/interleave for resume and profile) — neutral escaping and delimited prompt framing for resume (`candidateFacts`) and Interview profile (`interviewProfileFacts`); so `resume/` and the profile never import each other
-- `src/main/services/meetings/context/meeting-facts.ts` — combines a `MeetingGrounding` into the candidate-facts block (resume first); `profile.ts` — `interviewProfileSnapshot`, Start selection of the Settings profile; `start-request.ts` — `StartRequest`; `start-grounding.ts` — `resolveStartGrounding`, the selected job's saved resume (none for Unsorted) plus the profile, resolved inside serialized Start for Live and Mock
-- `src/main/services/meetings/presentation/` — current cursor state and historical slide-marker formatting
+- `src/main/services/meetings/context/meeting-facts.ts` — combines a `MeetingGrounding` into the candidate-facts block (resume first); `profile.ts` — `interviewProfileSnapshot`, Start selection of the Settings profile; `start-request.ts` — `StartRequest` (the renderer's `MeetingStartOptions` plus main-only `practice`); `start-grounding.ts` — `resolveStartGrounding`, the selected job's saved resume (none for Unsorted) plus the profile, resolved inside serialized Start for Live and Mock
+- `src/main/services/meetings/presentation/` — historical slide-marker formatting for summaries (presentation mode retired 2026-11-04)
 - `src/main/services/meetings/status/` — live-meeting identity, post-processing guards and `filing.ts` (historical job filing; refuses a live meeting)
 - `src/main/services/meetings/summary/` — meeting summaries, structured output handling and summary email
 - `src/main/services/meetings/rediarize/` — batch re-diarization and speaker identity/name carry-over
@@ -225,8 +221,8 @@ sanas/
 - `src/main/services/screen-capture/` — display selection, one-shot desktop capture, image sizing/encoding; no meeting or provider policy
 - `src/main/db/` — database connection lifecycle, consistent pre-upgrade backup, migrations and SQLite helpers
 - `src/main/db/testing/` — `sqlite-test-database.ts`, the local SQLite transaction adapter shared by repository tests; it does not certify Electron ABI packaging
-- `src/main/db/repos/meeting/` — the meeting repos: `meetings.ts` (row), `meeting-columns.ts` (the one meeting column projection: no resume/profile text, `interview_profile_used` computed in SQL), `meeting-create.ts` (`createMeeting(jobId, title, MeetingCreateInput)`, the one creation transaction; the input is main-resolved and carries the profile snapshot), `meeting-grounding.ts` (`getMeetingGrounding(id)`: `{ resume, interviewProfile, hasBiography }`, the only read of both snapshots), `meeting-resume-schema.ts` / `meeting-interview-profile-schema.ts` (append-only v9/v10 SQL; their original guards are superseded by v12), `meeting-snapshot-clear-schema.ts` (v12: the live immutability triggers on the resume/profile snapshot columns, which allow a clear-to-empty only while a `meeting_snapshot_clear` guard row exists; `moveMeetingToJob` in `meetings.ts` is the only sanctioned clearer, on a job change), `meeting-context.ts`, `meeting-presentation.ts`
-- `src/main/db/repos/job/` — job-owned content: `job-resume.ts` (`getJobResume`/`setJobResume`, one optional row per job) with its append-only v11 schema (`job-resume-schema.ts`), and `job-slides.ts` (the job deck)
+- `src/main/db/repos/meeting/` — the meeting repos: `meetings.ts` (row), `meeting-columns.ts` (the one meeting column projection: no resume/profile text, `interview_profile_used` computed in SQL), `meeting-create.ts` (`createMeeting(jobId, title, MeetingCreateInput)`, the one creation transaction; the input is main-resolved and carries the profile snapshot and the Start context, saved as revision 0), `meeting-grounding.ts` (`getMeetingGrounding(id)`: `{ resume, interviewProfile, hasBiography }`, the only read of both snapshots), `meeting-resume-schema.ts` / `meeting-interview-profile-schema.ts` (append-only v9/v10 SQL; their original guards are superseded by v12), `meeting-snapshot-clear-schema.ts` (v12: the live immutability triggers on the resume/profile snapshot columns, which allow a clear-to-empty only while a `meeting_snapshot_clear` guard row exists; `moveMeetingToJob` in `meetings.ts` is the only sanctioned clearer, on a job change), `meeting-context.ts` (text-only context revisions, `hasMeetingContext`, merge `moveContextHistory`), `meeting-presentation.ts` (read-only historical slides: `getPresentationHistory`, `hasLegacySlides`)
+- `src/main/db/repos/job/` — job-owned content: `job-resume.ts` (`getJobResume`/`setJobResume`, one optional row per job) with its append-only v11 schema (`job-resume-schema.ts`)
 - `src/shared/filler-marker.ts` — `FILLER_OPEN`/`FILLER_CLOSE` for prompts, `splitFiller`/`stripFillerMarkers` for rendering; `src/shared/interview-profile.ts` — the profile text limit
 - `src/renderer/src/app/settings/sections/InterviewProfileSection.tsx` — the one plain-text Interview profile editor; the Settings draft/pager/save flow owns editing state
 - `src/main/db/repos/` — per-entity repositories (incl. the screen-answer storage codec `manual-kind.ts`); the only place SQL strings live
@@ -236,7 +232,7 @@ sanas/
 - `src/renderer/src/app/shell/` — the library window frame: `AppHeader` (also the window title bar — drag region, see GOTCHAS), the `Page` union + `NAV` table (`pages.ts`) and the pure meeting-status wording
 - `src/renderer/src/app/controls/` — small shared library controls (`Switch`, `FieldRow`, `Badge`, `KeyBadge`); styles live in `styles/controls.css`
 - `src/renderer/src/app/pages/` — one component per library route/page; `SettingsPage` is layout and wiring only (its state is `useSettingsDraft`)
-- `src/renderer/src/app/jobs/` — `JobOverview` (name, context, glossary), `JobResume` (saved resume with its own Save resume; `ResumeDraftEditor` paste/import/preview, `resume-draft.ts` pure draft rules), `PresentationEditor` (deck), `JobEmail` (recipient), and `JobMeetings` (history/merge). `JobTabs` owns tab/panel IDs, keyboard focus and mounted panels from a name/render table. `pages/JobDetail` owns load, shared draft/save, composition and meeting drill-in; its selected index survives the drill-in
+- `src/renderer/src/app/jobs/` — `JobOverview` (name, context, glossary), `JobResume` (saved resume with its own Save resume; `ResumeDraftEditor` paste/import/preview, `resume-draft.ts` pure draft rules), `JobEmail` (recipient), and `JobMeetings` (history/merge). `JobTabs` owns tab/panel IDs, keyboard focus and mounted panels from a name/render table. `pages/JobDetail` owns load, shared draft/save, composition and meeting drill-in; its selected index survives the drill-in
 - `src/renderer/src/app/settings/` — only the cross-section tests (`settings-pages.test.tsx`, `settings-controls.test.tsx`); everything else is in the folders below
 - `src/renderer/src/app/settings/sections/` — one component per Settings section, including independent update state, plus pure status wording (`hotkey-status.ts`, `update-status.ts`); `SettingsSectionPage.tsx` is the section index that renders the selected section
 - `src/renderer/src/app/settings/frame/` — what every section shares: the section list (`settings-sections.ts`), card (`SettingsSection`), the index (`SettingsNav`, Up/Down), the animated scrolling pane (`SettingsPane`, owner of `SETTINGS_PANE_ID`), the draft state (`useSettingsDraft`: load, externally changed keys, save state machine), the pure patch/dirty/validation logic and page-ownership lists (`settings-draft.ts`) and the save bar
@@ -246,20 +242,20 @@ sanas/
 - `src/renderer/src/overlay-app/shell/` — `OverlaySession` (composes every controller once), `OverlayShell` layout, header, persistent status, preferences popover, window state, Answer every question
 - `src/renderer/src/overlay-app/shell/navigation/` — pure workspace reducer, local shortcut table/dispatch, the rail, and the compose readiness/focus handshake
 - `src/renderer/src/overlay-app/suggestions/` — the answer surface (full and preview), history/reading coordination and manual-request (detail/audience) policy
-- `src/renderer/src/overlay-app/workspaces/` — the frame that keeps secondary views mounted plus one file per view (`OverlayCapturePanel`, `SlidePanel`, `OverlayTranscript`, `OverlayContext`); `composer/` (Ask: draft state, submission, view) is the only subfolder, kept because it has several files
+- `src/renderer/src/overlay-app/workspaces/` — the frame that keeps secondary views mounted plus one file per view (`OverlayCapturePanel`, `OverlayTranscript`, `OverlayContext`); `composer/` (Ask: draft state, submission, view) is the only subfolder, kept because it has several files
 - `src/renderer/src/overlay-app/controls/` — the overlay's small control wrappers (button variants, in-DOM `OverlayTip` tooltip, labelled textarea, Open Sanas) and local icons; not a general component framework
 - `src/renderer/src/overlay-app/layout/` — overlay opacity and divider-ratio persistence, divider drag/measurement, and the three resize grips
 - `src/renderer/src/overlay-app/capture/` — Capture screen action, capture status subscription/helpers and the composer's screen-attachment state (hooks only; the Screen view lives in `workspaces/`)
 - `src/renderer/src/audio/` — renderer capture and AudioWorklet downsampling
 - `src/renderer/src/lib/` — pure presentation helpers shared across renderer pages and bundles (`overlay-workspaces.ts`: workspace names and the local shortcut table shared by the overlay and Settings → Hotkeys)
-- `src/renderer/src/lib/meeting/` — meeting, context and presentation reducers/hooks; `meeting-context-draft.ts` + `useMeetingContextDraft.ts` are the draft/apply/reload/conflict logic shared by the main window's full editor and the overlay's text-only Context
+- `src/renderer/src/lib/meeting/` — meeting and context reducers/hooks; `meeting-context-draft.ts` + `useMeetingContextDraft.ts` are the draft/apply/reload/conflict logic shared by the Live page's `MeetingContextEditor` and the overlay's Context; `start-selection.ts` also builds the Start options (`meetingStartOptions`) and the pre-Start context draft rule
 - `src/renderer/src/lib/navigation/` — `next-tab-index.ts` and colocated tests: pure orientation-aware wrapping arrows/Home/End rule shared by JobTabs and OverlayNavigation. Settings keeps its distinct clamped, arrow-only page navigation.
-- `src/renderer/src/lib/presentation/` — reusable slide editing and import UI/helpers
 - `src/renderer/src/lib/suggestions/` — text-safe compact/detail renderers and live history state (`FillerText` renders the ⟨…⟩ improvised-answer marker; `src/shared/filler-marker.ts` splits/strips it)
 - `src/renderer/src/dev/` — browser-preview implementation of the typed preload bridge: `mock-api.ts` assembles it, `mock-fixtures.ts` holds the static sample data, `mock-live-meeting.ts` the scripted live meeting; `overlay-scenarios.ts` holds the deterministic overlay preview states (`overlay.html?scenario=<name>`) driven through `mockDriver`
 - `src/renderer/public/` — AudioWorklet processors and other unbundled assets
 - `src/shared/` — types shared by main, preload and renderer
-- `src/shared/presentation/` — deck and historical timeline contracts
+- `src/shared/presentation/` — historical slide/event/history contracts and timeline ordering (read-only since 2026-11-04)
+- `src/shared/meeting-start.ts` — `MeetingStartOptions` (`interview?`, `meetingContext?`); `src/shared/meeting-context.ts` — the 20,000-character context limit
 - `src/shared/hotkeys/` — global shortcut action and registration-status contracts
 - `src/shared/live-controls/` — meeting-context, manual-admission, suggestion metadata and screen-capture contracts
 - `src/shared/updates/` — renderer-safe update state and operation contracts
@@ -270,8 +266,8 @@ sanas/
 - `.github/actions/` — shared local workflow actions, including Node/download-cache setup
 
 Tests are colocated `*.test.ts`/`*.test.tsx` files (Vitest, `npm test`) beside the modules they
-cover. Coverage includes provider normalization, turn/assistant policy, presentation and live-control
-state/admission/grounding, meeting lifecycle and post-processing, startup/backup/smoke/update wiring,
+cover. Coverage includes provider normalization, turn/assistant policy, live-control
+state/admission/grounding, historical slide readers, meeting lifecycle and post-processing, startup/backup/smoke/update wiring,
 IPC validation, renderer reducers/renderers, shared timeline/format helpers, window behavior, and
 release scripts. Repository SQL tests use the local Node SQLite adapter; Electron-ABI diagnostics remain
 a separate check, rather than ordinary Vitest loading of `better-sqlite3`.
@@ -291,17 +287,17 @@ main-process code belongs in a responsibility folder above, not beside them.
 - **`ipc/` stays thin.** Handlers validate and delegate to `services/`; renderers never access APIs,
   secrets or the database directly.
 - **Meeting lifecycle and live controls are separate.** `meetings/index.ts` owns lifecycle, STT, audio
-  and final persistence. `meetings/live-controls.ts` serializes context, manual request, answer-mode and
-  slide actions against injected lifecycle state.
+  and final persistence. `meetings/live-controls.ts` serializes context, manual request and answer-mode
+  actions against injected lifecycle state.
 - **Assistance policy stays split.** `turns/turn-assembler` closes turns; assistant triggers,
   classifier and coach policy decide; `meetings/assist/manual-requests` admits explicit requests;
   `live-assistance` coordinates automatic work; `speculative-answer` decides whether an early
   answer may be published; `suggestion-runner` owns generation, the unpublished state and persistence.
 - **Prompt snapshots are synchronous and read-only.** `meetings/assist/meeting-prompts.ts` resolves and
   caches immutable grounding when context changes; request snapshots perform no database writes.
-- **Presentation/context publication follows persistence.** Meeting context and slide cursor state are
-  published only after their repository writes succeed; historical views use immutable deck versions
-  and recorded events.
+- **Context publication follows persistence.** Meeting context is published only after its
+  repository write succeeds; the Start context lands in the creation transaction. Historical slide
+  views read immutable recorded deck versions and events and nothing writes them any more.
 - **Repos own SQL.** No SQL strings live outside `db/repos/`; FTS5 expressions come only from
   `db/fts-query.ts`, and repository row types do not depend on service modules.
 - **Updates expose sanitized state only.** Packaged normal startup owns updater network traffic and
@@ -312,7 +308,7 @@ main-process code belongs in a responsibility folder above, not beside them.
 
 ## Structural debt
 
-- `renderer/src/lib/` is broad (loose helpers beside `meeting/`, `presentation/`, `suggestions/`) and
+- `renderer/src/lib/` is broad (loose helpers beside `meeting/`, `suggestions/`) and
   `lib/meeting/` has a high file fan-out; split by responsibility before either grows again.
 - The overlay's CSS layers (`overlay-controls/-shell/-panels/-suggestions.css`) live in
   `app/styles/` beside the library's, so the shared folder mixes two bundles; `.workspace-body` /
@@ -351,7 +347,7 @@ main-process code belongs in a responsibility folder above, not beside them.
 - `main/services/meetings/context/resume/` owns validation (run once, at IPC ingress), escaped candidate-fact framing and deterministic terminology extraction.
 - `db/repos/meeting/meeting-resume-schema.ts` owns append-only v9 SQL and the immutable-update guard; `createMeeting` persists the text in its one transaction. The resume is not on the `Meeting` row: `getMeetingGrounding(id).resume` is the only read (`MeetingView` via `meetings.getResume`).
 - `app/jobs/JobResume.tsx` owns the job editor (draft, import, explicit Save resume); `MeetingView` shows a meeting's saved text read-only. Live/Mock setup have no resume input.
-- `MeetingPrompts` attaches candidate facts to both job prompt variants before saving grounding. `meetingKeyterms` builds one ordered hint list for streaming and batch STT; the provider applies its own limits.
+- `MeetingPrompts` attaches candidate facts to the meeting's one system prompt before saving grounding. `meetingKeyterms` builds one ordered hint list for streaming and batch STT; the provider applies its own limits.
 
 ## Meeting grounding (resume + Interview profile)
 
@@ -366,4 +362,5 @@ main-process code belongs in a responsibility folder above, not beside them.
 - `lib/meeting/start-selection.ts` (`interviewChecked`) shows the job-resume default unless the user chose;
   LiveMeetingPage sends only an explicit choice (undefined lets main decide) through preload/IPC.
 - `MeetingView` receives `interviewProfileUsed` through the existing Meeting projection; large profile text
-  stays off list/history IPC objects. Merge refuses meetings with a resume or profile.
+  stays off list/history IPC objects. Merge refuses meetings with a resume or profile, with
+  recorded slides, or when more than one part has meeting context.

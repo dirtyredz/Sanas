@@ -65,7 +65,9 @@ normal provider billing; canned success proves wiring, not provider quality.
 
 - `client-checkin`: ambient answer, finals-only storage, screenshot delivery, silent-channel
   warning, reconnect, missing display, More detail, summary and batch replacement.
-- `presentation`: Next point coaching, slide navigation, answer mode, screen and capture timeout.
+- `meeting-context`: Start with a `meetingContext` agenda; checks it reaches answer and Next point
+  requests (`context`, `context-coach`), plus coaching, answer mode, screen and capture timeout.
+  Canned runs prove delivery, not model quality.
 - `standup`: slow/failing assistant, busy admission, screenshot and oversize encoding failure.
 - `mock-interview`: behavioural, technical and follow-up questions with automatic suggestions,
   a shared architecture diagram (screen step), a socket drop and reconnect, summary saved.
@@ -80,10 +82,10 @@ normal provider billing; canned success proves wiring, not provider quality.
   Canned `Covers:` text is a plumbing oracle only. Mock interview checks its final pair the same way.
 
 Interview/dashboard PNGs live only in `src/main/services/mock-interview/fixtures/`; the coding
-renderer writes there. Scenarios reference that home; rehearsal `fixtures/` holds slide/standup only.
+renderer writes there. Scenarios reference that home; rehearsal `fixtures/` holds the standup screen only.
 Product plan screens are fixture IDs validated by the catalog, not filesystem paths.
 
-The checked-in PNGs are locally rendered client dashboards, slides and an architecture diagram. A scripted screen source
+The checked-in PNGs are locally rendered client dashboards, a standup board and an architecture diagram. A scripted screen source
 deliberately puts a wrong display first so display-ID matching remains exercised.
 
 ```powershell
@@ -162,15 +164,15 @@ milliseconds, bounded to ten minutes; steps are ordered and have unique IDs. Exa
 ```
 
 Steps: `utterance` above; `screen` (`image`, optional `real`, `displayId`); `ask` (`text`);
-`detail` (latest eligible completed answer); `answer-mode` (`enabled`); `slide`
-(`direction`: `prev`/`next`); `fault` (`fault`, `durationMs`). Fault names:
+`detail` (latest eligible completed answer); `answer-mode` (`enabled`); `fault` (`fault`, `durationMs`). Fault names:
 `socket-drop`, `silent-them`, `assistant-slow`, `assistant-fail`, `capture-timeout`,
 `missing-display`, `oversize-image`. Screen faults apply to the next capture while active;
 assistant faults apply to calls while active. Scripted drops emit reset and discard unfinished
 speech; audio drops close the actual socket abnormally and let Deepgram's own backoff reconnect.
 
 Expectations: `request`, `suggestion`, `coach`, `screen`, `no-interims`, `summary`, `capture-warning`,
-`reconnect`, `busy`, `assistant-error`, `capture-error`, `slide`, `recording`, `batch`.
+`reconnect`, `busy`, `assistant-error`, `capture-error`, `recording`, `batch`, `context`,
+`context-coach` (`contains` must appear in an outgoing answer / Next point request's user content).
 `after` anchors to actual step invocation; `fromFinal: true` anchors utterances to the received
 final (declared end only as fallback). `withinMs` limits completed delivery, and
 `contains` matches case-insensitive output (summary, answer or capture error). Missing evidence
@@ -231,8 +233,9 @@ An expectation may declare `assistant: "claude"` or `assistant: "canned"`. Only 
 for the selected assistant are evaluated; omitted means both. Use this for model-specific
 content checks, retaining unconditional delivery checks so canned runs still test plumbing.
 
-Optional top-level `coach: true`, `slides` (production Slide fields: title, talkingPoint,
-script, keyFacts) and `audio` (WAV path) enable those legs. Summaries require at least five live
+Optional top-level `coach: true`, `meetingContext` (Start text, at most 20,000 characters,
+saved as the meeting's revision 0) and `audio` (WAV path) enable those legs. Slides were
+retired on 2026-11-04: a scenario with `slides` or a `slide` step is rejected. Summaries require at least five live
 finals. Leave time for turn grace, assistant completion, and faults; an acquisition timeout
 alone needs five seconds. Canned summaries echo the received transcript section so content checks
 test prompt delivery and persistence, not summarization quality.
@@ -243,10 +246,11 @@ test prompt delivery and persistence, not summarization quality.
 npm run typecheck
 npm run lint
 npm exec -- vitest run src/main/services/mock-interview src/main/db/repos src/main/ipc src/main/rehearsal scripts/rehearsal src/main/services/meetings/assist/suggestion-runner.test.ts src/main/services/meetings/index.test.ts src/main/services/meetings/merge src/main/services/history src/renderer/src/lib/meeting/start-captured-meeting.test.ts src/renderer/src/app/pages/MockInterviewPage.test.tsx src/renderer/src/app/settings src/renderer/src/interviewer-app
-./scripts/rehearsal/run.ps1 -Scenario mock-interview -Tier scripted -Assistant canned
-./scripts/rehearsal/run.ps1 -Scenario coding-interview -Tier scripted -Assistant canned
 npm run build
+./scripts/rehearsal/run.ps1 -Scenario mock-interview -Tier scripted -Assistant canned
 ```
 
-Each canned wrapper includes a local build. Do not add full tiers, packaged smokes or
+Run that ONE free scripted rehearsal, serially. Add another canned scenario only when the
+change touches what it exercises (e.g. `coding-interview` for screen-capture prompts,
+`meeting-context` for Start/context plumbing). Each canned wrapper includes a local build. Do not add full tiers, packaged smokes or
 paid provider runs to this gate. Unit tests mock Electron and cover real-capture/audio seams.

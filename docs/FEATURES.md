@@ -29,8 +29,8 @@ and pauses of at least two seconds; streaming behavior is unchanged.
 | Stacked questions answered together              | ✅     | Back-to-back questions yield one combined suggestion (max 3, within 30 s); covered ones are not re-asked                                                                                          |
 | On-demand full answer (global hotkey)            | ✅     | Ctrl+Shift+Enter or "Answer now"; answers the latest question (<= 90 s old), earlier talk as background; runs beside an ambient nudge, opens its answer, 60 s timeout                             |
 | Always-on-top overlay window                     | ✅     | frameless, position/size memory, resize grips; requests current meeting state when opened                                                                                                         |
-| Answer-first overlay with workspace rail         | ✅     | Answer · Ask · Screen · Slide · Transcript · Context; answer preview + draggable divider above the rest (2026-11-01)                                                                              |
-| Overlay local shortcuts                          | ✅     | while focused: Ctrl+1–6 workspaces, Ctrl+, preferences, Esc back to Answer; listed in Settings → Hotkeys                                                                                          |
+| Answer-first overlay with workspace rail         | ✅     | Answer · Ask · Screen · Transcript · Context; answer preview + draggable divider above the rest (Slide retired 2026-11-04)                                                                        |
+| Overlay local shortcuts                          | ✅     | while focused: Ctrl+1–3, 5, 6 workspaces (Ctrl+4 unbound since Slide was retired), Ctrl+, preferences, Esc back to Answer; listed in Settings → Hotkeys                                           |
 | Overlay hidden from screen capture               | ✅     | always excluded from screen shares, screenshots and recordings; no toggle                                                                                                                         |
 | Deepgram auto-reconnect                          | ✅     | backoff, monotonic timestamps across reconnects                                                                                                                                                   |
 | System-audio loopback capture                    | ✅     | same-PC meetings; ch0=me ch1=them via multichannel                                                                                                                                                |
@@ -42,15 +42,15 @@ and pauses of at least two seconds; streaming behavior is unchanged.
 
 ## Organization
 
-| Feature                                                                            | Status | Notes                                                                                                                  |
-| ---------------------------------------------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------- |
-| Jobs (create/edit/archive)                                                         | ✅     | Overview (name/context/glossary), Presentation, Email, Meetings sub-tabs; drafts survive switching; archive UI pending |
-| Job context pack: company info, project scope, notes, talking points, persona/tone | ✅     | feeds AI in Phase 3                                                                                                    |
-| Per-job glossary (terms + notes)                                                   | ✅     | bulk paste on the glossary row; feeds STT now and AI in Phase 3                                                        |
-| Meetings under a job; transcript view                                              | ✅     | job picker on Live, history per job, rename, move to another job                                                       |
-| Post-meeting knowledge summary + action items                                      | ✅     | sectioned Markdown knowledge extract; detail scales with transcript length; fire-and-forget on stop                    |
-| On-demand summary (Summarize / Regenerate)                                         | ✅     | stored transcript (capped ~120k chars) + job context; timeout-safe generation                                          |
-| Email summary to the job's address                                                 | ✅     | recipient per job; SMTP (nodemailer); button + auto-send on stop                                                       |
+| Feature                                                                            | Status | Notes                                                                                                            |
+| ---------------------------------------------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------- |
+| Jobs (create/edit/archive)                                                         | ✅     | Overview (name/context/glossary), Resume, Email, Meetings sub-tabs; drafts survive switching; archive UI pending |
+| Job context pack: company info, project scope, notes, talking points, persona/tone | ✅     | feeds AI in Phase 3                                                                                              |
+| Per-job glossary (terms + notes)                                                   | ✅     | bulk paste on the glossary row; feeds STT now and AI in Phase 3                                                  |
+| Meetings under a job; transcript view                                              | ✅     | job picker on Live, history per job, rename, move to another job                                                 |
+| Post-meeting knowledge summary + action items                                      | ✅     | sectioned Markdown knowledge extract; detail scales with transcript length; fire-and-forget on stop              |
+| On-demand summary (Summarize / Regenerate)                                         | ✅     | stored transcript (capped ~120k chars) + job context; timeout-safe generation                                    |
+| Email summary to the job's address                                                 | ✅     | recipient per job; SMTP (nodemailer); button + auto-send on stop                                                 |
 
 ## App
 
@@ -73,25 +73,40 @@ and pauses of at least two seconds; streaming behavior is unchanged.
 | Settings layout and save states                                          | ✅     | one page per section, animated switch (reduced-motion fade), Up/Down in the index, attention dots; save bar on every page: unsaved / fix-field / saving / saved / failed, Discard (2026-11-01) |
 | Browser preview with a typed mock bridge (`npm run dev:web`)             | ✅     | dev only; scripted live meeting, `overlay.html?demo=live`; fixed overlay states via `overlay.html?scenario=<name>`                                                                             |
 
-## Presentation mode
+## Presentation mode — retired 2026-11-04
 
-Jobs can save up to 100 ordered slides with title, talking point, optional script and key facts. Add/edit/reorder/remove, or paste headings/labelled fields and inspect the import preview before appending or replacing the draft. Save is separate from import.
+Removed by owner decision: no job decks, slide import, Slide workspace, Previous/Next
+navigation, slide hotkeys, deck checkbox or slide-scoped coaching. Meetings recorded before then
+keep their timestamped slide markers read-only in meeting history, exports and regenerated
+summaries; no data was deleted. Meetings with recorded slides cannot be merged. Saved
+presentation hotkeys are ignored and dropped on the next settings save.
 
-New meetings snapshot the deck. The overlay's Slide workspace (rail, Ctrl+4 while focused) offers a scrolling plain-text teleprompter and Previous/Next controls. Configurable defaults: CommandOrControl+Alt+PageUp / PageDown. Navigation is manual, recorded, and independent of the owner's presentation app.
+## Meeting context and live controls
 
-Answers continue to use all job context and slides; Next point alone coaches the current slide against finalized user speech. Adding a deck does not turn on coaching. Navigation keeps answers and clears old coach cards. No-slide meetings retain their existing behavior.
+**Before Start**, the Live page has a **Meeting context** box beside the job picker (agenda,
+attendees, goals, talking points; works with Unsorted). The text is saved with the meeting at
+Start as its first context revision. The draft survives tab switches, job changes and a failed
+capture or Start; it is disabled while Start is pending and cleared once the meeting is live.
+It is not kept across an app restart.
 
-Meeting history, exports and summaries show timestamped slide markers. Presentation merges are not supported.
+**During a live or paused meeting**, edit the same saved text from the Live page's Meeting
+context editor or the overlay's Context (rail, Ctrl+6 while focused): an Unsaved badge, Reload
+saved and a conflict notice keep the draft safe; Apply to this meeting saves a new revision.
+Edits apply to later answers and coaching at once; answers already started finish against their
+captured context, and a pending Next point built on the old context is dropped. The overlay's
+**Open Sanas** (idle answer, Context, meeting error) reveals the main window on its current
+page — restored if minimized, never reloaded.
 
-## Live presentation controls
-
-During a live or paused meeting, open Context in the overlay rail (Ctrl+6 while focused) for quick, text-only edits to the meeting-only background (Apply never changes slides; an Unsaved badge, Reload saved and conflict notice keep the draft safe), or the Live page editor to edit the background and the meeting's slides, then Apply to this meeting. The overlay's **Open Sanas** (idle answer, Context, Slide empty state, meeting error) reveals the main window on its current page — restored if minimized, never reloaded. Ask the audience is in both Ask and Slide. Continue from slide is explicit; Restore meeting-start slides uses the original meeting snapshot. Edits reset Next point coaching but answers already started finish against their captured context.
-
-Ask? or Ctrl+Shift+K opens the typed composer. Enter submits, Shift+Enter adds a line, IME Enter remains composition, and Escape closes/releases focus while keeping the draft. Rejected requests keep their drafts. Ask the audience suggests one question grounded in recent finalized discussion; without speech it reports that there is no discussion yet. More detail creates/selects a linked expansion using the source answer's original grounding, with Back to source navigation.
+Ask? or Ctrl+Shift+K opens the typed composer. Enter submits, Shift+Enter adds a line, IME Enter remains composition, and Escape closes/releases focus while keeping the draft. Rejected requests keep their drafts. Ask the audience (in Ask) suggests one question grounded in recent finalized discussion; without speech it reports that there is no discussion yet. More detail creates/selects a linked expansion using the source answer's original grounding, with Back to source navigation.
 
 **Capture screen** (overlay button, or Ctrl+Shift+S, configurable in Settings → Hotkeys) captures the display under the overlay during a live or paused meeting and asks for an explanation in the meeting's context. The shortcut reveals the overlay without stealing focus; the overlay shows "Capturing…", then "Screen captured: <display> — analyzing…", or a readable failure. Code, stack traces, errors and failing tests get the visible error, the likely cause (visible vs inferred), a minimal fix in one code block and a verification step; slides, diagrams and apps get an explanation. Unreadable text is reported rather than invented. The composer's **Attach screen / Replace / Remove** keeps one screenshot draft per meeting (shown as a thumbnail) to send with the typed question; a rejected send keeps both. Screen answers show as "Screen answer", render in full in overlay and history, and allow More detail from the saved text. Screenshots are never saved.
 
 Answer every question is a meeting toggle, defaulting OFF from Settings. It includes classifier verdicts directed to other participants while preserving automatic pacing. The capture warning remains visible outside tabs. Saved meeting history and exports retain context, typed requests and source/detail relationships; older live cards indicate when they use earlier context.
+
+**Merging** meetings with context: allowed when at most one of the selected meetings has
+meeting context (nonempty initial text or any applied revision, a later clear included). The
+merged meeting keeps that context history, placed at that part's time on the merged timeline.
+Two or more meetings with context are refused with a readable message.
 
 ## Releases and updates
 
@@ -101,13 +116,13 @@ shows installed/available versions, progress and recoverable errors in Settings 
 to update is explicit and disabled during live/paused meetings and background meeting writes.
 Development and packaged smoke perform no update checks. Ordinary quit installs nothing.
 
-Storage is schema v7: v6 presentation snapshots/events plus v7 immutable context/deck revisions and
-saved assistance grounding. Startup backs up existing older databases before migration and rejects
+Storage is schema v12 (v6–v7 presentation snapshots and context revisions, v8 practice, v9–v12
+resume/profile snapshots and guards). Presentation tables remain for historical records only. Startup backs up existing older databases before migration and rejects
 newer schemas without opening the application.
 
 ## Meeting rehearsal harness
 
-Implemented: isolated versioned JSON scenarios for client check-in, slide presentation,
+Implemented: isolated versioned JSON scenarios for client check-in, meeting-context delivery,
 standup, mock job interview, visual coding interview and rapid-fire Q&A; deterministic scripted STT and canned assistant; real lifecycle/persistence/summary
 and per-expectation reports; optional production overlay. Audio replay/Windows offline TTS,
 real Deepgram streaming/batch, optional Claude, real desktop fixture capture and fault injection
@@ -148,7 +163,7 @@ Initial answers in both automatic and Answer now lanes match the ask: screening,
 
 Each job has an optional saved resume on its **Resume** tab (after Overview): paste text or
 import a PDF/DOCX (up to 5 MB), name it, see the character count and a preview, replace or
-remove it, then **Save resume** (its own button, like Presentation; the header Save does not
+remove it, then **Save resume** (its own button; the header Save does not
 cover it). Import and edits are a draft until saved; a cancelled or failed import, or a failed
 save, keeps the draft. Empty or over-40,000-character drafts cannot be saved. One job per
 interview: the resume belongs to the job, not to each Start.
@@ -160,7 +175,7 @@ meetings recorded before job resumes existed. Past meetings are not copied into 
 meeting under a different job removes its resume and Interview-profile copy (it came from the old
 job), which also makes it mergeable again.
 
-Candidate facts ground answers with or without slides, survive later deck changes and More detail replay, and supply deterministic terminology hints such as Camunda to transcription. The native file picker extracts text offline in main and shows the file name. Empty/scanned PDFs ask the user to paste text. No source binary or path is saved.
+Candidate facts ground answers with or without meeting context, survive later context changes and More detail replay, and supply deterministic terminology hints such as Camunda to transcription. The native file picker extracts text offline in main and shows the file name. Empty/scanned PDFs ask the user to paste text. No source binary or path is saved.
 
 ## Interview profile — implemented
 
@@ -168,8 +183,7 @@ Settings → Interview profile saves reusable plain text locally, with guidance 
 Go-to stories (problem / what I did / result), Strengths and weaknesses, Why I'm looking,
 Rate and availability, and Anything else. Save once, then edit when your experience changes.
 
-Mock interview always uses the saved profile. Live Start has an Interview checkbox beside
-the deck checkbox: it defaults on when the selected job has a saved resume (off for
+Mock interview always uses the saved profile. Live Start has an Interview checkbox: it defaults on when the selected job has a saved resume (off for
 Unsorted), and your explicit choice wins; choosing another job resets it to that job's default.
 Ordinary work meetings do not receive the profile. Each applicable Start saves an immutable
 snapshot; later profile edits do not change past meetings. History shows when one was used.

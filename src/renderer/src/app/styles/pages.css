@@ -56,6 +56,17 @@
   resize: vertical;
 }
 
+.live-setup .meeting-context-editor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.live-setup .meeting-context-editor .field {
+  flex-basis: 100%;
+}
+
 .source-hint {
   font-size: 13px;
   margin-top: -4px;

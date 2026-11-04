@@ -2,7 +2,44 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
-## 2026-11-04 — Answers anchor on the current question; earlier talk is background
+## 2026-11-04 — Presentation mode retired; meeting context can be entered before Start
+
+Owner decision: drop presentation (slides) mode completely. It supersedes the 2026-10-30
+teleprompter/lanes decision and the 2026-11-03 per-meeting deck opt-in. Removed: job decks and
+import, the deck checkbox, the overlay Slide workspace and Ctrl+4, Previous/Next IPC and global
+hotkeys, deck-scoped Apply, slide position hints and the current-slide coach. Answers, typed,
+capture and audience requests get conversation plus meeting context; Next point always uses the
+ordinary coach. One system prompt (persona, job context and talking points, glossary, candidate
+facts) is frozen per meeting at Start.
+
+**Meeting context before Start.** The Live page's Meeting context box (beside the job picker)
+is sent as `{ interview?, meetingContext? }` (one named options object replaces positional
+arguments; unknown keys such as `usePresentationDeck` are refused, never ignored) and saved as
+context revision 0 in the meeting-creation transaction, before assistance or STT start. The
+same text is then editable through the existing Live and overlay editors (text-only revisions).
+Rejected: a localStorage draft (meeting text would outlive the app session); a separate
+"agenda" field (one context concept is enough).
+
+**Storage, no migration.** All tables stay; nothing is deleted or rewritten. Nothing writes
+`job_slides`, `meeting_slides` or `meeting_slide_events` any more. The one exception: every
+new meeting still gets its empty version-0 `meeting_deck_versions` row, because context
+revisions and saved answer grounding have foreign keys to it. Removing it needs a separately
+scoped migration. Historical markers stay readable in history, exports and regenerated
+summaries (the only place slide titles still reach a prompt). Saved presentation hotkeys are
+dropped by the existing settings normalization (unknown keys are ignored on load and omitted on
+the next save) rather than an eager settings rewrite.
+
+**Merge with context (owner ruling, replaces "contextual merges are deferred").** Merging is
+allowed when at most one selected meeting has meeting context — nonempty initial text or any
+applied revision, a later clear included. That history moves onto the kept (earliest) meeting:
+when it belongs to a later part, each revision shifts by +1 (after the kept meeting's empty
+revision 0) and by the part's time offset, and that part's suggestions shift their
+`context_revision` with it. When the kept meeting has the context, the other parts' suggestions
+have their revision reference cleared (they were made without it). Two or more parts with
+context stay refused: interleaving independent histories has no honest answer. Meetings with
+recorded slides or slide events stay refused (the empty version-0 row does not count).
+
+; earlier talk is background
 
 A real interview review found about a quarter of the technical-section answers dragged an
 earlier topic's technology or project story into a new question ("broken record"). Causes: the

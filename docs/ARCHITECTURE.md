@@ -46,7 +46,7 @@ Electron desktop app, single-device, local-first. Three window roles:
 
 1. **Main window** — library UI: jobs, meetings, transcripts, context packs, settings. Native title bar hidden; the app header is the title bar (titleBarOverlay, `main/windows/window-chrome.ts`).
 2. **Overlay window** — small frameless always-on-top panel shown during a live meeting;
-   answer-first: the selected suggestion, plus one secondary workspace (Ask, Screen, Slide,
+   answer-first: the selected suggestion, plus one secondary workspace (Ask, Screen,
    Transcript, Context) chosen from a rail. Summoned/dismissed by global hotkey.
 
 3. **Interviewer window** — separate normal window for mock sessions; full-window shared fixture above captions and controls.
@@ -54,7 +54,7 @@ Electron desktop app, single-device, local-first. Three window roles:
 ### Overlay composition
 
 `overlay-app/shell/OverlaySession.tsx` composes every controller once for the window's
-lifetime — transcript/meeting state, presentation, settings, ghost/shortcut labels,
+lifetime — transcript/meeting state, settings, ghost/shortcut labels,
 navigation, suggestion history, manual requests, the composer (draft + screen attachment),
 capture status and Answer every question — and hands view models to `OverlayShell`. Views
 own no subscriptions or request policy. All workspaces stay mounted (hidden ones are `inert`),
@@ -62,8 +62,8 @@ so switching never resets a draft, attachment, history selection or scroll posit
 meeting does. The compose listener and `composerReady` handshake live in the session, above
 conditional rendering: a cold-start Ask intent opens Ask and focuses the textarea once it is
 available. Navigation is a pure reducer (`shell/navigation/overlay-navigation.ts`) whose only
-inputs are the owner's actions and a meeting change — no answer, slide or context event can
-switch the workspace, and every meeting opens on Answer. Local shortcuts (Ctrl+1–6, Ctrl+,
+inputs are the owner's actions and a meeting change — no answer or context event can
+switch the workspace, and every meeting opens on Answer. Local shortcuts (Ctrl+1–3, 5, 6; Ctrl+4 unbound; Ctrl+,
 and Escape) are a window keydown listener; global shortcuts stay in main. In a secondary
 workspace the answer is a preview above a draggable divider whose ratio persists as
 `overlayWhisperRatio`; Answer gives it the whole column.
@@ -72,8 +72,8 @@ workspace the answer is a preview above a draggable divider whose ratio persists
 `MainWindowShow` (`app.showMain()` in preload; handler in `ipc/windows.ts`), which calls the
 same `createMainWindow()` entry point startup and second-instance use: an existing window is
 restored if minimized, shown and focused — never reloaded or routed, so the Live page and its
-microphone session keep running. The overlay's Context edits text only; slides stay in the
-main window's editor.
+microphone session keep running. The overlay's Context and the Live page edit the same saved
+meeting-context text.
 
 ## Runtime data flow (live meeting)
 
@@ -241,7 +241,7 @@ objection | none`. It **fails closed**: timeout, cancel, malformed output or pro
   after launch and every 6 h; Settings shows what is past its limit and can run it now.
   Live meetings are never touched. Deleting a meeting by hand goes through the same
   `removeMeeting` (file + row).
-- Schema (current v11: v1 base, v2 `speakers`, v3 `jobs.summary_email`, v4 `segments_fts`, v5 `suggestions.purpose`, v6 presentation, v7 live context/grounding, v8 practice/results, v9 `meetings.resume_name`/`resume_text` with an immutability trigger, v10 immutable meetings.interview_profile, v11 `job_resumes`; later tables described below):
+- Schema (current v12: v1 base, v2 `speakers`, v3 `jobs.summary_email`, v4 `segments_fts`, v5 `suggestions.purpose`, v6 presentation, v7 live context/grounding, v8 practice/results, v9 `meetings.resume_name`/`resume_text` with an immutability trigger, v10 immutable meetings.interview_profile, v11 `job_resumes`, v12 snapshot-clear guard; later tables described below):
 
 ```
 jobs        (id, name, company_info, project_scope, notes,
@@ -322,27 +322,49 @@ On meeting end, two fire-and-forget passes:
    over by time overlap (`meetings/rediarize/speaker-carryover.ts`); names/merges stay user-editable
    per meeting in the transcript view.
 
-## Presentation mode
+## Meeting context and manual assistance
 
-Schema v6 adds ordered job_slides, immutable meeting_slides, and meeting_slide_events (meeting/revision, ordinal, audio time). Meeting creation copies the deck and records revision one in one transaction. Foreign keys cascade deletion; re-diarization only replaces segments.
+**Start.** The Live page sends `meeting.start(jobId, channels, { interview?, meetingContext? })`
+(`shared/meeting-start.ts`), validated at ingress by `requireMeetingStart` (`ipc/validate.ts`:
+unknown keys refused, context a string of at most 20,000 characters, never truncated). Main
+composes it with main-only `practice` into `StartRequest`; `createMeeting` writes the meeting row,
+its version-0 `meeting_deck_versions` bookkeeping row and context revision 0 (the exact Start
+text, possibly empty, at t=0) in one transaction, before `LiveSession.begin` and before STT opens.
+Mock calls `startMeeting(id, 2, { practice: true })` and gets empty context.
 
-Typed presentation IPC validates deck replacement and expected meeting/direction. Main serializes navigation with lifecycle operations, persists the audio-clock event before changing the cursor, then resets only coaching and broadcasts. Boundaries do nothing; paused moves retain the audio timestamp and increase revision.
+**Apply.** Context is append-only text revisions (`meeting_context_revisions`). Apply validates
+the expected revision in the lifecycle queue, persists, then updates in-memory prompts and
+broadcasts (`context/session.ts`: prepare → persist → publish); identical text is a no-op and a
+failed save changes nothing. New revisions repeat the latest row's `deck_version` (0 for every
+post-retirement meeting). A payload still carrying a `deck` is refused.
 
-Answers cache the complete snapshot deck with job notes/glossary. The current title is a short user-message hint. Classification and answer streams survive moves. Coaching has a separate stable context without the full deck; its user content contains the complete current slide, title/talking point of the next slide, current-visit finalized Me evidence and coach headlines only. Moves cancel buffered coaching and reset eligibility; delayed/crossing finals do not count for the new visit.
+**Prompts.** `MeetingPrompts` freezes one system prompt per meeting at Start (persona, job
+context including talking points, glossary, candidate facts) and saves its grounding row once
+(version 0, empty deck context). Meeting text rides in user content as a delimited
+`<meeting-context>` block on answers, typed, capture and audience requests and on the ordinary
+Next point coach. A context Apply cancels a buffered next point, resets coaching
+(`LiveAssistance.contextChanged`) and stamps later requests with the new revision; classifiers
+and started answers keep the context they captured, and a coach result is accepted only if the
+revision is unchanged.
 
-Historical transcript views, exports and summaries combine immutable events with segments by audio time, markers first at ties. Summary excerpts retain the active marker and never treat prepared scripts as speech. Regeneration reads the recorded snapshot, not the edited job deck.
+Typed, detail and audience requests reuse the requested lane while live or paused. Admission snapshots grounding and returns before generation completes. Detail loads the persisted source ID, original system/deck context and prompt window; current speech/edits never replace that grounding (legacy answers recorded with a deck replay their stored deck block). Successful completion events retain their transient reducer ID and add the stored SQLite ID. Linked detail cards do not overwrite sources.
 
-## Live context and manual assistance (v7)
+Saved context is owner background in summaries and exports, never transcript evidence or FTS content. Summary regeneration still rebuilds job context from current job data; only detail guarantees replay of the original job prompt.
 
-Deck versions are immutable; the active version can change. Context revisions increment on text/deck Apply, deck versions only on content changes, and presentation revisions on navigation/replacement/clear. Revision zero records the meeting-start deck and empty text, including ordinary meetings. v7 copies v6 events and slides into version zero before dropping old tables, with foreign keys enabled.
+**Merge.** `merge-plan.ts` refuses legacy slide meetings and more than one part with context
+(`hasMeetingContext`: nonempty initial text or any revision > 0). Each step carries a context
+action: `move` (this later part's revisions are copied onto the kept meeting at revision + 1 and
+t + offset, and its suggestions' `context_revision` shifts by 1), `unlink` (the kept meeting has
+the context; this part's suggestions get a null revision) or `keep`. Ordinary merges
+reassign/deduplicate grounding before deleting source meetings.
 
-Apply validates expected context/navigation revisions in the lifecycle queue, then commits context, optional deck and navigation event in one transaction. In-memory prompts, cursor and broadcasts follow commit. Identical content is a no-op. Job notes and decks are never written by meeting controls. Clear records a null ordinal; history resolves markers by version and ordinal, with markers first and revisions ordered at equal audio times.
-
-At meeting start both ordinary and presentation job/persona/glossary bases are captured. Answers use the selected base plus the complete effective deck as a separate cacheable provider block. Meeting text and the current-location hint stay in user content. Coaching has no full-deck block and accepts only its original context/presentation revisions. Edits reset coaching evidence; classifiers and started answers survive.
-
-Typed, detail and audience requests reuse the requested lane while live or paused. Admission snapshots grounding and returns before generation completes. Detail loads the persisted source ID, original system/deck context and prompt window; current speech/edits never replace that grounding. Successful completion events retain their transient reducer ID and add the stored SQLite ID. Linked detail cards do not overwrite sources.
-
-Saved context is owner background in summaries and exports, never transcript evidence or FTS content. Summary regeneration still rebuilds job context from current job data; only detail guarantees replay of the original job prompt. Contextual/presentation merges are refused even after clearing content. Ordinary merges reassign/deduplicate grounding before deleting source meetings.
+**Historical presentation records.** Presentation mode was retired on 2026-11-04. The v6/v7
+tables (`job_slides`, `meeting_slides`, `meeting_slide_events`, deck versions) remain and are
+never written, except the version-0 deck row every meeting needs for foreign keys.
+`db/repos/meeting/meeting-presentation.ts` reads them (`getPresentationHistory`,
+`hasLegacySlides`); `ipc/presentation-history.ts` serves the read-only history; MeetingView,
+exports (`meetings/export.ts`) and regenerated summaries (`meetings/presentation/history.ts`)
+interleave markers with segments by audio time, markers first at ties, never as speech.
 
 ### Screen capture (no persistence)
 
@@ -385,7 +407,7 @@ suggestion and health evidence; live storage is checked before batch replacement
 match encoded bytes at acquisition and assistant receipt. The report contains expectation IDs
 and outcomes, not transcript or credentials. See [REHEARSAL.md](REHEARSAL.md).
 
-Presentation activation is independent of assistance-job selection. Start passes a validated opt-in boolean; the repository snapshots slides and creates the initial event only when selected. History filing goes through meetings/status/filing.ts, which rejects the current live or paused meeting without rebinding context.
+History filing goes through meetings/status/filing.ts, which rejects the current live or paused meeting without rebinding context.
 
 ## Resumes: saved on the job (v11), snapshotted on the meeting (v9)
 
@@ -396,7 +418,7 @@ reads and writes it through `jobs.getResume(jobId)` / `jobs.setResume(jobId, res
 imports drafts through `jobs.importResume()`. The full text never rides on `jobs.list()` or any
 meeting/status broadcast; Live only asks `getResume` for availability (Interview default).
 
-Start carries no resume. `meeting.start(jobId, channels, usePresentationDeck, interview?)` and
+Start carries no resume. `meeting.start(jobId, channels, { interview?, meetingContext? })` and
 `mockInterview.start(plan, jobId, channels)` both reach `startMeeting`, which, inside the
 serialized Start and with no await before `createMeeting`, calls
 `resolveStartGrounding` (`services/meetings/context/start-grounding.ts`): the selected job's
@@ -404,9 +426,9 @@ saved resume (none when no job was chosen, resolved before `ensureDefaultJob()` 
 Unsorted bucket) and the Interview profile (`practice || (interview ?? hasSavedResume)`).
 Live state exposes a small `noResume` cue for practice sessions with neither resume nor profile.
 
-The meeting snapshot: the service hands `createMeeting` (`db/repos/meeting/meeting-create.ts`) a main-built `MeetingCreateInput`; it stores `resume_name` and `resume_text` in the same transaction as the deck copy. The resume and profile snapshots are read back only through `getMeetingGrounding(id)` (`{ resume, interviewProfile, hasBiography }`), never on list rows; STT hints, candidate facts, re-diarize, the merge guard, the `noResume` cue and the prompt block all go through it. The append-only v9 migration uses the existing pre-upgrade SQLite backup flow. A database trigger rejects changes to these fields; job filing leaves them intact. Resume-bearing merges are refused to avoid losing or misattributing candidate facts.
+The meeting snapshot: the service hands `createMeeting` (`db/repos/meeting/meeting-create.ts`) a main-built `MeetingCreateInput`; it stores `resume_name` and `resume_text` in the same transaction as the initial meeting context. The resume and profile snapshots are read back only through `getMeetingGrounding(id)` (`{ resume, interviewProfile, hasBiography }`), never on list rows; STT hints, candidate facts, re-diarize, the merge guard, the `noResume` cue and the prompt block all go through it. The append-only v9 migration uses the existing pre-upgrade SQLite backup flow. A database trigger rejects changes to these fields; job filing leaves them intact. Resume-bearing merges are refused to avoid losing or misattributing candidate facts.
 
-`MeetingPrompts` reads the saved resume at Start, escapes markup and appends a delimited candidate-facts block to both ordinary and presentation bases. It is independent of talking-point suppression and is captured in immutable grounding rows for More detail. Summary regeneration includes it as background, never transcript evidence. It is not added to FTS.
+`MeetingPrompts` reads the saved resume at Start, escapes markup and appends a delimited candidate-facts block to the meeting's one system prompt. It is captured in immutable grounding rows for More detail. Summary regeneration includes it as background, never transcript evidence. It is not added to FTS.
 
 Capitalized names, acronyms, mixed-case technology and a small lowercase technology vocabulary become STT hints. Resume terms alternate with job glossary terms, deduplicate case-insensitively and respect conservative count/length/byte limits. Streaming start/resume and batch transcription use `SttProvider`; no new provider or network path exists.
 
@@ -415,14 +437,13 @@ Resume file import: the job Resume tab invokes a parameterless typed IPC picker 
 ## Interview profile lifecycle
 
 Settings owns the editable, local interviewProfile string. Typed Settings IPC validates its
-40,000-character limit. Live Start passes an optional Interview choice beside the deck
-argument; main resolves it once (explicit false wins over the saved-job-resume default,
+40,000-character limit. Live Start passes an optional Interview choice in its Start options; main resolves it once (explicit false wins over the saved-job-resume default,
 practice always wins) before creating the meeting. Work meetings capture an empty
 string. Schema v10 inserts the profile snapshot in the same transaction as the resume and
 meeting; a trigger prevents updates. Old rows default empty.
 
-MeetingPrompts reads only that saved snapshot for ordinary and presentation bases, so
-Apply/deck changes, More detail and summaries cannot see later Settings edits. Resume facts
+MeetingPrompts reads only that saved snapshot, so
+context Apply, More detail and summaries cannot see later Settings edits. Resume facts
 precede profile facts; the profile block directs story selection and reserves marked filler
 for gaps. Both use shared delimiter escaping. Streaming open/resume and batch
 re-diarization both read the snapshot through getMeetingGrounding. Both call

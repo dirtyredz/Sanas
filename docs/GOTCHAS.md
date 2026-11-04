@@ -294,8 +294,9 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   first and exits, so a leftover process from an earlier attempt looks exactly like a
   crash. Check for a running `electron.exe` before concluding anything.
 - **Native checks without touching the owner's data:** an unpackaged run accepts
-  `--dev-user-data=<dir>` (ignored when packaged), e.g.
-  `electron.exe out/main/index.js --dev-user-data=.tmp/native/profile --remote-debugging-port=9333`.
+  `--dev-user-data=<absolute dir>` (ignored when packaged; a relative path throws "Path must be
+  absolute" at load and leaves an error dialog holding the process), e.g.
+  `electron.exe out/main/index.js --dev-user-data=C:\...\.tmp\native\profile --remote-debugging-port=9333`.
   A different userData also means a separate single-instance lock, so it can run beside the
   installed app — but its global shortcuts then fail to register (the installed app owns them).
 - **You cannot screenshot the overlay from the OS:** content protection omits it (a
@@ -304,7 +305,7 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   domain, so window state (minimize/restore) needs Win32 (`ShowWindow`/`IsIconic`) scoped to
   your own process id — the installed Sanas also has a window titled "Sanas".
 - **Overlay preview scenarios:** `npm run dev:web`, then `overlay.html?scenario=<name>`
-  (idle, listening, answer, history, code, streaming, detail, warning, paused, error, deck,
+  (idle, listening, answer, history, code, streaming, detail, warning, paused, error,
   capturing, capture-failed, rejected). They set state directly through `mockDriver` and must
   wait for the overlay to render the meeting before emitting answers or transcript, or the
   overlay drops them as another meeting's.
@@ -428,20 +429,39 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
 - **Open Sanas must not route or reload the main renderer.** The Live and Mock pages own
   microphone capture sessions and stay mounted across tab switches. Reloading the renderer
   would interrupt capture. `MainWindowShow` is parameterless and only restores/shows/focuses.
-- **The overlay's Context is text-only on purpose.** Its Apply payload never carries `deck`,
-  so it cannot change slides; bulk deck editing stays in the main window's
-  `MeetingContextEditor`. Both share `lib/meeting/meeting-context-draft.ts`.
+- **Meeting context is text only.** The overlay's Context and the Live page's
+  `MeetingContextEditor` share `lib/meeting/meeting-context-draft.ts`; main refuses any Apply
+  payload that still carries a `deck` (an old renderer must not have it silently ignored).
 - **Overlay CSS must not import `base.css`** — its opaque `body` background would cover the
   transparent window. `overlay.css` imports `tokens.css` and `controls.css` plus the scoped
   `overlay-*.css` layers.
 
-## Presentation mode
+## Meeting context (presentation mode retired 2026-11-04)
 
-- Editing/saving/clearing a job deck applies to the next meeting only. Deck versions are immutable; the active version can change through meeting Apply, independently of the job.
-- Slide moves cancel only buffered Next point coaching, clear only coach cards and reset coach thresholds. Never invalidate classifiers or streaming answers on a slide move. Ordinary Stop still permits answers to finish.
-- New-visit coaching excludes finalized speech starting before a navigation boundary. Provider timestamps can drift relative to captured audio after reconnect; coverage remains advisory.
-- Shortcut Settings shows attempted startup accelerators and registration failures. Saved changes need restart; duplicates, unavailable combinations and invalid accelerators are visible. Slide shortcuts do not focus the overlay and work while paused/ghosted.
-- Presentation meetings cannot be merged yet. Recorded slide markers survive re-diarization; scripts do not count as transcript evidence.
+- **The version-0 deck row is not presentation data.** Every new meeting still writes
+  `meeting_deck_versions (id, 0)`: `meeting_context_revisions` and
+  `suggestion_grounding_contexts` have foreign keys to it. Do not "finish the cleanup" by
+  dropping that insert, and never treat that row as a sign of slides (`hasLegacySlides` looks
+  at actual `meeting_slides`/`meeting_slide_events` rows only).
+- **Pre-Start context is saved in the creation transaction**, as revision 0 at t=0, before
+  assistance and STT start. A failed insert rolls the meeting back. The Live draft is local page
+  state: it survives tab switches, job changes and a failed capture/Start, is disabled while
+  Start is pending, and is cleared only when Start is confirmed live. It is lost on app
+  restart by design (no localStorage for meeting text). Whitespace-only text is not sent.
+- **Merge and context.** Any nonempty initial text or any applied revision (a later clear
+  included) counts as context. Only one merged part may have it; moving it shifts revisions by
+  +1 and time by the part's offset, and the part's suggestions' `context_revision` must shift
+  with them or More detail/stale-context marks point at the wrong text. Legacy slide meetings
+  stay unmergeable.
+- **A context Apply restarts coaching, not answers.** It cancels a buffered Next point, clears
+  coach thresholds and stamps later requests with the new revision; classifiers and streaming
+  answers keep their captured context. The renderer clears coach cards on a revision change
+  (`whisper-history` action `context-changed`).
+- **Retired settings keys.** Saved `presentationPrevHotkey`/`presentationNextHotkey` are dropped
+  by `loadSettings` (unknown keys ignored) and vanish on the next save. Ctrl+4 in the overlay is
+  deliberately unbound; Transcript stays Ctrl+5 and Context Ctrl+6.
+- Shortcut Settings shows attempted startup accelerators and registration failures. Saved changes need restart; duplicates, unavailable combinations and invalid accelerators are visible.
+- Historical slide markers survive re-diarization and are never transcript evidence.
 
 ## Live-control boundaries
 
@@ -546,7 +566,7 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
 - Vitest now DOES configure the `@shared` alias in `vitest.config.ts`; the older overlay note
   above saying otherwise is stale. Electron imports still need mocks in CI.
 
-- A remembered job is assistance context, not consent to present its deck. Start defaults deck use off each meeting. Unsorted clears the remembered job; late job loading must not replace a newer selection. Filing an ended meeting changes organization only, never saved grounding. Live corrections use Apply.
+- A remembered job is assistance context only. Unsorted clears the remembered job; late job loading must not replace a newer selection. Filing an ended meeting changes organization only, never saved grounding. Live corrections use Apply.
 
 - This PC assumes counterpart speech arrives on captured system output. Check Teams/Zoom output against the captured default device. For another-device calls, end and restart as Elsewhere, then pin your voice; Resume cannot change topology. Brief system sound is not proof of counterpart capture. Batch logs distinguish mono pins carried from user/other segment counts.
 - Classifier failures remain fail-closed. Only allowlisted category (provider, timeout, `connection`, ...), error class name (`errorName`), HTTP status, request ID, model and elapsed time enter diagnostics; never raw exception messages, prompts, keys or bodies. The library and overlay show the 30-second suspension (only after 3 consecutive failures; a single timeout just skips its turn) with Answer now as the recovery path.
@@ -580,7 +600,7 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   copy/summary path. Rendering goes through `FillerText`; never show the raw characters.
 
 - Resume drafts never go in localStorage or settings. The meeting's copy is immutable, even if the job's resume is later edited or removed. Filing the meeting under a _different_ job is the one exception: it clears the resume and profile snapshot (`moveMeetingToJob`, guarded by `meeting_snapshot_clear`; v12 triggers). Never UPDATE those columns anywhere else.
-- Both ordinary and presentation prompt bases need the same resume block. Adding/clearing a deck must never remove candidate facts or reread a changed attachment. Escape markup before surrounding resume text with delimiters; framing mitigates injection but cannot guarantee model behavior.
+- The one frozen system prompt carries the resume block. A context Apply must never remove candidate facts or reread a changed attachment. Escape markup before surrounding resume text with delimiters; framing mitigates injection but cannot guarantee model behavior.
 - Merge rejects resume-bearing meetings so candidate identity/history is not silently discarded (moving a meeting to another job removes its snapshots, which unblocks merging). Resume content is background for summaries, not evidence that the candidate spoke those facts.
 - STT hints are heuristic, bounded and potentially incomplete. A glossary and resume together must stay within the provider budget, including after pause/resume and batch re-diarization.
 
@@ -596,8 +616,8 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
 - The legacy noResume IPC field now means a practice meeting has neither resume nor profile.
   The cue reads “No resume or profile”; whitespace-only profiles count as empty. Settings edits
   during practice cannot change the cue or STT hints. Ordinary meetings have no cue.
-- Escape profile delimiters with the same function as resume data. Include it in both prompt
-  variants and persisted grounding, or deck changes/More detail will lose the story. Prompt
+- Escape profile delimiters with the same function as resume data. Include it in the system
+  prompt and persisted grounding, or context changes/More detail will lose the story. Prompt
   assertions prove wiring and instructions only, not model quality or injection resistance.
 - v10 adds an immutable profile column and v11 the `job_resumes` table. Disposable migration
   tests that reconstruct v7/v8/v9/v10 from the latest schema must drop `job_resumes` and the v10

@@ -20,8 +20,8 @@ function ContextDraftEditor({ context }: { context: MeetingContext }): React.JSX
   return (
     <div className="meeting-context-editor">
       <label className="field">
-        <span>Meeting context</span>
         <textarea
+          aria-label="Meeting context"
           maxLength={MEETING_CONTEXT_MAX_CHARS}
           rows={5}
           value={draft.text}
@@ -32,10 +32,14 @@ function ContextDraftEditor({ context }: { context: MeetingContext }): React.JSX
       {conflict && (
         <p role="alert">Context changed in another window. Reload to use the latest version.</p>
       )}
-      <button disabled={draft.busy || !unsaved} onClick={() => void apply()}>
+      <button
+        className="btn btn-primary"
+        disabled={draft.busy || !unsaved}
+        onClick={() => void apply()}
+      >
         Apply to this meeting
       </button>
-      <button disabled={draft.busy} onClick={reload}>
+      <button className="btn" disabled={draft.busy} onClick={reload}>
         Reload saved context
       </button>
       <p role="status">{draft.notice}</p>
