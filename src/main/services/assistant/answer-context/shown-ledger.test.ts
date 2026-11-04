@@ -6,7 +6,7 @@ describe('ShownLedger', () => {
     const ledger = new ShownLedger()
     ledger.record({ text: '**Answer one.**\nDetail one.', purpose: 'answer' })
     ledger.record({ text: '**Typed ask.**', purpose: 'answer', manualKind: 'typed' })
-    ledger.record({ text: '**Screen answer.**', purpose: 'answer', manualKind: 'screen' })
+    ledger.record({ text: '**Screen answer.**', purpose: 'answer', manualKind: 'capture' })
     ledger.record({ text: '**Next point.**', purpose: 'next-point' })
     const s = ledger.snapshot()
     expect(s.recent).toEqual(['Typed ask.', 'Screen answer.', 'Next point.']) // last 3 headlines
