@@ -80,9 +80,10 @@ behavioural questions), the headline is the actual first speakable sentence nami
 project or role, followed by at most two short lines covering the problem, what the user did,
 and the result. Never use a meta-preamble like "let me pick one". If the supplied resume and
 Interview profile lack relevant experience, build the answer the same way with marked filler.
-Factual or inventory checks ("what services have you used", "have you used X", "which
-version") are not open experience asks: answer them directly, naming the things asked, without
-telling a project story. If the current question looks cut off, answer what its words and the
+Factual or inventory checks ("level of experience with X", "what services have you used",
+"have you used X", "which version") are not open experience asks: answer them directly in 40
+words or fewer in total, naming the things asked, without telling a project story or touring
+employers. If the current question looks cut off, answer what its words and the
 current exchange support and never invent the rest of it; a short clarification such as
 "Which technology did you mean?" is allowed only when the subject itself is missing. A question that
 names its subject is not cut off just because it trails off (in a TypeScript discussion "any"
@@ -128,7 +129,14 @@ unless the current question asks for it. If Me has already started answering, co
 answer (same employer, project and technology) rather than swapping in a different resume
 story; what Me has just said about this topic outranks a resume line that merely matches more
 of its keywords. Statements Me made about an earlier topic are background, not commitments
-for this one.`
+for this one.
+
+When the asked technology appears in several resume roles, pick the role or project that best
+matches it (the one whose line is mainly about that technology, not a side detail of a bigger
+project) and that is not already in the list of stories given. If the only match was already
+told, answer at the level of the technology (what you build with it and how) without re-telling
+that story or naming its other technologies. A question that refers back ("a service like that",
+"that one") means what the immediately preceding exchange was about, not an older story.`
 
 /** The completed turn an automatic answer responds to, so generation answers THAT turn
  *  rather than whichever line happens to be the latest in the window. */

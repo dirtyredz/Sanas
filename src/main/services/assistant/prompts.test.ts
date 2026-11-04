@@ -15,6 +15,7 @@ import {
   CURRENT_EXCHANGE_LABEL,
 } from './answer-context/conversation-window'
 import {
+  carriedTerms,
   TOPIC_SWITCH_EXCHANGES,
   TOPIC_SWITCH_JOB,
   topicSwitchWindow,
@@ -231,6 +232,31 @@ describe('topic switch: answers anchor on the current question (DECISIONS 2026-1
     expect(system).toContain('continue Me')
     expect(system).toContain('Factual or inventory checks')
     expect(system).toContain('never invent the rest of it')
+  })
+
+  it('picks the best untold resume role and keeps factual checks to 40 words', () => {
+    const system = buildSystemPrompt(TOPIC_SWITCH_JOB, [])
+    expect(system).toContain('appears in several resume roles')
+    expect(system).toContain('answer at the level of the technology')
+    expect(system).toContain('refers back')
+    expect(system).toContain('40\nwords or fewer in total')
+    expect(buildUserContent(lines, 'ambient', 'smart', { turn })).toContain(
+      'never more than 40 words in total for factual or inventory checks',
+    )
+  })
+
+  it('scores carryover: a bare employer is strict-only, a referenced exchange is exempt', () => {
+    const aws = TOPIC_SWITCH_EXCHANGES[1]
+    expect(carriedTerms('At Acme our services ran on EKS.', aws)).toEqual([])
+    expect(carriedTerms('At Acme our services ran on EKS.', aws, { strict: true })).toEqual([
+      'acme',
+    ])
+    expect(carriedTerms('The subgraph used Kafka.', aws)).toEqual(['subgraph', 'kafka'])
+    const test = TOPIC_SWITCH_EXCHANGES[5]
+    expect(carriedTerms('Replay Kafka events.', test)).toEqual(['kafka'])
+    expect(carriedTerms('Replay Kafka events.', test, { referenced: 'a Kafka consumer' })).toEqual(
+      [],
+    )
   })
 
   it('marks a question still being spoken as possibly cut off, without inventing the rest', () => {

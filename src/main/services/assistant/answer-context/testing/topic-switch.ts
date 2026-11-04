@@ -15,13 +15,20 @@ export interface TopicSwitchExchange {
   reply: string[]
   /** Terms an on-topic answer names (any one is enough, lower case). */
   asked: string[]
-  /** Earlier-topic terms an answer must not bring in (lower-case stems). */
+  /** Earlier-topic technology/story terms an answer must not bring in (lower-case stems). */
   carryover: string[]
+  /** Index of the exchange this question refers back to ("a service like that"): terms that
+   *  exchange (its fixture reply or the answer given to it) used are not carryover here. */
+  refersTo?: number
   /** A factual or inventory check: the answer should stay short (15-40 words). */
   factual: boolean
 }
 
-const FEDERATION_TERMS = ['federat', 'subgraph', 'kafka', 'acme', 'apollo', 'invoic', 'postgres']
+const FEDERATION_TERMS = ['federat', 'subgraph', 'kafka', 'apollo', 'invoic', 'postgres']
+/** Employers whose bare name counts only in the STRICT tally. The resume has the asked
+ *  technology at Acme (Node, TypeScript, EKS/Aurora/MSK on AWS), so naming it is not a
+ *  broken record; the earlier story's technology terms are. */
+const STRICT_EMPLOYER_TERMS = ['acme']
 
 export const TOPIC_SWITCH_EXCHANGES: TopicSwitchExchange[] = [
   {
@@ -101,6 +108,7 @@ export const TOPIC_SWITCH_EXCHANGES: TopicSwitchExchange[] = [
   },
   {
     question: 'How do you test a service like that?',
+    refersTo: 3,
     reply: ['Unit tests around the handlers, and a contract test against the upstream API.'],
     asked: ['test'],
     carryover: FEDERATION_TERMS,
@@ -177,9 +185,17 @@ export function topicSwitchWindow(
   return { window, question: question as unknown as TopicSwitchQuestion }
 }
 
-/** Lower-case carryover terms an answer brought in that its question did not name. */
-export function carriedTerms(answer: string, ex: TopicSwitchExchange): string[] {
+/** Lower-case carryover terms an answer brought in that its question did not name. `strict`
+ *  also counts a bare employer name; `referenced` is the text of the exchange a back-referring
+ *  question points at (terms from it are not carryover). */
+export function carriedTerms(
+  answer: string,
+  ex: TopicSwitchExchange,
+  opts: { strict?: boolean; referenced?: string } = {},
+): string[] {
   const a = answer.toLowerCase()
   const q = ex.question.toLowerCase()
-  return ex.carryover.filter((t) => a.includes(t) && !q.includes(t))
+  const ref = (opts.referenced ?? '').toLowerCase()
+  const terms = opts.strict ? [...ex.carryover, ...STRICT_EMPLOYER_TERMS] : ex.carryover
+  return terms.filter((t) => a.includes(t) && !q.includes(t) && !ref.includes(t))
 }

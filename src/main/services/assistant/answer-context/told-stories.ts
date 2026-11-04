@@ -77,5 +77,6 @@ ${list}
 Do not re-tell these stories or bring back their projects, employers or technologies unless the
 current question asks about them. If the current question really needs the same project, refer
 back to it in one short clause (for example "like the project I mentioned") and add only what
-the question asks. ${end}`
+the question asks. When the asked technology also appears in a resume role not listed here,
+use that role instead. ${end}`
 }

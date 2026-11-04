@@ -51,7 +51,11 @@ interface Row {
   promptChars: number
   systemChars: number
   answer: string
+  /** Corrected carryover: earlier-topic technology/story terms (a bare employer name is
+   *  excluded; so are terms from the exchange a question refers back to). */
   carried: string[]
+  /** Strict carryover: also counts a bare employer name. */
+  carriedStrict: string[]
   askedHit: boolean
   words: number
   overLength: boolean
@@ -182,6 +186,7 @@ async function ask(req: SuggestionRequest, i: number): Promise<string> {
 
 async function runVersion(v: Version, sample: number, rows: Row[]): Promise<void> {
   v.reset()
+  const answers = new Map<string, string>()
   for (const [i, ex] of TOPIC_SWITCH_EXCHANGES.entries()) {
     const at = topicSwitchWindow(i)
     const turn = completedTurn(ex.question, at.question.startMs, at.question.endMs)
@@ -209,7 +214,12 @@ async function runVersion(v: Version, sample: number, rows: Row[]): Promise<void
       }
       const answer = await ask(req, i)
       v.remember(answer)
-      rows.push(score(v, sample, i, ex, lane, req, answer))
+      answers.set(`${lane}-${i}`, answer)
+      const ref = ex.refersTo === undefined ? undefined : TOPIC_SWITCH_EXCHANGES[ex.refersTo]
+      const referenced = ref
+        ? [ref.question, ...ref.reply, answers.get(`${lane}-${ex.refersTo}`) ?? ''].join('\n')
+        : undefined
+      rows.push(score(v, sample, i, ex, lane, req, answer, referenced))
     }
   }
 }
@@ -222,6 +232,7 @@ function score(
   lane: Lane,
   req: SuggestionRequest,
   answer: string,
+  referenced?: string,
 ): Row {
   const words = wordCount(answer)
   return {
@@ -233,7 +244,8 @@ function score(
     promptChars: req.userContent.length,
     systemChars: req.system.length + (req.cacheableContext?.length ?? 0),
     answer,
-    carried: carriedTerms(answer, ex),
+    carried: carriedTerms(answer, ex, { referenced }),
+    carriedStrict: carriedTerms(answer, ex, { strict: true, referenced }),
     askedHit: ex.asked.some((t) => answer.toLowerCase().includes(t)),
     words,
     overLength: ex.factual && words > 40,
@@ -283,7 +295,7 @@ function report(rows: Row[], sizes: string[]): string {
     const r = scored(v)
     const avg = (f: (x: Row) => number) =>
       Math.round(r.reduce((s, x) => s + f(x), 0) / Math.max(1, r.length))
-    return `| ${v} | ${r.length} | ${r.filter((x) => x.carried.length).length} | ${r.filter((x) => !x.askedHit).length} | ${r.filter((x) => x.overLength).length} | ${avg((x) => x.words)} | ${avg((x) => x.promptChars)} | ${avg((x) => x.systemChars)} |`
+    return `| ${v} | ${r.length} | ${r.filter((x) => x.carriedStrict.length).length} | ${r.filter((x) => x.carried.length).length} | ${r.filter((x) => !x.askedHit).length} | ${r.filter((x) => x.overLength).length} | ${avg((x) => x.words)} | ${avg((x) => x.promptChars)} | ${avg((x) => x.systemChars)} |`
   })
   const lines = [
     `# Topic-switch eval (${dry ? 'DRY RUN: prompts only, canned answers' : 'live'})`,
@@ -292,11 +304,13 @@ function report(rows: Row[], sizes: string[]): string {
     `Models: automatic ${settings.nudgeModel}, Answer now ${settings.answerModel}. Samples per version: ${samples}.`,
     'Fixture: invented (src/main/services/assistant/answer-context/testing/topic-switch.ts). Exchange 0 seeds the story and is not scored.',
     '',
-    '| version | scored answers | carryover answers | missed asked term | factual over 40 words | avg words | avg prompt chars | avg system chars |',
-    '|---|---|---|---|---|---|---|---|',
+    '| version | scored answers | carryover (strict) | carryover (corrected) | missed asked term | factual over 40 words | avg words | avg prompt chars | avg system chars |',
+    '|---|---|---|---|---|---|---|---|---|',
     ...summary,
     '',
-    'Pass bar (review.md section 5): old shows carryover in at least half its samples; new shows 0 carryovers, factual answers at most 40 words.',
+    'Strict carryover also counts a bare employer name (Acme). Corrected counts only earlier-topic technology/story terms and ignores terms from the exchange a question refers back to.',
+    '',
+    'Pass bar (review.md section 5): old shows carryover in at least half its samples; new shows 0 corrected carryovers, factual answers at most 40 words.',
     '',
     '## Prompt size, long meeting (rolling window full; six answers already told)',
     '',
@@ -316,7 +330,7 @@ function report(rows: Row[], sizes: string[]): string {
         const n = pick('new')
         if (!o || !n) continue
         const flag = (r: Row) =>
-          `${r.carried.length ? `CARRYOVER: ${r.carried.join(', ')}` : 'no carryover'}; ${r.askedHit ? 'asked term present' : 'MISSED asked term'}; ${r.words} words${r.overLength ? ' (OVER 40)' : ''}; prompt ${r.promptChars} chars`
+          `${r.carried.length ? `CARRYOVER: ${r.carried.join(', ')}` : r.carriedStrict.length ? `strict-only: ${r.carriedStrict.join(', ')}` : 'no carryover'}; ${r.askedHit ? 'asked term present' : 'MISSED asked term'}; ${r.words} words${r.overLength ? ' (OVER 40)' : ''}; prompt ${r.promptChars} chars`
         lines.push(
           `### Sample ${s + 1}, exchange ${i} (${lane}): ${ex.question}`,
           '',
@@ -345,7 +359,7 @@ it('topic switch: old vs new answer prompts', async () => {
   const tally = (v: string) => rows.filter((r) => r.version === v && r.exchange > 0)
   for (const v of ['old', 'new'])
     console.log(
-      `${v}: ${tally(v).length} scored, ${tally(v).filter((r) => r.carried.length).length} carryover, avg prompt ${Math.round(tally(v).reduce((a, r) => a + r.promptChars, 0) / Math.max(1, tally(v).length))} chars`,
+      `${v}: ${tally(v).length} scored, ${tally(v).filter((r) => r.carriedStrict.length).length} strict / ${tally(v).filter((r) => r.carried.length).length} corrected carryover, ${tally(v).filter((r) => r.overLength).length} factual over 40, avg prompt ${Math.round(tally(v).reduce((a, r) => a + r.promptChars, 0) / Math.max(1, tally(v).length))} chars`,
     )
   console.log(`report: ${out}`)
 })
