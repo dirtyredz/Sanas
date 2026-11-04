@@ -22,7 +22,7 @@ and pauses of at least two seconds; streaming behavior is unchanged.
 | Pause / resume a meeting                         | ✅     | one meeting across an interruption; clock is audio time (2026-09-09)                                                 |
 | Merge meetings                                   | ✅     | job page: tick two or more, folded into the earliest; wall-clock offsets, speaker blocks (2026-09-09)                |
 | Lost connection pauses instead of erroring       | ✅     | after the provider's own retries; Resume when back online (2026-09-09)                                               |
-| Ambient AI nudges (completed-turn detection)     | ✅     | Smart/Full/Points; classifies completed turns; suppresses recently repeated answers; configurable models/cooldown    |
+| Ambient AI nudges (completed-turn detection)     | ✅     | Smart/Full/Points; classifies completed turns; answer runs alongside the classifier, shown only if accepted          |
 | Next point while you talk                        | ✅     | opt-in (off by default); ≥1 per 30 s; labelled "Next point" in overlay, history and export                           |
 | System-audio capture warning                     | ✅     | This PC mode: banner when ch1 is silent but the mic hears speech; advisory only                                      |
 | Live whisper history                             | ✅     | Per-meeting history with previous/next/Latest; follows new answers unless reading an older/scrolled item             |

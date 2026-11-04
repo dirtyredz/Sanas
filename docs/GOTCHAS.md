@@ -321,8 +321,30 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   auto-reconnect with transcript continuity.
 - **Turn boundaries are acoustic, and messy.** `speech_final` can arrive with empty text,
   duplicates, or late; UtteranceEnd can arrive after speech already resumed. Neither means the
-  sentence is finished semantically — hence the 350 ms continuation grace and a boundary older
-  than observed speech being rejected.
+  sentence is finished semantically — hence the continuation grace (150 ms since 2026-11-04;
+  350 before) and a boundary older than observed speech being rejected. The grace is a latency
+  tradeoff: every boundary-completed turn waits for it, and speech resuming after it starts a new
+  turn. Since the grace (150) is shorter than the boundary tolerance (250), zero-latency STT (the
+  scripted rehearsal provider) can never cancel a boundary with new speech: it must withhold the
+  boundary instead, as Deepgram does when speech resumes within 600 ms (see Rehearsals).
+- **A speculative answer must never flash.** It runs before the classifier agrees, so the runner
+  holds it unpublished (`SuggestionRunner.speculate`): no `start`/`delta`/`error` event and no
+  persistence until `promote()`. The older `cancel()` deliberately ignored streamed answers
+  ("never withdrawn once started"), so reusing `start` would have leaked rejected answers to the
+  screen; `cancel()` now discards an unpublished run and stays a no-op once published. A discarded
+  run settles `discarded` (Mock drops it from per-question requests). Lane and hold are released
+  exactly once, in the run's `finally`; the lane token stops a late callback from freeing a newer
+  owner, and an unpromoted held result is discarded at the request deadline.
+- **Promotion compares the whole prompt, not the verdict.** `speculative-answer.ts` rebuilds the
+  ordinary request at verdict time and publishes only an identical one (userContent, system,
+  context, grounding id/revision, carried turns, model, budget). A new final, a hotkey answer
+  adding a recent headline, or "Answer now" clearing the ledger all make it a mismatch and the
+  ordinary request replaces it. Do not loosen this to "the verdict is a question".
+- **Latency clocks differ by origin.** Assistance/run observers stamp their own receipt clocks
+  (rehearsal: harness `now()`; Mock: its `now`); turn timing in `live-assistance` is receipt time
+  (`performance.now`); provider and STT timestamps are audio time. Mock's `firstVisibleLatencyMs`
+  starts at the STT final's receipt, `spokenVisibleLatencyMs` at TTS playback finishing (closest to
+  speech end). "Visible" is the main-process broadcast, not paint. Never subtract across origins.
 - **The classifier fails closed.** An Anthropic outage or slow call silences automatic answers
   (and suspends classification for 30 s); "Answer now" still works. Effort is not sent to Haiku or
   unknown model IDs (only Opus/Sonnet 5.x), so the classifier's "low effort" is a no-op on it; its
@@ -498,6 +520,12 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
 - Scripted long utterances must advance activity until their final. A lone future-dated interim
   makes the 1.8-second silence fallback split retimed bursts early; the harness now emits ongoing
   activity at replay time without changing production turn assembly.
+- Scripted STT emits a final at utterance end with no endpointing latency, so it must model
+  endpoint _suppression_: a final gets no boundary when the scenario resumes speech on that
+  channel within `ENDPOINTING_MS` (600, shared with `stt/deepgram.ts`). Without it, short
+  assembly gaps (rapid-qa, stacked pairs) split into separate turns once the grace is shorter
+  than the 250 ms boundary tolerance. Its `fromFinal` latencies therefore exclude the acoustic
+  600 ms that live speech pays.
 - Existing WAVs must be 16 kHz linear16 mono/stereo with valid RIFF chunks. Speech synthesis
   must fit each declared duration; enlarge timing instead of truncating words.
 - Offline speech is voice-dependent. Mock/rapid slots were retimed from measured speech with

@@ -140,8 +140,32 @@ Mic (getUserMedia, renderer)
 - **Answering completed turns:** STT → existing final persistence/broadcast → identity
   resolution → `turns/turn-assembler` → prefilter (`triggers.ts`, loose, local) → classifier →
   freshness/cooldown → suggestion runner. Interims and VAD count only as activity, never text.
-  A turn closes after a boundary plus a 350 ms continuation grace, after 1,800 ms with no
-  advancing speech, or on a confirmed speaker change in final text; channels are independent.
+  A turn closes after a boundary plus a 150 ms continuation grace (350 ms before 2026-11-04),
+  after 1,800 ms with no advancing speech, or on a confirmed speaker change in final text;
+  channels are independent.
+- **Latency path (speech end → first readable answer):** endpoint arrival (Deepgram
+  `endpointing=600`) + 150 ms grace + max(classifier complete, answer first text) + IPC/paint.
+  The classifier and the answer overlap because of speculation (next bullet). Warm live
+  measurement 2026-11-04: Haiku verdict median 697 ms, Sonnet first token median 1,182 ms, so
+  first text lands ≈1.9 s after speech end instead of ≈2.8 s.
+- **Speculative answer** (`assist/speculative-answer.ts`, `SuggestionRunner.speculate`): when the
+  classifier starts on a free ambient lane, the answer a `question me` verdict would get starts
+  with it, **unpublished**: it owns the ambient lane and the meeting hold, but emits no event and
+  stores nothing; deltas are buffered. On the verdict, the ordinary request is rebuilt from the
+  state at that moment; the speculation is **promoted** (held text shown at once, then it streams
+  and persists like any answer) only if that request is the identical prompt (same verdict
+  wording, window, recent answers, grounding, carried questions, model). Otherwise it is
+  **discarded** silently and the ordinary request starts: `none`, failures, `other`, `request`,
+  `room`, a moved-on window, a changed ledger, expiry, a dropped candidate, Stop/reconnect/pin
+  change, its own provider failure or timeout. Cooldown and ledger coverage are consumed only on
+  promotion. "Answer now" uses the hotkey lane and never touches it. Every speculation is a paid
+  call, discarded or not: `speculation-started/promoted/discarded` diagnostics and a
+  `speculative answers: started=… promoted=… discarded=…` log line at Stop count it.
+- **Stage timing evidence** (`assist/diagnostics.ts`, `run-observation.ts`): assistance events
+  `turn-completed`, `classifier-started`, `classified`, `answer-started` (with the
+  `suggestionId`, correlating candidate turn and run) and the speculation events; run events
+  `begin`, `first-text` (provider text, shown or not), `promoted`, `visible` (main-process
+  broadcast), `settled`. Observers stamp their own receipt clock; no prompt or answer text.
 - **Classifier** (`assistant/classifier.ts`): one non-streaming call with `classifierModel`
   (default Haiku), 64 tokens, 2.5 s hard deadline, answering one of `question | request |
 objection | none`. It **fails closed**: timeout, cancel, malformed output or provider error

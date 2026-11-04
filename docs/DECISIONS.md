@@ -2,6 +2,30 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-11-04 — Speculative answers and a 150 ms turn grace (answer latency)
+
+The owner found automatic answers slow. The path was serial: endpoint + 350 ms grace + Haiku
+verdict (warm median 697 ms) + Sonnet first token (warm median 1,182 ms). Plan:
+`docs/plans/answer-latency-diagnosis.md`.
+
+- **Speculate the answer alongside the classifier.** When classification starts on a free ambient
+  lane, the `question me` answer starts too, unpublished, and is promoted only if the verdict's
+  ordinary request is the identical prompt; anything else discards it silently and the ordinary
+  path runs. Saves min(classifier, answer TTFT): ~0.7 s per accepted question. **Accepted cost:**
+  one extra answer call per classified candidate the classifier rejects or retargets (none,
+  other, request, room, failures), plus the ordinary call that replaces a mismatch. Counted in
+  diagnostics and a Stop log line. Fail-closed visibility is kept: nothing is shown or stored
+  before acceptance, and cooldown/ledger are consumed only on promotion.
+- **Grace 350 → 150 ms**, endpointing (600 ms) and the 1.8 s fallback unchanged: ~0.2 s on every
+  boundary-completed turn. Tradeoff: speech resuming 150–350 ms after a boundary's arrival now
+  starts a new turn instead of continuing (a premature answer, then a superseded one). Live,
+  Deepgram only endpoints after 600 ms of silence, so short pauses never reach the grace.
+- Rejected: speculating every verdict type (silently changes addressee semantics); speculating on
+  interims (unstable text, far more spend); a second automatic-answer pipeline; removing classifier
+  spacing or cooldown (no measured cost); a shorter classifier prompt or endpointing change in the
+  same step (one proven change at a time).
+- Expected: first readable text ≈1.9 s after speech end, from ≈2.8 s.
+
 ## 2026-11-03 — One meeting-grounding read
 
 Resume and Interview profile are two snapshots of the same idea: what the user can truthfully say about

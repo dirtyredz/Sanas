@@ -185,7 +185,11 @@ lexical checks, not proof of correctness; inspect saved answers for grounding an
 
 Reports retain request/suggestion IDs, turn spans and step associations, dispatch/first provider
 delta/first visible output/completion/delivery times, pending-at-stop state, classifier verdicts,
-admissions and invalidation/expiry/suspension transitions. They omit prompts, answers, keys and
+admissions and invalidation/expiry/suspension transitions. Transitions also carry
+`classifier-started`, `answer-started` and `speculation-started/promoted/discarded` (with the
+`suggestionId` that links a candidate turn to its request record); `speculation` totals them, so
+discarded speculative calls (which still appear in `requests` as cancelled) are countable as
+spend. Scripted `fromFinal` latencies exclude live endpointing (600 ms). They omit prompts, answers, keys and
 image bytes; captures retain SHA-256 digests and pixel errors. Successful full prompts/answers
 remain in the private isolated SQLite profile. Failed/no-op calls retain metadata only.
 Treat retained profiles and custom scenario text as private and remove them when no longer needed.

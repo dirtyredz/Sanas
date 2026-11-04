@@ -193,7 +193,8 @@ sanas/
 - `src/main/services/assistant/presentation/` — presentation answer context, current-location hints and scoped coaching prompts
 - `src/main/services/assistant/live-controls/` — typed, detail, audience and screen-capture request instructions
 - `src/main/services/meetings/` — meeting lifecycle/STT/audio orchestration plus meeting-level facades
-- `src/main/services/meetings/assist/` — per-meeting prompt/grounding state, manual and screen-capture admission, in-memory composer screen drafts (`capture-drafts.ts`), automatic coordination (`question-ledger.ts` carries uncovered stacked questions into one suggestion) and suggestion execution
+- `src/main/services/meetings/assist/` — per-meeting prompt/grounding state, manual and screen-capture admission, in-memory composer screen drafts (`capture-drafts.ts`), automatic coordination (`question-ledger.ts` carries uncovered stacked questions into one suggestion; `speculative-answer.ts` owns the one unpublished answer started alongside the classifier and its promote/discard rule) and suggestion execution
+- `src/main/services/meetings/assist/testing/` — test-only fake-clock harness shared by the live-assistance suites
 - `src/main/services/meetings/capture/` — AUDIO capture-side identity and capture-health policy (screen capture lives in `services/screen-capture/`)
 - `src/main/services/meetings/context/` — pure preparation followed by commit/publication of live context changes; `meeting-keyterms.ts` builds the STT hints (glossary plus resume/profile terms) for streaming and batch
 - `src/main/services/meetings/context/resume/` — per-meeting resume: ingress validation (`resume.ts`), bounded PDF/DOCX parsing (`import-file.ts`); (term extraction lives beside `candidate-data.ts` in `context/candidate-keyterms.ts`: `candidateKeyterms`, shared by resume and profile)
@@ -283,7 +284,8 @@ main-process code belongs in a responsibility folder above, not beside them.
   slide actions against injected lifecycle state.
 - **Assistance policy stays split.** `turns/turn-assembler` closes turns; assistant triggers,
   classifier and coach policy decide; `meetings/assist/manual-requests` admits explicit requests;
-  `live-assistance` coordinates automatic work; `suggestion-runner` owns generation and persistence.
+  `live-assistance` coordinates automatic work; `speculative-answer` decides whether an early
+  answer may be published; `suggestion-runner` owns generation, the unpublished state and persistence.
 - **Prompt snapshots are synchronous and read-only.** `meetings/assist/meeting-prompts.ts` resolves and
   caches immutable grounding when context changes; request snapshots perform no database writes.
 - **Presentation/context publication follows persistence.** Meeting context and slide cursor state are
@@ -305,7 +307,9 @@ main-process code belongs in a responsibility folder above, not beside them.
   `app/styles/` beside the library's, so the shared folder mixes two bundles; `.workspace-body` /
   `.workspace-actions` sit in `overlay-panels.css` while the workspace frame is in `overlay-shell.css`.
 - `services/meetings/` and `services/assistant/` are both broad (many files plus subfolders);
-  group by lifecycle vs. policy before adding more siblings.
+  group by lifecycle vs. policy before adding more siblings. `meetings/assist/` holds 15 code files
+  (over the 12 cap) after `speculative-answer.ts`; a split into automatic (live-assistance, ledger,
+  speculation, runner) and manual (manual/capture requests, drafts) subfolders is the natural seam.
 - `shell/` and `workspaces/` are coupled through `OverlaySessionModel`: workspaces take the whole
   session, and `OverlaySession` imports the composer hook. Narrow the props per workspace if the
   session grows.
