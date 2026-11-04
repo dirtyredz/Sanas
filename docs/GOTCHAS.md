@@ -317,8 +317,9 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   sentence is finished semantically — hence the 350 ms continuation grace and a boundary older
   than observed speech being rejected.
 - **The classifier fails closed.** An Anthropic outage or slow call silences automatic answers
-  (and suspends classification for 30 s); "Answer now" still works. Effort is not sent to Haiku,
-  so the classifier's "low effort" is a no-op on it.
+  (and suspends classification for 30 s); "Answer now" still works. Effort is not sent to Haiku or
+  unknown model IDs (only Opus/Sonnet 5.x), so the classifier's "low effort" is a no-op on it; its
+  budget is protected by the short-budget no-thinking rule instead (see the thinking gotcha below).
 - **Interim vs final results:** interims mutate/replace; only persist finals or the
   transcript in SQLite will accrete duplicates.
 - **Claude prompt growth:** a long meeting's transcript exceeds sensible prompt sizes —
@@ -511,7 +512,7 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
 - A remembered job is assistance context, not consent to present its deck. Start defaults deck use off each meeting. Unsorted clears the remembered job; late job loading must not replace a newer selection. Filing an ended meeting changes organization only, never saved grounding. Live corrections use Apply.
 
 - This PC assumes counterpart speech arrives on captured system output. Check Teams/Zoom output against the captured default device. For another-device calls, end and restart as Elsewhere, then pin your voice; Resume cannot change topology. Brief system sound is not proof of counterpart capture. Batch logs distinguish mono pins carried from user/other segment counts.
-- Classifier failures remain fail-closed. Only allowlisted category, HTTP status, request ID, model and elapsed time enter diagnostics; never raw exception messages, prompts, keys or bodies. The library and overlay show the 30-second suspension with Answer now as the recovery path.
+- Classifier failures remain fail-closed. Only allowlisted category (provider, timeout, `connection`, ...), error class name (`errorName`), HTTP status, request ID, model and elapsed time enter diagnostics; never raw exception messages, prompts, keys or bodies. The library and overlay show the 30-second suspension with Answer now as the recovery path.
 
 - Re-diarization regression tests use migrated in-memory SQLite and the real batch service/repositories: empty batches preserve rows; insert/name failures roll back deletion; a 22-row replacement commits atomically. These establish ordinary transaction behavior, not recovery of a corrupt reconstructed DB or completeness of a nonempty provider batch.
 
@@ -553,4 +554,4 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   from the latest schema must remove the v10 trigger and column before rerunning migrations.
 - Hint normalization must use /\s+/ (whitespace), not /s+/: the latter silently corrupts
   employer and technology names. Profile hints share the corrected resume/glossary helper.
-- Short-output model calls (turn classifier, 64 tokens) must pass `thinking: 'off'`. Haiku 5.5 sometimes emits a thinking block first, spends the whole budget on it, and returns no text (stop_reason max_tokens); the provider throws `TokenBudgetError` with no HTTP status, so every classification failed closed and automatic answers stayed suspended while Answer now (large budget) still worked. Diagnostics now log `errorName` and a `connection` category.
+- Short-output model calls never think: `claude.ts` sends `thinking: {type:'disabled'}` whenever `maxTokens <= SHORT_BUDGET_MAX_TOKENS` (500: classifier 64, points 220, coach 220, interviewer 220, smart 500; full answers at 1200 keep the model default). The rule lives only in the provider; callers do nothing. Haiku 5.5 sometimes emits a thinking block first, spends the whole budget on it, and returns no text (stop_reason max_tokens); the provider throws `TokenBudgetError` with no HTTP status, so every classification failed closed and automatic answers stayed suspended while Answer now (large budget) still worked. Diagnostics now log `errorName` and a `connection` category.

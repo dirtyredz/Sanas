@@ -1,5 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest'
 import { classifyTurn } from './classifier'
+import { TokenBudgetError } from './completion-result'
 const req = {
   apiKey: 'SECRET_KEY',
   model: 'test-model',
@@ -63,7 +64,7 @@ it('keeps a sanitized error class name and a connection category, never the mess
   const budget = await classifyTurn(
     {
       complete: async () => {
-        throw named('TokenBudgetError', 'PRIVATE_BODY')
+        throw new TokenBudgetError()
       },
     },
     req,

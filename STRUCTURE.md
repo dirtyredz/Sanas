@@ -183,7 +183,7 @@ sanas/
 - `src/main/` — process entry (`index.ts`, normal vs `--smoke` dispatch) and the display-media loopback handler (`system-audio.ts`)
 - `src/main/services/` — main-process services and provider seams
 - `src/main/services/stt/` — the swappable STT seam, Deepgram implementation and message normalization; `keyterm-budget.ts` holds Deepgram's keyterm limits so callers pass an ordered list and never a vendor budget
-- `src/main/services/assistant/failure-diagnostics.ts` — allowlists provider failure metadata for classifier diagnostics; the assistance coordinator owns the suspension timer and publishes availability through MeetingState
+- `src/main/services/assistant/failure-diagnostics.ts` — allowlists provider failure metadata for classifier diagnostics (category incl. `connection`, error class `errorName`, status, request ID, model, elapsed); the assistance coordinator owns the suspension timer and publishes availability through MeetingState
 - `src/main/ipc/resume-import.ts` — the native PDF/DOCX picker handler; the renderer never supplies a filesystem path
 - `src/renderer/src/lib/meeting/start-selection.ts` — remembered Start selection persistence
 - `src/renderer/src/lib/meeting/resume/` — `MeetingResumeInput`, the Start-time resume draft
@@ -318,7 +318,8 @@ main-process code belongs in a responsibility folder above, not beside them.
 - `windows/main-window.ts`, `overlay-window.ts` and `interviewer-window.ts` share webPreferences/load-URL
   boilerplate. The third window has arrived; a shared `createAppWindow(opts)` factory is tracked as a P1 item.
 - `AssistRequest.model`, `AssistRequest.effort` and `AssistRequest.workspaceId` map closely to
-  Anthropic-specific knobs. A second provider will need its own model settings and interpretation.
+  Anthropic-specific knobs, and the Claude provider derives "no thinking" from a short `maxTokens`
+  (`SHORT_BUDGET_MAX_TOKENS` in claude.ts), also Anthropic-specific. A second provider will need its own model settings and interpretation.
 - Live assistance and summaries select `AssistantProvider` through `services/assistant/provider.ts`.
   Normal startup selects Claude; explicit rehearsal startup may install a canned provider.
 - SMTP credentials use the same plain local-settings trust model as API keys. `safeStorage` encryption

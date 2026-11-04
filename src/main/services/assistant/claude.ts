@@ -8,6 +8,16 @@ function supportsEffort(model: string): boolean {
   return /^claude-(?:opus|sonnet)-5(?:-|$)/.test(model)
 }
 
+/** Calls whose output budget is at or under this are short, speakable answers (classifier,
+ *  points, smart, coach, interviewer). A model that thinks first would spend the whole
+ *  budget on reasoning and return no text (stop_reason max_tokens), so thinking is disabled.
+ *  'Full' answers (1200+) keep the model's default. This is the one place the rule lives. */
+export const SHORT_BUDGET_MAX_TOKENS = 500
+
+export function thinkingDisabled(req: Pick<AssistRequest, 'maxTokens'>): boolean {
+  return req.maxTokens <= SHORT_BUDGET_MAX_TOKENS
+}
+
 interface SdkRequestOptions {
   signal?: AbortSignal
   timeout?: number
@@ -57,7 +67,7 @@ export const claudeProvider: AssistantProvider = {
         model: req.model,
         max_tokens: req.maxTokens,
         ...(supportsEffort(req.model) ? { output_config: { effort: req.effort } } : {}),
-        ...(req.thinking === 'off' ? { thinking: { type: 'disabled' as const } } : {}),
+        ...(thinkingDisabled(req) ? { thinking: { type: 'disabled' as const } } : {}),
         // job context pack is stable for the whole meeting — cache it
         system: [req.system, ...(req.cacheableContext ? [req.cacheableContext] : [])].map(
           (text) => ({

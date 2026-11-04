@@ -31,9 +31,6 @@ export interface AssistRequest {
   /** Effort/quality dial: 'low' favors latency, 'high' depth. Providers map it
    *  to their nearest native knob (Claude: output_config.effort). */
   effort: 'low' | 'medium' | 'high'
-  /** 'off' forbids reasoning blocks. Short-output calls (the turn classifier) MUST set it:
-   *  a model that thinks first spends the whole token budget on thinking and returns no text. */
-  thinking?: 'off'
   /** Per-request cancellation and deadline, owned by the calling feature. */
   signal?: AbortSignal
   timeoutMs?: number

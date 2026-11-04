@@ -118,9 +118,6 @@ export async function classifyTurn(
       userContent: buildClassifierInput(req.current, req.previous),
       maxTokens: MAX_TOKENS,
       effort: 'low',
-      // Haiku may emit a thinking block first; at 64 tokens that exhausts the budget and
-      // the call returns no text (stop_reason max_tokens), failing every classification.
-      thinking: 'off',
       signal: controller.signal,
       timeoutMs: deadlineMs,
       maxRetries: 0,
