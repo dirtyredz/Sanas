@@ -46,12 +46,9 @@ function subscribe<T>(channel: string, cb: (value: T) => void): () => void {
 const api = {
   mockInterview: {
     setup: (): Promise<MockSetup> => ipcRenderer.invoke(IPC.MockSetup),
-    start: (
-      plan: MockPlanId,
-      jobId: number,
-      channels: number,
-      resume?: MeetingResume | null,
-    ): Promise<MockState> => ipcRenderer.invoke(IPC.MockStart, plan, jobId, channels, resume),
+    /** The meeting snapshots the job's saved resume; there is no per-session attachment. */
+    start: (plan: MockPlanId, jobId: number, channels: number): Promise<MockState> =>
+      ipcRenderer.invoke(IPC.MockStart, plan, jobId, channels),
     getState: (): Promise<MockState> => ipcRenderer.invoke(IPC.MockState),
     end: (): Promise<void> => ipcRenderer.invoke(IPC.MockEnd),
     skip: (): Promise<void> => ipcRenderer.invoke(IPC.MockSkip),
@@ -138,15 +135,15 @@ const api = {
   },
   meeting: {
     getState: (): Promise<MeetingState> => ipcRenderer.invoke(IPC.MeetingGetState),
+    /** Main snapshots the job's saved resume. `interview` undefined = default (on when the
+     *  job has a saved resume); a boolean is the user's explicit choice. */
     start: (
       jobId?: number,
       channels?: number,
       usePresentationDeck = false,
-      resume?: MeetingResume | null,
       interview?: boolean,
     ): Promise<MeetingState> =>
-      ipcRenderer.invoke(IPC.MeetingStart, jobId, channels, usePresentationDeck, resume, interview),
-    importResume: (): Promise<MeetingResume | null> => ipcRenderer.invoke(IPC.MeetingImportResume),
+      ipcRenderer.invoke(IPC.MeetingStart, jobId, channels, usePresentationDeck, interview),
     /** Stop listening but keep the meeting open; resume continues its clock. */
     pause: (): Promise<MeetingState> => ipcRenderer.invoke(IPC.MeetingPause),
     /** Resume with the capture topology now in hand; main refuses if it changed. */
@@ -208,6 +205,14 @@ const api = {
       ipcRenderer.invoke(IPC.JobsUpdate, job),
     archive: (id: number, archived: boolean): Promise<void> =>
       ipcRenderer.invoke(IPC.JobsArchive, id, archived),
+    /** The job's saved resume; new meetings for the job snapshot it at Start. */
+    getResume: (jobId: number): Promise<MeetingResume | null> =>
+      ipcRenderer.invoke(IPC.JobsGetResume, jobId),
+    /** Replaces the saved resume, or removes it with null; resolves with what was stored. */
+    setResume: (jobId: number, resume: MeetingResume | null): Promise<MeetingResume | null> =>
+      ipcRenderer.invoke(IPC.JobsSetResume, jobId, resume),
+    /** Native PDF/DOCX picker; resolves with an unsaved draft, or null when cancelled. */
+    importResume: (): Promise<MeetingResume | null> => ipcRenderer.invoke(IPC.JobsImportResume),
   },
   glossary: {
     list: (jobId: number): Promise<GlossaryTerm[]> => ipcRenderer.invoke(IPC.GlossaryList, jobId),

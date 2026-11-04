@@ -52,7 +52,6 @@ export const IPC = {
   MeetingGetState: 'meeting:get-state',
   MeetingPause: 'meeting:pause',
   MeetingResume: 'meeting:resume',
-  MeetingImportResume: 'meeting:import-resume',
   MeetingStop: 'meeting:stop',
   MeetingPinSpeaker: 'meeting:pin-speaker',
   // audio stream (renderer → main, fire-and-forget)
@@ -70,6 +69,9 @@ export const IPC = {
   JobsCreate: 'jobs:create',
   JobsUpdate: 'jobs:update',
   JobsArchive: 'jobs:archive',
+  JobsGetResume: 'jobs:get-resume',
+  JobsSetResume: 'jobs:set-resume',
+  JobsImportResume: 'jobs:import-resume',
   GlossaryList: 'glossary:list',
   GlossaryAdd: 'glossary:add',
   GlossaryRemove: 'glossary:remove',

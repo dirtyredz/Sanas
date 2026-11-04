@@ -1,6 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { RESUME_MAX_CHARS, type MeetingResume } from '@shared/meeting-resume'
-import { MeetingResumeInput } from '../../lib/meeting/resume/MeetingResumeInput'
 import type { Job } from '@shared/types'
 import type {
   MockPlanId,
@@ -80,22 +78,6 @@ export function MockInterviewPage({
   const [selected, setSelected] = useState<PracticeSession | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const [resume, setResume] = useState<MeetingResume | null>(null)
-  const [importing, setImporting] = useState(false)
-  const [importError, setImportError] = useState('')
-  const invalidResume = !!resume && (!resume.text.trim() || resume.text.length > RESUME_MAX_CHARS)
-  const importResume = async (): Promise<void> => {
-    setImporting(true)
-    setImportError('')
-    try {
-      const attachment = await window.sanas.meeting.importResume()
-      if (attachment) setResume(attachment)
-    } catch (e) {
-      setImportError(errorText(e))
-    } finally {
-      setImporting(false)
-    }
-  }
   const mic = useRef<CaptureSession | null>(null)
   const mounted = useRef(true)
   const active = !!state && !['idle', 'ended'].includes(state.status)
@@ -149,14 +131,14 @@ export function MockInterviewPage({
     }
   }, [meeting.status])
   const start = async (): Promise<void> => {
-    if (jobId === '' || busy || importing || invalidResume) return
+    if (jobId === '' || busy) return
     setBusy(true)
     setError('')
     setSelected(null)
     try {
       const opened = await startCapturedMeeting(
         'this-pc',
-        (channels) => window.sanas.mockInterview.start(plan, jobId, channels, resume),
+        (channels) => window.sanas.mockInterview.start(plan, jobId, channels),
         (s) => !['idle', 'ending', 'ended'].includes(s.status),
         true,
       )
@@ -167,8 +149,6 @@ export function MockInterviewPage({
       }
       mic.current = opened.capture
       setState(opened.result)
-      setResume(null)
-      setImportError('')
     } catch (e) {
       setError(errorText(e))
     } finally {
@@ -238,8 +218,6 @@ export function MockInterviewPage({
               !!setup.missingKeys.length ||
               jobId === '' ||
               busy ||
-              importing ||
-              invalidResume ||
               active ||
               meeting.meetingId !== null
             }
@@ -258,14 +236,10 @@ export function MockInterviewPage({
             </button>
           )}
         </div>
-        <MeetingResumeInput
-          value={resume}
-          onChange={setResume}
-          disabled={active || busy}
-          importing={importing}
-          importError={importError}
-          onImport={() => void importResume()}
-        />
+        <p className="muted">
+          Sanas answers from the selected job’s saved resume. Add or change it on that job’s Resume
+          tab in Jobs; each practice session keeps the resume it started with.
+        </p>
         {!jobs.length && <p>Create a job in Jobs first, then return here.</p>}
         <p>
           Start opens This PC capture and a separate interviewer window. Hear each question through

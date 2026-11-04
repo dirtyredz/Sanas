@@ -98,7 +98,7 @@ export async function runRehearsal(): Promise<void> {
     const { createJob } = await import('../db/repos/jobs')
     const job = createJob(scenario.name)
     if (scenario.slides) {
-      const { replaceJobSlides } = await import('../db/repos/job-slides')
+      const { replaceJobSlides } = await import('../db/repos/job/job-slides')
       replaceJobSlides(job.id, scenario.slides)
     }
     const state = await meetings.startMeeting(job.id, wav?.channels ?? 2)

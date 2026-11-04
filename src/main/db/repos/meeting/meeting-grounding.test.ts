@@ -9,7 +9,7 @@ import { createJob, ensureDefaultJob } from '../jobs'
 import { createMeeting } from './meeting-create'
 import { getMeetingGrounding } from './meeting-grounding'
 import { getMeeting, moveMeetingToJob } from './meetings'
-import { replaceJobSlides } from '../job-slides'
+import { replaceJobSlides } from '../job/job-slides'
 import { getMeetingContext } from './meeting-context'
 import { MeetingPrompts } from '../../../services/meetings/assist/meeting-prompts'
 import { answerRequest } from '../../../services/meetings/assist/suggestion-requests'
@@ -40,12 +40,12 @@ const settings = {
 it('upgrades v8, preserving old meetings and keeping resume text immutable after filing', () => {
   database()
   sqlite.exec(
-    'DROP TRIGGER meetings_interview_profile_immutable; ALTER TABLE meetings DROP COLUMN interview_profile; DROP TRIGGER meetings_resume_immutable; ALTER TABLE meetings DROP COLUMN resume_name; ALTER TABLE meetings DROP COLUMN resume_text; PRAGMA user_version = 8',
+    'DROP TABLE job_resumes; DROP TRIGGER meetings_interview_profile_immutable; ALTER TABLE meetings DROP COLUMN interview_profile; DROP TRIGGER meetings_resume_immutable; ALTER TABLE meetings DROP COLUMN resume_name; ALTER TABLE meetings DROP COLUMN resume_text; PRAGMA user_version = 8',
   )
   const job = ensureDefaultJob()
   sqlite.prepare('INSERT INTO meetings (job_id, title) VALUES (?, ?)').run(job, 'Before resume')
   runMigrations(mock.db)
-  expect(schemaVersion).toBe(10)
+  expect(mock.db.pragma('user_version', { simple: true })).toBe(schemaVersion)
   expect(getMeeting(1)).toMatchObject({ title: 'Before resume' })
   expect(getMeetingGrounding(1).resume).toBeNull()
   const id = createMeeting(job, 'Recruiter', { resume })

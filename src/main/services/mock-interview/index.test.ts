@@ -21,20 +21,29 @@ vi.mock('./turns/interviewer', () => ({ createInterviewer: vi.fn() }))
 vi.mock('../meetings/observation', () => ({ subscribeMeeting: vi.fn() }))
 vi.mock('../meetings/assist/run-observation', () => ({ subscribeRuns: vi.fn() }))
 vi.mock('../meetings/assist/diagnostics', () => ({ subscribeAssistance: vi.fn() }))
+// Same grounding resolution and creation as ordinary Start, without STT or audio.
 vi.mock('../meetings', async () => {
   const { createMeeting } = await import('../../db/repos/meeting/meeting-create')
+  const { resolveStartGrounding } = await import('../meetings/context/start-grounding')
   return {
     currentState: () => ({ meetingId: null }),
     meetingAudioMs: () => 0,
     stopMeeting: vi.fn(),
     startMeeting: async (
-      job: number,
+      jobId: number,
       _channels: number,
-      options: Parameters<typeof createMeeting>[2],
-    ) => ({
-      meetingId: createMeeting(job, 'Practice', options),
-      status: 'live',
-    }),
+      request: { practice?: boolean; interview?: boolean },
+    ) => {
+      const { job, resume, interviewProfile } = resolveStartGrounding(jobId, request, 'Profile')
+      return {
+        meetingId: createMeeting(job, 'Practice', {
+          practice: request.practice,
+          resume,
+          interviewProfile,
+        }),
+        status: 'live',
+      }
+    },
   }
 })
 // Exercise the product's start callback without starting speech, windows or timers.
@@ -55,7 +64,8 @@ vi.mock('./turns/session', () => ({
   },
 }))
 import { runMigrations } from '../../db/migrations'
-import { ensureDefaultJob } from '../../db/repos/jobs'
+import { createJob } from '../../db/repos/jobs'
+import { setJobResume } from '../../db/repos/job/job-resume'
 import { getMeetingGrounding } from '../../db/repos/meeting/meeting-grounding'
 import { getMeeting } from '../../db/repos/meeting/meetings'
 import { mockStartInput } from '../../ipc/mock-interview-validation'
@@ -63,22 +73,21 @@ import { startMock } from './index'
 
 let close: (() => void) | undefined
 afterEach(() => close?.())
-it.each([true, false])('stores the mock-start resume with attachment = %s', async (attached) => {
+it.each([true, false])('snapshots the job saved resume = %s at mock start', async (saved) => {
   const opened = sqliteTestDatabase()
   close = () => opened.sqlite.close()
   mock.db = opened.db
   runMigrations(mock.db)
-  const resume = attached
-    ? { name: 'Synthetic', text: 'At ExampleCo I owned the migration.' }
-    : null
-  const input = mockStartInput('interview', ensureDefaultJob(), 2, resume)
-  const state = await startMock(
-    input.plan,
-    input.job,
-    input.channels,
-    {} as WebContents,
-    input.resume,
-  )
-  expect(getMeetingGrounding(state.meetingId!).resume).toEqual(resume)
+  const job = createJob('Platform role').id
+  const resume = { name: 'Synthetic', text: 'At ExampleCo I owned the migration.' }
+  if (saved) setJobResume(job, resume)
+  const input = mockStartInput('interview', job, 2)
+  const state = await startMock(input.plan, input.job, input.channels, {} as WebContents)
+  const grounding = getMeetingGrounding(state.meetingId!)
+  expect(grounding.resume).toEqual(saved ? resume : null)
+  expect(grounding.interviewProfile).toBe('Profile') // Mock always uses the profile
   expect(getMeeting(state.meetingId!)?.practice).toBe(true)
+  // later edits never reach the started session
+  setJobResume(job, null)
+  expect(getMeetingGrounding(state.meetingId!).resume).toEqual(saved ? resume : null)
 })

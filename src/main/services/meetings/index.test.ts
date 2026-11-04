@@ -21,6 +21,7 @@ const fakes = vi.hoisted(() => ({
   slides: [] as { title: string; talkingPoint: string; script: string; keyFacts: string }[],
   slideEvents: vi.fn(),
   hideOverlay: vi.fn(),
+  jobResumes: new Map<number, { name: string; text: string }>(),
 }))
 
 vi.mock('@shared/ipc', () => ({
@@ -48,6 +49,9 @@ vi.mock('../stt', () => ({
 vi.mock('../../db/repos/jobs', () => ({
   ensureDefaultJob: () => 3,
   getGlossaryTerms: () => [],
+}))
+vi.mock('../../db/repos/job/job-resume', () => ({
+  getJobResume: (id: number) => fakes.jobResumes.get(id) ?? null,
 }))
 vi.mock('../../db/repos/meeting/meetings', () => ({
   clearMeetingAudioPath: vi.fn(),
@@ -151,22 +155,50 @@ describe('meeting capture health', () => {
     fakes.slideEvents.mockClear()
   })
 
-  it('sends resume hints through SttProvider on start and resume, but not the next meeting', async () => {
-    await startMeeting(undefined, 1, {
-      resume: { name: 'Pasted text', text: 'Used Camunda at ExampleCo.' },
-    })
-    expect(sttProvider.start).toHaveBeenLastCalledWith(
-      expect.objectContaining({ keyterms: expect.arrayContaining(['Camunda']) }),
-    )
-    await pauseMeeting()
-    await resumeMeeting(1)
-    expect(sttProvider.start).toHaveBeenLastCalledWith(
-      expect.objectContaining({ keyterms: expect.arrayContaining(['Camunda']) }),
-    )
-    await stopMeeting()
-    await startMeeting()
-    expect(sttProvider.start).toHaveBeenLastCalledWith(expect.objectContaining({ keyterms: [] }))
-    await stopMeeting()
+  it('snapshots the job resume at Start: hints survive pause/resume and later job edits', async () => {
+    fakes.jobResumes.set(5, { name: 'Pasted text', text: 'Used Camunda at ExampleCo.' })
+    try {
+      await startMeeting(5, 1)
+      expect(created.input.resume).toEqual({
+        name: 'Pasted text',
+        text: 'Used Camunda at ExampleCo.',
+      })
+      expect(sttProvider.start).toHaveBeenLastCalledWith(
+        expect.objectContaining({ keyterms: expect.arrayContaining(['Camunda']) }),
+      )
+      fakes.jobResumes.set(5, { name: 'v2', text: 'Now Temporal at LaterCo.' })
+      await pauseMeeting()
+      await resumeMeeting(1)
+      const terms = () => vi.mocked(sttProvider.start).mock.calls.at(-1)![0].keyterms
+      expect(terms()).toEqual(expect.arrayContaining(['Camunda']))
+      expect(terms()).not.toContain('Temporal')
+      await stopMeeting()
+      // the next meeting for the job takes the latest saved value
+      await startMeeting(5, 1)
+      expect(created.input.resume).toEqual({ name: 'v2', text: 'Now Temporal at LaterCo.' })
+      await stopMeeting()
+      fakes.jobResumes.delete(5)
+      await startMeeting(5, 1)
+      expect(created.input.resume).toBeNull()
+      await stopMeeting()
+      await startMeeting()
+      expect(sttProvider.start).toHaveBeenLastCalledWith(expect.objectContaining({ keyterms: [] }))
+      await stopMeeting()
+    } finally {
+      fakes.jobResumes.clear()
+    }
+  })
+
+  it('Unsorted (no job) gets no resume even when the bucket job has one saved', async () => {
+    fakes.jobResumes.set(3, { name: 'Bucket', text: 'Camunda' })
+    try {
+      await startMeeting()
+      expect(fakes.create).toHaveBeenLastCalledWith(3, expect.any(String), expect.anything())
+      expect(created.input.resume).toBeNull()
+      await stopMeeting()
+    } finally {
+      fakes.jobResumes.clear()
+    }
   })
 
   it('hides the overlay when the meeting stops, never on pause or resume', async () => {
@@ -230,25 +262,28 @@ it('keeps the missing-resume cue across practice pause/resume and clears it for 
   expect((await meetings.resumeMeeting(2)).noResume).toBe(true)
   await meetings.stopMeeting()
   expect(meetings.currentState().noResume).toBeUndefined()
-  await meetings.startMeeting(3, 2, { practice: true, resume: { name: 'x', text: 'ExampleCo' } })
+  fakes.jobResumes.set(3, { name: 'x', text: 'ExampleCo' })
+  await meetings.startMeeting(3, 2, { practice: true })
   expect(meetings.currentState().noResume).toBeUndefined()
   await meetings.stopMeeting()
+  fakes.jobResumes.clear()
   await meetings.startMeeting(3, 2)
   expect(meetings.currentState().noResume).toBeUndefined()
   await meetings.stopMeeting()
 })
 
 it.each([
-  [{}, false],
-  [{ interview: false, resume: { name: 'Resume', text: 'Java' } }, false],
-  [{ interview: true }, true],
-  [{ resume: { name: 'Resume', text: 'Java' } }, true],
-  [{ practice: true, interview: false }, true],
+  [{}, false, false],
+  [{ interview: false }, true, false],
+  [{ interview: true }, false, true],
+  [{}, true, true],
+  [{ practice: true, interview: false }, false, true],
 ] as const)(
-  'snapshots interview-only profile and reuses hints with options %j',
-  async (options, applies) => {
+  'snapshots interview-only profile and reuses hints with options %j, job resume %s',
+  async (options, jobHasResume, applies) => {
     await stopMeeting()
     fakes.profile = 'At ExampleCo I built Camunda workflows.'
+    if (jobHasResume) fakes.jobResumes.set(3, { name: 'Resume', text: 'Java' })
     try {
       await startMeeting(3, 2, options)
       expect(fakes.create).toHaveBeenLastCalledWith(
@@ -267,6 +302,7 @@ it.each([
     } finally {
       await stopMeeting()
       fakes.profile = ''
+      fakes.jobResumes.clear()
     }
   },
 )

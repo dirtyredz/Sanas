@@ -1,7 +1,5 @@
-import type { MeetingResume } from '@shared/meeting-resume'
-import { RESUME_MAX_CHARS } from '@shared/meeting-resume'
-import { MeetingResumeInput } from '../../lib/meeting/resume/MeetingResumeInput'
-import { interviewAfterAttachment, rememberJob } from '../../lib/meeting/start-selection'
+import { useJobHasResume } from '../../lib/meeting/resume/useJobHasResume'
+import { interviewChecked, rememberJob } from '../../lib/meeting/start-selection'
 import { applyJobList, startableJobs } from '../../lib/meeting/job-choices'
 import { startCapturedMeeting } from '../../lib/meeting/start-captured-meeting'
 import { MeetingContextEditor } from '../../lib/meeting/MeetingContextEditor'
@@ -46,29 +44,11 @@ export function LiveMeetingPage({ visible = true }: { visible?: boolean }): Reac
   const [jobs, setJobs] = useState<Job[]>([])
   const [jobId, setJobId] = useState<number | ''>('')
   const choiceChanged = useRef(false)
-  const [resumeAttachment, setResumeAttachment] = useState<MeetingResume | null>(null)
-  const [interview, setInterview] = useState(false)
-  const changeResume = (next: MeetingResume | null): void => {
-    setInterview((current) => interviewAfterAttachment(current, resumeAttachment, next))
-    setResumeAttachment(next)
-  }
-  const [importingResume, setImportingResume] = useState(false)
-  const [resumeImportError, setResumeImportError] = useState('')
-  const importResume = async (): Promise<void> => {
-    setImportingResume(true)
-    setResumeImportError('')
-    try {
-      const attachment = await window.sanas.meeting.importResume()
-      if (attachment) {
-        setResumeAttachment(attachment)
-        setInterview(true)
-      }
-    } catch (error) {
-      setResumeImportError(error instanceof Error ? error.message : 'Could not import resume.')
-    } finally {
-      setImportingResume(false)
-    }
-  }
+  // the job's saved resume is snapshotted by main at Start; here only its presence matters,
+  // to default Interview on. `interviewOverride` is the user's explicit choice, if any.
+  const jobHasResume = useJobHasResume(jobId, visible)
+  const [interviewOverride, setInterviewOverride] = useState<boolean | undefined>(undefined)
+  const interview = interviewChecked(interviewOverride, jobHasResume)
 
   const [useDeck, setUseDeck] = useState(false)
   const [deckCount, setDeckCount] = useState(0)
@@ -98,6 +78,7 @@ export function LiveMeetingPage({ visible = true }: { visible?: boolean }): Reac
 
   useEffect(() => {
     let cancelled = false
+    setInterviewOverride(undefined) // a different job starts from its own default
     setUseDeck(false)
     setDeckCount(0)
     if (jobId !== '')
@@ -166,16 +147,14 @@ export function LiveMeetingPage({ visible = true }: { visible?: boolean }): Reac
             jobId === '' ? undefined : jobId,
             channels,
             useDeck,
-            resumeAttachment,
-            interview,
+            interviewOverride,
           ),
         (st) => st.status === 'live',
       )
       mic = opened.capture
       const st = opened.result
       if (st.status === 'live') {
-        setResumeAttachment(null)
-        setInterview(false)
+        setInterviewOverride(undefined) // the next meeting starts from the job's default
         micRef.current = mic
         setSysAudio(mic.channels === 2)
         setUserSpeakers(new Set())
@@ -297,8 +276,8 @@ export function LiveMeetingPage({ visible = true }: { visible?: boolean }): Reac
             <input
               type="checkbox"
               checked={interview}
-              disabled={busy || importingResume}
-              onChange={(e) => setInterview(e.target.checked)}
+              disabled={busy}
+              onChange={(e) => setInterviewOverride(e.target.checked)}
             />{' '}
             Interview
           </label>
@@ -320,18 +299,7 @@ export function LiveMeetingPage({ visible = true }: { visible?: boolean }): Reac
           ))}
         </div>
         {!active && (
-          <button
-            className="btn btn-primary"
-            onClick={start}
-            disabled={
-              busy ||
-              importingResume ||
-              !!(
-                resumeAttachment &&
-                (!resumeAttachment.text.trim() || resumeAttachment.text.length > RESUME_MAX_CHARS)
-              )
-            }
-          >
+          <button className="btn btn-primary" onClick={start} disabled={busy}>
             ● Start listening
           </button>
         )}
@@ -359,16 +327,15 @@ export function LiveMeetingPage({ visible = true }: { visible?: boolean }): Reac
         )}
       </div>
       {!active && (
-        <MeetingResumeInput
-          importing={importingResume}
-          importError={resumeImportError}
-          onImport={importResume}
-          value={resumeAttachment}
-          onChange={changeResume}
-          disabled={busy}
-        />
+        <p className="muted source-hint">
+          {sourceHint}{' '}
+          {jobId === ''
+            ? 'Unsorted meetings start without a resume.'
+            : jobHasResume
+              ? "This job's saved resume will be attached."
+              : 'This job has no saved resume (add one on its Resume tab in Jobs).'}
+        </p>
       )}
-      {!active && <p className="muted source-hint">{sourceHint}</p>}
 
       {micError && <p className="notice warn">{micError}</p>}
       {state.error && <p className="notice warn">{state.error}</p>}

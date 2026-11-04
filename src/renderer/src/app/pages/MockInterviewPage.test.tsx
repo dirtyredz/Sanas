@@ -43,9 +43,11 @@ it('shows the tab and honest per-question results with outcome reasons', () => {
   expect(html).toContain('not screen paint')
 })
 
-it('offers the shared resume input in mock setup', async () => {
+it('has no resume editor in mock setup and points to the job Resume tab instead', async () => {
   const { MockInterviewPage } = await import('./MockInterviewPage')
   const html = renderToStaticMarkup(<MockInterviewPage visible onSettings={() => {}} />)
-  expect(html).toContain('Paste resume text')
-  expect(html).toContain('Choose PDF or DOCX')
+  expect(html).not.toContain('Paste resume text')
+  expect(html).not.toContain('Choose PDF or DOCX')
+  expect(html).not.toMatch(/<textarea/)
+  expect(html).toContain('Resume tab in Jobs')
 })

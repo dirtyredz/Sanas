@@ -11,7 +11,7 @@ vi.mock('electron', () => ({
   BrowserWindow: { fromWebContents: mocks.fromWebContents },
   dialog: { showOpenDialog: mocks.showOpenDialog },
 }))
-vi.mock('../services/meetings/context/resume/import-file', () => ({
+vi.mock('../../services/meetings/context/resume/import-file', () => ({
   importResumeFile: mocks.importResumeFile,
 }))
 import { registerResumeImportIpc } from './resume-import'
@@ -26,7 +26,7 @@ it('uses the native picker path, never a renderer-supplied path', async () => {
   mocks.showOpenDialog.mockResolvedValue({ canceled: false, filePaths: ['native/Synthetic.pdf'] })
   mocks.importResumeFile.mockResolvedValue(resume)
   registerResumeImportIpc()
-  expect(mocks.handle.mock.calls[0][0]).toBe(IPC.MeetingImportResume)
+  expect(mocks.handle.mock.calls[0][0]).toBe(IPC.JobsImportResume)
   const result = await mocks.handle.mock.calls[0][1]({ sender }, 'renderer-path.pdf')
   expect(mocks.fromWebContents).toHaveBeenCalledWith(sender)
   expect(mocks.showOpenDialog).toHaveBeenCalledWith(parent, {

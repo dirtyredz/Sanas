@@ -1,9 +1,9 @@
 import { BrowserWindow, dialog, ipcMain } from 'electron'
 import { IPC } from '@shared/ipc'
-import { importResumeFile } from '../services/meetings/context/resume/import-file'
+import { importResumeFile } from '../../services/meetings/context/resume/import-file'
 
 export function registerResumeImportIpc(): void {
-  ipcMain.handle(IPC.MeetingImportResume, async (event) => {
+  ipcMain.handle(IPC.JobsImportResume, async (event) => {
     const parent = BrowserWindow.fromWebContents(event.sender)
     if (!parent) throw new Error('Resume picker window is unavailable.')
     const result = await dialog.showOpenDialog(parent, {

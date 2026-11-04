@@ -4,6 +4,7 @@ import { MeetingView } from './MeetingView'
 import { errorText } from '../../lib/ipc-error'
 import { PresentationEditor } from '../jobs/PresentationEditor'
 import { JobOverview } from '../jobs/JobOverview'
+import { JobResume } from '../jobs/JobResume'
 import { JobEmail } from '../jobs/JobEmail'
 import { JobMeetings } from '../jobs/JobMeetings'
 
@@ -92,6 +93,7 @@ export function JobDetail({
         onSelect={setTab}
         tabs={[
           { name: 'Overview', render: () => <JobOverview job={job} setJob={setJob} /> },
+          { name: 'Resume', render: () => <JobResume key={jobId} jobId={jobId} /> },
           { name: 'Presentation', render: () => <PresentationEditor key={jobId} jobId={jobId} /> },
           { name: 'Email', render: () => <JobEmail job={job} setJob={setJob} /> },
           {

@@ -17,7 +17,7 @@ function database(): void {
 }
 afterEach(() => sqlite?.close())
 
-import { replaceJobSlides } from './job-slides'
+import { replaceJobSlides } from './job/job-slides'
 import { getMeetingContext } from './meeting/meeting-context'
 import { MeetingPrompts } from '../../services/meetings/assist/meeting-prompts'
 import { PresentationSession } from '../../services/meetings/presentation/session'

@@ -1,5 +1,5 @@
 import type { Slide } from '@shared/presentation/types'
-import { getDb } from '../index'
+import { getDb } from '../../index'
 
 export function getJobSlides(jobId: number): Slide[] {
   return getDb()

@@ -1,5 +1,4 @@
-import { registerResumeImportIpc } from './resume-import'
-import { validateResume } from '../services/meetings/context/resume/resume'
+import { registerJobResumeIpc } from './job-resume/job-resume'
 import { registerMockInterviewIpc } from './mock-interview'
 import { registerUpdatesIpc } from './updates'
 import { ipcMain } from 'electron'
@@ -58,7 +57,7 @@ import { broadcast } from '../windows/broadcast'
 // Thin handlers only — validate (./validate.ts) and delegate (see STRUCTURE.md).
 
 export function registerIpcHandlers(): void {
-  registerResumeImportIpc()
+  registerJobResumeIpc()
   registerMockInterviewIpc()
   registerUpdatesIpc()
   registerPresentationIpc()
@@ -79,14 +78,7 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(
     IPC.MeetingStart,
-    (
-      _e,
-      jobId: unknown,
-      channels: unknown,
-      usePresentationDeck: unknown,
-      resume: unknown,
-      interview: unknown,
-    ) =>
+    (_e, jobId: unknown, channels: unknown, usePresentationDeck: unknown, interview: unknown) =>
       // validate at ingress: an optional job id, and only 1 or 2 are meaningful capture topologies
       startMeeting(
         jobId === undefined || jobId === null ? undefined : requireId(jobId, 'job id'),
@@ -96,7 +88,6 @@ export function registerIpcHandlers(): void {
             usePresentationDeck === undefined
               ? false
               : requireBool(usePresentationDeck, 'use presentation deck'),
-          resume: validateResume(resume),
           interview: interview === undefined ? undefined : requireBool(interview, 'interview'),
         },
       ),

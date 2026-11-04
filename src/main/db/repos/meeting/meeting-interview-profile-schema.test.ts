@@ -29,7 +29,7 @@ const profile =
 it('upgrades v9 with empty historical snapshots; freezes new snapshots after edits and filing', () => {
   const job = database()
   sqlite.exec(
-    'DROP TRIGGER meetings_interview_profile_immutable; ALTER TABLE meetings DROP COLUMN interview_profile; PRAGMA user_version = 9',
+    'DROP TABLE job_resumes; DROP TRIGGER meetings_interview_profile_immutable; ALTER TABLE meetings DROP COLUMN interview_profile; PRAGMA user_version = 9',
   )
   sqlite.prepare('INSERT INTO meetings (job_id, title) VALUES (?, ?)').run(job, 'Old work meeting')
   runMigrations(mock.db)
@@ -38,7 +38,7 @@ it('upgrades v9 with empty historical snapshots; freezes new snapshots after edi
   let savedProfile = profile
   const options = { interview: true }
   const id = createMeeting(job, 'Interview', {
-    interviewProfile: interviewProfileSnapshot(options, savedProfile),
+    interviewProfile: interviewProfileSnapshot(options, false, savedProfile),
   })
   savedProfile = 'Edited biography'
   moveMeetingToJob(id, createJob('Filed later').id)
@@ -48,7 +48,7 @@ it('upgrades v9 with empty historical snapshots; freezes new snapshots after edi
     sqlite.prepare('UPDATE meetings SET interview_profile = ? WHERE id = ?').run(savedProfile, id),
   ).toThrow('immutable')
   const next = createMeeting(job, 'Next interview', {
-    interviewProfile: interviewProfileSnapshot(options, savedProfile),
+    interviewProfile: interviewProfileSnapshot(options, false, savedProfile),
   })
   expect(getMeetingGrounding(next).interviewProfile).toBe(savedProfile)
   runMigrations(mock.db)

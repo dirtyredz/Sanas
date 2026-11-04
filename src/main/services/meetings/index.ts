@@ -1,4 +1,4 @@
-import { interviewProfileSnapshot } from './context/profile'
+import { resolveStartGrounding } from './context/start-grounding'
 import type { StartRequest } from './context/start-request'
 import { meetingKeyterms } from './context/meeting-keyterms'
 import { observeMeeting } from './observation'
@@ -9,7 +9,6 @@ import type { ChannelCount, MeetingState, Settings, TranscriptEvent } from '@sha
 import { loadSettings } from '../../config/settings'
 import { sttProvider } from '../stt'
 import type { SttSession, SttSignal, SttTranscript } from '../stt/types'
-import { ensureDefaultJob } from '../../db/repos/jobs'
 import {
   clearMeetingAudioPath,
   endMeeting,
@@ -315,16 +314,21 @@ export function startMeeting(
       })
     }
 
-    const profile = interviewProfileSnapshot(request, settings.interviewProfile)
-    const job = jobId ?? ensureDefaultJob()
+    // no await between resolving the job's saved resume and creating the meeting: the
+    // snapshot is exactly what was saved when Start ran
+    const { job, resume, interviewProfile } = resolveStartGrounding(
+      jobId,
+      request,
+      settings.interviewProfile,
+    )
     const id = createMeeting(
       job,
       `${request.practice ? 'Practice' : 'Meeting'} ${new Date().toLocaleString()}`,
       {
         practice: request.practice,
         usePresentationDeck: request.usePresentationDeck,
-        resume: request.resume,
-        interviewProfile: profile,
+        resume,
+        interviewProfile,
       },
     )
     captures.meetingChanged() // drafts and feedback belong to one meeting

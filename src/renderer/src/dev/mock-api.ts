@@ -1,4 +1,5 @@
 import { MATCH_CLOSE, MATCH_OPEN } from '@shared/search-markers'
+import type { MeetingResume } from '@shared/meeting-resume'
 import type {
   HistoryEvent,
   HistoryHit,
@@ -58,6 +59,9 @@ const settingsListeners = new Set<Listener<SettingsView>>()
 const historyListeners = new Set<Listener<HistoryEvent>>()
 let askSeq = 0
 let dueRecordings = 2 // retention preview: cleaned up by run()
+// job-owned saved resumes, snapshotted onto a meeting at Start like main does
+const jobResumes = new Map<number, MeetingResume>()
+const meetingResumes = new Map<number, MeetingResume>()
 
 const controls = mockLiveControls(
   () => getMeetingState().meetingId,
@@ -128,10 +132,13 @@ const api: SanasApi = {
     onGhostState: on(ghostListeners),
   },
   meeting: {
-    importResume: async () => null,
     getState: async () => getMeetingState(),
-    start: async (_jobId, channels) => {
-      beginMockPresentation(99, _jobId ?? jobs[0].id)
+    start: async (jobId, channels) => {
+      // Unsorted (no job) starts without a resume
+      const resume = jobId === undefined ? undefined : jobResumes.get(jobId)
+      if (resume) meetingResumes.set(99, resume)
+      else meetingResumes.delete(99)
+      beginMockPresentation(99, jobId ?? jobs[0].id)
       controls.reset(99, settings.answerEveryQuestion)
       return startScript(99, channels ?? 1)
     },
@@ -166,6 +173,15 @@ const api: SanasApi = {
     archive: async (id, archived) => {
       const j = jobs.find((x) => x.id === id)
       if (j) j.archived = archived
+    },
+    getResume: async (jobId) => jobResumes.get(jobId) ?? null,
+    setResume: async (jobId, resume) => {
+      if (resume) jobResumes.set(jobId, { name: resume.name.trim(), text: resume.text.trim() })
+      else jobResumes.delete(jobId)
+      return jobResumes.get(jobId) ?? null
+    },
+    importResume: async () => {
+      throw new Error('Resume import needs the desktop app; paste the text instead.')
     },
   },
   glossary: {
@@ -261,7 +277,7 @@ const api: SanasApi = {
     },
     export: async () => 'C:\\Users\\you\\Documents\\Northwind weekly sync.md',
     get: async (meetingId) => meetings.find((m) => m.id === meetingId) ?? null,
-    getResume: async () => null,
+    getResume: async (meetingId) => meetingResumes.get(meetingId) ?? null,
     merge: async (ids) => {
       const parts = meetings
         .filter((m) => ids.includes(m.id))

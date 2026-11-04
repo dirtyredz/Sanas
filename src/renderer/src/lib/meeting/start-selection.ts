@@ -1,4 +1,3 @@
-import type { MeetingResume } from '@shared/meeting-resume'
 type SelectionStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
 export function rememberedJob(
   storage: SelectionStorage,
@@ -14,12 +13,9 @@ export function rememberJob(storage: SelectionStorage, value: string): void {
   else storage.removeItem('sanas.lastJobId')
 }
 
-/** Interview turns on when a resume is first attached; once attached, edits and removal keep
- *  the user's explicit choice. */
-export function interviewAfterAttachment(
-  current: boolean,
-  previous: MeetingResume | null,
-  next: MeetingResume | null,
-): boolean {
-  return !previous && next !== null ? true : current
+/** The Interview checkbox: the user's explicit choice when there is one, else on when the
+ *  selected job has a saved resume (Unsorted never has one). Start sends only the override,
+ *  so an untouched box lets main decide from what is saved at that moment. */
+export function interviewChecked(override: boolean | undefined, jobHasResume: boolean): boolean {
+  return override ?? jobHasResume
 }

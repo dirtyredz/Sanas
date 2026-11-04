@@ -5,7 +5,6 @@ it('accepts only shipped plans, a real job ID and stereo topology', () => {
     plan: 'interview',
     job: 7,
     channels: 2,
-    resume: null,
   })
   for (const args of [
     ['../../secret', 7, 2],
@@ -15,10 +14,4 @@ it('accepts only shipped plans, a real job ID and stereo topology', () => {
     ['interview', 7, '2'],
   ])
     expect(() => mockStartInput(...(args as [unknown, unknown, unknown]))).toThrow()
-})
-
-it('validates and preserves the optional resume at mock ingress', () => {
-  const resume = { name: 'Resume', text: 'At ExampleCo I owned the migration.' }
-  expect(mockStartInput('interview', 7, 2, resume)).toMatchObject({ resume })
-  expect(() => mockStartInput('interview', 7, 2, { name: 'x', text: ' ' })).toThrow('No text found')
 })

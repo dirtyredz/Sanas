@@ -7,6 +7,7 @@ import { JobDetail } from './JobDetail'
 import { JobOverview } from '../jobs/JobOverview'
 import { JobEmail } from '../jobs/JobEmail'
 import { PresentationEditor } from '../jobs/PresentationEditor'
+import { JobResume } from '../jobs/JobResume'
 
 // Exercise page callbacks and successive renders without adding a DOM dependency.
 // Child identity assertions cover the mounted editor boundary, including local slide drafts.
@@ -103,18 +104,27 @@ it('defaults to Overview and preserves unsaved context/email through tab switche
   )
 })
 
-it('keeps the same presentation editor mounted and only one panel visible on every tab', () => {
-  const original = render().child(PresentationEditor)
-  for (const name of ['Presentation', 'Email', 'Meetings', 'Overview']) {
+it('keeps the presentation and resume editors mounted and only one panel visible on every tab', () => {
+  const first = render()
+  expect(first.all.filter((n) => n.props.role === 'tab').map((n) => n.props.children)).toEqual([
+    'Overview',
+    'Resume',
+    'Presentation',
+    'Email',
+    'Meetings',
+  ])
+  const originals = [PresentationEditor, JobResume].map((type) => first.child(type))
+  for (const name of ['Resume', 'Presentation', 'Email', 'Meetings', 'Overview']) {
     render().tab(name).props.onClick()
     const page = render()
     const panels = page.all.filter((n) => n.props.role === 'tabpanel')
-    expect(panels).toHaveLength(4)
+    expect(panels).toHaveLength(5)
     expect(panels.filter((n) => !n.props.hidden).map((n) => n.key)).toEqual([name])
-    const editor = page.child(PresentationEditor)
-    expect(editor.type).toBe(original.type)
-    expect(editor.key).toBe(original.key)
-    expect(editor.props).toEqual(original.props)
+    for (const original of originals) {
+      const editor = page.child(original.type)
+      expect(editor.key).toBe(original.key)
+      expect(editor.props).toEqual(original.props)
+    }
   }
 })
 

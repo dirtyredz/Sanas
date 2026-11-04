@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { interviewAfterAttachment, rememberedJob, rememberJob } from './start-selection'
+import { interviewChecked, rememberedJob, rememberJob } from './start-selection'
 it('Unsorted replaces the remembered deck job across remounts', () => {
   const data = new Map<string, string>()
   const storage = {
@@ -34,10 +34,9 @@ it.each(['', 9] as const)('late job loading preserves newer selection %s', async
   expect(selection).toBe(choice)
 })
 
-const resume = { name: 'Resume', text: 'Java' }
-it('enables Interview on attachment and preserves explicit off while editing or removing it', () => {
-  expect(interviewAfterAttachment(false, null, resume)).toBe(true)
-  expect(interviewAfterAttachment(false, resume, { ...resume, text: 'TypeScript' })).toBe(false)
-  expect(interviewAfterAttachment(false, resume, null)).toBe(false)
-  expect(interviewAfterAttachment(true, resume, null)).toBe(true)
+it('defaults Interview from the job resume and lets an explicit choice win either way', () => {
+  expect(interviewChecked(undefined, true)).toBe(true)
+  expect(interviewChecked(undefined, false)).toBe(false) // Unsorted / no saved resume
+  expect(interviewChecked(false, true)).toBe(false)
+  expect(interviewChecked(true, false)).toBe(true)
 })

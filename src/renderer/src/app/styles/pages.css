@@ -569,6 +569,23 @@
   overflow-wrap: anywhere;
 }
 
+.job-resume fieldset {
+  border: 0;
+  min-width: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+}
+.job-resume label,
+.job-resume textarea,
+.job-resume input {
+  width: 100%;
+}
+.job-resume p {
+  overflow-wrap: anywhere;
+}
+
 /* ---------- mock interview ---------- */
 .mock-page table {
   width: 100%;
