@@ -70,7 +70,7 @@ it.each([false, true])('assembles resume-first profile grounding, with deck = %s
       slides: [{ title: 'Interview', talkingPoint: '', script: '', keyFacts: '' }],
     })
   const request = answerRequest(
-    { ...prompts.snapshot(), meetingId: id, atMs: 0, window: [], recent: [] },
+    { ...prompts.snapshot(), meetingId: id, atMs: 0, window: [], recent: [], told: [] },
     {
       anthropicApiKey: 'stub',
       anthropicWorkspaceId: '',

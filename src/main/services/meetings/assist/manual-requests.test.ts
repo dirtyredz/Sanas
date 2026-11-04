@@ -2,6 +2,11 @@ import { expect, it, vi } from 'vitest'
 import type { SuggestionGroundingRow } from '../../../db/repos/suggestion-grounding'
 import { admitManual, manualRequest, type ManualAdmissionDeps } from './manual-requests'
 import {
+  TOPIC_SWITCH_EXCHANGES,
+  topicSwitchWindow,
+} from '../../assistant/answer-context/testing/topic-switch'
+import {
+  answerNowRequest,
   answerRequest,
   coachRequest,
   type AssistSettings,
@@ -27,6 +32,7 @@ const snap: AssistSnapshot = {
   groundingContextId: 5,
   window: [],
   recent: [],
+  told: [],
 }
 it('supports typed requests without speech with the full answer profile', () => {
   const req = manualRequest(snap, settings, { meetingId: 1, kind: 'typed', text: 'Explain this' })
@@ -43,6 +49,31 @@ it('supports typed requests without speech with the full answer profile', () => 
   })
   expect(req.userContent).toContain('<typed-request>\nExplain this')
   expect(req.userContent).toContain('correction')
+})
+it('Answer now carries the latest question and told stories; typed and capture asks do not', () => {
+  const { window, question } = topicSwitchWindow(3, 1)
+  const told = [{ headline: 'At Acme I ran the federation.', detail: 'Invoicing was mine.' }]
+  const live = { ...snap, window, told }
+  const now = answerNowRequest(live, settings, {
+    speaker: 0,
+    text: TOPIC_SWITCH_EXCHANGES[3].question,
+    startMs: question.startMs,
+    open: false,
+  })
+  expect(now.userContent).toContain(
+    `The most recent question (Me asked for an answer to it now):\nS1: ${TOPIC_SWITCH_EXCHANGES[3].question}`,
+  )
+  expect(now.userContent).toContain('- At Acme I ran the federation. / Invoicing was mine.')
+  expect(now.userContent).not.toContain('<none>')
+  expect(now.allowNoop).toBe(false)
+  const typed = manualRequest(live, settings, { meetingId: 1, kind: 'typed', text: 'camunda?' })
+  const image = { mediaType: 'image/png' as const, base64: 'x' }
+  const capture = manualRequest(live, settings, { meetingId: 1, kind: 'capture', image })
+  for (const req of [typed, capture]) {
+    expect(req.userContent).not.toContain('The most recent question')
+    expect(req.userContent).not.toContain('At Acme I ran the federation.')
+    expect(req.userContent).not.toContain('Current exchange')
+  }
 })
 it('keeps job/deck cache blocks independent of text edits and excludes the deck from coaching', () => {
   const original = answerRequest(snap, settings, 'hotkey'),

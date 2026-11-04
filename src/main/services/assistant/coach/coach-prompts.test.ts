@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { COACH_PROFILE, buildCoachUserContent } from './coach-prompts'
+import { COACH_INSTRUCTION, COACH_PROFILE, buildCoachUserContent } from './coach-prompts'
+import { BACKGROUND_LABEL } from '../answer-context/conversation-window'
+import { TOPIC_SWITCH_EXCHANGES, topicSwitchWindow } from '../answer-context/testing/topic-switch'
 
 const window = [
   { speaker: 0, isUser: false, text: 'How does the export API respond?' },
@@ -40,6 +42,33 @@ describe('coach prompts', () => {
     expect(prompt).toContain('line 399 ')
     expect(prompt).not.toContain('- first')
     expect(prompt).toContain('- second\n- third\n- fourth')
+  })
+
+  it('never introduces new technologies and labels the earlier conversation as background', () => {
+    const { window: lines, question } = topicSwitchWindow(3, 1)
+    const prompt = buildCoachUserContent({
+      window: lines,
+      excerpt: TOPIC_SWITCH_EXCHANGES[3].reply[0],
+      reason: 'pause',
+      recent: [],
+      question: {
+        speaker: 'S1',
+        text: TOPIC_SWITCH_EXCHANGES[3].question,
+        startMs: question.startMs,
+      },
+    })
+    expect(COACH_INSTRUCTION).toContain(
+      'Never introduce a technology, tool, employer or project Me has not mentioned in this answer',
+    )
+    expect(COACH_INSTRUCTION).not.toContain('job-note fact')
+    expect(prompt.startsWith(BACKGROUND_LABEL)).toBe(true)
+    expect(prompt).toContain(
+      'Question Me is answering:\nS1: Talk to me about some Node services you built recently.',
+    )
+    // the question and Me's reply are not repeated inside the background
+    const background = prompt.slice(0, prompt.indexOf('---'))
+    expect(background).not.toContain('Node services')
+    expect(background).not.toContain('Initech')
   })
 
   it('has its own short profile whatever the whisper mode', () => {

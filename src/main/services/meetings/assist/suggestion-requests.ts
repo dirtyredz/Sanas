@@ -9,9 +9,12 @@ import type { Addressee, ResponseKind } from '../../assistant/classifier'
 import {
   assistProfile,
   buildUserContent,
+  type LatestQuestion,
   type TranscriptLine,
   type TriggeringTurn,
 } from '../../assistant/prompts'
+import type { ToldStory } from '../../assistant/answer-context/told-stories'
+import type { QuestionTurn } from '../../turns/latest-question'
 import {
   COACH_PROFILE,
   buildCoachUserContent,
@@ -41,8 +44,10 @@ export interface AssistSnapshot {
   system: string
   window: TranscriptLine[]
   names?: SpeakerNames
-  /** Headlines of suggestions already shown this meeting, oldest first. */
+  /** Headlines of suggestions already shown this meeting, oldest first (next points). */
   recent: readonly string[]
+  /** Answers already told this meeting, oldest first (automatic and Answer now prompts). */
+  told: readonly ToldStory[]
 }
 
 export type AssistSettings = Pick<
@@ -58,13 +63,14 @@ export type AssistSettings = Pick<
 >
 
 /** An answer: automatic (to a classified turn) or requested ("Answer now"). Streams.
- *  Automatic answers name the turn they answer, see what was already shown, and may
- *  decline with the no-op; a requested answer always answers. */
+ *  Both name the question they answer when there is one, and see the stories already told;
+ *  only an automatic answer may decline with the no-op. */
 export function answerRequest(
   snap: AssistSnapshot,
   s: AssistSettings,
   trigger: SuggestionTrigger,
   turn?: TriggeringTurn,
+  latest?: LatestQuestion,
 ): SuggestionRequest {
   const profile = assistProfile(trigger, s.whisperMode)
   const automatic = trigger === 'ambient'
@@ -84,7 +90,8 @@ export function answerRequest(
       buildUserContent(snap.window, trigger, s.whisperMode, {
         names: snap.names,
         turn,
-        recent: automatic ? snap.recent : undefined,
+        latest,
+        told: snap.told,
       }) +
       (snap.presentation ? presentationHint(snap.presentation) : '') +
       meetingContextBlock(snap.meetingText ?? ''),
@@ -118,9 +125,37 @@ export function automaticAnswerRequest(
       earlier: earlier.length
         ? earlier.map((t) => ({ speaker: label(t), text: t.text }))
         : undefined,
+      startMs: Math.min(turn.startMs, ...earlier.map((t) => t.startMs)),
     }),
     diagnosticTurns: asked,
   }
+}
+
+function questionLabel(snap: AssistSnapshot, q: QuestionTurn): string {
+  return speakerLabel({ speaker: q.speaker, isUser: false }, snap.names)
+}
+
+/** "Answer now": anchored on the most recent question when there is one (F1, DECISIONS
+ *  2026-11-04); without one it answers from the rolling window as before. */
+export function answerNowRequest(
+  snap: AssistSnapshot,
+  s: AssistSettings,
+  question: QuestionTurn | null,
+): SuggestionRequest {
+  return answerRequest(
+    snap,
+    s,
+    'hotkey',
+    undefined,
+    question
+      ? {
+          speaker: questionLabel(snap, question),
+          text: question.text,
+          startMs: question.startMs,
+          open: question.open,
+        }
+      : undefined,
+  )
 }
 
 /** Request fields that do NOT make two requests a different prompt. `atMs` only stamps the
@@ -153,7 +188,9 @@ export function samePrompt(a: SuggestionRequest, b: SuggestionRequest): boolean 
 export function coachRequest(
   snap: AssistSnapshot,
   s: AssistSettings,
-  input: Omit<CoachPromptInput, 'window' | 'names' | 'recent'>,
+  input: Omit<CoachPromptInput, 'window' | 'names' | 'recent' | 'question'> & {
+    question?: QuestionTurn | null
+  },
   accept: (text: string) => boolean,
 ): SuggestionRequest {
   return {
@@ -180,10 +217,18 @@ export function coachRequest(
           '\n' +
           COMPACT_CONTRACT
         : buildCoachUserContent({
-            ...input,
+            excerpt: input.excerpt,
+            reason: input.reason,
             window: snap.window,
             names: snap.names,
             recent: snap.recent,
+            question: input.question
+              ? {
+                  speaker: questionLabel(snap, input.question),
+                  text: input.question.text,
+                  startMs: input.question.startMs,
+                }
+              : undefined,
           })),
     maxTokens: COACH_PROFILE.maxTokens,
     effort: COACH_PROFILE.effort,

@@ -10,6 +10,11 @@ import { speakerNameMap } from '../../../db/repos/speakers'
 import { assistantProvider } from '../../assistant/provider'
 import { classifyTurn } from '../../assistant/classifier'
 import { rememberHeadline } from '../../assistant/compact-contract'
+import {
+  rememberStory,
+  tellsStory,
+  type ToldStory,
+} from '../../assistant/answer-context/told-stories'
 import type { TranscriptLine } from '../../assistant/prompts'
 import type { TurnFinal } from '../../turns/types'
 import { broadcast } from '../../../windows/broadcast'
@@ -22,7 +27,7 @@ import { PresentationEvidence } from './presentation-evidence'
 import { MeetingPrompts } from './meeting-prompts'
 
 // The live-assist side of the running meeting, assembled in one place: the rolling
-// transcript window the prompts read, the headlines already shown (so automatic prompts do
+// transcript window the prompts read, the headlines and stories already shown (so prompts do
 // not repeat them), the job's system prompt, and the SuggestionRunner + LiveAssistance pair
 // wired to the provider, the DB and the windows. The meeting orchestrator (../index.ts)
 // owns lifecycle, STT and the audio clock; it hands this the identity-resolved finals and
@@ -34,6 +39,7 @@ export class LiveSession {
   readonly assistance: LiveAssistance
   private readonly window: TranscriptLine[] = []
   private readonly shownHeadlines: string[] = []
+  private readonly told: ToldStory[] = []
   private readonly runner: SuggestionRunner
   private snapshot: () => AssistSnapshot | null = () => null
   private readonly evidence = new PresentationEvidence()
@@ -53,6 +59,8 @@ export class LiveSession {
         const id = insertSuggestion(s)
         // a late answer from a meeting that has since ended must not leak into the next one
         if (isLiveMeeting(s.meetingId)) rememberHeadline(this.shownHeadlines, s.text)
+        if (isLiveMeeting(s.meetingId) && tellsStory(s.purpose, s.manualKind))
+          rememberStory(this.told, s.text)
         if (isLiveMeeting(s.meetingId) && s.purpose === 'next-point')
           rememberHeadline(this.coachHeadlines, s.text)
         return id
@@ -85,6 +93,7 @@ export class LiveSession {
           window: [...this.window],
           names,
           recent: [...this.shownHeadlines],
+          told: [...this.told],
           presentation: this.presentation(),
           coachEvidence: this.evidence.snapshot(),
           coachRecent: [...this.coachHeadlines],
@@ -99,6 +108,7 @@ export class LiveSession {
   begin(jobId: number): void {
     this.window.length = 0
     this.shownHeadlines.length = 0
+    this.told.length = 0
     this.coachHeadlines.length = 0
     this.evidence.reset(0)
     this.assistance.presentationChanged(0)

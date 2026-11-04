@@ -11,6 +11,7 @@ import type { CompletedTurn } from '../../turns/types'
 import type { AssistImage } from '../../assistant/types'
 import type { SuggestionRequest } from './suggestion-runner'
 import { deckContext } from '../../assistant/presentation/prompts'
+import { topicSwitchWindow } from '../../assistant/answer-context/testing/topic-switch'
 const settings: AssistSettings = {
   anthropicApiKey: 'key',
   anthropicWorkspaceId: '',
@@ -34,6 +35,7 @@ const snapshot = (): AssistSnapshot => ({
   coachSystem: 'job notes glossary',
   window: [{ speaker: 0, isUser: true, text: 'THIRD_SENTINEL previously discussed' }],
   recent: ['THIRD_SENTINEL previous answer'],
+  told: [],
   coachRecent: [],
   coachEvidence: { text: 'Me: FIRST speech', incomplete: false },
   presentation: {
@@ -114,6 +116,26 @@ describe('samePrompt', () => {
       { delivery: 'buffered' as const },
     ])
       expect(samePrompt(base(), { ...base(), ...change })).toBe(false)
+  })
+  it('matches a rebuilt request with the same told stories and split window, and only then', () => {
+    const { window, question } = topicSwitchWindow(2)
+    const asked = {
+      text: 'Other than Lambda?',
+      speaker: 0,
+      startMs: question.startMs,
+    } as CompletedTurn
+    const live = (told: AssistSnapshot['told']): SuggestionRequest =>
+      automaticAnswerRequest(
+        { ...snapshot(), presentation: undefined, window: [...window], told: [...told] },
+        settings,
+        asked,
+        { kind: 'question', addressee: 'me' },
+        [asked],
+      )
+    const story = { headline: 'At Acme I ran the federation.', detail: 'Invoicing was mine.' }
+    expect(live([story]).userContent).toContain('Current exchange')
+    expect(samePrompt(live([story]), live([story]))).toBe(true)
+    expect(samePrompt(live([story]), live([story, { headline: 'New', detail: '' }]))).toBe(false)
   })
   it('compares a field it has never heard of by default', () => {
     const future = { ...base(), someFutureField: 'x' } as unknown as SuggestionRequest

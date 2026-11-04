@@ -1,5 +1,11 @@
 import { observeAssistance } from './diagnostics'
 import { TurnAssembler } from '../../turns/turn-assembler'
+import {
+  ANSWER_NOW_QUESTION_MS,
+  COACH_QUESTION_MS,
+  couldBeQuestion,
+  latestQuestion,
+} from '../../turns/latest-question'
 import type { CompletedTurn, IdentityRole, TurnFinal } from '../../turns/types'
 import { answerCooldownAllows, looksLikeResponseCandidate } from '../../assistant/triggers'
 import type {
@@ -15,7 +21,7 @@ import { speakerLabel } from '../../turns/transcript-format'
 import type { SuggestionHandle, SuggestionRunner } from './suggestion-runner'
 import { SPECULATED_VERDICT, SpeculativeAnswer } from './speculative-answer'
 import {
-  answerRequest,
+  answerNowRequest,
   automaticAnswerRequest,
   coachRequest,
   type AssistSettings,
@@ -102,6 +108,8 @@ export class LiveAssistance {
   private coach = new CoachPolicy()
   private coachBoundary = 0
   private recentTurns: CompletedTurn[] = []
+  /** The latest substantial other-speaker turn: what Answer now and next points anchor on. */
+  private lastQuestion: CompletedTurn | null = null
   /** Admitted questions no suggestion has covered yet: stacked ones are answered together. */
   private unanswered = new QuestionLedger()
   private classifying: Candidate | null = null
@@ -142,6 +150,7 @@ export class LiveAssistance {
       this.active = true
       this.coach.reset()
       this.recentTurns = []
+      this.lastQuestion = null
       this.lastAnswerAt = null
       this.lastClassifierStartAt = null
       this.clearSuspension()
@@ -173,7 +182,10 @@ export class LiveAssistance {
   /** "That's me" changed: identities in flight are no longer trustworthy. Old turns are
    *  not re-triggered. */
   identityChanged(): void {
-    this.guard(() => this.invalidate('identity-change'))
+    this.guard(() => {
+      this.invalidate('identity-change')
+      this.lastQuestion = null
+    })
   }
 
   /** Assistance settings were saved. Disabling coaching cancels it at once. */
@@ -240,9 +252,15 @@ export class LiveAssistance {
       const snap = this.deps.snapshot()
       if (!snap || (snap.window.length === 0 && !snap.presentation?.current)) return
       this.cancelCoach()
-      const handle = this.deps.runner.start(answerRequest(snap, this.deps.settings(), 'hotkey'))
+      const question = latestQuestion(
+        this.lastQuestion,
+        this.assembler.openTurns(),
+        this.deps.now(),
+        ANSWER_NOW_QUESTION_MS,
+      )
+      const handle = this.deps.runner.start(answerNowRequest(snap, this.deps.settings(), question))
       if (handle) {
-        this.unanswered.clear() // it answers the whole window; nothing earlier is left to carry
+        this.unanswered.clear() // it answers the latest question; nothing earlier is left to carry
         this.afterRun(handle)
       }
     })
@@ -255,6 +273,7 @@ export class LiveAssistance {
       observeAssistance({ event: 'turn-completed', turn })
       const previous = this.recentTurns.slice(-2)
       this.recentTurns = [...this.recentTurns, turn].slice(-RECENT_TURNS)
+      if (couldBeQuestion(turn)) this.lastQuestion = turn
       if (turn.role === 'user') {
         if (turn.startMs >= this.coachBoundary) this.coach.userTurnCompleted(now)
         continue
@@ -532,7 +551,16 @@ export class LiveAssistance {
       )
     }
     handle = this.deps.runner.start(
-      coachRequest(snap, s, { excerpt: this.coach.excerpt(), reason }, accept),
+      coachRequest(
+        snap,
+        s,
+        {
+          excerpt: this.coach.excerpt(),
+          reason,
+          question: latestQuestion(this.lastQuestion, [], now, COACH_QUESTION_MS),
+        },
+        accept,
+      ),
     )
     if (!handle) return
     const mine = handle

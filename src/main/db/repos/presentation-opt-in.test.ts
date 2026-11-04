@@ -66,6 +66,7 @@ it('requires per-meeting deck opt-in and clears prior presentation request conte
       presentation: presentation.state(),
       window: [],
       recent: [],
+      told: [],
     },
     settings,
     'hotkey',

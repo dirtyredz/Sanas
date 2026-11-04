@@ -32,6 +32,7 @@ function setup(fail = false) {
       system: '',
       window: [{ speaker: 1, isUser: false, text: 'How many subgraphs did you run?' }],
       recent: [],
+      told: [],
     }),
     log: () => {},
     availabilityChanged,

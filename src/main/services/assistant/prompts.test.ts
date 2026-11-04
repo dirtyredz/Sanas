@@ -7,7 +7,18 @@ import {
   SUMMARY_CHARS,
   summaryMaxTokens,
   type TranscriptLine,
+  CURRENT_QUESTION_RULE,
 } from './prompts'
+import {
+  BACKGROUND_CHARS,
+  BACKGROUND_LABEL,
+  CURRENT_EXCHANGE_LABEL,
+} from './answer-context/conversation-window'
+import {
+  TOPIC_SWITCH_EXCHANGES,
+  TOPIC_SWITCH_JOB,
+  topicSwitchWindow,
+} from './answer-context/testing/topic-switch'
 
 const window: TranscriptLine[] = [
   { speaker: 1, isUser: false, text: 'Can you make me a linked list in JavaScript?' },
@@ -87,19 +98,22 @@ describe('whisper prompt modes', () => {
     expect(prompt).toContain('otherwise output\nexactly <none>')
   })
 
-  it('includes recently shown suggestions so automatic answers do not repeat them', () => {
-    const recent = [
-      'Iâ€™ll verify AS9 writeback in sandbox after the catalog change; report back.',
-      'Ask which context window the catalog lists.',
+  it('includes stories already told so answers do not re-tell them', () => {
+    const told = [
+      { headline: 'I’ll verify AS9 writeback in sandbox after the catalog change.', detail: '' },
+      { headline: 'Ask which context window the catalog lists.', detail: 'It sets the cap.' },
     ]
-    const prompt = buildUserContent(window, 'ambient', 'smart', { recent })
+    const prompt = buildUserContent(window, 'ambient', 'smart', { told })
     expect(prompt).toContain(
-      '- Iâ€™ll verify AS9 writeback in sandbox after the catalog change; report back.\n- Ask which context window the catalog lists.',
+      '- I’ll verify AS9 writeback in sandbox after the catalog change.\n- Ask which context window the catalog lists. / It sets the cap.',
     )
-    expect(prompt).toContain('Do not repeat or re-assert these.')
+    expect(prompt).toContain('Do not re-tell these stories')
     expect(prompt).toContain('output exactly <none>')
-    // a requested answer always answers: no recent list, no no-op
-    expect(buildUserContent(window, 'hotkey', 'smart')).not.toContain('<none>')
+    // a requested answer sees the same list but always answers: no no-op
+    const hotkey = buildUserContent(window, 'hotkey', 'smart', { told })
+    expect(hotkey).toContain('Do not re-tell these stories')
+    expect(hotkey).toContain('You must still answer the current question.')
+    expect(hotkey).not.toContain('<none>')
   })
 
   it('treats job context as background, not a topic to steer back to', () => {
@@ -181,5 +195,54 @@ describe('buildUserContent: stacked questions', () => {
     expect(prompt).toContain('1. S2: What is the delivery date?\n2. S2: Who owns the rollout?')
     expect(prompt).toMatch(/Address EACH one, briefly and in\s+order, in ONE suggestion/)
     expect(prompt).not.toContain('Respond to this completed turn')
+  })
+})
+
+describe('topic switch: answers anchor on the current question (DECISIONS 2026-11-04)', () => {
+  const ex = TOPIC_SWITCH_EXCHANGES[2]
+  const { window: lines, question } = topicSwitchWindow(2)
+  const turn = {
+    speaker: 'S1',
+    text: ex.question,
+    kind: 'question' as const,
+    addressee: 'me' as const,
+    startMs: question.startMs,
+  }
+
+  it('isolates the current question and keeps the earlier story only as capped background', () => {
+    const prompt = buildUserContent(lines, 'ambient', 'smart', { turn })
+    const background = prompt.slice(
+      prompt.indexOf(BACKGROUND_LABEL),
+      prompt.indexOf(CURRENT_EXCHANGE_LABEL),
+    )
+    const current = prompt.slice(prompt.indexOf(CURRENT_EXCHANGE_LABEL), prompt.indexOf('---'))
+    expect(current).toContain(`S1: ${ex.question}`)
+    expect(current).not.toMatch(/subgraph|kafka|federat/i)
+    expect(background).toContain('background only')
+    expect(background.length).toBeLessThanOrEqual(BACKGROUND_LABEL.length + BACKGROUND_CHARS + 4)
+    expect(prompt).toContain('Answer the technology and subject THAT question names')
+    expect(prompt).not.toContain('Rolling transcript')
+  })
+
+  it('states the match-the-asked-technology rule in the system prompt', () => {
+    const system = buildSystemPrompt(TOPIC_SWITCH_JOB, [])
+    expect(system).toContain(CURRENT_QUESTION_RULE)
+    expect(system).toContain('Earlier turns are background')
+    expect(system).toContain('continue Me')
+    expect(system).toContain('Factual or inventory checks')
+    expect(system).toContain('never invent the rest of it')
+  })
+
+  it('marks a question still being spoken as possibly cut off, without inventing the rest', () => {
+    const cut = TOPIC_SWITCH_EXCHANGES[3]
+    const at = topicSwitchWindow(3)
+    const prompt = buildUserContent(at.window, 'hotkey', 'smart', {
+      latest: { speaker: 'S1', text: cut.cutQuestion!, startMs: at.question.startMs, open: true },
+    })
+    expect(prompt).toContain(
+      `The most recent question (Me asked for an answer to it now):\nS1: ${cut.cutQuestion}`,
+    )
+    expect(prompt).toContain('do\nnot invent the rest of the question')
+    expect(prompt).toContain(CURRENT_EXCHANGE_LABEL)
   })
 })

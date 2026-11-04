@@ -5,21 +5,18 @@ import {
   type FormattableLine,
   type SpeakerNames,
 } from '../turns/transcript-format'
-import {
-  COMPACT_CONTRACT,
-  INITIAL_ANSWER_DEPTH,
-  NO_SUGGESTION,
-  recentSuggestionsBlock,
-} from './compact-contract'
+import { COMPACT_CONTRACT, INITIAL_ANSWER_DEPTH, NO_SUGGESTION } from './compact-contract'
 import { boundedExcerpt } from './excerpt'
 import type { ResponseKind } from './classifier'
+import { renderConversation } from './answer-context/conversation-window'
+import { toldStoriesBlock, type ToldStory } from './answer-context/told-stories'
 
 // Prompt assembly: stable system prompt (cacheable, per meeting) + volatile
-// transcript window in the user turn. Never send the whole meeting (GOTCHAS.md).
+// transcript in the user turn: the current exchange plus a capped, labelled background
+// (answer-context/conversation-window.ts). Never send the whole meeting (GOTCHAS.md).
 
 export type TranscriptLine = FormattableLine
 
-export const WINDOW_CHARS = 6000 // ~recent few minutes of conversation
 const TURN_CHARS = 4000 // the triggering turn, opening + ending kept
 const EARLIER_TURN_CHARS = 600 // each carried-forward question
 export const SUMMARY_CHARS = 120_000 // enough for a long technical meeting, while still bounded
@@ -83,13 +80,19 @@ behavioural questions), the headline is the actual first speakable sentence nami
 project or role, followed by at most two short lines covering the problem, what the user did,
 and the result. Never use a meta-preamble like "let me pick one". If the supplied resume and
 Interview profile lack relevant experience, build the answer the same way with marked filler.
-For an incomplete or garbled ask (for example a cut-off technology name), a short clarification
-such as "Which technology did you mean?" is allowed. Expanding the answer (More detail) extends the
-same story the same way: keep earlier claims, mark new filler, stay free of false precision.
+Factual or inventory checks ("what services have you used", "have you used X", "which
+version") are not open experience asks: answer them directly, naming the things asked, without
+telling a project story. If the current question looks cut off, answer what its words and the
+current exchange support and never invent the rest of it; a short clarification such as
+"Which technology did you mean?" is allowed only when the subject itself is missing. A question that
+names its subject is not cut off just because it trails off (in a TypeScript discussion "any"
+is the any type). Expanding the answer (More detail) extends the same story the same way: keep
+earlier claims, mark new filler, stay free of false precision.
 
-Follow the conversation's CURRENT topic. The job context below is background to draw on
-only when it is relevant to what is being discussed right now — never a default topic to
-steer back to, and never a reason to repeat an earlier point.`,
+${CURRENT_QUESTION_RULE}
+
+The job context below is background too: draw on it only when it is relevant to the current
+question — never a default topic to steer back to, and never a reason to repeat an earlier point.`,
   ]
 
   if (job) {
@@ -115,6 +118,17 @@ steer back to, and never a reason to repeat an earlier point.`,
 
   return parts.join('\n\n')
 }
+/** The anchor rule for every answer (DECISIONS 2026-11-04): the current question decides the
+ *  topic; earlier conversation and earlier suggestions are background. */
+export const CURRENT_QUESTION_RULE = `Answer the current question. The prompt marks the current exchange (the question being
+answered and Me's reply so far); everything earlier is background. Answer the technology and
+subject the current question names. Earlier turns are background: do not bring in a technology,
+employer or project story from earlier in the conversation, or from an earlier suggestion,
+unless the current question asks for it. If Me has already started answering, continue Me's
+answer (same employer, project and technology) rather than swapping in a different resume
+story; what Me has just said about this topic outranks a resume line that merely matches more
+of its keywords. Statements Me made about an earlier topic are background, not commitments
+for this one.`
 
 /** The completed turn an automatic answer responds to, so generation answers THAT turn
  *  rather than whichever line happens to be the latest in the window. */
@@ -128,16 +142,34 @@ export interface TriggeringTurn {
   /** Earlier questions overtaken before any suggestion covered them, oldest first. The
    *  suggestion answers these and `text` together. */
   earlier?: readonly { speaker: string; text: string }[]
+  /** Audio time the exchange began (the first question's first word). Splits the window into
+   *  the current exchange and background; without it the rolling window is sent. */
+  startMs?: number
+}
+
+/** Answer now: the most recent other-speaker question, picked without a classifier. */
+export interface LatestQuestion {
+  speaker: string
+  text: string
+  /** Audio time of its first word: where the current exchange starts. */
+  startMs: number
+  /** Still being spoken when Answer now was pressed: it may be cut off. */
+  open: boolean
 }
 
 export interface UserContentOptions {
   names?: SpeakerNames
   /** Automatic answers: the turn being answered. */
   turn?: TriggeringTurn
-  /** Automatic answers: headlines already shown this meeting. Its presence also enables the
-   *  no-op output — an automatic answer may decline; a requested one never does. */
-  recent?: readonly string[]
+  /** Answer now: the latest question, when one was asked recently. */
+  latest?: LatestQuestion
+  /** Answers already told this meeting. Automatic answers may decline with the no-op when
+   *  theirs would repeat one; a requested one never does. */
+  told?: readonly ToldStory[]
 }
+
+const ANCHOR_REMINDER = `Answer the technology and subject THAT question names; earlier conversation is background. If
+Me has already started answering, continue Me's answer rather than starting a different story.`
 
 function focusBlock(turn: TriggeringTurn): string {
   const who =
@@ -162,7 +194,17 @@ per question, no preamble. ${who}`
   }
   return `Respond to this completed turn (a ${turn.kind}):
 ${turn.speaker}: ${boundedExcerpt(turn.text, TURN_CHARS)}
-Answer THAT turn, about the topic being discussed now. ${who}`
+Answer THAT turn, about the topic being discussed now. ${ANCHOR_REMINDER} ${who}`
+}
+
+function latestBlock(q: LatestQuestion): string {
+  const cut = q.open
+    ? ` It may still be cut off: answer what its words and the current exchange support, and do
+not invent the rest of the question.`
+    : ''
+  return `The most recent question (Me asked for an answer to it now):
+${q.speaker}: ${boundedExcerpt(q.text, TURN_CHARS)}
+Answer THAT question. ${ANCHOR_REMINDER}${cut}`
 }
 
 export function buildUserContent(
@@ -171,9 +213,14 @@ export function buildUserContent(
   mode: WhisperMode,
   opts: UserContentOptions = {},
 ): string {
-  const transcript = renderTranscriptWindow(window, WINDOW_CHARS, opts.names)
-  const focus = opts.turn ? `\n\n${focusBlock(opts.turn)}` : ''
-  const recent = opts.recent ? `\n\n${recentSuggestionsBlock(opts.recent)}` : ''
+  const exchangeStartMs = opts.turn?.startMs ?? opts.latest?.startMs
+  const transcript = renderConversation(window, exchangeStartMs, opts.names)
+  const focus = opts.turn
+    ? `\n\n${focusBlock(opts.turn)}`
+    : opts.latest
+      ? `\n\n${latestBlock(opts.latest)}`
+      : ''
+  const told = opts.told ? `\n\n${toldStoriesBlock(opts.told, trigger === 'ambient')}` : ''
   const profile = assistProfile(trigger, mode)
   const ask = {
     full: `Give the actual answer to the current ask, with depth proportional to its purpose.`,
@@ -185,7 +232,7 @@ For open experience asks, give the concrete speakable story with filler marked $
 coach the user toward an answer; do not expand into a full answer or code solution.`,
   }[profile.kind]
 
-  return `Rolling transcript (most recent last):\n\n${transcript}${focus}\n\n---\n${ask}${recent}\n\n${INITIAL_ANSWER_DEPTH}\n\n${COMPACT_CONTRACT}`
+  return `${transcript}${focus}\n\n---\n${ask}${told}\n\n${INITIAL_ANSWER_DEPTH}\n\n${COMPACT_CONTRACT}`
 }
 
 /** Ask-your-history: answers come from excerpts only, with citations. */

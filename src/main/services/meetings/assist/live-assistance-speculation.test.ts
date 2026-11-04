@@ -217,7 +217,7 @@ describe('speculative answer: rejection is silent', () => {
   it('a prompt input that changed during classification falls back to the ordinary path', async () => {
     const t = speculating()
     await otherTurn(t.assist, 'What context window does it have?', 0, 1_000)
-    t.recent.push('A headline shown meanwhile.') // e.g. a hotkey answer finished
+    t.told.push({ headline: 'A headline shown meanwhile.', detail: '' }) // e.g. a hotkey answer finished
     await t.classify(0, t.question)
     expect(t.generations).toHaveLength(2)
     expect(t.generations[0].req.signal?.aborted).toBe(true)

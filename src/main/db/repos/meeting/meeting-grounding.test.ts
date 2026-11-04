@@ -74,6 +74,7 @@ it.each([false, true])('grounds assembled Unsorted answer requests with deck = %
       presentation: undefined,
       window: [],
       recent: [],
+      told: [],
     },
     settings,
     'hotkey',
@@ -104,7 +105,7 @@ it.each([true, false])('assembles concrete behavioural policy with resume = %s',
   const prompts = new MeetingPrompts()
   prompts.begin(job, getMeetingContext(id))
   const request = answerRequest(
-    { ...prompts.snapshot(), meetingId: id, atMs: 0, window: [], recent: [] },
+    { ...prompts.snapshot(), meetingId: id, atMs: 0, window: [], recent: [], told: [] },
     settings,
     'ambient',
     {

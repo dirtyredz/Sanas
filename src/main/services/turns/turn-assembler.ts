@@ -45,6 +45,9 @@ interface OpenTurn {
   boundaryAtMs: number
 }
 
+/** An unfinished turn as seen from outside: no completion state. */
+export type OpenTurnView = Pick<CompletedTurn, 'speaker' | 'role' | 'text' | 'startMs' | 'endMs'>
+
 interface ChannelState {
   open: OpenTurn | null
   /** Latest audio time of any speech seen on the channel (finals, interims, VAD). */
@@ -211,6 +214,23 @@ export class TurnAssembler {
       next = next === null ? at : Math.min(next, at)
     }
     return next
+  }
+
+  /** The turns still being spoken, read-only (Answer now pressed mid-question). */
+  openTurns(): OpenTurnView[] {
+    const out: OpenTurnView[] = []
+    for (const ch of this.channels.values()) {
+      const t = ch.open
+      if (t)
+        out.push({
+          speaker: t.speaker,
+          role: t.role,
+          text: turnText(t),
+          startMs: t.startMs,
+          endMs: t.endMs,
+        })
+    }
+    return out
   }
 
   /** Discards every unfinished turn and the duplicate memory. Never emits. */

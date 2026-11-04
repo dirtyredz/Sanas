@@ -7,6 +7,7 @@ import { CONTINUATION_GRACE_MS } from '../../../turns/turn-assembler'
 import { LiveAssistance } from '../live-assistance'
 import { SuggestionRunner } from '../suggestion-runner'
 import type { AssistSettings } from '../suggestion-requests'
+import type { ToldStory } from '../../../assistant/answer-context/told-stories'
 
 // Shared fake-clock harness for the live-assistance suites. Each suite mocks ./diagnostics
 // itself (vi.mock is hoisted per test file). Providers resolve only when a test says so.
@@ -70,8 +71,9 @@ export function setup(over: Partial<AssistSettings> = {}, opts: { speculate?: bo
     release: () => holds--,
     log: () => undefined,
   })
-  const window: { speaker: number; isUser: boolean; text: string }[] = []
+  const window: { speaker: number; isUser: boolean; text: string; tStartMs?: number }[] = []
   const recent: string[] = []
+  const told: ToldStory[] = []
   const assist = new LiveAssistance({
     now: () => Date.now(),
     setTimer: (fn, ms) => setTimeout(fn, ms),
@@ -96,6 +98,7 @@ export function setup(over: Partial<AssistSettings> = {}, opts: { speculate?: bo
       window,
       names: undefined,
       recent,
+      told,
     }),
     log: (m) => logs.push(m),
     availabilityChanged: () => availabilityChanges++,
@@ -116,6 +119,7 @@ export function setup(over: Partial<AssistSettings> = {}, opts: { speculate?: bo
     eventAt,
     window,
     recent,
+    told,
     classify,
     question,
     none,
