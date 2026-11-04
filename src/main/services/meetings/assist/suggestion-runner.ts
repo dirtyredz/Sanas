@@ -2,7 +2,8 @@ import { observeRun } from './run-observation'
 import type { SuggestionMetadata } from '@shared/live-controls/types'
 import type { SuggestionEvent, SuggestionPurpose, SuggestionTrigger } from '@shared/types'
 import type { AssistantProvider, AssistImage } from '../../assistant/types'
-import { couldBeNoSuggestion, isNoSuggestion } from '../../assistant/compact-contract'
+import { isNoSuggestion } from '../../assistant/compact-contract'
+import { RunPublication } from './run-publication'
 import { canStartSuggestion, type SuggestionInFlight } from './suggestion-in-flight'
 
 // Runs one suggestion end to end: lane ownership, deadline, provider call, events,
@@ -174,33 +175,21 @@ export class SuggestionRunner {
     }
     let cancelled = false
     const controller = new AbortController()
-    // a speculation waits here, after its provider call, until it is promoted or discarded
-    let published = !speculative
-    let ended = false
-    let decide: (promoted: boolean) => void = () => undefined
-    const decision = new Promise<boolean>((resolve) => (decide = resolve))
-
-    // a streamed answer that may decline is held back until it visibly is not the no-op;
-    // an unpublished speculation holds everything
-    let shown = false
-    let held = ''
+    // what is visible so far; a speculation also waits on it, after its provider call,
+    // until it is promoted or discarded
+    const gate = new RunPublication(!speculative, req.allowNoop, {
+      start: () => emit('start', ''),
+      delta: (text) => emit('delta', text),
+    })
     let sawText = false
-    const reveal = (): void => {
-      if (shown || !published || (req.allowNoop && couldBeNoSuggestion(held))) return
-      shown = true
-      emit('start', '')
-      if (held) emit('delta', held)
-    }
-    if (streamed) reveal()
+    if (streamed) gate.reveal()
     const onDelta = (delta: string): void => {
       if (cancelled) return // late text from a discarded speculation
       if (!sawText && delta) {
         sawText = true
         observeRun({ kind: 'first-text', id: sid, meetingId: req.meetingId })
       }
-      if (shown) return emit('delta', delta)
-      held += delta
-      reveal()
+      gate.push(delta)
     }
     // the request outlives the call that started it and ends in an insert against this
     // meeting, so it holds the meeting like any other background write. Everything after
@@ -208,7 +197,7 @@ export class SuggestionRunner {
     this.deps.hold(req.meetingId)
     const timeout = setTimeout(() => {
       controller.abort()
-      decide(false) // a held, unpromoted result never outlives the request deadline
+      gate.reject() // a held, unpromoted result never outlives the request deadline
     }, req.timeoutMs)
 
     const run = async (): Promise<SuggestionOutcome> => {
@@ -234,10 +223,10 @@ export class SuggestionRunner {
           maxRetries: req.maxRetries,
           onDelta: streamed ? onDelta : undefined,
         })
-        if (!published && !(await decision)) return 'discarded'
+        if (!gate.published && !(await gate.decision)) return 'discarded'
         if (cancelled) return 'cancelled'
         // declined: nothing displayed, nothing persisted; the lane frees in `finally`
-        if (req.allowNoop && !shown && isNoSuggestion(text)) return 'noop'
+        if (req.allowNoop && !gate.shown && isNoSuggestion(text)) return 'noop'
         if (!streamed && !(req.accept?.(text) ?? true)) return 'noop'
         const stored = this.deps.persist({
           ...metadata,
@@ -249,11 +238,11 @@ export class SuggestionRunner {
           text,
         })
         storedSuggestionId = typeof stored === 'number' ? stored : undefined
-        if (!shown) emit('start', '') // buffered, or a short answer still being held
+        if (!gate.shown) emit('start', '') // buffered, or a short answer still being held
         emit('done', text)
         return 'done'
       } catch (e) {
-        if (!published) return 'discarded' // never shown, so never an error card either
+        if (!gate.published) return 'discarded' // never shown, so never an error card either
         if (cancelled) return 'cancelled'
         const timedOut = controller.signal.aborted
         if (streamed) {
@@ -271,7 +260,7 @@ export class SuggestionRunner {
         }
         return timedOut ? 'timeout' : 'error'
       } finally {
-        ended = true
+        gate.end()
         clearTimeout(timeout)
         this.deps.release(req.meetingId)
         releaseLane()
@@ -286,21 +275,19 @@ export class SuggestionRunner {
       id: sid,
       done,
       promote: () => {
-        if (published) return !cancelled
-        if (cancelled || ended) return false
-        published = true
-        decide(true)
+        if (gate.published) return !cancelled
+        if (cancelled || !gate.publish()) return false
         observeRun({ kind: 'promoted', id: sid, meetingId: req.meetingId })
-        reveal() // text already held is shown now, unless it could still be the no-op
+        gate.reveal() // text already held is shown now, unless it could still be the no-op
         return true
       },
       cancel: () => {
         // answers are never withdrawn once published; next points and speculations are
-        if ((streamed && published) || cancelled) return
+        if ((streamed && gate.published) || cancelled) return
         cancelled = true
         releaseLane()
         controller.abort()
-        decide(false)
+        gate.reject()
       },
     }
   }

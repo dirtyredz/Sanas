@@ -1,5 +1,6 @@
 import { observeAssistance } from './diagnostics'
 import type { CompletedTurn } from '../../turns/types'
+import { samePrompt } from './suggestion-requests'
 import type { SpeculativeHandle, SuggestionRequest, SuggestionRunner } from './suggestion-runner'
 
 // The one automatic answer started BEFORE the classifier has spoken, so the classifier's
@@ -27,45 +28,18 @@ interface Pending {
   handle: SpeculativeHandle
 }
 
-/** Everything that reaches the provider, or the stored suggestion's provenance. Audio time
- *  (`atMs`) is excluded: it only stamps the stored suggestion. */
-function samePrompt(a: SuggestionRequest, b: SuggestionRequest): boolean {
-  const turnsA = a.diagnosticTurns ?? []
-  const turnsB = b.diagnosticTurns ?? []
-  return (
-    a.trigger === b.trigger &&
-    a.purpose === b.purpose &&
-    a.apiKey === b.apiKey &&
-    a.workspaceId === b.workspaceId &&
-    a.model === b.model &&
-    a.system === b.system &&
-    a.cacheableContext === b.cacheableContext &&
-    a.userContent === b.userContent &&
-    a.maxTokens === b.maxTokens &&
-    a.effort === b.effort &&
-    a.timeoutMs === b.timeoutMs &&
-    a.allowNoop === b.allowNoop &&
-    a.groundingContextId === b.groundingContextId &&
-    a.contextRevision === b.contextRevision &&
-    !a.image &&
-    !b.image &&
-    turnsA.length === turnsB.length &&
-    turnsA.every((t, i) => t === turnsB[i])
-  )
-}
-
 export class SpeculativeAnswer {
   private pending: Pending | null = null
   private started = 0
   private promoted = 0
   private discarded = 0
 
-  constructor(private runner: Partial<Pick<SuggestionRunner, 'speculate'>>) {}
+  constructor(private runner: Pick<SuggestionRunner, 'speculate'>) {}
 
   /** Starts the speculation for `turn`, or returns null when speculation is unavailable, one
    *  is already pending, or the ambient lane is taken. */
   begin(turn: CompletedTurn, request: SuggestionRequest): SpeculativeHandle | null {
-    if (this.pending || !this.runner.speculate) return null
+    if (this.pending) return null
     const handle = this.runner.speculate(request)
     if (!handle) return null
     this.pending = { turn, request, handle }
@@ -128,9 +102,9 @@ export class SpeculativeAnswer {
   }
 
   /** Running totals since the last `takeCounts`, then reset; null when none started. */
-  takeCounts(): string | null {
+  takeCounts(): { started: number; promoted: number; discarded: number } | null {
     const out = this.started
-      ? `started=${this.started} promoted=${this.promoted} discarded=${this.discarded}`
+      ? { started: this.started, promoted: this.promoted, discarded: this.discarded }
       : null
     this.started = this.promoted = this.discarded = 0
     return out

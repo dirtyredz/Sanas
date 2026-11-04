@@ -522,7 +522,7 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   activity at replay time without changing production turn assembly.
 - Scripted STT emits a final at utterance end with no endpointing latency, so it must model
   endpoint _suppression_: a final gets no boundary when the scenario resumes speech on that
-  channel within `ENDPOINTING_MS` (600, shared with `stt/deepgram.ts`). Without it, short
+  channel within `ENDPOINTING_MS` (600, in `stt/endpointing.ts`, used by `stt/deepgram.ts`). Without it, short
   assembly gaps (rapid-qa, stacked pairs) split into separate turns once the grace is shorter
   than the 250 ms boundary tolerance. Its `fromFinal` latencies therefore exclude the acoustic
   600 ms that live speech pays.

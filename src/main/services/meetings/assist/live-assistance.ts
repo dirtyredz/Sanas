@@ -59,9 +59,7 @@ export interface LiveAssistanceDeps {
   clearTimer(handle: unknown): void
   settings(): AssistSettings
   classify(req: ClassifyRequest): Promise<ClassifierOutcome>
-  /** Without `speculate`, answers start only after the verdict (the ordinary path). */
-  runner: Pick<SuggestionRunner, 'canStart' | 'start'> &
-    Partial<Pick<SuggestionRunner, 'speculate'>>
+  runner: Pick<SuggestionRunner, 'canStart' | 'start' | 'speculate'>
   /** The live meeting right now, or null when there is none. */
   snapshot(): AssistSnapshot | null
   availabilityChanged?(): void
@@ -152,8 +150,13 @@ export class LiveAssistance {
       this.active = false
       this.clearSuspension()
       this.invalidate('stop-or-pause')
-      const counts = this.speculation.takeCounts()
-      if (counts) this.deps.log(`speculative answers: ${counts}`) // spend visibility; no text
+      const c = this.speculation.takeCounts()
+      if (c) {
+        // spend visibility; no text
+        this.deps.log(
+          `speculative answers: started=${c.started} promoted=${c.promoted} discarded=${c.discarded}`,
+        )
+      }
     })
   }
 
@@ -367,7 +370,7 @@ export class LiveAssistance {
    *  Expiry, suspension, key and cooldown checks have already passed; nothing here consumes
    *  the cooldown or the ledger — only a promotion does. */
   private speculate(c: Candidate, snap: AssistSnapshot, s: AssistSettings, now: number): void {
-    if (!this.deps.runner.speculate || !this.deps.runner.canStart('ambient')) return
+    if (!this.deps.runner.canStart('ambient')) return
     const asked = this.unanswered.select(now)
     const handle = this.speculation.begin(
       c.turn,

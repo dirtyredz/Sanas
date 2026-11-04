@@ -25,7 +25,7 @@ function setup(fail = false) {
       coachWhileTalking: false,
     }),
     classify,
-    runner: { canStart: () => true, start },
+    runner: { canStart: () => true, start, speculate: () => null },
     snapshot: () => ({
       meetingId: 40,
       atMs: 13000,

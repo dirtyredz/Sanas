@@ -182,7 +182,7 @@ sanas/
 - `src/main/ipc/` — typed IPC handlers; validate ingress and delegate, with no business logic (`windows.ts`: overlay toggle/resize/ghost, compose handshake and the parameterless Open Sanas)
 - `src/main/` — process entry (`index.ts`, normal vs `--smoke` dispatch) and the display-media loopback handler (`system-audio.ts`)
 - `src/main/services/` — main-process services and provider seams
-- `src/main/services/stt/` — the swappable STT seam, Deepgram implementation and message normalization; `keyterm-budget.ts` holds Deepgram's keyterm limits so callers pass an ordered list and never a vendor budget
+- `src/main/services/stt/` — the swappable STT seam, Deepgram implementation and message normalization; `keyterm-budget.ts` holds Deepgram's keyterm limits so callers pass an ordered list and never a vendor budget; `endpointing.ts` the shared endpointing silence the scripted STT mirrors
 - `src/main/services/assistant/failure-diagnostics.ts` — allowlists provider failure metadata for classifier diagnostics (category incl. `connection`, error class `errorName`, status, request ID, model, elapsed); the assistance coordinator owns the suspension timer and publishes availability through MeetingState
 - `src/main/ipc/resume-import.ts` — the native PDF/DOCX picker handler; the renderer never supplies a filesystem path
 - `src/renderer/src/lib/meeting/start-selection.ts` — remembered Start selection persistence
@@ -193,7 +193,7 @@ sanas/
 - `src/main/services/assistant/presentation/` — presentation answer context, current-location hints and scoped coaching prompts
 - `src/main/services/assistant/live-controls/` — typed, detail, audience and screen-capture request instructions
 - `src/main/services/meetings/` — meeting lifecycle/STT/audio orchestration plus meeting-level facades
-- `src/main/services/meetings/assist/` — per-meeting prompt/grounding state, manual and screen-capture admission, in-memory composer screen drafts (`capture-drafts.ts`), automatic coordination (`question-ledger.ts` carries uncovered stacked questions into one suggestion; `speculative-answer.ts` owns the one unpublished answer started alongside the classifier and its promote/discard rule) and suggestion execution
+- `src/main/services/meetings/assist/` — per-meeting prompt/grounding state, manual and screen-capture admission, in-memory composer screen drafts (`capture-drafts.ts`), automatic coordination (`question-ledger.ts` carries uncovered stacked questions into one suggestion; `speculative-answer.ts` owns the one unpublished answer started alongside the classifier and its promote/discard rule; `samePrompt` in `suggestion-requests.ts` decides when two requests are the same prompt, comparing every field except an explicit short list) and suggestion execution (`suggestion-runner.ts` owns lanes, deadline and persistence; `run-publication.ts` the per-run held-text and publish gate)
 - `src/main/services/meetings/assist/testing/` — test-only fake-clock harness shared by the live-assistance suites
 - `src/main/services/meetings/capture/` — AUDIO capture-side identity and capture-health policy (screen capture lives in `services/screen-capture/`)
 - `src/main/services/meetings/context/` — pure preparation followed by commit/publication of live context changes; `meeting-keyterms.ts` builds the STT hints (glossary plus resume/profile terms) for streaming and batch
@@ -231,7 +231,7 @@ sanas/
 - `src/renderer/src/app/settings/frame/` — what every section shares: the section list (`settings-sections.ts`), card (`SettingsSection`), the index (`SettingsNav`, Up/Down), the animated scrolling pane (`SettingsPane`, owner of `SETTINGS_PANE_ID`), the draft state (`useSettingsDraft`: load, externally changed keys, save state machine), the pure patch/dirty/validation logic and page-ownership lists (`settings-draft.ts`) and the save bar
 - `src/renderer/src/app/settings/frame/paging/` — the pager: pure page order (`page-order.ts`: `ORDER`, `selectPage`, `stepPage`, `pageDirection`) and the thin React state wrapper `useSettingsPager`
 - `src/renderer/src/app/styles/` — layered shared stylesheet; no per-page stylesheets. `tokens.css` is shared by both windows; the library imports `index.css` (base → controls → shell → transcript → pages → settings), the overlay imports `overlay-app/overlay.css` (tokens → controls → `overlay-controls` → `overlay-shell` → `overlay-panels` → `overlay-suggestions`)
-- `src/renderer/src/overlay-app/` — deliberately small, separate overlay bundle
+- `src/renderer/src/overlay-app/` — deliberately small, separate overlay bundle; `no-native-popups.test.ts` scans every file under it for native tooltip/select/dialog UI that would leak into screen shares
 - `src/renderer/src/overlay-app/shell/` — `OverlaySession` (composes every controller once), `OverlayShell` layout, header, persistent status, preferences popover, window state, Answer every question
 - `src/renderer/src/overlay-app/shell/navigation/` — pure workspace reducer, local shortcut table/dispatch, the rail, and the compose readiness/focus handshake
 - `src/renderer/src/overlay-app/suggestions/` — the answer surface (full and preview), history/reading coordination and manual-request (detail/audience) policy
@@ -307,7 +307,7 @@ main-process code belongs in a responsibility folder above, not beside them.
   `app/styles/` beside the library's, so the shared folder mixes two bundles; `.workspace-body` /
   `.workspace-actions` sit in `overlay-panels.css` while the workspace frame is in `overlay-shell.css`.
 - `services/meetings/` and `services/assistant/` are both broad (many files plus subfolders);
-  group by lifecycle vs. policy before adding more siblings. `meetings/assist/` holds 15 code files
+  group by lifecycle vs. policy before adding more siblings. `meetings/assist/` holds 16 code files
   (over the 12 cap) after `speculative-answer.ts`; a split into automatic (live-assistance, ledger,
   speculation, runner) and manual (manual/capture requests, drafts) subfolders is the natural seam.
 - `shell/` and `workspaces/` are coupled through `OverlaySessionModel`: workspaces take the whole

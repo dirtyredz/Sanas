@@ -1,4 +1,5 @@
 import { readFileSync } from 'fs'
+import { ENDPOINTING_MS } from './endpointing'
 import { fitKeyterms } from './keyterm-budget'
 import type {
   SttBatchOptions,
@@ -32,8 +33,6 @@ import {
 const WS_BASE = 'wss://api.deepgram.com/v1/listen'
 const KEEPALIVE_MS = 5000 // socket dies after ~10s of silence (GOTCHAS.md)
 const RECONNECT_DELAYS_MS = [1000, 2000, 4000, 8000, 8000] // then give up
-/** Silence Deepgram needs before it reports an endpoint. Speech resuming sooner gets none. */
-export const ENDPOINTING_MS = 600
 
 /** Streaming query. Endpointing and utterance-end give turn assembly its boundary evidence;
  *  VAD events give it speech activity. */

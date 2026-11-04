@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import {
   answerRequest,
+  automaticAnswerRequest,
   coachRequest,
+  samePrompt,
   type AssistSettings,
   type AssistSnapshot,
 } from './suggestion-requests'
+import type { CompletedTurn } from '../../turns/types'
+import type { AssistImage } from '../../assistant/types'
+import type { SuggestionRequest } from './suggestion-runner'
 import { deckContext } from '../../assistant/presentation/prompts'
 const settings: AssistSettings = {
   anthropicApiKey: 'key',
@@ -89,3 +94,41 @@ it.each(['points', 'smart', 'full'] as const)(
     }
   },
 )
+
+describe('samePrompt', () => {
+  const turn = { text: 'Why?', speaker: 1 } as unknown as CompletedTurn
+  const base = (): SuggestionRequest =>
+    automaticAnswerRequest(snapshot(), settings, turn, { kind: 'question', addressee: 'me' }, [
+      turn,
+    ])
+
+  it('ignores only audio time and the accept closure', () => {
+    expect(samePrompt(base(), { ...base(), atMs: 999, accept: () => true })).toBe(true)
+  })
+  it('differs on any prompt field, including presentationRevision and delivery', () => {
+    for (const change of [
+      { userContent: 'other' },
+      { model: 'other' },
+      { groundingContextId: 9 },
+      { presentationRevision: 4 },
+      { delivery: 'buffered' as const },
+    ])
+      expect(samePrompt(base(), { ...base(), ...change })).toBe(false)
+  })
+  it('compares a field it has never heard of by default', () => {
+    const future = { ...base(), someFutureField: 'x' } as unknown as SuggestionRequest
+    expect(samePrompt(base(), future)).toBe(false)
+    expect(samePrompt(future, { ...future })).toBe(true)
+  })
+  it('never matches a request holding a screenshot, and compares turn spans by identity', () => {
+    const image = { mediaType: 'image/png', base64: 'x' } as unknown as AssistImage
+    expect(samePrompt({ ...base(), image }, { ...base(), image })).toBe(false)
+    const span = { startMs: 1, endMs: 2, completedAt: 3 }
+    expect(
+      samePrompt(
+        { ...base(), diagnosticTurns: [span] },
+        { ...base(), diagnosticTurns: [{ ...span }] },
+      ),
+    ).toBe(false)
+  })
+})

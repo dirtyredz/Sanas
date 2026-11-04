@@ -83,7 +83,11 @@ export function setup(over: Partial<AssistSettings> = {}, opts: { speculate?: bo
     },
     runner: opts.speculate
       ? runner
-      : { canStart: (t) => runner.canStart(t), start: (r) => runner.start(r) },
+      : {
+          canStart: (t) => runner.canStart(t),
+          start: (r) => runner.start(r),
+          speculate: () => null,
+        },
     snapshot: () => ({
       meetingId: 7,
       atMs: 1_000,

@@ -123,6 +123,31 @@ export function automaticAnswerRequest(
   }
 }
 
+/** Request fields that do NOT make two requests a different prompt. `atMs` only stamps the
+ *  stored suggestion's audio time; `accept` is a per-request closure (buffered requests only,
+ *  never a speculation) that could never compare equal. Everything else, including
+ *  `presentationRevision` (stamped on the published events, so a moved slide must not reuse
+ *  an older stamp) and `delivery`/`maxRetries` (provider behaviour), counts: a NEW field is
+ *  compared by default, so a speculation can never be published for a request that differs
+ *  in something nobody remembered to list. */
+const NOT_PROMPT = new Set<keyof SuggestionRequest>(['atMs', 'accept'])
+
+/** True when `a` and `b` would send the same prompt with the same provenance, so a
+ *  speculation started for `a` may be published as the answer to `b`. Screenshots never
+ *  match (a held image is single-use), and the diagnostic turn spans match by identity. */
+export function samePrompt(a: SuggestionRequest, b: SuggestionRequest): boolean {
+  if (a.image || b.image) return false
+  const turnsA = a.diagnosticTurns ?? []
+  const turnsB = b.diagnosticTurns ?? []
+  if (turnsA.length !== turnsB.length || !turnsA.every((t, i) => t === turnsB[i])) return false
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)] as (keyof SuggestionRequest)[])
+  for (const k of keys) {
+    if (k === 'diagnosticTurns' || k === 'image' || NOT_PROMPT.has(k)) continue
+    if (a[k] !== b[k]) return false
+  }
+  return true
+}
+
 /** A next point while the user talks: ambient lane, nudge model, its own short profile,
  *  buffered so nothing is shown unless the complete result is accepted. */
 export function coachRequest(
