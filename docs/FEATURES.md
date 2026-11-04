@@ -156,7 +156,9 @@ interview: the resume belongs to the job, not to each Start.
 Every new Live or Mock meeting for that job copies the saved resume at Start. Live and Mock
 setup have no resume input. Unsorted (no job) meetings start without one. Later edits or
 removal change only future meetings; the meeting's copy is read-only in history, including
-meetings recorded before job resumes existed. Past meetings are not copied into jobs.
+meetings recorded before job resumes existed. Past meetings are not copied into jobs. Filing a
+meeting under a different job removes its resume and Interview-profile copy (it came from the old
+job), which also makes it mergeable again.
 
 Candidate facts ground answers with or without slides, survive later deck changes and More detail replay, and supply deterministic terminology hints such as Camunda to transcription. The native file picker extracts text offline in main and shows the file name. Empty/scanned PDFs ask the user to paste text. No source binary or path is saved.
 

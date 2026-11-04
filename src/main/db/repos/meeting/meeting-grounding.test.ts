@@ -5,7 +5,7 @@ import { sqliteTestDatabase } from '../../testing/sqlite-test-database'
 const mock = vi.hoisted(() => ({ db: null as unknown as Database }))
 vi.mock('../../index', () => ({ getDb: () => mock.db }))
 import { runMigrations, schemaVersion } from '../../migrations'
-import { createJob, ensureDefaultJob } from '../jobs'
+import { ensureDefaultJob } from '../jobs'
 import { createMeeting } from './meeting-create'
 import { getMeetingGrounding } from './meeting-grounding'
 import { getMeeting, moveMeetingToJob } from './meetings'
@@ -49,7 +49,7 @@ it('upgrades v8, preserving old meetings and keeping resume text immutable after
   expect(getMeeting(1)).toMatchObject({ title: 'Before resume' })
   expect(getMeetingGrounding(1).resume).toBeNull()
   const id = createMeeting(job, 'Recruiter', { resume })
-  moveMeetingToJob(id, createJob('Filed later').id)
+  moveMeetingToJob(id, job) // same job: no-op
   expect(getMeetingGrounding(id).resume).toEqual(resume)
   expect(() =>
     sqlite.prepare('UPDATE meetings SET resume_text = ? WHERE id = ?').run('rewritten', id),

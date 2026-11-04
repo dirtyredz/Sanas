@@ -68,7 +68,7 @@ it('upgrades v10 without inventing job resumes or touching historical snapshots'
     .run(job, 'Old interview', resume.name, resume.text, 'Old profile')
   runMigrations(mock.db)
   expect(mock.db.pragma('user_version', { simple: true })).toBe(schemaVersion)
-  expect(schemaVersion).toBe(11)
+  expect(schemaVersion).toBe(12)
   expect(getJobResume(job)).toBeNull() // no backfill from past meetings
   expect(getMeetingGrounding(1)).toMatchObject({ resume, interviewProfile: 'Old profile' })
 })

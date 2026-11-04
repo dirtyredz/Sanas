@@ -5,7 +5,7 @@ import { sqliteTestDatabase } from '../../testing/sqlite-test-database'
 const mock = vi.hoisted(() => ({ db: null as unknown as Database }))
 vi.mock('../../index', () => ({ getDb: () => mock.db }))
 import { runMigrations } from '../../migrations'
-import { ensureDefaultJob, createJob } from '../jobs'
+import { ensureDefaultJob } from '../jobs'
 import { createMeeting } from './meeting-create'
 import { getMeetingGrounding } from './meeting-grounding'
 import { getMeeting, moveMeetingToJob } from './meetings'
@@ -41,7 +41,7 @@ it('upgrades v9 with empty historical snapshots; freezes new snapshots after edi
     interviewProfile: interviewProfileSnapshot(options, false, savedProfile),
   })
   savedProfile = 'Edited biography'
-  moveMeetingToJob(id, createJob('Filed later').id)
+  moveMeetingToJob(id, job) // same job: no-op
   expect(getMeetingGrounding(id).interviewProfile).toBe(profile)
   expect(getMeeting(id)?.interviewProfileUsed).toBe(true)
   expect(() =>

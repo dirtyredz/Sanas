@@ -85,8 +85,24 @@ export function getMeeting(meetingId: number): Meeting | null {
   return row ? toMeeting(row) : null
 }
 
+/** Moving to the job it is already in is a no-op. A real move drops the resume and
+ *  interview-profile snapshots (they were taken from the old job); transcript, suggestions,
+ *  summary and audio stay. The immutability triggers permit the clear only while the
+ *  guard row below exists. */
 export function moveMeetingToJob(meetingId: number, jobId: number): void {
-  getDb().prepare(`UPDATE meetings SET job_id = ? WHERE id = ?`).run(jobId, meetingId)
+  const db = getDb()
+  db.transaction(() => {
+    const row = db.prepare('SELECT job_id FROM meetings WHERE id = ?').get(meetingId) as
+      { job_id: number } | undefined
+    if (!row || row.job_id === jobId) return
+    db.prepare('INSERT OR REPLACE INTO meeting_snapshot_clear (meeting_id) VALUES (?)').run(
+      meetingId,
+    )
+    db.prepare(
+      "UPDATE meetings SET job_id = ?, resume_name = '', resume_text = '', interview_profile = '' WHERE id = ?",
+    ).run(jobId, meetingId)
+    db.prepare('DELETE FROM meeting_snapshot_clear WHERE meeting_id = ?').run(meetingId)
+  })()
 }
 
 export function renameMeeting(meetingId: number, title: string): void {

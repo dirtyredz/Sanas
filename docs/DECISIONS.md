@@ -33,6 +33,16 @@ the corrected tally ignores it and ignores terms from the exchange a question re
 
 Owner report (v0.1.15): a single 2.5 s Haiku timeout suspended all automatic answers for 30 s and showed the unavailable banner. A failed or slow check now fails closed for its own turn only; suspension (30 s, banner) needs 3 consecutive failures, and any success resets the count. Deadline stays 2.5 s. Rejected: raising the deadline (adds latency to every answer).
 
+## 2026-11-04 — Moving a meeting to another job drops its resume and profile snapshot
+
+Owner ruling after a meeting started under "Ten Mile Square" was filed under "Constellation" and
+could no longer be merged with the adjacent Constellation meeting (merge refuses biographies).
+The snapshots came from the wrong job, so a real job change clears the meeting's resume
+(name + text) and Interview-profile snapshot; transcript, suggestions, summary and audio stay.
+Same-job move is a no-op. Live/paused meetings still cannot be filed. Schema v12 reworks the two
+immutability triggers to allow clearing to empty text only while `moveMeetingToJob` holds a
+`meeting_snapshot_clear` guard row inside its transaction; every other edit still aborts.
+
 ## 2026-11-04 — The resume lives on the job (owner reversal)
 
 Owner ruling: one job per interview, so the resume belongs to the job, not to each Start.
