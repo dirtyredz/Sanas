@@ -33,9 +33,9 @@ const c = part({
   summary: 'Last stretch.',
 })
 
-it('refuses presentation snapshots before planning any mutations', () => {
-  expect(() => planMerge([{ ...a, hasPresentation: true }, b])).toThrow(
-    'Presentation meetings cannot be merged yet.',
+it('refuses meetings recorded with legacy slides before planning any mutations', () => {
+  expect(() => planMerge([{ ...a, hasLegacySlides: true }, b])).toThrow(
+    'Meetings recorded with presentation slides cannot be merged.',
   )
 })
 
@@ -44,8 +44,8 @@ describe('planMerge', () => {
     const plan = planMerge([c, a, b]) // deliberately out of order
     expect(plan.keepId).toBe(13)
     expect(plan.steps).toEqual([
-      { from: 14, timeOffsetMs: 292_000, speakerOffset: 5 },
-      { from: 15, timeOffsetMs: 352_000, speakerOffset: 6 },
+      { from: 14, timeOffsetMs: 292_000, speakerOffset: 5, context: 'keep' },
+      { from: 15, timeOffsetMs: 352_000, speakerOffset: 6, context: 'keep' },
     ])
     expect(plan.endedAt).toBe('2026-09-09 21:18:13')
   })
@@ -64,8 +64,8 @@ describe('planMerge', () => {
     })
     const plan = planMerge([a, silent, c])
     expect(plan.steps).toEqual([
-      { from: 20, timeOffsetMs: 288_000, speakerOffset: 5 },
-      { from: 15, timeOffsetMs: 352_000, speakerOffset: 5 },
+      { from: 20, timeOffsetMs: 288_000, speakerOffset: 5, context: 'keep' },
+      { from: 15, timeOffsetMs: 352_000, speakerOffset: 5, context: 'keep' },
     ])
   })
 
@@ -119,8 +119,33 @@ describe('planMerge', () => {
   })
 })
 
-it('refuses applied context even when the latest deck and text are empty', () => {
-  expect(() => planMerge([{ ...a, hasAppliedContext: true, hasPresentation: false }, b])).toThrow(
-    'applied context',
-  )
+describe('meeting context', () => {
+  it('moves the one later part that has context onto the kept meeting', () => {
+    const plan = planMerge([a, { ...b, hasMeetingContext: true }, c])
+    expect(plan.steps.map((s) => [s.from, s.context])).toEqual([
+      [14, 'move'],
+      [15, 'keep'],
+    ])
+  })
+
+  it('unlinks the other parts when the kept (earliest) meeting has the context', () => {
+    const plan = planMerge([c, b, { ...a, hasMeetingContext: true }])
+    expect(plan.keepId).toBe(13)
+    expect(plan.steps.map((s) => s.context)).toEqual(['unlink', 'unlink'])
+  })
+
+  it('refuses two or more parts with context, cleared-but-revised context included', () => {
+    expect(() =>
+      planMerge([{ ...a, hasMeetingContext: true }, b, { ...c, hasMeetingContext: true }]),
+    ).toThrow('Only one of the meetings being merged may have meeting context')
+  })
+
+  it('keeps the legacy-slide refusal even when only one part has context', () => {
+    expect(() =>
+      planMerge([
+        { ...a, hasMeetingContext: true },
+        { ...b, hasLegacySlides: true },
+      ]),
+    ).toThrow('presentation slides')
+  })
 })

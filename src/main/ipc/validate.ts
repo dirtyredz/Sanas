@@ -1,5 +1,7 @@
 import type { Job, OverlayResizeRequest, Settings } from '@shared/types'
 import { SETTINGS_SCHEMA } from '../config/settings-schema'
+import { MEETING_CONTEXT_MAX_CHARS } from '@shared/meeting-context'
+import type { MeetingStartOptions } from '@shared/meeting-start'
 
 // Ingress checks for what the renderer sends over IPC. Preload's TypeScript types do not
 // survive the hop, so every handler argument goes through one of these before delegating.
@@ -103,5 +105,31 @@ export function requireSettingsPatch(v: unknown): Partial<Settings> {
     if (value !== undefined) out[key] = value
   }
   for (const key of Object.keys(SETTINGS_SCHEMA) as (keyof Settings)[]) take(key)
+  return out
+}
+
+const START_KEYS = new Set(['interview', 'meetingContext'])
+
+/** The Live page's Start options. Omitted means defaults. Unknown keys (including the retired
+ *  `usePresentationDeck`) are refused, never ignored, and context is never truncated. */
+export function requireMeetingStart(raw: unknown): MeetingStartOptions {
+  if (raw === undefined || raw === null) return {}
+  if (typeof raw !== 'object' || Array.isArray(raw)) throw new Error('Invalid start options.')
+  const r = raw as Record<string, unknown>
+  for (const key of Object.keys(r))
+    if (!START_KEYS.has(key)) throw new Error(`Unsupported start option: ${key}.`)
+  const out: MeetingStartOptions = {}
+  if (r.interview !== undefined) {
+    if (typeof r.interview !== 'boolean') throw new Error('Invalid interview choice.')
+    out.interview = r.interview
+  }
+  if (r.meetingContext !== undefined) {
+    if (typeof r.meetingContext !== 'string') throw new Error('Meeting context must be text.')
+    if (r.meetingContext.length > MEETING_CONTEXT_MAX_CHARS)
+      throw new Error(
+        `Meeting context must be at most ${MEETING_CONTEXT_MAX_CHARS.toLocaleString('en-US')} characters.`,
+      )
+    out.meetingContext = r.meetingContext
+  }
   return out
 }

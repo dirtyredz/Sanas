@@ -1,22 +1,9 @@
 {
   "version": 1,
-  "name": "Client delivery presentation",
+  "name": "Meeting context delivery",
   "coach": true,
   "durationMs": 37000,
-  "slides": [
-    {
-      "title": "Delivery plan",
-      "talkingPoint": "Explain the rollout and Friday delivery.",
-      "script": "Confirm delivery owners and risk checks.",
-      "keyFacts": "Delivery is Friday."
-    },
-    {
-      "title": "Client decisions",
-      "talkingPoint": "Confirm approval and follow-up.",
-      "script": "Ask for client approval.",
-      "keyFacts": "Maya owns rollout."
-    }
-  ],
+  "meetingContext": "Attendees: Maya (delivery lead), Sam (client sponsor). Goal: agree the Friday rollout. Talking points: Maya owns rollout; client approval needed by Thursday; risk checks before go-live.",
   "steps": [
     {
       "id": "intro",
@@ -41,12 +28,6 @@
       "atMs": 16000,
       "kind": "answer-mode",
       "enabled": true
-    },
-    {
-      "id": "slide",
-      "atMs": 17000,
-      "kind": "slide",
-      "direction": "next"
     },
     {
       "id": "q",
@@ -79,7 +60,7 @@
       "id": "screen",
       "atMs": 27000,
       "kind": "screen",
-      "image": "../fixtures/slide.png"
+      "image": "../fixtures/standup.png"
     },
     {
       "id": "timeout",
@@ -92,7 +73,7 @@
       "id": "timeout-screen",
       "atMs": 30100,
       "kind": "screen",
-      "image": "../fixtures/slide.png"
+      "image": "../fixtures/standup.png"
     }
   ],
   "expectations": [
@@ -120,10 +101,14 @@
       "withinMs": 16500
     },
     {
-      "id": "slide-moved",
-      "kind": "slide",
-      "after": "slide",
-      "withinMs": 1000
+      "id": "context-in-answer",
+      "kind": "context",
+      "contains": "Maya owns rollout"
+    },
+    {
+      "id": "context-in-coach",
+      "kind": "context-coach",
+      "contains": "Maya owns rollout"
     },
     {
       "id": "screen-delivered",

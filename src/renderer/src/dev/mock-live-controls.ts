@@ -1,4 +1,3 @@
-import { mockPresentation, replaceMockPresentation } from './mock-presentation'
 type SanasApi = Window['sanas']
 import type { MeetingContext } from '@shared/live-controls/types'
 
@@ -12,39 +11,15 @@ export function mockLiveControls(
   const toggles = new Set<(state: { meetingId: number | null; enabled: boolean }) => void>()
   let enabled = false,
     seq = 10000
-  const get = async (id: number): Promise<MeetingContext> => {
-    const history = await mockPresentation.getHistory(id)
-    return (
-      contexts.get(id) ?? {
-        meetingId: id,
-        revision: 0,
-        deckVersion: 0,
-        text: '',
-        slides: history.slides,
-        initialSlides: history.versions?.[0] ?? [],
-      }
-    )
-  }
+  const get = async (id: number): Promise<MeetingContext> =>
+    contexts.get(id) ?? { meetingId: id, revision: 0, text: '' }
   const meetingContext: SanasApi['meetingContext'] = {
     get,
     update: async (input) => {
       const current = await get(input.meetingId)
       if (current.revision !== input.expectedRevision)
         throw new Error('Context changed. Reload before applying.')
-      const next = {
-        ...current,
-        text: input.text,
-        revision: current.revision + 1,
-        ...(input.deck ? { slides: input.deck.slides, deckVersion: current.deckVersion + 1 } : {}),
-      }
-      if (input.deck)
-        replaceMockPresentation(
-          input.meetingId,
-          input.deck.slides,
-          next.deckVersion,
-          input.deck.ordinal,
-          input.deck.expectedPresentationRevision,
-        )
+      const next = { ...current, text: input.text, revision: current.revision + 1 }
       contexts.set(input.meetingId, next)
       changed.forEach((cb) => cb(next))
       return next
@@ -116,8 +91,8 @@ export function mockLiveControls(
     meetingContext,
     assist,
     overlay,
-    reset: (id: number, value: boolean) => {
-      contexts.delete(id)
+    reset: (id: number, value: boolean, contextText = '') => {
+      contexts.set(id, { meetingId: id, revision: 0, text: contextText })
       enabled = value
     },
   }

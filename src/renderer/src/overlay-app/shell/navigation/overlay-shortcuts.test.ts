@@ -11,13 +11,21 @@ const key = (over: Partial<ShortcutKey>): ShortcutKey => ({
   ...over,
 })
 
-it('maps Ctrl+1 … Ctrl+6 to the six workspaces', () => {
-  const order = ['answer', 'ask', 'screen', 'slide', 'transcript', 'context']
-  order.forEach((workspace, i) => {
-    expect(
-      overlayShortcut(key({ key: String(i + 1), code: `Digit${i + 1}`, ctrlKey: true })),
-    ).toEqual({ type: 'workspace', workspace })
+it('maps Ctrl+1, 2, 3, 5 and 6 to the five workspaces; Ctrl+4 is unbound', () => {
+  const order: [string, string][] = [
+    ['1', 'answer'],
+    ['2', 'ask'],
+    ['3', 'screen'],
+    ['5', 'transcript'],
+    ['6', 'context'],
+  ]
+  order.forEach(([digit, workspace]) => {
+    expect(overlayShortcut(key({ key: digit, code: `Digit${digit}`, ctrlKey: true }))).toEqual({
+      type: 'workspace',
+      workspace,
+    })
   })
+  expect(overlayShortcut(key({ key: '4', code: 'Digit4', ctrlKey: true }))).toBeNull()
   expect(overlayShortcut(key({ key: 'End', code: 'Numpad1', ctrlKey: true }))).toEqual({
     type: 'workspace',
     workspace: 'answer',
@@ -55,7 +63,6 @@ it('documents every local shortcut', () => {
     'Ctrl+1',
     'Ctrl+2',
     'Ctrl+3',
-    'Ctrl+4',
     'Ctrl+5',
     'Ctrl+6',
     'Ctrl+,',

@@ -6,11 +6,10 @@ import { JobTabs } from '../jobs/JobTabs'
 import { JobDetail } from './JobDetail'
 import { JobOverview } from '../jobs/JobOverview'
 import { JobEmail } from '../jobs/JobEmail'
-import { PresentationEditor } from '../jobs/PresentationEditor'
 import { JobResume } from '../jobs/JobResume'
 
 // Exercise page callbacks and successive renders without adding a DOM dependency.
-// Child identity assertions cover the mounted editor boundary, including local slide drafts.
+// Child identity assertions cover the mounted editor boundary.
 const hooks = vi.hoisted(() => ({ values: [] as unknown[], cursor: 0 }))
 vi.mock('react', async (original) => ({
   ...(await original<typeof import('react')>()),
@@ -80,8 +79,6 @@ it('defaults to Overview and preserves unsaved context/email through tab switche
   page = render()
   const email = page.child(JobEmail).props
   email.setJob({ ...email.job, summaryEmail: 'draft@example.com' })
-  page.tab('Presentation').props.onClick()
-  page = render()
   page.tab('Meetings').props.onClick()
   page = render()
   page.tab('Overview').props.onClick()
@@ -104,21 +101,23 @@ it('defaults to Overview and preserves unsaved context/email through tab switche
   )
 })
 
-it('keeps the presentation and resume editors mounted and only one panel visible on every tab', () => {
+it('keeps the resume editor mounted and only one panel visible on every tab', () => {
   const first = render()
   expect(first.all.filter((n) => n.props.role === 'tab').map((n) => n.props.children)).toEqual([
     'Overview',
     'Resume',
-    'Presentation',
     'Email',
     'Meetings',
   ])
-  const originals = [PresentationEditor, JobResume].map((type) => first.child(type))
-  for (const name of ['Resume', 'Presentation', 'Email', 'Meetings', 'Overview']) {
+  expect(first.all.some((n) => n.props.role === 'tab' && n.props.children === 'Presentation')).toBe(
+    false,
+  )
+  const originals = [JobResume].map((type) => first.child(type))
+  for (const name of ['Resume', 'Email', 'Meetings', 'Overview']) {
     render().tab(name).props.onClick()
     const page = render()
     const panels = page.all.filter((n) => n.props.role === 'tabpanel')
-    expect(panels).toHaveLength(5)
+    expect(panels).toHaveLength(4)
     expect(panels.filter((n) => !n.props.hidden).map((n) => n.key)).toEqual([name])
     for (const original of originals) {
       const editor = page.child(original.type)

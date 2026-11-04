@@ -1,5 +1,5 @@
 import type { ContextUpdate, ManualRequest } from '@shared/live-controls/types'
-import { validateSlides } from '../../shared/presentation/types'
+import { MEETING_CONTEXT_MAX_CHARS } from '@shared/meeting-context'
 import { requireId } from './validate'
 import { requireCaptureToken } from './screen-capture-validation'
 
@@ -9,8 +9,7 @@ function object(value: unknown): Record<string, unknown> {
   return value as Record<string, unknown>
 }
 function revision(value: unknown): number {
-  if (!Number.isSafeInteger(value) || (value as number) < 0)
-    throw new Error('Invalid revision or ordinal.')
+  if (!Number.isSafeInteger(value) || (value as number) < 0) throw new Error('Invalid revision.')
   return value as number
 }
 function text(value: unknown, max: number): string {
@@ -18,26 +17,16 @@ function text(value: unknown, max: number): string {
     throw new Error(`Text must be at most ${max} characters.`)
   return value
 }
+/** Text only: presentation mode was retired, so a payload still carrying a deck is refused
+ *  rather than silently applied as text. */
 export function requireContextUpdate(raw: unknown): ContextUpdate {
   const r = object(raw)
-  const result: ContextUpdate = {
+  if (r.deck !== undefined) throw new Error('Slides are no longer supported.')
+  return {
     meetingId: requireId(r.meetingId, 'meetingId'),
     expectedRevision: revision(r.expectedRevision),
-    text: text(r.text, 20000),
+    text: text(r.text, MEETING_CONTEXT_MAX_CHARS),
   }
-  if (r.deck !== undefined) {
-    const d = object(r.deck),
-      slides = validateSlides(d.slides),
-      ordinal = revision(d.ordinal)
-    if (ordinal >= Math.max(1, slides.length))
-      throw new Error('Selected slide is outside the deck.')
-    result.deck = {
-      slides,
-      ordinal,
-      expectedPresentationRevision: revision(d.expectedPresentationRevision),
-    }
-  }
-  return result
 }
 export function requireManualRequest(raw: unknown): ManualRequest {
   const r = object(raw),

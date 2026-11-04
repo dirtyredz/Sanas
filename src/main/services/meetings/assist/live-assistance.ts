@@ -250,7 +250,7 @@ export class LiveAssistance {
     this.guard(() => {
       if (!this.deps.runner.canStart('hotkey')) return
       const snap = this.deps.snapshot()
-      if (!snap || (snap.window.length === 0 && !snap.presentation?.current)) return
+      if (!snap || snap.window.length === 0) return
       this.cancelCoach()
       const question = latestQuestion(
         this.lastQuestion,
@@ -544,11 +544,7 @@ export class LiveAssistance {
     const accept = (): boolean => {
       if (epoch !== this.epoch || this.coachRun !== handle || this.candidatePending()) return false
       const current = this.deps.snapshot()
-      return (
-        !!current &&
-        current.contextRevision === snap.contextRevision &&
-        current.presentation?.revision === snap.presentation?.revision
-      )
+      return !!current && current.contextRevision === snap.contextRevision
     }
     handle = this.deps.runner.start(
       coachRequest(
@@ -579,7 +575,9 @@ export class LiveAssistance {
     run?.cancel()
   }
 
-  presentationChanged(atMs: number): void {
+  /** Meeting context changed (or a new meeting began): a buffered next point built on the old
+   *  context is cancelled and coaching restarts from `atMs`. Started answers are untouched. */
+  contextChanged(atMs: number): void {
     this.cancelCoach()
     this.clearTimer('coach')
     this.coach.reset()

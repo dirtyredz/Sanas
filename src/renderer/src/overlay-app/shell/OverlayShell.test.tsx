@@ -35,7 +35,6 @@ function session(
     lines: [
       { speaker: 0, isUser: false, text: 'What blocks the pilot?', tStartMs: 0, interim: false },
     ],
-    presentation: { meetingId: 7, revision: 0, ordinal: 0, count: 0, current: null },
     settings: {
       overlayOpacity: 0.9,
       changeOpacity: noop,
@@ -109,17 +108,19 @@ describe('overlay shell', () => {
   })
 
   it('names every workspace in the rail and marks the selected one', () => {
-    const html = render('slide')
-    for (const name of ['Answer', 'Ask', 'Screen', 'Slide', 'Transcript', 'Context'])
+    const html = render('transcript')
+    for (const name of ['Answer', 'Ask', 'Screen', 'Transcript', 'Context'])
       expect(html).toMatch(new RegExp(`role="tab"[^>]*>.*?${name}</span>`))
-    expect(html).toMatch(/id="ov-tab-slide"[^>]*aria-selected="true"/)
+    expect(html).not.toContain('ov-tab-slide')
+    expect(html).not.toContain('ov-panel-slide')
+    expect(html).toMatch(/id="ov-tab-transcript"[^>]*aria-selected="true"/)
     expect(html).toMatch(/id="ov-tab-answer"[^>]*aria-selected="false"/)
   })
 
   it('keeps every workspace mounted but makes the hidden ones inert', () => {
     const html = render('ask')
     expect(panel(html, 'ask')).not.toContain('inert')
-    for (const id of ['screen', 'slide', 'transcript', 'context'])
+    for (const id of ['screen', 'transcript', 'context'])
       expect(panel(html, id)).toContain('inert=""')
     // the Ask draft and the transcript are both present: switching never unmounts them
     expect(html).toContain('What should we verify?')
@@ -137,17 +138,6 @@ describe('overlay shell', () => {
     expect(full).not.toContain('is-preview')
   })
 
-  it('Slide without a deck shows an empty state, never the transcript', () => {
-    expect(panel(render('slide'), 'slide')).toBeTruthy()
-    const html = render('slide')
-    const slide = html.slice(
-      html.indexOf('id="ov-panel-slide"'),
-      html.indexOf('id="ov-panel-transcript"'),
-    )
-    expect(slide).toContain('no slides')
-    expect(slide).not.toContain('What blocks the pilot?')
-  })
-
   it('shows capture progress outside the workspaces', () => {
     const html = render('transcript', {
       capture: {
@@ -160,34 +150,16 @@ describe('overlay shell', () => {
 })
 
 describe('overlay shell, focused workspaces', () => {
-  it('never carries the full deck editor; Context hands deck editing to Sanas', () => {
+  it('Context is a text-only editor with no slide or deck controls', () => {
     const html = render('context')
     expect(html).not.toContain('Meeting slides')
     expect(html).not.toContain('Restore meeting-start')
     expect(html).not.toContain('Continue from slide')
   })
 
-  it('offers Ask the audience in Slide as well as Ask', () => {
-    const slide = {
-      meetingId: 7,
-      revision: 2,
-      ordinal: 2,
-      count: 8,
-      current: {
-        title: 'Rollout checkpoints',
-        talkingPoint: 'Main point',
-        script: 'Say it',
-        keyFacts: '',
-      },
-    }
-    const html = render('slide', { presentation: slide } as Partial<OverlaySessionModel>)
-    const panel = html.slice(
-      html.indexOf('id="ov-panel-slide"'),
-      html.indexOf('id="ov-panel-transcript"'),
-    )
-    expect(panel).toContain('Slide 3 of 8')
-    expect(panel).toContain('Rollout checkpoints')
-    expect(panel).toContain('Ask the audience')
+  it('offers Ask the audience in Ask', () => {
+    const html = render('ask')
+    expect(html).toContain('Ask the audience')
   })
 
   it('idle offers Open Sanas instead of meeting actions', () => {

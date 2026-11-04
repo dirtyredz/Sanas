@@ -18,37 +18,11 @@ export function useSuggestionHistory(
   const [state, dispatch] = useReducer(whisperHistoryReducer, EMPTY_WHISPER_HISTORY)
   const stateRef = useRef(state)
   const meetingIdRef = useRef(meetingId)
-  const revisionRef = useRef<number | null>(null)
   const contextRevisionRef = useRef<number | null>(null)
   stateRef.current = state
   meetingIdRef.current = meetingId
 
   useEffect(() => dispatch({ type: 'meeting', meetingId }), [meetingId])
-  useEffect(() => {
-    revisionRef.current = null
-    let active = true
-    let received = false
-    const apply = (state: { meetingId: number | null; revision: number }): void => {
-      if (state.meetingId !== meetingIdRef.current) return
-      if (revisionRef.current !== null && state.revision < revisionRef.current) return
-      if (revisionRef.current !== state.revision) dispatch({ type: 'slide' })
-      revisionRef.current = state.revision
-    }
-    const remove = window.sanas.presentation.onChanged((state) => {
-      received = true
-      apply(state)
-    })
-    window.sanas.presentation
-      .getState()
-      .then((state) => {
-        if (active && !received) apply(state)
-      })
-      .catch(() => {})
-    return () => {
-      active = false
-      remove()
-    }
-  }, [meetingId])
   useEffect(() => {
     let active = true
     contextRevisionRef.current = null
@@ -60,7 +34,7 @@ export function useSuggestionHistory(
         (contextRevisionRef.current !== null && context.revision < contextRevisionRef.current)
       )
         return
-      if (contextRevisionRef.current !== context.revision) dispatch({ type: 'slide' })
+      if (contextRevisionRef.current !== context.revision) dispatch({ type: 'context-changed' })
       contextRevisionRef.current = context.revision
     }
     const remove = window.sanas.meetingContext.onChanged(apply)
@@ -79,12 +53,6 @@ export function useSuggestionHistory(
         // A timed-out/slow answer may finish after Stop or after the next meeting starts.
         // It is still persisted by main, but it does not belong in this live meeting's list.
         if (event.meetingId !== meetingIdRef.current) return
-        if (
-          event.purpose === 'next-point' &&
-          event.presentationRevision !== undefined &&
-          event.presentationRevision !== revisionRef.current
-        )
-          return
         if (
           event.purpose === 'next-point' &&
           event.contextRevision != null &&

@@ -97,11 +97,13 @@ export async function runRehearsal(): Promise<void> {
     }
     const { createJob } = await import('../db/repos/jobs')
     const job = createJob(scenario.name)
-    if (scenario.slides) {
-      const { replaceJobSlides } = await import('../db/repos/job/job-slides')
-      replaceJobSlides(job.id, scenario.slides)
-    }
-    const state = await meetings.startMeeting(job.id, wav?.channels ?? 2)
+    const state = await meetings.startMeeting(
+      job.id,
+      wav?.channels ?? 2,
+      scenario.meetingContext === undefined
+        ? undefined
+        : { meetingContext: scenario.meetingContext },
+    )
     if (state.status !== 'live' || state.meetingId === null || state.error)
       throw new Error('Meeting failed to start or recording failed')
     const meetingId = state.meetingId

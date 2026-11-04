@@ -1,18 +1,14 @@
-import type { Slide } from '../presentation/types'
-
+/** One saved revision of a meeting's context text. Revision 0 is the text entered before
+ *  Start (possibly empty); each Apply adds the next revision. */
 export interface MeetingContext {
   meetingId: number
   revision: number
-  deckVersion: number
   text: string
-  slides: Slide[]
-  initialSlides: Slide[]
 }
 export interface ContextUpdate {
   meetingId: number
   expectedRevision: number
   text: string
-  deck?: { slides: Slide[]; ordinal: number; expectedPresentationRevision: number }
 }
 /** 'capture' is an answer that was sent a screenshot: a direct Capture screen, or a typed
  *  question with an attached screen. It is stored as 'typed' (see ./capture.ts). */

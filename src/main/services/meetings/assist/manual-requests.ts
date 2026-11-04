@@ -15,7 +15,6 @@ import {
 } from '../../assistant/live-controls/capture-prompts'
 import type { AssistImage } from '../../assistant/types'
 import { renderTranscriptWindow } from '../../turns/transcript-format'
-import { presentationHint } from '../../assistant/presentation/prompts'
 import { answerRequest, type AssistSettings, type AssistSnapshot } from './suggestion-requests'
 import type { SuggestionHandle, SuggestionRequest } from './suggestion-runner'
 
@@ -49,8 +48,7 @@ export function manualRequest(
   base.manualKind = input.kind
   const context =
     renderTranscriptWindow(snap.window, 12000, snap.names) +
-    meetingContextBlock(snap.meetingText ?? '') +
-    (snap.presentation ? presentationHint(snap.presentation) : '')
+    meetingContextBlock(snap.meetingText ?? '')
   if (input.kind === 'detail') {
     if (
       !source ||
@@ -100,13 +98,7 @@ export function manualRequest(
       effort: 'low',
       maxTokens: 200,
       timeoutMs: 25000,
-      userContent:
-        AUDIENCE_INSTRUCTION +
-        '\n' +
-        context +
-        (snap.presentation?.current
-          ? '\nCurrent-visit finalized speech:\n' + (snap.coachEvidence?.text ?? '')
-          : ''),
+      userContent: AUDIENCE_INSTRUCTION + '\n' + context,
     }
   return {
     ...base,

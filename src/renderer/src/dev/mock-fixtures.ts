@@ -209,8 +209,6 @@ export const sampleSettings: SettingsView = {
   overlayHotkey: 'CommandOrControl+Shift+Space',
   assistHotkey: 'CommandOrControl+Shift+Enter',
   captureHotkey: 'Control+Shift+S',
-  presentationPrevHotkey: 'CommandOrControl+Alt+PageUp',
-  presentationNextHotkey: 'CommandOrControl+Alt+PageDown',
   audioDeviceId: '',
   recordAudio: true,
   meetingSource: 'elsewhere',

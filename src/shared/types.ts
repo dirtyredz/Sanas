@@ -116,7 +116,6 @@ export interface TranscriptEvent {
 
 /** Streaming suggestion event pushed from main to windows. */
 export interface SuggestionEvent extends SuggestionMetadata {
-  presentationRevision?: number
   suggestionId: number
   meetingId: number
   trigger: SuggestionTrigger
@@ -172,8 +171,6 @@ export interface Settings {
   assistHotkey: string
   /** Capture the screen under the overlay and explain it (Capture screen). */
   captureHotkey: string
-  presentationPrevHotkey: string
-  presentationNextHotkey: string
   audioDeviceId: string
   /** Save raw meeting audio to a local WAV file. */
   recordAudio: boolean

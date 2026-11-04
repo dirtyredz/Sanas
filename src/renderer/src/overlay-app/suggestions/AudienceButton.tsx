@@ -2,7 +2,7 @@ import { OverlayButton } from '../controls/OverlayButton'
 import type { ManualRequestsModel } from './useManualRequests'
 import { OverlayTip } from '../controls/OverlayTip'
 
-/** Ask the audience — one handler (useManualRequests) for Ask and Slide. The answer and any
+/** Ask the audience — one handler (useManualRequests) for Ask. The answer and any
  *  refusal ("nothing heard yet") show on the answer surface. */
 export function AudienceButton({
   manual,

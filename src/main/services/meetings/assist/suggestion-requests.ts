@@ -1,8 +1,5 @@
 import { meetingContextBlock } from '../../assistant/live-controls/prompts'
 import type { Settings } from '@shared/types'
-import type { PresentationState } from '@shared/presentation/types'
-import { presentationCoachContent, presentationHint } from '../../assistant/presentation/prompts'
-import { COMPACT_CONTRACT, recentSuggestionsBlock } from '../../assistant/compact-contract'
 import { speakerLabel, type SpeakerNames } from '../../turns/transcript-format'
 import type { CompletedTurn } from '../../turns/types'
 import type { Addressee, ResponseKind } from '../../assistant/classifier'
@@ -29,14 +26,10 @@ import type { SuggestionRequest } from './suggestion-runner'
 
 /** The live meeting at the moment a request is built. */
 export interface AssistSnapshot {
-  cacheableContext?: string
+  /** The meeting's current context text (owner-supplied, per meeting). */
   meetingText?: string
   contextRevision?: number
   groundingContextId?: number
-  presentation?: PresentationState
-  coachSystem?: string
-  coachEvidence?: { text: string; incomplete: boolean }
-  coachRecent?: readonly string[]
   meetingId: number
   /** The meeting clock (audio received), which stored suggestion times use. */
   atMs: number
@@ -82,7 +75,6 @@ export function answerRequest(
     workspaceId: s.anthropicWorkspaceId || undefined,
     model: profile.useAnswerModel ? s.answerModel : s.nudgeModel,
     system: snap.system,
-    cacheableContext: snap.cacheableContext,
     groundingContextId: snap.groundingContextId,
     contextRevision: snap.contextRevision,
     userContent:
@@ -90,9 +82,7 @@ export function answerRequest(
         names: snap.names,
         focus,
         told: snap.told,
-      }) +
-      (snap.presentation ? presentationHint(snap.presentation) : '') +
-      meetingContextBlock(snap.meetingText ?? ''),
+      }) + meetingContextBlock(snap.meetingText ?? ''),
     // points/smart ambient output stays terse; full mode and hotkey answers get code room
     maxTokens: profile.maxTokens,
     effort: profile.effort,
@@ -162,8 +152,7 @@ export function answerNowRequest(
 /** Request fields that do NOT make two requests a different prompt. `atMs` only stamps the
  *  stored suggestion's audio time; `accept` is a per-request closure (buffered requests only,
  *  never a speculation) that could never compare equal. Everything else, including
- *  `presentationRevision` (stamped on the published events, so a moved slide must not reuse
- *  an older stamp) and `delivery`/`maxRetries` (provider behaviour), counts: a NEW field is
+ *  `contextRevision` and `delivery`/`maxRetries` (provider behaviour), counts: a NEW field is
  *  compared by default, so a speculation can never be published for a request that differs
  *  in something nobody remembered to list. */
 const NOT_PROMPT = new Set<keyof SuggestionRequest>(['atMs', 'accept'])
@@ -198,33 +187,22 @@ export function coachRequest(
     meetingId: snap.meetingId,
     trigger: 'ambient',
     purpose: 'next-point',
-    presentationRevision: snap.presentation?.current ? snap.presentation.revision : undefined,
     atMs: snap.atMs,
     apiKey: s.anthropicApiKey,
     workspaceId: s.anthropicWorkspaceId || undefined,
     model: s.nudgeModel,
-    system: snap.coachSystem ?? snap.system,
+    system: snap.system,
     contextRevision: snap.contextRevision,
     userContent:
       meetingContextBlock(snap.meetingText ?? '', true) +
-      (snap.presentation?.current
-        ? presentationCoachContent(
-            snap.presentation,
-            snap.coachEvidence?.text ?? '',
-            snap.coachEvidence?.incomplete ?? true,
-          ) +
-          '\n' +
-          recentSuggestionsBlock(snap.coachRecent ?? []) +
-          '\n' +
-          COMPACT_CONTRACT
-        : buildCoachUserContent({
-            excerpt: input.excerpt,
-            reason: input.reason,
-            window: snap.window,
-            names: snap.names,
-            recent: snap.recent,
-            question: input.question ? promptQuestion(snap, input.question) : undefined,
-          })),
+      buildCoachUserContent({
+        excerpt: input.excerpt,
+        reason: input.reason,
+        window: snap.window,
+        names: snap.names,
+        recent: snap.recent,
+        question: input.question ? promptQuestion(snap, input.question) : undefined,
+      }),
     maxTokens: COACH_PROFILE.maxTokens,
     effort: COACH_PROFILE.effort,
     timeoutMs: suggestionTimeoutMs('ambient', false, 'next-point'),

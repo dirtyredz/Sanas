@@ -1,4 +1,3 @@
-import { usePresentationState } from '../../lib/meeting/usePresentationState'
 import { useTranscript } from '../../lib/meeting/useTranscript'
 import { useCaptureStatus } from '../capture/useCaptureStatus'
 import { useOverlaySettings } from '../layout/useOverlaySettings'
@@ -19,7 +18,6 @@ function useOverlaySessionModel() {
   const { lines, state } = useTranscript()
   const meetingId = state.meetingId
   const active = state.status === 'live' || state.status === 'paused'
-  const presentation = usePresentationState(meetingId)
   const settings = useOverlaySettings()
   const windowState = useOverlayWindowState()
   const navigation = useOverlayNavigation(meetingId)
@@ -39,7 +37,6 @@ function useOverlaySessionModel() {
     meetingId,
     active,
     lines,
-    presentation,
     settings,
     windowState,
     navigation,

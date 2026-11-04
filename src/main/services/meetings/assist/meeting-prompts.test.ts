@@ -16,22 +16,20 @@ vi.mock('../../../db/repos/meeting/meeting-grounding', () => ({
   getMeetingGrounding: () => ({ resume: null, interviewProfile: '', hasBiography: false }),
 }))
 import { MeetingPrompts } from './meeting-prompts'
-it.each([false, true])(
-  'keeps candidate biography when deck active = %s; missing facts get marked filler',
-  (deck) => {
-    const context = {
-      meetingId: 1,
-      revision: 0,
-      initialSlides: [],
-      deckVersion: 0,
-      text: '',
-      slides: deck ? [{ title: 'Deck', talkingPoint: '', script: '', keyFacts: '' }] : [],
-    }
+it.each(['', 'Agenda: platform review'])(
+  'keeps biography and job talking points with initial context %j; missing facts get marked filler',
+  (text) => {
+    const context = { meetingId: 1, revision: 0, text }
     data.notes = 'Synthetic candidate: personally operated about five subgraphs at ExampleCo.'
     const prompts = new MeetingPrompts()
     prompts.begin(1, context)
     expect(prompts.snapshot().system).toContain(data.notes)
-    expect(prompts.snapshot().system.includes('OPTIONAL_PRIORITY')).toBe(!deck)
+    expect(prompts.snapshot().system).toContain('OPTIONAL_PRIORITY')
+    expect(prompts.snapshot()).toMatchObject({ contextRevision: 0, meetingText: text })
+    // context edits never change the frozen system prompt
+    const system = prompts.snapshot().system
+    prompts.applyContext({ ...context, revision: 1, text: 'Changed' })
+    expect(prompts.snapshot()).toMatchObject({ system, contextRevision: 1, meetingText: 'Changed' })
     data.notes = ''
     prompts.begin(1, context)
     expect(prompts.snapshot().system).not.toContain('ExampleCo')

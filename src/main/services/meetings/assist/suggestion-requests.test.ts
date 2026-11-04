@@ -10,7 +10,6 @@ import {
 import type { CompletedTurn } from '../../turns/types'
 import type { AssistImage } from '../../assistant/types'
 import type { SuggestionRequest } from './suggestion-runner'
-import { deckContext } from '../../assistant/presentation/prompts'
 import { topicSwitchWindow } from '../../assistant/answer-context/topic-switch-fixture'
 const settings: AssistSettings = {
   anthropicApiKey: 'key',
@@ -22,56 +21,41 @@ const settings: AssistSettings = {
   nudgeCooldownSec: 5,
   coachWhileTalking: true,
 }
-const deck = ['FIRST', 'SECOND', 'THIRD_SENTINEL'].map((title) => ({
-  title,
-  talkingPoint: title,
-  script: `${title} script`,
-  keyFacts: `${title} facts`,
-}))
 const snapshot = (): AssistSnapshot => ({
   meetingId: 1,
   atMs: 100,
-  system: 'job notes glossary' + deckContext(deck),
-  coachSystem: 'job notes glossary',
-  window: [{ speaker: 0, isUser: true, text: 'THIRD_SENTINEL previously discussed' }],
-  recent: ['THIRD_SENTINEL previous answer'],
+  system: 'job notes glossary',
+  window: [{ speaker: 0, isUser: true, text: 'We covered the rollout plan' }],
+  recent: ['Earlier answer'],
   told: [],
-  coachRecent: [],
-  coachEvidence: { text: 'Me: FIRST speech', incomplete: false },
-  presentation: {
-    meetingId: 1,
-    revision: 3,
-    count: 3,
-    ordinal: 0,
-    current: { ...deck[0] },
-    next: { title: deck[1].title, talkingPoint: deck[1].talkingPoint },
-  },
+  meetingText: 'Attendees: Dana (CFO). Goal: agree pilot scope.',
+  contextRevision: 2,
+  groundingContextId: 7,
 })
-describe('presentation request lanes', () => {
-  it('answers from the full deck in both lanes, with only a current-title hint and no revision cancellation', () => {
+describe('meeting context in requests', () => {
+  it('answers in both lanes with the meeting context and its revision, and no slide material', () => {
     for (const lane of ['ambient', 'hotkey'] as const) {
       const req = answerRequest(snapshot(), settings, lane)
-      expect(req.system).toContain('THIRD_SENTINEL')
-      expect(req.userContent).toContain('Selected presentation position: slide 1')
-      expect(req.presentationRevision).toBeUndefined()
-      expect(req.userContent).not.toContain('deferral')
+      expect(req.userContent).toContain('<meeting-context>')
+      expect(req.userContent).toContain('Goal: agree pilot scope.')
+      expect(req.contextRevision).toBe(2)
+      expect(req.cacheableContext).toBeUndefined()
+      expect(req.system + req.userContent).not.toMatch(/slide|presentation|deck/i)
     }
   })
-  it('captures immutable coach content and excludes later slides, prior speech and answer headlines after Previous', () => {
+  it('gives the ordinary coach the meeting context and captures it immutably', () => {
     const snap = snapshot()
-    const req = coachRequest(
-      snap,
-      settings,
-      { excerpt: 'THIRD_SENTINEL', reason: 'long' },
-      () => true,
-    )
-    snap.presentation!.current!.script = 'mutated'
-    expect(req.system + req.userContent).not.toContain('THIRD_SENTINEL')
-    expect(req.userContent).toContain('FIRST script')
-    expect(req.userContent).not.toContain('SECOND script')
-    expect(req.userContent).not.toContain('SECOND facts')
-    expect(req.presentationRevision).toBe(3)
+    const req = coachRequest(snap, settings, { excerpt: 'rollout', reason: 'long' }, () => true)
+    snap.meetingText = 'mutated'
+    expect(req.userContent).toContain('Goal: agree pilot scope.')
     expect(req.userContent).not.toContain('mutated')
+    expect(req.system).toBe('job notes glossary')
+    expect(req.contextRevision).toBe(2)
+    expect(req.system + req.userContent).not.toMatch(/slide|presentation|deck/i)
+  })
+  it('omits the context block entirely when the meeting has none', () => {
+    const req = answerRequest({ ...snapshot(), meetingText: '' }, settings, 'hotkey')
+    expect(req.userContent).not.toContain('<meeting-context>')
   })
 })
 
@@ -107,12 +91,12 @@ describe('samePrompt', () => {
   it('ignores only audio time and the accept closure', () => {
     expect(samePrompt(base(), { ...base(), atMs: 999, accept: () => true })).toBe(true)
   })
-  it('differs on any prompt field, including presentationRevision and delivery', () => {
+  it('differs on any prompt field, including contextRevision and delivery', () => {
     for (const change of [
       { userContent: 'other' },
       { model: 'other' },
       { groundingContextId: 9 },
-      { presentationRevision: 4 },
+      { contextRevision: 4 },
       { delivery: 'buffered' as const },
     ])
       expect(samePrompt(base(), { ...base(), ...change })).toBe(false)
@@ -126,7 +110,7 @@ describe('samePrompt', () => {
     } as CompletedTurn
     const live = (told: AssistSnapshot['told']): SuggestionRequest =>
       automaticAnswerRequest(
-        { ...snapshot(), presentation: undefined, window: [...window], told: [...told] },
+        { ...snapshot(), window: [...window], told: [...told] },
         settings,
         asked,
         { kind: 'question', addressee: 'me' },

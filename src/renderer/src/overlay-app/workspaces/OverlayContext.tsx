@@ -1,20 +1,13 @@
 import type { MeetingContext } from '@shared/live-controls/types'
 import { useMeetingContext } from '../../lib/meeting/useMeetingContext'
 import { useMeetingContextDraft } from '../../lib/meeting/useMeetingContextDraft'
-import { OpenSanasButton } from '../controls/OpenSanasButton'
 import { OverlayButton } from '../controls/OverlayButton'
 import { OverlayTextArea } from '../controls/OverlayTextArea'
+import { MEETING_CONTEXT_MAX_CHARS } from '@shared/meeting-context'
 
-/** Context: quick, text-only edits to this meeting's background. Apply never changes slides;
- *  full deck editing stays in the main window's Live page. Unsaved text is never applied or
+/** Context: quick, text-only edits to this meeting's background. Unsaved text is never applied or
  *  carried over by opening Sanas. */
-export function OverlayContext({
-  meetingId,
-  slideCount,
-}: {
-  meetingId: number
-  slideCount: number
-}): React.JSX.Element {
+export function OverlayContext({ meetingId }: { meetingId: number }): React.JSX.Element {
   const { context, error } = useMeetingContext(meetingId)
   if (error)
     return (
@@ -23,19 +16,11 @@ export function OverlayContext({
       </p>
     )
   if (!context) return <p className="workspace-body ov-empty">Loading meeting context…</p>
-  return <TextDraft key={meetingId} context={context} slideCount={slideCount} />
+  return <TextDraft key={meetingId} context={context} />
 }
 
-function TextDraft({
-  context,
-  slideCount,
-}: {
-  context: MeetingContext
-  slideCount: number
-}): React.JSX.Element {
-  const { draft, dispatch, unsaved, conflict, apply, reload } = useMeetingContextDraft(context, {
-    mode: 'text',
-  })
+function TextDraft({ context }: { context: MeetingContext }): React.JSX.Element {
+  const { draft, dispatch, unsaved, conflict, apply, reload } = useMeetingContextDraft(context)
   return (
     <div className="workspace-body overlay-context">
       <div className="context-head">
@@ -46,7 +31,7 @@ function TextDraft({
         hideLabel
         label="Meeting context"
         rows={5}
-        maxLength={20000}
+        maxLength={MEETING_CONTEXT_MAX_CHARS}
         placeholder="Client, goals, names, numbers…"
         value={draft.text}
         disabled={draft.busy}
@@ -76,10 +61,6 @@ function TextDraft({
           {draft.notice}
         </p>
       )}
-      <p className="ov-message">
-        {slideCount > 0 ? `Slides: ${slideCount}. ` : ''}Edit slides in Sanas’s Live page.{' '}
-        <OpenSanasButton />
-      </p>
     </div>
   )
 }

@@ -29,16 +29,6 @@ const GLOBAL_HOTKEYS: { action: HotkeyAction; label: string; help: string }[] = 
     label: 'Ask composer',
     help: 'Opens the overlay ready to type a question.',
   },
-  {
-    action: 'presentationPrevHotkey',
-    label: 'Previous slide',
-    help: 'Moves the presentation back one slide, even while the overlay is paused.',
-  },
-  {
-    action: 'presentationNextHotkey',
-    label: 'Next slide',
-    help: 'Moves the presentation forward one slide.',
-  },
 ]
 
 export function HotkeysSection({

@@ -79,7 +79,7 @@ export function JobOverview({
             <p className="hint">
               Project scope: target role and job description. Company info: target client. Persona:
               candidate role and concise screening delivery. Talking points: optional priorities,
-              not the sole home of biography. Notes remain available with a deck active.
+              not the sole home of biography.
             </p>
             <p className="hint">
               Add confirmed employer and technology names to Glossary. Use meeting context and Apply

@@ -1,6 +1,12 @@
 import { expect, it } from 'vitest'
-import { interviewChecked, rememberedJob, rememberJob } from './start-selection'
-it('Unsorted replaces the remembered deck job across remounts', () => {
+import {
+  contextDraftAfterStart,
+  interviewChecked,
+  meetingStartOptions,
+  rememberedJob,
+  rememberJob,
+} from './start-selection'
+it('Unsorted replaces the remembered job across remounts', () => {
   const data = new Map<string, string>()
   const storage = {
     getItem: (k: string) => data.get(k) ?? null,
@@ -39,4 +45,19 @@ it('defaults Interview from the job resume and lets an explicit choice win eithe
   expect(interviewChecked(undefined, false)).toBe(false) // Unsorted / no saved resume
   expect(interviewChecked(false, true)).toBe(false)
   expect(interviewChecked(true, false)).toBe(true)
+})
+
+it('sends the typed meeting context exactly, and only an explicit Interview choice', () => {
+  expect(meetingStartOptions(undefined, '')).toEqual({})
+  expect(meetingStartOptions(undefined, '   \n ')).toEqual({}) // whitespace is no context
+  expect(meetingStartOptions(false, '  Agenda: scope\n')).toEqual({
+    interview: false,
+    meetingContext: '  Agenda: scope\n',
+  })
+  expect(meetingStartOptions(true, '')).toEqual({ interview: true })
+})
+
+it('keeps the pre-Start context after a failed capture or Start and clears it once live', () => {
+  expect(contextDraftAfterStart('Agenda', false)).toBe('Agenda')
+  expect(contextDraftAfterStart('Agenda', true)).toBe('')
 })

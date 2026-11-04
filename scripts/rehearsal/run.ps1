@@ -6,7 +6,7 @@ Builds local sources, launches explicit rehearsal mode, prints each assertion an
 with 0 on success or 1 on failure. No downloads. Logs are redacted and timestamped.
 Audio and Claude incur provider charges; missing credentials come from 1Password via op.
 .PARAMETER Scenario
-Starter name (client-checkin, presentation, standup) or JSON path relative to the repository.
+Starter name (client-checkin, meeting-context, standup) or JSON path relative to the repository.
 .PARAMETER Tier
 scripted or audio. The retired live tier points to the Mock interview tab.
 .PARAMETER Assistant

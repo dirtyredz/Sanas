@@ -32,11 +32,7 @@ export const IPC = {
   ScreenCaptureDiscard: 'screen-capture:discard',
   ScreenCaptureStatusGet: 'screen-capture:status-get',
   ScreenCaptureStatus: 'screen-capture:status',
-  PresentationJobGet: 'presentation:job-get',
-  PresentationJobReplace: 'presentation:job-replace',
-  PresentationState: 'presentation:state',
-  PresentationChanged: 'presentation:changed',
-  PresentationMove: 'presentation:move',
+  /** Read-only slide markers of meetings recorded before presentation mode was retired. */
   PresentationHistory: 'presentation:history',
   HotkeysStatus: 'hotkeys:status',
   // settings

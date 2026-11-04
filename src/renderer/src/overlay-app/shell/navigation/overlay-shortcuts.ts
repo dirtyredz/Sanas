@@ -1,7 +1,7 @@
 import { WORKSPACE_KEYS, type Workspace } from '../../../lib/overlay-workspaces'
 
 // Local overlay shortcuts — only while the overlay window has focus. The global shortcuts
-// (show/hide, Answer now, Ask, Capture, slides) are registered by main and live in Settings.
+// (show/hide, Answer now, Ask, Capture) are registered by main and live in Settings.
 // The label/key table is shared data in lib/overlay-workspaces.ts.
 
 export function workspaceShortcut(workspace: Workspace): string {

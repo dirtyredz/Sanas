@@ -17,8 +17,6 @@ import { isLiveMeeting, liveMeetingId } from '../status/live-meeting'
 import { clearPostProcessing, markPostProcessing } from '../status/post-processing'
 import { LiveAssistance } from './live-assistance'
 import { SuggestionRunner } from './suggestion-runner'
-import type { PresentationState } from '@shared/presentation/types'
-import { PresentationEvidence } from './presentation-evidence'
 import { MeetingPrompts } from './meeting-prompts'
 
 // The live-assist side of the running meeting, assembled in one place: the rolling
@@ -36,13 +34,11 @@ export class LiveSession {
   private readonly shown = new ShownLedger()
   private readonly runner: SuggestionRunner
   private snapshot: () => AssistSnapshot | null = () => null
-  private readonly evidence = new PresentationEvidence()
   private readonly prompts = new MeetingPrompts()
 
   /** `clockMs` is the meeting's audio clock, so suggestions line up with the transcript. */
   constructor(
     private readonly clockMs: () => number,
-    private readonly presentation: () => PresentationState,
     availabilityChanged?: () => void,
   ) {
     const runner = (this.runner = new SuggestionRunner({
@@ -82,8 +78,6 @@ export class LiveSession {
           window: [...this.window],
           names,
           ...this.shown.snapshot(),
-          presentation: this.presentation(),
-          coachEvidence: this.evidence.snapshot(),
         }
       }),
       log: (message) => console.warn(`[sanas] ${message}`),
@@ -95,17 +89,17 @@ export class LiveSession {
   begin(jobId: number): void {
     this.window.length = 0
     this.shown.reset()
-    this.evidence.reset(0)
-    this.assistance.presentationChanged(0)
+    this.assistance.contextChanged(0)
     this.assistance.start()
     this.prompts.begin(jobId, getMeetingContext(liveMeetingId()!))
-    this.presentationChanged(this.clockMs())
     this.assistance.setAnswerEveryQuestion(loadSettings().answerEveryQuestion)
   }
 
+  /** An applied context revision: new grounding for later requests, and coaching restarts
+   *  so a next point built on the old context is never shown. Started answers keep theirs. */
   applyContext(context: MeetingContext): void {
     this.prompts.applyContext(context)
-    this.presentationChanged(this.clockMs())
+    this.assistance.contextChanged(this.clockMs())
   }
 
   /** True while no requested answer holds the hotkey lane (checked before a capture). */
@@ -130,16 +124,9 @@ export class LiveSession {
 
   /** One persisted-or-not final: into the prompt window, then to live assistance. */
   final(line: TranscriptLine, turn: TurnFinal): void {
-    this.evidence.final(turn)
     this.window.push(line)
     if (this.window.length > WINDOW_LINES) this.window.shift()
     this.assistance.final(turn)
-  }
-
-  presentationChanged(atMs: number): void {
-    this.evidence.reset(atMs)
-    this.shown.clearCoach()
-    this.assistance.presentationChanged(atMs)
   }
 
   /** A voice was (un)pinned as the user: relabel the window so the next prompt agrees, and
@@ -147,8 +134,6 @@ export class LiveSession {
   relabel(speaker: number, isUser: boolean): void {
     for (const line of this.window) if (line.speaker === speaker) line.isUser = isUser
     this.assistance.identityChanged()
-    this.evidence.identityChanged(this.clockMs())
-    this.shown.clearCoach()
   }
 
   /** What the post-stop summary reads: a copy of the window and the meeting's prompt. */

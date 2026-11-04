@@ -26,8 +26,8 @@ import { canStartSuggestion, type SuggestionInFlight } from './suggestion-in-fli
 
 export interface SuggestionRequest extends SuggestionMetadata {
   diagnosticTurns?: readonly { startMs: number; endMs: number; completedAt: number }[]
+  /** Legacy deck grounding, replayed only by More detail on answers recorded with a deck. */
   cacheableContext?: string
-  presentationRevision?: number
   meetingId: number
   trigger: SuggestionTrigger
   purpose: SuggestionPurpose
@@ -152,9 +152,6 @@ export class SuggestionRunner {
         meetingId: req.meetingId,
         trigger: req.trigger,
         purpose: req.purpose,
-        ...(req.presentationRevision === undefined
-          ? {}
-          : { presentationRevision: req.presentationRevision }),
         kind,
         text,
       }

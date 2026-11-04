@@ -1,12 +1,16 @@
 import { expect, it } from 'vitest'
 import { requireContextUpdate, requireManualRequest } from './live-controls-validation'
-it('validates text bounds, identities, revisions and selected slides without truncation', () => {
+it('validates text bounds, identities and revisions without truncation; refuses a deck', () => {
   expect(requireContextUpdate({ meetingId: 1, expectedRevision: 0, text: '' }).text).toBe('')
+  expect(
+    requireContextUpdate({ meetingId: 1, expectedRevision: 2, text: 'x'.repeat(20000) }),
+  ).toEqual({ meetingId: 1, expectedRevision: 2, text: 'x'.repeat(20000) })
   for (const patch of [
     { text: 'x'.repeat(20001) },
     { expectedRevision: -1 },
     { meetingId: 0 },
-    { deck: { slides: [], ordinal: 1, expectedPresentationRevision: 0 } },
+    { deck: { slides: [], ordinal: 0, expectedPresentationRevision: 0 } },
+    { text: 42 },
   ]) {
     expect(() =>
       requireContextUpdate({ meetingId: 1, expectedRevision: 0, text: '', ...patch }),

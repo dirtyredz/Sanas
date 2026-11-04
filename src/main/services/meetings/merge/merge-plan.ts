@@ -9,12 +9,19 @@
 //    into their own block instead of being conflated. Whether part one's "S1" is part
 //    two's "S1" is something only a listener knows; the meeting view's merge-speakers
 //    control is how they say so.
+//
+// Meeting context follows the same timeline. At most one part may carry context (nonempty
+// initial text or any applied revision): its history moves onto the kept meeting, after the
+// kept meeting's empty revision 0 and shifted by the part's time offset. Two or more parts
+// with context are refused — interleaving independent histories has no honest answer.
 
 import { parseSqliteDateTime } from '../../../db/sqlite-time'
 
 export interface MergePart {
-  hasPresentation?: boolean
-  hasAppliedContext?: boolean
+  /** Recorded slides or slide events from before presentation mode was retired. */
+  hasLegacySlides?: boolean
+  /** Nonempty initial meeting context, or any applied revision (clears included). */
+  hasMeetingContext?: boolean
   id: number
   jobId: number
   startedAt: string
@@ -25,11 +32,24 @@ export interface MergePart {
   maxSpeaker: number
 }
 
+/** What happens to one moved part's context revisions and the revision its suggestions name:
+ *  - 'move': this part carries the context; its history moves onto the kept meeting with every
+ *    revision shifted by `contextRevisionOffset` (and its suggestions' revisions with it).
+ *  - 'unlink': the kept meeting carries the context; this part's suggestions were made without
+ *    it, so their revision reference is cleared rather than pointed at text they never saw.
+ *  - 'keep': nobody's context concerns this part; its revision-0 references stay valid (the
+ *    kept meeting's revision 0 is empty, like this part's). */
+export type MergeContextAction = 'move' | 'unlink' | 'keep'
+
 export interface MergeStep {
   from: number
   timeOffsetMs: number
   speakerOffset: number
+  context: MergeContextAction
 }
+
+/** The kept meeting has no context when a later part's moves in, so its only revision is 0. */
+export const CONTEXT_REVISION_OFFSET = 1
 
 export interface MergePlan {
   /** The earliest part; it keeps its row, title and start. */
@@ -42,10 +62,12 @@ export interface MergePlan {
 
 /** Works out what moves where, or throws a readable reason why it should not. */
 export function planMerge(parts: MergePart[]): MergePlan {
-  if (parts.some((p) => p.hasAppliedContext))
-    throw new Error('Meetings with applied context cannot be merged yet.')
-  if (parts.some((p) => p.hasPresentation))
-    throw new Error('Presentation meetings cannot be merged yet.')
+  if (parts.some((p) => p.hasLegacySlides))
+    throw new Error('Meetings recorded with presentation slides cannot be merged.')
+  if (parts.filter((p) => p.hasMeetingContext).length > 1)
+    throw new Error(
+      'Only one of the meetings being merged may have meeting context — more than one of these does.',
+    )
   if (parts.length < 2) throw new Error('Pick at least two meetings to merge.')
   if (new Set(parts.map((p) => p.id)).size !== parts.length) {
     throw new Error('The same meeting was listed twice.')
@@ -71,6 +93,8 @@ export function planMerge(parts: MergePart[]): MergePlan {
   }
   const [keep, ...rest] = ordered
   const base = parseSqliteDateTime(keep.startedAt)
+  const contextAction = (p: MergePart): MergeContextAction =>
+    p.hasMeetingContext ? 'move' : keep.hasMeetingContext ? 'unlink' : 'keep'
 
   const steps: MergeStep[] = []
   let speakerOffset = keep.maxSpeaker + 1
@@ -79,6 +103,7 @@ export function planMerge(parts: MergePart[]): MergePlan {
       from: p.id,
       timeOffsetMs: Math.max(0, parseSqliteDateTime(p.startedAt) - base),
       speakerOffset,
+      context: contextAction(p),
     })
     speakerOffset += p.maxSpeaker + 1
   }

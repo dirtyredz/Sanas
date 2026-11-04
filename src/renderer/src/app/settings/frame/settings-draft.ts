@@ -18,8 +18,6 @@ export const PAGE_OWNED = [
   'assistHotkey',
   'captureHotkey',
   'composeHotkey',
-  'presentationPrevHotkey',
-  'presentationNextHotkey',
   'anthropicWorkspaceId',
   'nudgeModel',
   'answerModel',

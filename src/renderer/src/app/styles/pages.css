@@ -20,10 +20,6 @@
   margin-right: 6px;
 }
 
-.live-toolbar select {
-  min-width: 170px;
-}
-
 .live-toolbar .listening {
   display: inline-flex;
   align-items: center;
@@ -36,6 +32,28 @@
   font-family: var(--mono);
   font-variant-numeric: tabular-nums;
   color: var(--muted);
+}
+
+/* Job picker beside the Meeting context box; stacks when the window is narrow. */
+.live-setup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.live-setup .live-job select {
+  min-width: 170px;
+}
+
+.live-setup .live-context {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.live-setup .live-context textarea {
+  width: 100%;
+  resize: vertical;
 }
 
 .source-hint {
@@ -554,19 +572,6 @@
 
 .glossary-notice {
   margin: 6px 0 0;
-}
-
-.presentation-editor fieldset {
-  border: 0;
-  min-width: 0;
-  padding: 0;
-}
-.presentation-editor textarea {
-  width: 100%;
-}
-.presentation-editor pre {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
 }
 
 .job-resume fieldset {

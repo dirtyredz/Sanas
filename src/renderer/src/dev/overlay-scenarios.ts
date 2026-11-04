@@ -1,15 +1,12 @@
 import type { SuggestionEvent } from '@shared/types'
-import type { Slide } from '@shared/presentation/types'
 import { mockDriver } from './mock-api'
-import { beginMockPresentation, mockPresentation } from './mock-presentation'
 import { setMockCaptureStatus } from './mock-screen-capture'
 
 // Deterministic overlay preview states: open overlay.html?scenario=<name> under
-// `npm run dev:web`. Each scenario sets the meeting, transcript, answers, deck and capture
+// `npm run dev:web`. Each scenario sets the meeting, transcript, answers and capture
 // status directly — no timers — so screenshots and reviews see the same overlay every time.
 
 const MEETING = 99
-const DECK_JOB = 990
 
 const LINES = [
   { speaker: 0, isUser: false, text: 'What blocks the pilot at Beaverton?' },
@@ -38,25 +35,6 @@ const DETAIL =
   'Verify: reload and confirm the console is clean.'
 const WARNING =
   'No system audio detected — voices heard by the mic will be labeled Me. Check which speaker your call app plays to.'
-
-const DECK: Slide[] = [
-  {
-    title: 'Why now',
-    talkingPoint: 'Clinics lose a day a week to paper.',
-    script: '',
-    keyFacts: '',
-  },
-  {
-    title: 'Rollout checkpoints',
-    talkingPoint: 'Explain how rollout is checked.',
-    script: Array.from(
-      { length: 12 },
-      (_, i) => `Checkpoint ${i + 1}: the audit log is reviewed before the next clinic goes live.`,
-    ).join('\n\n'),
-    keyFacts: '3 clinics in October. 2 weeks of staff training each.',
-  },
-  { title: 'Questions', talkingPoint: 'Invite questions.', script: '', keyFacts: '' },
-]
 
 let seq = 500
 
@@ -135,13 +113,6 @@ const SCENARIOS: Record<string, () => void | Promise<void>> = {
     live('error', {
       error: 'Deepgram rejected the API key. Check Settings → API keys, then resume the meeting.',
     }),
-  deck: async () => {
-    await mockPresentation.replaceJobSlides(DECK_JOB, DECK)
-    beginMockPresentation(MEETING, DECK_JOB)
-    await live()
-    await mockPresentation.move({ meetingId: MEETING, direction: 'next' })
-    answer('**Explain how rollout is checked.**', { purpose: 'next-point' })
-  },
   capturing: async () => {
     await live()
     setMockCaptureStatus({ meetingId: MEETING, phase: 'capturing', message: 'Capturing…' })

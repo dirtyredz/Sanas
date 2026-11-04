@@ -26,7 +26,6 @@ const snap: AssistSnapshot = {
   meetingId: 1,
   atMs: 0,
   system: 'stable job',
-  cacheableContext: 'complete deck',
   meetingText: 'correction',
   contextRevision: 2,
   groundingContextId: 5,
@@ -75,15 +74,16 @@ it('Answer now carries the latest question and told stories; typed and capture a
     expect(req.userContent).not.toContain('Current exchange')
   }
 })
-it('keeps job/deck cache blocks independent of text edits and excludes the deck from coaching', () => {
+it('keeps the cached job prompt independent of context edits; coaching sees the context', () => {
   const original = answerRequest(snap, settings, 'hotkey'),
     changed = answerRequest({ ...snap, meetingText: 'new' }, settings, 'hotkey')
   expect(changed.system).toBe(original.system)
-  expect(changed.cacheableContext).toBe(original.cacheableContext)
+  expect(changed.cacheableContext).toBeUndefined()
   expect(changed.userContent).not.toBe(original.userContent)
   const coach = coachRequest(snap, settings, { excerpt: '', reason: 'long' }, () => true)
   expect(coach.cacheableContext).toBeUndefined()
-  expect(coach.userContent).toContain('current slide only')
+  expect(coach.userContent).toContain('<meeting-context>\ncorrection')
+  expect(coach.userContent).not.toMatch(/slide/i)
   expect(answerRequest({ ...snap, meetingText: '' }, settings, 'hotkey').userContent).not.toContain(
     'meeting-context',
   )
@@ -117,7 +117,7 @@ it('expands only eligible sources and replays immutable grounding rather than cu
     timeoutMs: 60000,
   })
   expect(req.userContent).toContain('old transcript and correction')
-  expect(req.userContent).not.toContain('complete deck')
+  expect(req.userContent).not.toContain('<meeting-context>') // the replay, not current context
   for (const patch of [
     { meetingId: 2 },
     { purpose: 'next-point' as const },
@@ -195,6 +195,8 @@ it('audience prompts request one question and use their bounded profile', () => 
   const req = manualRequest(snap, settings, { meetingId: 1, kind: 'audience' })
   expect(req).toMatchObject({ maxTokens: 200, effort: 'low', timeoutMs: 25000 })
   expect(req.userContent).toContain('exactly one short, speakable question')
+  expect(req.userContent).toContain('<meeting-context>\ncorrection')
+  expect(req.userContent).not.toMatch(/slide|current-visit/i)
 })
 
 it('preserves manual admission ordering and outcomes', () => {

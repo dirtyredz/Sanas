@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import type { Job, Meeting } from '@shared/types'
 import { MeetingView } from './MeetingView'
 import { errorText } from '../../lib/ipc-error'
-import { PresentationEditor } from '../jobs/PresentationEditor'
 import { JobOverview } from '../jobs/JobOverview'
 import { JobResume } from '../jobs/JobResume'
 import { JobEmail } from '../jobs/JobEmail'
@@ -94,7 +93,6 @@ export function JobDetail({
         tabs={[
           { name: 'Overview', render: () => <JobOverview job={job} setJob={setJob} /> },
           { name: 'Resume', render: () => <JobResume key={jobId} jobId={jobId} /> },
-          { name: 'Presentation', render: () => <PresentationEditor key={jobId} jobId={jobId} /> },
           { name: 'Email', render: () => <JobEmail job={job} setJob={setJob} /> },
           {
             name: 'Meetings',

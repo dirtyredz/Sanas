@@ -13,7 +13,6 @@ export function registerShortcuts(
   now: () => number = () => performance.now(),
 ): HotkeyStatus[] {
   const seen = new Set<string>()
-  let lastMove = -Infinity
   let lastCapture = -Infinity
   statuses = (Object.keys(callbacks) as HotkeyAction[]).map((action) => {
     const accelerator = settings[action] ?? ''
@@ -27,11 +26,6 @@ export function registerShortcuts(
       if (seen.has(key)) throw new Error('Duplicate shortcut.')
       seen.add(key)
       const registered = register(accelerator, () => {
-        if (action.startsWith('presentation')) {
-          const time = now()
-          if (time - lastMove < 200) return
-          lastMove = time
-        }
         // a held capture shortcut auto-repeats: one capture per deliberate press
         if (action === 'captureHotkey') {
           const time = now()

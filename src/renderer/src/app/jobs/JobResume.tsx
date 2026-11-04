@@ -7,7 +7,7 @@ import { resumeDraftProblem, sameResume } from './resume-draft'
 /**
  * The job's saved resume. Every new Live or Mock meeting for this job snapshots what is saved
  * here at Start; meetings already started keep their own copy. Edits are a local draft until
- * "Save resume" (the header's Save does not cover this tab, like Presentation). A failed import
+ * "Save resume" (the header's Save does not cover this tab). A failed import
  * or save leaves the draft as it was.
  */
 export function JobResume({ jobId }: { jobId: number }): React.JSX.Element {

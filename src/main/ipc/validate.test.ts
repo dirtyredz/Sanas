@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   boundedText,
+  requireMeetingStart,
   optionalText,
   requireBool,
   requireId,
@@ -162,5 +163,39 @@ describe('requireSettingsPatch', () => {
   })
   it('rejects a non-object', () => {
     expect(() => requireSettingsPatch(null)).toThrow('Invalid settings')
+  })
+})
+
+describe('requireMeetingStart', () => {
+  it('accepts omitted, empty and limit-sized context with an optional interview choice', () => {
+    expect(requireMeetingStart(undefined)).toEqual({})
+    expect(requireMeetingStart({})).toEqual({})
+    expect(requireMeetingStart({ meetingContext: '' })).toEqual({ meetingContext: '' })
+    const max = 'x'.repeat(20000)
+    expect(requireMeetingStart({ meetingContext: max, interview: false })).toEqual({
+      meetingContext: max,
+      interview: false,
+    })
+  })
+
+  it('refuses oversized or non-text context without truncating', () => {
+    expect(() => requireMeetingStart({ meetingContext: 'x'.repeat(20001) })).toThrow(
+      'at most 20,000 characters',
+    )
+    for (const meetingContext of [42, null, ['a'], { text: 'a' }])
+      expect(() => requireMeetingStart({ meetingContext })).toThrow()
+  })
+
+  it('refuses the retired deck option and the old positional boolean shape', () => {
+    expect(() => requireMeetingStart({ usePresentationDeck: true })).toThrow(
+      'Unsupported start option: usePresentationDeck',
+    )
+    expect(() => requireMeetingStart(true)).toThrow('Invalid start options')
+    expect(() => requireMeetingStart([])).toThrow('Invalid start options')
+    expect(() => requireMeetingStart({ interview: 'yes' })).toThrow('Invalid interview choice')
+  })
+
+  it('never lets the renderer choose practice', () => {
+    expect(() => requireMeetingStart({ practice: true })).toThrow('Unsupported start option')
   })
 })

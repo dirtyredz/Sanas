@@ -1,5 +1,11 @@
 import { useJobHasResume } from '../../lib/meeting/resume/useJobHasResume'
-import { interviewChecked, rememberJob } from '../../lib/meeting/start-selection'
+import {
+  contextDraftAfterStart,
+  interviewChecked,
+  meetingStartOptions,
+  rememberJob,
+} from '../../lib/meeting/start-selection'
+import { MEETING_CONTEXT_MAX_CHARS } from '@shared/meeting-context'
 import { applyJobList, startableJobs } from '../../lib/meeting/job-choices'
 import { startCapturedMeeting } from '../../lib/meeting/start-captured-meeting'
 import { MeetingContextEditor } from '../../lib/meeting/MeetingContextEditor'
@@ -50,8 +56,10 @@ export function LiveMeetingPage({ visible = true }: { visible?: boolean }): Reac
   const [interviewOverride, setInterviewOverride] = useState<boolean | undefined>(undefined)
   const interview = interviewChecked(interviewOverride, jobHasResume)
 
-  const [useDeck, setUseDeck] = useState(false)
-  const [deckCount, setDeckCount] = useState(0)
+  // Meeting context typed before Start. Local state on purpose: this page stays mounted across
+  // tab switches and job changes, so the draft survives them (not an app restart); it is
+  // cleared only once a Start is confirmed live, when the text lives with the meeting.
+  const [contextDraft, setContextDraft] = useState('')
   const [elapsedMs, setElapsedMs] = useState(0)
   // elapsed counts listening time only: a pause folds the run so far into `banked`
   const banked = useRef(0)
@@ -77,21 +85,8 @@ export function LiveMeetingPage({ visible = true }: { visible?: boolean }): Reac
   }, [visible])
 
   useEffect(() => {
-    let cancelled = false
     setInterviewOverride(undefined) // a different job starts from its own default
-    setUseDeck(false)
-    setDeckCount(0)
-    if (jobId !== '')
-      window.sanas.presentation.getJobSlides(jobId).then((slides) => {
-        if (!cancelled) setDeckCount(slides.length)
-      })
-    return () => {
-      cancelled = true
-    }
   }, [jobId])
-  useEffect(() => {
-    if (!active) setUseDeck(false)
-  }, [active])
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
@@ -146,13 +141,13 @@ export function LiveMeetingPage({ visible = true }: { visible?: boolean }): Reac
           window.sanas.meeting.start(
             jobId === '' ? undefined : jobId,
             channels,
-            useDeck,
-            interviewOverride,
+            meetingStartOptions(interviewOverride, contextDraft),
           ),
         (st) => st.status === 'live',
       )
       mic = opened.capture
       const st = opened.result
+      setContextDraft((draft) => contextDraftAfterStart(draft, st.status === 'live'))
       if (st.status === 'live') {
         setInterviewOverride(undefined) // the next meeting starts from the job's default
         micRef.current = mic
@@ -234,43 +229,8 @@ export function LiveMeetingPage({ visible = true }: { visible?: boolean }): Reac
 
   return (
     <div className="live-page">
-      {state.meetingId !== null && (
-        <details className="card">
-          <summary>Meeting context and slides</summary>
-          <MeetingContextEditor meetingId={state.meetingId} />
-        </details>
-      )}
       <div className="live-toolbar">
         <h2>Live</h2>
-        <select
-          value={jobId}
-          disabled={active}
-          aria-label="Job"
-          onChange={(e) => {
-            choiceChanged.current = true
-            const value = e.target.value
-            rememberJob(localStorage, value)
-            setJobId(value === '' ? '' : Number(value))
-          }}
-        >
-          <option value="">Unsorted</option>
-          {jobs.map((j) => (
-            <option key={j.id} value={j.id}>
-              {j.name}
-            </option>
-          ))}
-        </select>
-        {!active && (
-          <label>
-            <input
-              type="checkbox"
-              checked={useDeck}
-              disabled={!deckCount}
-              onChange={(e) => setUseDeck(e.target.checked)}
-            />{' '}
-            Use presentation deck ({deckCount} slides available)
-          </label>
-        )}
         {!active && (
           <label title="Use your saved Interview profile for this meeting">
             <input
@@ -324,6 +284,51 @@ export function LiveMeetingPage({ visible = true }: { visible?: boolean }): Reac
             {live ? (sysAudio ? 'mic + system audio' : 'mic only') : 'paused — nothing captured'}
             <span className="elapsed">{formatClock(elapsedMs)}</span>
           </span>
+        )}
+      </div>
+      <div className="live-setup">
+        <label className="field live-job">
+          <span className="label">Job</span>
+          <select
+            value={jobId}
+            disabled={active}
+            aria-label="Job"
+            onChange={(e) => {
+              choiceChanged.current = true
+              const value = e.target.value
+              rememberJob(localStorage, value)
+              setJobId(value === '' ? '' : Number(value))
+            }}
+          >
+            <option value="">Unsorted</option>
+            {jobs.map((j) => (
+              <option key={j.id} value={j.id}>
+                {j.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        {state.meetingId !== null ? (
+          <details className="card live-context">
+            <summary>Meeting context</summary>
+            <MeetingContextEditor meetingId={state.meetingId} />
+          </details>
+        ) : (
+          <label className="field live-context">
+            <span className="label">Meeting context</span>
+            <textarea
+              rows={3}
+              maxLength={MEETING_CONTEXT_MAX_CHARS}
+              value={contextDraft}
+              disabled={busy}
+              placeholder="Agenda, attendees, goals, talking points…"
+              onChange={(e) => setContextDraft(e.target.value)}
+            />
+            <small>
+              For this meeting only: saved with it at Start, and still editable from the overlay’s
+              Context while it runs.
+            </small>
+          </label>
         )}
       </div>
       {!active && (

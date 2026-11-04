@@ -36,6 +36,35 @@ describe('versioned scenarios', () => {
     expect(() => parseScenario({ ...s, steps: [s.steps[0], s.steps[0]] })).toThrow('unique')
     expect(() => parseScenario({ ...s, steps: [...s.steps].reverse() })).toThrow('ordered')
   })
+  it('rejects retired slides and slide steps, and validates meetingContext', () => {
+    const s = parseScenario(valid())
+    expect(() => parseScenario({ ...s, slides: [] })).toThrow('Slides were retired')
+    expect(() =>
+      parseScenario({ ...s, steps: [{ id: 'sl', atMs: 0, kind: 'slide', direction: 'next' }] }),
+    ).toThrow('Slides were retired')
+    expect(parseScenario({ ...s, meetingContext: 'Maya owns rollout' }).meetingContext).toBe(
+      'Maya owns rollout',
+    )
+    expect(() => parseScenario({ ...s, meetingContext: 'x'.repeat(20001) })).toThrow(
+      'meetingContext',
+    )
+    expect(() => parseScenario({ ...s, meetingContext: 5 })).toThrow('meetingContext')
+  })
+  it('checks that meeting context reached answer and next-point requests', () => {
+    const s = parseScenario(valid())
+    s.expectations = [
+      { id: 'a', kind: 'context', contains: 'Maya owns rollout' },
+      { id: 'c', kind: 'context-coach', contains: 'Maya owns rollout' },
+    ]
+    const hit = (kind: 'context' | 'context-coach', text: string) => ({ kind, atMs: 1, text })
+    expect(
+      evaluate(
+        s,
+        [hit('context', 'x Maya owns rollout'), hit('context-coach', 'nope')],
+        new Map(),
+      ).map((c) => c.passed),
+    ).toEqual([true, false])
+  })
   it('rejects unknown fault names, references, and invalid utterance bounds', () => {
     const s = parseScenario(valid())
     expect(() =>

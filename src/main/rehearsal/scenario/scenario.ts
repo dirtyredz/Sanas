@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
-import type { Slide } from '../../../shared/presentation/types'
+import { MEETING_CONTEXT_MAX_CHARS } from '../../../shared/meeting-context'
 import { rubrics, type Rubric } from './semantics'
 
 export type Fault =
@@ -17,7 +17,6 @@ export type Step = { id: string; atMs: number } & (
   | { kind: 'ask'; text: string }
   | { kind: 'detail' }
   | { kind: 'answer-mode'; enabled: boolean }
-  | { kind: 'slide'; direction: 'prev' | 'next' }
   | { kind: 'fault'; fault: Fault; durationMs: number }
 )
 export type CheckKind =
@@ -31,10 +30,12 @@ export type CheckKind =
   | 'busy'
   | 'assistant-error'
   | 'capture-error'
-  | 'slide'
   | 'recording'
   | 'batch'
   | 'coach'
+  // Meeting-context delivery: `contains` must appear in an answer / next-point request's userContent.
+  | 'context'
+  | 'context-coach'
 export interface Expectation {
   id: string
   kind: CheckKind
@@ -53,7 +54,7 @@ export interface Scenario {
   durationMs: number
   steps: Step[]
   expectations: Expectation[]
-  slides?: Slide[]
+  meetingContext?: string
   coach?: boolean
   audio?: string
 }
@@ -78,11 +79,13 @@ const checks: CheckKind[] = [
   'busy',
   'assistant-error',
   'capture-error',
-  'slide',
   'recording',
   'batch',
   'coach',
+  'context',
+  'context-coach',
 ]
+const RETIRED_SLIDES = 'Slides were retired; use meetingContext'
 function object(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value))
     throw new Error('Expected an object')
@@ -110,6 +113,7 @@ export function parseScenario(value: unknown): Scenario {
     !s.expectations.length
   )
     throw new Error('Scenario needs a duration, steps and expectations')
+  if ('slides' in s) throw new Error(RETIRED_SLIDES)
   if (s.coach !== undefined && typeof s.coach !== 'boolean') throw new Error('Invalid coach flag')
   if (s.audio !== undefined) text(s.audio)
   const ids = new Set<string>()
@@ -151,17 +155,13 @@ export function parseScenario(value: unknown): Scenario {
       case 'answer-mode':
         if (typeof step.enabled !== 'boolean') throw new Error('Invalid answer mode')
         break
-      case 'slide':
-        if (!['prev', 'next'].includes(String(step.direction)))
-          throw new Error('Invalid slide direction')
-        break
       case 'fault':
         if (!faults.includes(step.fault as Fault)) throw new Error('Unknown fault')
         milliseconds(step.durationMs)
         if (!step.durationMs) throw new Error('Fault duration must be positive')
         break
       default:
-        throw new Error('Unknown step kind')
+        throw new Error(step.kind === 'slide' ? RETIRED_SLIDES : 'Unknown step kind')
     }
   }
   const expectationIds = new Set<string>()
@@ -188,13 +188,11 @@ export function parseScenario(value: unknown): Scenario {
     if (e.assistant !== undefined && !['canned', 'claude'].includes(String(e.assistant)))
       throw new Error('Invalid expectation assistant')
   }
-  if (s.slides !== undefined) {
-    if (!Array.isArray(s.slides)) throw new Error('Invalid slides')
-    for (const raw of s.slides) {
-      const slide = object(raw)
-      for (const key of ['title', 'talkingPoint', 'script', 'keyFacts'])
-        if (typeof slide[key] !== 'string') throw new Error('Invalid slide field')
-    }
+  if (s.meetingContext !== undefined) {
+    if (typeof s.meetingContext !== 'string' || s.meetingContext.length > MEETING_CONTEXT_MAX_CHARS)
+      throw new Error(
+        `meetingContext must be text of at most ${MEETING_CONTEXT_MAX_CHARS} characters`,
+      )
   }
   return s as unknown as Scenario
 }

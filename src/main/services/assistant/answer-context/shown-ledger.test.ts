@@ -11,20 +11,17 @@ describe('ShownLedger', () => {
     const s = ledger.snapshot()
     expect(s.recent).toEqual(['Typed ask.', 'Screen answer.', 'Next point.']) // last 3 headlines
     expect(s.told.map((t) => t.headline)).toEqual(['Answer one.', 'Typed ask.'])
-    expect(s.coachRecent).toEqual(['Next point.'])
   })
 
-  it('snapshots are copies; clearCoach and reset restart the right lists', () => {
+  it('snapshots are copies; reset restarts every list', () => {
     const ledger = new ShownLedger()
     ledger.record({ text: '**A next point.**', purpose: 'next-point' })
     ledger.record({ text: '**An answer.**', purpose: 'answer' })
     const before = ledger.snapshot()
     ledger.record({ text: '**Later.**', purpose: 'next-point' })
-    expect(before.coachRecent).toEqual(['A next point.'])
-    ledger.clearCoach()
-    expect(ledger.snapshot().coachRecent).toEqual([])
+    expect(before.recent).toEqual(['A next point.', 'An answer.'])
     expect(ledger.snapshot().told).toHaveLength(1)
     ledger.reset()
-    expect(ledger.snapshot()).toEqual({ recent: [], told: [], coachRecent: [] })
+    expect(ledger.snapshot()).toEqual({ recent: [], told: [] })
   })
 })

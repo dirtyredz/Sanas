@@ -3,15 +3,15 @@ import { registerShortcuts } from './registration'
 const settings = {
   overlayHotkey: 'A',
   assistHotkey: 'B',
-  presentationPrevHotkey: 'C',
-  presentationNextHotkey: 'D',
+  composeHotkey: 'C',
+  captureHotkey: 'D',
 }
 it('reports occupied, duplicate and invalid accelerators', () => {
   const callbacks = {
     overlayHotkey: vi.fn(),
     assistHotkey: vi.fn(),
-    presentationPrevHotkey: vi.fn(),
-    presentationNextHotkey: vi.fn(),
+    composeHotkey: vi.fn(),
+    captureHotkey: vi.fn(),
   }
   const status = registerShortcuts(
     (key) => {
@@ -26,9 +26,9 @@ it('reports occupied, duplicate and invalid accelerators', () => {
   expect(status[1].error).toBe('Duplicate shortcut.')
   expect(status[2].error).toBe('invalid')
 })
-it('suppresses repeats and contains synchronous and asynchronous callback failures', async () => {
+it('contains synchronous and asynchronous callback failures; other shortcuts do not debounce', async () => {
   const registered: (() => void)[] = []
-  let now = 0
+  const now = 0
   const report = vi.fn()
   const next = vi.fn()
   registerShortcuts(
@@ -44,16 +44,13 @@ it('suppresses repeats and contains synchronous and asynchronous callback failur
       assistHotkey: async () => {
         throw new Error('async')
       },
-      presentationPrevHotkey: next,
-      presentationNextHotkey: next,
+      composeHotkey: next,
     },
     report,
     () => now,
   )
   registered[2]()
-  registered[3]()
-  now = 200
-  registered[3]()
+  registered[2]()
   expect(next).toHaveBeenCalledTimes(2)
   registered[0]()
   registered[1]()

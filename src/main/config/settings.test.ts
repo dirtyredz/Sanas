@@ -30,8 +30,27 @@ describe('settings defaults', () => {
     expect(settings.whisperMode).toBe('smart')
     expect(settings.overlayWhisperRatio).toBe(0.27)
     expect(settings.overlayHotkey).toBe('Control+Space')
-    expect(settings.presentationPrevHotkey).toBe('CommandOrControl+Alt+PageUp')
-    expect(settings.presentationNextHotkey).toBe('CommandOrControl+Alt+PageDown')
+  })
+
+  it('ignores retired presentation shortcuts and drops them on the next save', () => {
+    file.contents = JSON.stringify({
+      overlayHotkey: 'Control+Space',
+      captureHotkey: 'Control+Alt+K',
+      presentationPrevHotkey: 'Alt+PageUp',
+      presentationNextHotkey: 'Alt+PageDown',
+    })
+    const loaded = loadSettings()
+    expect(loaded).not.toHaveProperty('presentationPrevHotkey')
+    expect(loaded).not.toHaveProperty('presentationNextHotkey')
+    expect(loaded.captureHotkey).toBe('Control+Alt+K') // surviving custom values are kept
+    saveSettings({ overlayOpacity: 0.8 })
+    const written = JSON.parse(file.contents)
+    expect(written).not.toHaveProperty('presentationPrevHotkey')
+    expect(written).not.toHaveProperty('presentationNextHotkey')
+    expect(written).toMatchObject({
+      overlayHotkey: 'Control+Space',
+      captureHotkey: 'Control+Alt+K',
+    })
   })
 
   it('gives a legacy settings file the turn-detection and coaching defaults', () => {

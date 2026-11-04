@@ -23,15 +23,15 @@ describe('overlay navigation', () => {
     const state = run(
       initialNavigation(1),
       { type: 'preferences', open: true },
-      { type: 'select', workspace: 'slide' },
+      { type: 'select', workspace: 'transcript' },
     )
-    expect(state).toMatchObject({ workspace: 'slide', preferencesOpen: false })
+    expect(state).toMatchObject({ workspace: 'transcript', preferencesOpen: false })
   })
 
-  it('a new meeting — deck or not — always returns to Answer', () => {
-    const onSlide = run(initialNavigation(1), { type: 'select', workspace: 'slide' })
-    expect(run(onSlide, { type: 'meeting', meetingId: 2 }).workspace).toBe('answer')
-    expect(run(onSlide, { type: 'meeting', meetingId: null }).workspace).toBe('answer')
+  it('a new meeting always returns to Answer', () => {
+    const onTranscript = run(initialNavigation(1), { type: 'select', workspace: 'transcript' })
+    expect(run(onTranscript, { type: 'meeting', meetingId: 2 }).workspace).toBe('answer')
+    expect(run(onTranscript, { type: 'meeting', meetingId: null }).workspace).toBe('answer')
   })
 
   it('a re-broadcast of the same meeting keeps the chosen workspace', () => {

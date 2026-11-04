@@ -19,7 +19,7 @@ export interface WhisperHistoryState {
 }
 
 export type WhisperHistoryAction =
-  | { type: 'slide' }
+  | { type: 'context-changed' }
   | { type: 'meeting'; meetingId: number | null }
   | { type: 'event'; event: SuggestionEvent; followNewest: boolean; now: number }
   | { type: 'select'; suggestionId: number }
@@ -46,7 +46,7 @@ export function whisperHistoryReducer(
   state: WhisperHistoryState,
   action: WhisperHistoryAction,
 ): WhisperHistoryState {
-  if (action.type === 'slide') {
+  if (action.type === 'context-changed') {
     const items = state.items.filter((item) => item.purpose !== 'next-point')
     return {
       ...state,

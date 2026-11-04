@@ -1,9 +1,7 @@
 // What the meeting has already been shown, kept in one place so production and the eval
-// route a suggestion into the same memories. Three views, each with its own audience:
-//   recent       headlines of every suggestion: what a next point (coach) must not repeat
-//   told         stories the user may have said aloud: what an answer must not re-tell
-//   coachRecent  headlines of next points only: the slide coach's own list, which also
-//                restarts when the slide moves or a voice is relabelled (clearCoach)
+// route a suggestion into the same memories. Two views, each with its own audience:
+//   recent  headlines of every suggestion: what a next point (coach) must not repeat
+//   told    stories the user may have said aloud: what an answer must not re-tell
 
 import type { SuggestionPurpose } from '@shared/types'
 import type { ManualKind } from '@shared/live-controls/types'
@@ -19,35 +17,26 @@ export interface ShownSuggestion {
 export interface ShownSnapshot {
   recent: string[]
   told: ToldStory[]
-  coachRecent: string[]
 }
 
 export class ShownLedger {
   private readonly recent: string[] = []
   private readonly told: ToldStory[] = []
-  private readonly coachRecent: string[] = []
 
   /** Routes one shown suggestion into every memory it belongs to. */
   record(s: ShownSuggestion): void {
     rememberHeadline(this.recent, s.text)
     if (tellsStory(s.purpose, s.manualKind)) rememberStory(this.told, s.text)
-    if (s.purpose === 'next-point') rememberHeadline(this.coachRecent, s.text)
   }
 
   /** Copies, so a request built from them cannot see later records. */
   snapshot(): ShownSnapshot {
-    return { recent: [...this.recent], told: [...this.told], coachRecent: [...this.coachRecent] }
-  }
-
-  /** The slide moved or a voice was relabelled: next points restart their own list. */
-  clearCoach(): void {
-    this.coachRecent.length = 0
+    return { recent: [...this.recent], told: [...this.told] }
   }
 
   /** A new meeting. */
   reset(): void {
     this.recent.length = 0
     this.told.length = 0
-    this.coachRecent.length = 0
   }
 }

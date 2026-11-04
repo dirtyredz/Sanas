@@ -7,8 +7,6 @@ const keys = (overlay: string): Record<HotkeyAction, string> => ({
   assistHotkey: 'Control+Shift+Enter',
   captureHotkey: 'Control+Shift+S',
   composeHotkey: 'Control+Shift+K',
-  presentationPrevHotkey: 'Alt+PageUp',
-  presentationNextHotkey: 'Alt+PageDown',
 })
 
 describe('describeHotkey', () => {

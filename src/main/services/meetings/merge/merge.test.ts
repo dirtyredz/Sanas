@@ -17,10 +17,16 @@ vi.mock('../../../db/repos/meeting/meeting-grounding', () => ({
   }),
 }))
 vi.mock('../../../db/repos/segments', () => ({ maxSpeaker: vi.fn(), reassignSegments: vi.fn() }))
-vi.mock('../../../db/repos/suggestions', () => ({ reassignSuggestions: vi.fn() }))
+vi.mock('../../../db/repos/suggestions', () => ({
+  reassignSuggestions: vi.fn(),
+  shiftSuggestionContextRevisions: vi.fn(),
+}))
 vi.mock('../../../db/repos/speakers', () => ({ reassignSpeakerNames: vi.fn() }))
-vi.mock('../../../db/repos/meeting/meeting-context', () => ({ hasAppliedContext: vi.fn() }))
-vi.mock('../../../db/repos/meeting/meeting-presentation', () => ({ hasPresentation: vi.fn() }))
+vi.mock('../../../db/repos/meeting/meeting-context', () => ({
+  hasMeetingContext: vi.fn(),
+  moveContextHistory: vi.fn(),
+}))
+vi.mock('../../../db/repos/meeting/meeting-presentation', () => ({ hasLegacySlides: vi.fn() }))
 vi.mock('../status/post-processing', () => ({ isPostProcessing: () => false }))
 vi.mock('../remove', () => ({ removeAudioFile: f.remove }))
 import { mergeMeetings } from './merge'

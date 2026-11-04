@@ -40,14 +40,6 @@ export function IconScreen(): React.JSX.Element {
   )
 }
 
-export function IconSlide(): React.JSX.Element {
-  return (
-    <svg {...base}>
-      <path d="M1.8 2.5h12.4M2.8 2.5v7.5h10.4V2.5M8 10v3.5M5.5 13.8 8 11.5l2.5 2.3" />
-    </svg>
-  )
-}
-
 export function IconTranscript(): React.JSX.Element {
   return (
     <svg {...base}>

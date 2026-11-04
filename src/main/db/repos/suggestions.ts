@@ -38,6 +38,19 @@ export function reassignSuggestions(
     .run(toMeetingId, timeOffsetMs, fromMeetingId)
 }
 
+/** Merge: shifts the meeting-context revision each of a meeting's suggestions names by
+ *  `offset` (its context history moved with it), or clears it when `offset` is null (the
+ *  context it is moving next to is not one it was made with). */
+export function shiftSuggestionContextRevisions(meetingId: number, offset: number | null): void {
+  getDb()
+    .prepare(
+      offset === null
+        ? 'UPDATE suggestions SET context_revision = NULL WHERE meeting_id = ?'
+        : 'UPDATE suggestions SET context_revision = context_revision + ? WHERE meeting_id = ? AND context_revision IS NOT NULL',
+    )
+    .run(...(offset === null ? [meetingId] : [offset, meetingId]))
+}
+
 export function insertSuggestion(
   s: {
     meetingId: number

@@ -5,7 +5,6 @@ import {
   IconAsk,
   IconContext,
   IconScreen,
-  IconSlide,
   IconTranscript,
 } from '../../controls/overlay-icons'
 import { WORKSPACE_LABELS } from '../../../lib/overlay-workspaces'
@@ -17,7 +16,6 @@ const ICONS: Record<Workspace, () => React.JSX.Element> = {
   answer: IconAnswer,
   ask: IconAsk,
   screen: IconScreen,
-  slide: IconSlide,
   transcript: IconTranscript,
   context: IconContext,
 }

@@ -4,7 +4,8 @@ import { registerUpdatesIpc } from './updates'
 import { ipcMain } from 'electron'
 import { registerLiveControlsIpc } from './live-controls'
 import { registerScreenCaptureIpc } from './screen-capture'
-import { registerPresentationIpc } from './presentation'
+import { registerPresentationHistoryIpc } from './presentation-history'
+import { registerHotkeysIpc } from './hotkeys'
 import { registerWindowsIpc } from './windows'
 import { IPC } from '@shared/ipc'
 import { loadSettings, saveSettings, toView } from '../config/settings'
@@ -23,6 +24,7 @@ import {
 import {
   optionalText,
   requireBool,
+  requireMeetingStart,
   requireId,
   requireIdList,
   requireJob,
@@ -60,7 +62,8 @@ export function registerIpcHandlers(): void {
   registerJobResumeIpc()
   registerMockInterviewIpc()
   registerUpdatesIpc()
-  registerPresentationIpc()
+  registerPresentationHistoryIpc()
+  registerHotkeysIpc()
   registerLiveControlsIpc()
   registerScreenCaptureIpc()
   registerWindowsIpc()
@@ -76,21 +79,13 @@ export function registerIpcHandlers(): void {
     return view
   })
 
-  ipcMain.handle(
-    IPC.MeetingStart,
-    (_e, jobId: unknown, channels: unknown, usePresentationDeck: unknown, interview: unknown) =>
-      // validate at ingress: an optional job id, and only 1 or 2 are meaningful capture topologies
-      startMeeting(
-        jobId === undefined || jobId === null ? undefined : requireId(jobId, 'job id'),
-        channels === 2 ? 2 : 1,
-        {
-          usePresentationDeck:
-            usePresentationDeck === undefined
-              ? false
-              : requireBool(usePresentationDeck, 'use presentation deck'),
-          interview: interview === undefined ? undefined : requireBool(interview, 'interview'),
-        },
-      ),
+  ipcMain.handle(IPC.MeetingStart, (_e, jobId: unknown, channels: unknown, options: unknown) =>
+    // validate at ingress: an optional job id, and only 1 or 2 are meaningful capture topologies
+    startMeeting(
+      jobId === undefined || jobId === null ? undefined : requireId(jobId, 'job id'),
+      channels === 2 ? 2 : 1,
+      requireMeetingStart(options),
+    ),
   )
   ipcMain.handle(IPC.MeetingGetState, () => currentState())
   ipcMain.handle(IPC.MeetingPause, () => pauseMeeting())

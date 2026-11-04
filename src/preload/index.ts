@@ -15,7 +15,8 @@ import type {
 import type { CaptureAttachResult, CaptureStatus } from '../shared/live-controls/capture'
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC } from '../shared/ipc'
-import type { Slide, PresentationState, PresentationHistory } from '../shared/presentation/types'
+import type { PresentationHistory } from '../shared/presentation/types'
+import type { MeetingStartOptions } from '../shared/meeting-start'
 import type { HotkeyStatus } from '../shared/hotkeys/types'
 import type {
   GlossaryTerm,
@@ -86,22 +87,10 @@ const api = {
       subscribe(IPC.ScreenCaptureStatus, cb),
   },
   hotkeys: { getStatus: (): Promise<HotkeyStatus[]> => ipcRenderer.invoke(IPC.HotkeysStatus) },
+  /** Read-only slide markers of meetings recorded before presentation mode was retired. */
   presentation: {
-    getJobSlides: (id: number): Promise<Slide[]> => ipcRenderer.invoke(IPC.PresentationJobGet, id),
-    replaceJobSlides: (id: number, slides: Slide[]): Promise<Slide[]> =>
-      ipcRenderer.invoke(IPC.PresentationJobReplace, id, slides),
-    getState: (): Promise<PresentationState> => ipcRenderer.invoke(IPC.PresentationState),
-    move: (request: {
-      meetingId: number
-      direction: 'prev' | 'next'
-    }): Promise<PresentationState> => ipcRenderer.invoke(IPC.PresentationMove, request),
     getHistory: (id: number): Promise<PresentationHistory> =>
       ipcRenderer.invoke(IPC.PresentationHistory, id),
-    onChanged: (cb: (state: PresentationState) => void): (() => void) => {
-      const listener = (_e: unknown, state: PresentationState): void => cb(state)
-      ipcRenderer.on(IPC.PresentationChanged, listener)
-      return () => ipcRenderer.removeListener(IPC.PresentationChanged, listener)
-    },
   },
   settings: {
     get: (): Promise<SettingsView> => ipcRenderer.invoke(IPC.SettingsGet),
@@ -135,15 +124,13 @@ const api = {
   },
   meeting: {
     getState: (): Promise<MeetingState> => ipcRenderer.invoke(IPC.MeetingGetState),
-    /** Main snapshots the job's saved resume. `interview` undefined = default (on when the
-     *  job has a saved resume); a boolean is the user's explicit choice. */
+    /** Main snapshots the job's saved resume. `options.interview` undefined = default (on
+     *  when the job has a saved resume); `options.meetingContext` is saved with the meeting. */
     start: (
       jobId?: number,
       channels?: number,
-      usePresentationDeck = false,
-      interview?: boolean,
-    ): Promise<MeetingState> =>
-      ipcRenderer.invoke(IPC.MeetingStart, jobId, channels, usePresentationDeck, interview),
+      options?: MeetingStartOptions,
+    ): Promise<MeetingState> => ipcRenderer.invoke(IPC.MeetingStart, jobId, channels, options),
     /** Stop listening but keep the meeting open; resume continues its clock. */
     pause: (): Promise<MeetingState> => ipcRenderer.invoke(IPC.MeetingPause),
     /** Resume with the capture topology now in hand; main refuses if it changed. */

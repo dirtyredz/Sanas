@@ -17,7 +17,7 @@ function event(
 }
 
 describe('whisper history', () => {
-  it('a slide move removes only coaching and preserves streaming answers and their selection', () => {
+  it('a context change removes only coaching and preserves streaming answers and their selection', () => {
     let state = whisperHistoryReducer(EMPTY_WHISPER_HISTORY, {
       type: 'event',
       event: event(1, 'start', '', 'hotkey'),
@@ -26,11 +26,11 @@ describe('whisper history', () => {
     })
     state = whisperHistoryReducer(state, {
       type: 'event',
-      event: event(2, 'done', 'old slide coach', 'ambient', 'next-point'),
+      event: event(2, 'done', 'old coach', 'ambient', 'next-point'),
       followNewest: false,
       now: 2,
     })
-    state = whisperHistoryReducer(state, { type: 'slide' })
+    state = whisperHistoryReducer(state, { type: 'context-changed' })
     expect(state.items.map((item) => item.suggestionId)).toEqual([1])
     expect(state.items[0].streaming).toBe(true)
     expect(state.selectedId).toBe(1)
@@ -217,7 +217,7 @@ it('preserves persisted sources and linked detail metadata across selection and 
       (i) => i.storedSuggestionId === state.items[1].sourceSuggestionId,
     )!.suggestionId,
   })
-  state = whisperHistoryReducer(state, { type: 'slide' })
+  state = whisperHistoryReducer(state, { type: 'context-changed' })
   expect(state.selectedId).toBe(1)
   expect(state.items).toHaveLength(2)
 })

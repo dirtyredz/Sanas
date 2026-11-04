@@ -1,3 +1,5 @@
+import type { MeetingStartOptions } from '@shared/meeting-start'
+
 type SelectionStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
 export function rememberedJob(
   storage: SelectionStorage,
@@ -18,4 +20,23 @@ export function rememberJob(storage: SelectionStorage, value: string): void {
  *  so an untouched box lets main decide from what is saved at that moment. */
 export function interviewChecked(override: boolean | undefined, jobHasResume: boolean): boolean {
   return override ?? jobHasResume
+}
+
+/** What Live's Start sends: the Interview override (undefined lets main decide) and the
+ *  Meeting context typed before Start, exactly as typed. Whitespace-only text counts as none,
+ *  so it never creates context history (which would block a later merge). */
+export function meetingStartOptions(
+  interviewOverride: boolean | undefined,
+  contextDraft: string,
+): MeetingStartOptions {
+  return {
+    ...(interviewOverride === undefined ? {} : { interview: interviewOverride }),
+    ...(contextDraft.trim() ? { meetingContext: contextDraft } : {}),
+  }
+}
+
+/** The pre-Start context draft after a Start attempt: cleared only once the meeting is
+ *  confirmed live (its text now lives with the meeting); a failed capture or Start keeps it. */
+export function contextDraftAfterStart(draft: string, live: boolean): string {
+  return live ? '' : draft
 }

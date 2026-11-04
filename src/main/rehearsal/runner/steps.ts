@@ -63,12 +63,6 @@ export function createStepExecutor({
       case 'answer-mode':
         await meetings.setAnswerEveryQuestion(meetingId, step.enabled)
         break
-      case 'slide': {
-        const before = meetings.presentationState()
-        const after = await meetings.moveSlide(meetingId, step.direction)
-        evidence.push({ kind: 'slide', atMs: now(), passed: before.revision !== after.revision })
-        break
-      }
       case 'screen': {
         await screens.prepare(step)
         const draft = step.text ? await meetings.attachScreen(meetingId) : undefined

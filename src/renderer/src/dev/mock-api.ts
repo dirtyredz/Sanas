@@ -39,7 +39,7 @@ import {
   transcriptListeners,
   type Listener,
 } from './mock-live-meeting'
-import { beginMockPresentation, endMockPresentation, mockPresentation } from './mock-presentation'
+import { mockPresentation } from './mock-presentation'
 import { mockScreenCapture } from './mock-screen-capture'
 import { mockUpdates } from './mock-updates'
 
@@ -133,21 +133,17 @@ const api: SanasApi = {
   },
   meeting: {
     getState: async () => getMeetingState(),
-    start: async (jobId, channels) => {
+    start: async (jobId, channels, options) => {
       // Unsorted (no job) starts without a resume
       const resume = jobId === undefined ? undefined : jobResumes.get(jobId)
       if (resume) meetingResumes.set(99, resume)
       else meetingResumes.delete(99)
-      beginMockPresentation(99, jobId ?? jobs[0].id)
-      controls.reset(99, settings.answerEveryQuestion)
+      controls.reset(99, settings.answerEveryQuestion, options?.meetingContext ?? '')
       return startScript(99, channels ?? 1)
     },
     pause: async () => pauseScript(),
     resume: async (_channels) => resumeScript(),
-    stop: async () => {
-      endMockPresentation()
-      return stopScript()
-    },
+    stop: async () => stopScript(),
     pinSpeaker: async (speaker, isUser) => pinSpeaker(speaker, isUser),
     sendAudio: () => {},
     onTranscript: on(transcriptListeners),

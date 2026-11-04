@@ -5,6 +5,7 @@ import { sttProvider } from '../stt'
 const created = vi.hoisted(() => ({
   input: {} as {
     practice?: boolean
+    meetingContext?: string
     resume?: { name: string; text: string } | null
     interviewProfile?: string
   },
@@ -18,8 +19,7 @@ const fakes = vi.hoisted(() => ({
   currentMeetingId: null as number | null,
   onTranscript: null as null | ((transcript: Record<string, unknown>) => void),
   liveFinal: vi.fn(),
-  slides: [] as { title: string; talkingPoint: string; script: string; keyFacts: string }[],
-  slideEvents: vi.fn(),
+  begin: vi.fn(),
   hideOverlay: vi.fn(),
   jobResumes: new Map<number, { name: string; text: string }>(),
 }))
@@ -71,10 +71,6 @@ vi.mock('../../db/repos/meeting/meeting-grounding', () => ({
     hasBiography: !!created.input.resume || !!created.input.interviewProfile,
   }),
 }))
-vi.mock('../../db/repos/meeting/meeting-presentation', () => ({
-  getPresentationHistory: () => ({ slides: fakes.slides, events: [] }),
-  insertSlideEvent: fakes.slideEvents,
-}))
 vi.mock('../audio-store', () => ({
   discardRecording: vi.fn(),
   startRecording: vi.fn(),
@@ -108,11 +104,10 @@ vi.mock('./assist/live-session', () => ({
       settingsChanged: vi.fn(),
       start: vi.fn(),
     }
-    begin = vi.fn()
+    begin = fakes.begin
     closing = vi.fn(() => ({ window: [], prompt: '' }))
     final = fakes.liveFinal
     relabel = vi.fn()
-    presentationChanged = vi.fn()
   },
 }))
 vi.mock('../../db/repos/segments', () => ({
@@ -134,8 +129,6 @@ import {
   startMeeting,
   pauseMeeting,
   resumeMeeting,
-  moveSlide,
-  presentationState,
   stopMeeting,
 } from './index'
 
@@ -151,8 +144,7 @@ describe('meeting capture health', () => {
     fakes.currentMeetingId = null
     fakes.onTranscript = null
     fakes.liveFinal.mockClear()
-    fakes.slides = []
-    fakes.slideEvents.mockClear()
+    fakes.begin.mockClear()
   })
 
   it('snapshots the job resume at Start: hints survive pause/resume and later job edits', async () => {
@@ -211,28 +203,26 @@ describe('meeting capture health', () => {
     expect(fakes.hideOverlay).toHaveBeenCalledOnce()
   })
 
-  it('records moves against accepted audio and preserves the cursor across pause/resume', async () => {
-    fakes.slides = ['one', 'two'].map((title) => ({
-      title,
-      talkingPoint: title,
-      script: '',
-      keyFacts: '',
-    }))
-    await startMeeting(undefined, 2)
-    sendAudioChunk(silentLoopbackWithMicSpeech(1000))
-    await pauseMeeting()
-    await moveSlide(7, 'next')
-    sendAudioChunk(silentLoopbackWithMicSpeech(1000)) // paused: ignored
-    await moveSlide(7, 'prev')
-    expect(fakes.slideEvents.mock.calls.map((call) => call[1])).toEqual([
-      { deckVersion: 0, ordinal: 1, revision: 2, tMs: 1000 },
-      { deckVersion: 0, ordinal: 0, revision: 3, tMs: 1000 },
-    ])
-    await resumeMeeting(2)
-    expect(presentationState().revision).toBe(3)
-    await expect(moveSlide(99, 'next')).rejects.toThrow('no longer active')
+  it('saves the Start context with the meeting before assistance or STT begins', async () => {
+    const order: string[] = []
+    fakes.create.mockImplementationOnce((_job, _title, input) => {
+      order.push('create')
+      created.input = input
+      return 7
+    })
+    fakes.begin.mockImplementationOnce(() => order.push('assist'))
+    vi.mocked(sttProvider.start).mockImplementationOnce(async (options) => {
+      order.push('stt')
+      fakes.onTranscript = options.onTranscript as never
+      return { sendAudio: vi.fn(), stop: vi.fn() } as never
+    })
+    await startMeeting(undefined, 1, { meetingContext: 'Agenda: pilot scope', interview: false })
+    expect(created.input.meetingContext).toBe('Agenda: pilot scope')
+    expect(order).toEqual(['create', 'assist', 'stt'])
     await stopMeeting()
-    expect(presentationState().current).toBeNull()
+    await startMeeting(undefined, 1, { practice: true }) // Mock: empty context by default
+    expect(created.input.meetingContext).toBeUndefined()
+    await stopMeeting()
   })
 
   it('keeps coaching fed while the capture warning is active', async () => {
@@ -246,7 +236,7 @@ describe('meeting capture health', () => {
       isFinal: true,
       tStartMs: 0,
       tEndMs: 5_000,
-      text: 'Here is the next part of the presentation.',
+      text: 'Here is the next part of the plan.',
     })
 
     expect(fakes.liveFinal).toHaveBeenCalledOnce()

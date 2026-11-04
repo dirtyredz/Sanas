@@ -4,12 +4,7 @@ const f = vi.hoisted(() => ({
   requests: [] as AssistRequest[],
   answers: [] as string[],
   saveGrounding: vi.fn(() => 1),
-  deck: ['FIRST', 'LATER'].map((title) => ({
-    title,
-    talkingPoint: title,
-    script: title + ' script',
-    keyFacts: '',
-  })),
+  initialContext: '',
 }))
 vi.mock('../../../config/settings', () => ({
   loadSettings: () => ({ anthropicApiKey: 'key', whisperMode: 'smart', coachWhileTalking: false }),
@@ -18,18 +13,8 @@ vi.mock('../../../db/repos/meeting/meeting-grounding', () => ({
   getMeetingGrounding: () => ({ resume: null, interviewProfile: '', hasBiography: false }),
 }))
 vi.mock('../../../db/repos/jobs', () => ({ getJob: () => null, listGlossary: () => [] }))
-vi.mock('../../../db/repos/meeting/meeting-presentation', () => ({
-  getPresentationHistory: () => ({ slides: f.deck, events: [] }),
-}))
 vi.mock('../../../db/repos/meeting/meeting-context', () => ({
-  getMeetingContext: () => ({
-    meetingId: 1,
-    revision: 0,
-    deckVersion: 0,
-    text: '',
-    slides: f.deck,
-    initialSlides: f.deck,
-  }),
+  getMeetingContext: () => ({ meetingId: 1, revision: 0, text: f.initialContext }),
 }))
 vi.mock('../../../db/repos/suggestion-grounding', () => ({
   saveGrounding: f.saveGrounding,
@@ -59,12 +44,10 @@ afterEach(() => {
   f.requests.length = 0
   f.answers.length = 0
   f.saveGrounding.mockClear()
+  f.initialContext = ''
 })
 it('remembers told stories across Answer now and typed lanes and shows them to the next answer', async () => {
-  const session = new LiveSession(
-    () => 100,
-    () => ({ meetingId: 1, revision: 0, count: 0, ordinal: 0, current: null, next: null }),
-  )
+  const session = new LiveSession(() => 100)
   session.begin(1)
   session.final(
     { speaker: 1, isUser: false, text: 'Walk me through the graph.', tStartMs: 0, tEndMs: 900 },
@@ -93,43 +76,28 @@ it('remembers told stories across Answer now and typed lanes and shows them to t
   )
   session.assistance.halt()
 })
-it('allows pre-speech answers and keeps the full cached deck invariant across navigation, with independent summary evidence', async () => {
-  let ordinal = 0
-  const session = new LiveSession(
-    () => 100,
-    () => ({
-      meetingId: 1,
-      count: 2,
-      ordinal,
-      revision: ordinal + 1,
-      current: f.deck[ordinal],
-      next: ordinal ? null : f.deck[1],
-    }),
-  )
+it('answers and coaches from the context saved at Start, with one frozen system prompt', async () => {
+  f.initialContext = 'Attendees: Dana (CFO). Goal: agree pilot scope.'
+  const session = new LiveSession(() => 100)
   session.begin(1)
   session.assistance.answerNow()
   await new Promise((resolve) => setTimeout(resolve, 0))
-  expect(f.requests[0].cacheableContext).toContain('LATER script')
+  expect(f.requests).toHaveLength(0) // nothing to answer before anyone speaks
   session.final(
-    { speaker: 0, isUser: true, text: 'prior words', tStartMs: 0, tEndMs: 10 },
-    { channel: 0, speaker: 0, role: 'user', text: 'prior words', tStartMs: 0, tEndMs: 10 },
+    { speaker: 1, isUser: false, text: 'What is the scope?', tStartMs: 0, tEndMs: 10 },
+    { channel: 0, speaker: 1, role: 'other', text: 'What is the scope?', tStartMs: 0, tEndMs: 10 },
   )
-  ordinal = 1
-  session.presentationChanged(100)
   session.assistance.answerNow()
   await new Promise((resolve) => setTimeout(resolve, 0))
-  expect(f.requests[1].system).toBe(f.requests[0].system)
-  expect(f.requests[1].userContent).toContain('slide 2')
-  expect(session.closing().window[0].text).toBe('prior words')
-  expect(session.closing().prompt).not.toContain('LATER script')
+  expect(f.requests[0].userContent).toContain('<meeting-context>\nAttendees: Dana (CFO).')
+  expect(f.requests[0].cacheableContext).toBeUndefined()
+  expect(f.requests[0].system + f.requests[0].userContent).not.toMatch(/slide|deck/i)
+  expect(session.closing().prompt).toBe(f.requests[0].system)
   session.assistance.halt()
 })
 
 it('admits typed requests while paused, rejects busy/wrong-meeting and avoids audience calls without speech', async () => {
-  const session = new LiveSession(
-    () => 100,
-    () => ({ meetingId: 1, revision: 0, count: 0, ordinal: 0, current: null, next: null }),
-  )
+  const session = new LiveSession(() => 100)
   session.begin(1)
   session.assistance.halt()
   expect(session.request({ meetingId: 1, kind: 'audience' })).toMatchObject({
@@ -147,30 +115,18 @@ it('admits typed requests while paused, rejects busy/wrong-meeting and avoids au
     accepted: false,
     reason: 'busy',
   })
-  session.applyContext({
-    meetingId: 1,
-    revision: 1,
-    deckVersion: 1,
-    text: 'later correction',
-    slides: [],
-    initialSlides: f.deck,
-  })
+  session.applyContext({ meetingId: 1, revision: 1, text: 'later correction' })
   await new Promise((resolve) => setTimeout(resolve, 0))
   expect(f.requests[0].userContent).not.toContain('later correction')
-  expect(f.requests[0].cacheableContext).toContain('LATER script')
   expect(session.request({ meetingId: 1, kind: 'typed', text: 'after edit' })).toEqual({
     accepted: true,
   })
   await new Promise((resolve) => setTimeout(resolve, 0))
   expect(f.requests[1].userContent).toContain('later correction')
-  expect(f.requests[1].cacheableContext).toBe('')
 })
 
-it('resolves grounding on context changes while snapshots only read the cached id', async () => {
-  const session = new LiveSession(
-    () => 100,
-    () => ({ meetingId: 1, revision: 0, count: 0, ordinal: 0, current: null, next: null }),
-  )
+it('saves grounding once at Start; context changes and snapshots only read the cached id', async () => {
+  const session = new LiveSession(() => 100)
   session.begin(1)
   expect(f.saveGrounding).toHaveBeenCalledTimes(1)
 
@@ -183,19 +139,12 @@ it('resolves grounding on context changes while snapshots only read the cached i
   })
   expect(f.saveGrounding).toHaveBeenCalledTimes(1)
 
-  session.applyContext({
-    meetingId: 1,
-    revision: 1,
-    deckVersion: 1,
-    text: 'new context',
-    slides: [],
-    initialSlides: f.deck,
-  })
-  expect(f.saveGrounding).toHaveBeenCalledTimes(2)
-  expect(f.saveGrounding).toHaveBeenLastCalledWith(1, 1, expect.any(String), '')
+  expect(f.saveGrounding).toHaveBeenLastCalledWith(1, 0, expect.any(String), '')
+  session.applyContext({ meetingId: 1, revision: 1, text: 'new context' })
+  expect(f.saveGrounding).toHaveBeenCalledTimes(1)
 
   expect(session.request({ meetingId: 1, kind: 'typed', text: 'cached' })).toEqual({
     accepted: true,
   })
-  expect(f.saveGrounding).toHaveBeenCalledTimes(2)
+  expect(f.saveGrounding).toHaveBeenCalledTimes(1)
 })

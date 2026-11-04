@@ -1,7 +1,7 @@
 // Pure overlay navigation: which workspace is showing and whether preferences are open.
 // Navigation owns neither assistance nor capture state. Nothing but the owner's own action
-// changes the workspace: no slide, context, transcript or answer event is an input here, and
-// every meeting (with or without a deck) opens on Answer.
+// changes the workspace: no context, transcript or answer event is an input here, and
+// every meeting opens on Answer.
 
 import { WORKSPACES, type Workspace } from '../../../lib/overlay-workspaces'
 

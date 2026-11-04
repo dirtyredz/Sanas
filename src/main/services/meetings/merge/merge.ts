@@ -2,14 +2,14 @@ import type { Meeting, MergeResult } from '@shared/types'
 import { getDb } from '../../../db'
 import { applyMerge, deleteMeeting, getMeeting } from '../../../db/repos/meeting/meetings'
 import { maxSpeaker, reassignSegments } from '../../../db/repos/segments'
-import { reassignSuggestions } from '../../../db/repos/suggestions'
+import { reassignSuggestions, shiftSuggestionContextRevisions } from '../../../db/repos/suggestions'
 import { reassignSpeakerNames } from '../../../db/repos/speakers'
 import { isPostProcessing } from '../status/post-processing'
 import { removeAudioFile } from '../remove'
-import { planMerge, type MergePart } from './merge-plan'
+import { CONTEXT_REVISION_OFFSET, planMerge, type MergePart } from './merge-plan'
 import { getMeetingGrounding } from '../../../db/repos/meeting/meeting-grounding'
-import { hasAppliedContext } from '../../../db/repos/meeting/meeting-context'
-import { hasPresentation } from '../../../db/repos/meeting/meeting-presentation'
+import { hasMeetingContext, moveContextHistory } from '../../../db/repos/meeting/meeting-context'
+import { hasLegacySlides } from '../../../db/repos/meeting/meeting-presentation'
 
 // Folds several meeting rows into one — the repair for a conversation that a dropped
 // connection split into pieces before Pause existed, and for any stop/start done by hand.
@@ -24,8 +24,8 @@ import { hasPresentation } from '../../../db/repos/meeting/meeting-presentation'
 function toPart(m: Meeting): MergePart {
   return {
     id: m.id,
-    hasPresentation: hasPresentation(m.id),
-    hasAppliedContext: hasAppliedContext(m.id),
+    hasLegacySlides: hasLegacySlides(m.id),
+    hasMeetingContext: hasMeetingContext(m.id),
     jobId: m.jobId,
     startedAt: m.startedAt,
     endedAt: m.endedAt,
@@ -53,6 +53,11 @@ export function mergeMeetings(ids: number[]): MergeResult {
 
   getDb().transaction(() => {
     for (const step of plan.steps) {
+      // context first: the moved revisions and the suggestions naming them shift together
+      if (step.context === 'move') {
+        moveContextHistory(step.from, plan.keepId, CONTEXT_REVISION_OFFSET, step.timeOffsetMs)
+        shiftSuggestionContextRevisions(step.from, CONTEXT_REVISION_OFFSET)
+      } else if (step.context === 'unlink') shiftSuggestionContextRevisions(step.from, null)
       reassignSegments(step.from, plan.keepId, step.timeOffsetMs, step.speakerOffset)
       reassignSuggestions(step.from, plan.keepId, step.timeOffsetMs)
       reassignSpeakerNames(step.from, plan.keepId, step.speakerOffset)

@@ -27,12 +27,7 @@ import { CAPTURE_WARNING, CaptureHealth } from './capture/capture-health'
 import { LiveSession } from './assist/live-session'
 import { insertSegment, setSpeakerIsUser } from '../../db/repos/segments'
 import { broadcast } from '../../windows/broadcast'
-import {
-  getPresentationHistory,
-  insertSlideEvent,
-} from '../../db/repos/meeting/meeting-presentation'
 import { createMeeting } from '../../db/repos/meeting/meeting-create'
-import { PresentationSession } from './presentation/session'
 import { createLiveControls } from './live-controls'
 import { CaptureRequests } from './assist/capture-requests'
 import { createScreenCapture } from '../screen-capture'
@@ -77,14 +72,8 @@ let persistFailed = false // one warning per meeting, not one per line
 const captureHealth = new CaptureHealth()
 let lastError: string | undefined // the error shown now, kept when only capture health changes
 
-const presentation = new PresentationSession(
-  insertSlideEvent,
-  (state) => broadcast(IPC.PresentationChanged, state),
-  (atMs) => live.presentationChanged(atMs),
-)
 const live = new LiveSession(
   () => audioMsReceived,
-  () => presentation.state(),
   () => setState({ ...currentState(), ...(lastError ? { error: lastError } : {}) }),
 )
 const assistance = live.assistance
@@ -115,7 +104,6 @@ const liveControls = createLiveControls({
   clockMs: () => audioMsReceived,
   live,
   captures,
-  presentation,
 })
 
 export function currentState(): MeetingState {
@@ -326,7 +314,7 @@ export function startMeeting(
       `${request.practice ? 'Practice' : 'Meeting'} ${new Date().toLocaleString()}`,
       {
         practice: request.practice,
-        usePresentationDeck: request.usePresentationDeck,
+        meetingContext: request.meetingContext,
         resume,
         interviewProfile,
       },
@@ -340,7 +328,6 @@ export function startMeeting(
     persistFailed = false
     userSpeakers.clear()
     captureHealth.reset()
-    presentation.begin(id, getPresentationHistory(id).slides)
     live.begin(job) // window, headlines and prompt are per meeting; a resume keeps them
 
     // held back until the recording is open too: sendAudioChunk accepts nothing until the
@@ -354,7 +341,6 @@ export function startMeeting(
       assistance.halt()
       endMeeting(id)
       setLiveMeeting(null)
-      presentation.clear()
       return setState({
         meetingId: null,
         status: 'error',
@@ -489,7 +475,6 @@ export function stopMeeting(): Promise<MeetingState> {
             }),
       ]).then(() => clearPostProcessing(endedId))
     }
-    presentation.clear()
     hideOverlay() // the meeting is over (Stop, overlay Stop, end of a mock); Pause never gets here
     return setState({ meetingId: null, status: 'idle' })
   })
@@ -517,9 +502,6 @@ export const updateMeetingContext = liveControls.updateMeetingContext
 export const requestAssist = liveControls.requestAssist
 export const answerEveryQuestionState = liveControls.answerEveryQuestionState
 export const setAnswerEveryQuestion = liveControls.setAnswerEveryQuestion
-export const presentationState = liveControls.presentationState
-export const moveSlide = liveControls.moveSlide
-export const moveSlideShortcut = liveControls.moveSlideShortcut
 
 /** Settings were saved. Only assistance keys concern live assistance — an overlay resize
  *  also saves settings and must not reset anything. */

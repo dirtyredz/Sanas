@@ -128,6 +128,8 @@ export class RehearsalAssistant implements AssistantProvider {
   slowUntil = 0
   failUntil = 0
   readonly requests: RequestOutcome[] = []
+  /** Outgoing userContent by request id, for the meeting-context delivery checks. */
+  readonly contents = new Map<number, string>()
   private readonly action = new AsyncLocalStorage<string>()
   withAction<T>(id: string, work: () => T): T {
     return this.action.run(id, work)
@@ -146,6 +148,7 @@ export class RehearsalAssistant implements AssistantProvider {
       req.diagnostic?.manualKind ? this.action.getStore() : undefined,
     )
     this.requests.push(record)
+    this.contents.set(record.id, req.userContent)
     const originalDelta = req.onDelta
     req = {
       ...req,

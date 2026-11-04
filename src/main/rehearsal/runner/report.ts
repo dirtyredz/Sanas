@@ -97,6 +97,13 @@ export async function finishReport({
   for (const r of model.requests)
     if (r.purpose !== 'classifier' && r.purpose !== 'summary')
       evidence.push({ kind: 'request', atMs: r.atMs, requestId: r.id })
+  // Meeting-context delivery: expose each answer / next-point request's outgoing content so a
+  // 'context' / 'context-coach' expectation can assert its `contains` token reached the model.
+  for (const r of model.requests) {
+    const kind =
+      r.purpose === 'answer' ? 'context' : r.purpose === 'next-point' ? 'context-coach' : undefined
+    if (kind) evidence.push({ kind, atMs: r.atMs, text: model.contents.get(r.id), requestId: r.id })
+  }
   const checks = evaluate(
     scenario,
     evidence,
