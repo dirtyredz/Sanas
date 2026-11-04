@@ -56,9 +56,10 @@ sanas/
 │   │   ├── system-audio.ts                # display-media loopback handler
 │   │   ├── services/
 │   │   │   ├── stt/                       # SttProvider seam, Deepgram sessions, event normalization and keyterm budget
-│   │   │   ├── turns/                     # pure completed-turn assembly
+│   │   │   ├── turns/                     # pure completed-turn assembly (latest-question.ts: Answer now question pick)
 │   │   │   │   └── transcript-format.ts   # canonical transcript formatting/windowing
 │   │   │   ├── assistant/                 # AssistantProvider seam, Claude, prompts, classifier, triggers, failure-diagnostics.ts
+│   │   │   │   ├── answer-context/        # answer prompt context: background/current-exchange window, told stories (testing/: invented fixture)
 │   │   │   │   ├── coach/                 # next-point policy and prompts
 │   │   │   │   ├── presentation/          # deck context, location hints and restricted coach prompt
 │   │   │   │   └── live-controls/         # typed/detail/audience prompt instructions
@@ -142,6 +143,7 @@ sanas/
 │       └── updates/                        # sanitized updater snapshots
 ├── scripts/                                # repository, release and owner-operation tooling
 │   ├── release/                            # version, package, publish, install and smoke tooling
+│   ├── eval/                               # paid prompt evals (owner-run .ps1 + vitest-run .eval.ts)
 │   ├── rehearsal/                        # runner, credentials and fixture rendering
 │   │   ├── scenarios/                    # scripted/audio JSON
 │   │   └── fixtures/                     # slide.png and standup.png only
@@ -163,6 +165,7 @@ sanas/
 - `src/main/rehearsal/runner/` — options, observer evidence, step execution, clock/audio pump and final checks/report.
 - `src/main/rehearsal/audio/` — PCM replay and socket fault injection.
 - `src/main/rehearsal/screens/` — fixture display, capture verification and coordinate geometry.
+- `scripts/eval/` — paid prompt evals: `topic-switch.ps1` (old vs new prompt builders on an invented fixture; `-DryRun` is free) and `.eval.ts`
 - `scripts/rehearsal/` — owner runner, credentials and offline fixture rendering.
 - `scripts/rehearsal/scenarios/` — versioned scripted/audio scenarios.
 - `scripts/rehearsal/fixtures/` — rehearsal-only slide and standup screens.
@@ -193,8 +196,9 @@ sanas/
 - `src/main/ipc/job-resume/` — `jobs.getResume`/`setResume` (validated by `validateResume`) and `resume-import.ts`, the native PDF/DOCX picker returning an unsaved draft; the renderer never supplies a filesystem path
 - `src/renderer/src/lib/meeting/start-selection.ts` — remembered Start selection persistence and the Interview default/override rule
 - `src/renderer/src/lib/meeting/resume/` — `useJobHasResume`, whether the selected job has a saved resume (Live's Interview default), stale-reply safe
-- `src/main/services/turns/` — pure turn assembly and identity-role types; no I/O or timers
+- `src/main/services/turns/` — pure turn assembly and identity-role types; no I/O or timers; `latest-question.ts` picks the question Answer now answers
 - `src/main/services/assistant/` — the swappable assistant seam and shared answer/classification logic
+- `src/main/services/assistant/answer-context/` — answer prompt context: current-exchange/background window split, told stories; `testing/` holds the invented topic-switch fixture
 - `src/main/services/assistant/coach/` — next-point eligibility policy and coach prompt construction
 - `src/main/services/assistant/presentation/` — presentation answer context, current-location hints and scoped coaching prompts
 - `src/main/services/assistant/live-controls/` — typed, detail, audience and screen-capture request instructions

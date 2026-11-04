@@ -49,10 +49,14 @@ export function storyOf(text: string): ToldStory {
   return { headline: headlineOf(text), detail }
 }
 
-/** Records a shown answer, keeping only as many as the prompt uses. */
+/** Records a shown answer, keeping only as many as the prompt uses. The same headline told
+ *  again (an automatic answer and an Answer now to one question) moves to the end instead of
+ *  taking a second slot. */
 export function rememberStory(stories: ToldStory[], text: string): void {
   const story = storyOf(text)
   if (!story.headline) return
+  const same = stories.findIndex((s) => s.headline === story.headline)
+  if (same >= 0) stories.splice(same, 1)
   stories.push(story)
   if (stories.length > TOLD_STORIES) stories.splice(0, stories.length - TOLD_STORIES)
 }

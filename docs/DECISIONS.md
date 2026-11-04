@@ -2,6 +2,24 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-11-04 — Answers anchor on the current question; earlier talk is background
+
+A real interview review found about a quarter of the technical-section answers dragged an
+earlier topic's technology or project story into a new question ("broken record"). Causes: the
+newest-6,000-char window was mostly the previous topic and nothing labelled it background;
+Answer now carried no focus turn at all; the anti-repeat list was 3 headlines (the stories sat
+in body lines) and absent on Answer now. Now every answer request carries the question it
+answers (Answer now: the latest substantial other-speaker turn, `turns/latest-question.ts`),
+the prompt shows "Earlier conversation (background only)" (2,500 chars) then "Current
+exchange" (question onward, 4,000 chars), the system prompt gains a current-question rule, and
+told stories (last 6, headline + first prose line) replace the headline list in automatic and
+Answer now prompts. Next points follow the same shape and may not introduce a technology,
+employer or project Me has not mentioned. Typed, capture, audience and More-detail prompts are
+unchanged (an explicit ask outranks dedupe). Rejected: shrinking the window (loses follow-up
+context); dropping earlier transcript (follow-ups like "a service like that" need it); deduping
+by headline only (already failed). Checked by the paid `scripts/eval/topic-switch.ps1`
+(invented fixture, old vs new prompts).
+
 ## 2026-11-04 — One slow classifier check must not blank automatic answers
 
 Owner report (v0.1.15): a single 2.5 s Haiku timeout suspended all automatic answers for 30 s and showed the unavailable banner. A failed or slow check now fails closed for its own turn only; suspension (30 s, banner) needs 3 consecutive failures, and any success resets the count. Deadline stays 2.5 s. Rejected: raising the deadline (adds latency to every answer).
@@ -415,8 +433,8 @@ speaking, which some will find distracting, and it costs real calls (~$0.11/hour
 the **ambient lane** rather than adding a third, so one automatic thing streams at a time.
 Delivery is **buffered**: nothing is published unless the whole result is complete and still
 fresh, so a stale or cancelled next point never flashes in. Tradeoff: no token streaming for
-next points. Coverage is bounded to recent context (6,000 chars of transcript plus an excerpt
-of the current explanation) so the call stays fast and cheap.
+next points. Coverage is bounded to recent context (a 2,500-char background transcript, the question being
+answered and the current explanation; it was 6,000 chars of transcript before 2026-11-04) so the call stays fast and cheap.
 
 A mic-only reading of a This-PC meeting labels every voice as the user (GOTCHAS.md), so a
 **capture-health warning** appears when the loopback channel is digitally silent while the mic

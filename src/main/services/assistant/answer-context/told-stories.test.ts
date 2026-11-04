@@ -25,6 +25,10 @@ describe('told stories', () => {
     expect(told[0]).toEqual({ headline: 'Story 2', detail: 'line 2' })
     rememberStory(told, '   ')
     expect(told).toHaveLength(TOLD_STORIES)
+    rememberStory(told, '**Story 3**\nline 3 again')
+    expect(told).toHaveLength(TOLD_STORIES)
+    expect(told.at(-1)).toEqual({ headline: 'Story 3', detail: 'line 3 again' })
+    expect(told.filter((s) => s.headline === 'Story 3')).toHaveLength(1)
   })
 
   it('says do not re-tell, and offers the no-op only to automatic answers', () => {

@@ -338,7 +338,7 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
 - **Promotion compares the whole prompt, not the verdict.** `speculative-answer.ts` rebuilds the
   ordinary request at verdict time and publishes only an identical one (userContent, system,
   context, grounding id/revision, carried turns, model, budget). A new final, a hotkey answer
-  adding a recent headline, or "Answer now" clearing the ledger all make it a mismatch and the
+  adding a told story, or "Answer now" clearing the ledger all make it a mismatch and the
   ordinary request replaces it. Do not loosen this to "the verdict is a question".
 - **Latency clocks differ by origin.** Assistance/run observers stamp their own receipt clocks
   (rehearsal: harness `now()`; Mock: its `now`); turn timing in `live-assistance` is receipt time
@@ -608,3 +608,5 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
 - The overlay (and mock interviewer / shared-screen window) is a BrowserWindow, so `window-all-closed` never fires while one exists: closing the main window used to leave Sanas running (2026-11-04, v0.1.13). The main window's `closed` handler now calls `app.quit()` (`windows/main-window.ts`; `before-quit` still ends a running mock first). A live non-mock meeting is not stopped on quit; its finals are already persisted and `closeDanglingMeetingsAtStartup` closes the row next launch. Stopping a meeting hides the overlay (`stopMeeting` -> `hideOverlay`); pause does not.
 
 - **Live job picker.** `LiveMeetingPage` stays mounted while hidden (App keeps it for live state), so it reloads jobs when `visible` flips true; a mount-only fetch hid jobs created on the Jobs page. The `Unsorted` job row (made by `ensureDefaultJob` for jobId-less meetings) is filtered out of the picker (`lib/meeting/job-choices.ts`) because the blank "Unsorted" option already maps to it. Mock setup keeps the row (it needs a job id).
+
+- **Answer-context window needs line timing.** The current-exchange split uses `tStartMs`; untimed lines before the exchange count as background, and if no line is at/after the question start the section reads "(only the question below so far)". Answer now anchoring depends on turn assembly: backchannel under 3 words never counts as the question and one older than 90 s (`ANSWER_NOW_QUESTION_MS`) is dropped, falling back to the rolling 6,000-char window. Told stories are in-memory per meeting (cleared at begin, not rebuilt from the DB on resume) and live inside `userContent`, so a story added during classification makes a speculative answer fall back to the ordinary path.

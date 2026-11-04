@@ -136,6 +136,21 @@ Mic (getUserMedia, renderer)
   (last ~N seconds/tokens) + the trigger reason and compact output contract. Suggestions
   lead with a bold, ~20-word headline, may include one runnable code block (25 lines max),
   and may end with two short follow-up lines.
+- **Answer prompt context** (`assistant/answer-context/`, `conversation-window.ts`): answers
+  carry the question they answer and two labelled transcript sections: "Earlier conversation
+  (background only ...)" (<= 2,500 chars, `BACKGROUND_CHARS`) and "Current exchange" (from the
+  question's first word, `TriggeringTurn.startMs`, to now; <= 4,000 chars, opening and newest
+  text kept), split by line audio time (`tStartMs >= startMs - 250 ms`). Automatic answers use
+  the classified turn; Answer now / the hotkey use `turns/latest-question.ts`: the latest
+  other-speaker turn of >= 3 words (an open turn from `TurnAssembler.openTurns()` wins and is
+  marked "may be cut off"), else the last completed one within 90 s (`ANSWER_NOW_QUESTION_MS`);
+  with none it falls back to the old rolling 6,000-char window. The system prompt's
+  `CURRENT_QUESTION_RULE` makes earlier turns/answers background. `told-stories.ts` keeps the
+  last 6 answers (headline + first prose line; automatic, Answer now, More detail, typed; not
+  next points, audience or capture) per meeting in `LiveSession`; automatic and Answer now
+  prompts show them as "do not re-tell", and only automatic answers may still decline with
+  `<none>`. Next points use the same background/question/explanation shape and keep the
+  3-headline list.
 - **Answering completed turns:** STT → existing final persistence/broadcast → identity
   resolution → `turns/turn-assembler` → prefilter (`triggers.ts`, loose, local) → classifier →
   freshness/cooldown → suggestion runner. Interims and VAD count only as activity, never text.
@@ -153,7 +168,7 @@ Mic (getUserMedia, renderer)
   stores nothing; deltas are buffered. On the verdict, the ordinary request is rebuilt from the
   state at that moment; the speculation is **promoted** (held text shown at once, then it streams
   and persists like any answer) only if that request is the identical prompt (same verdict
-  wording, window, recent answers, grounding, carried questions, model). Otherwise it is
+  wording, window, told stories, grounding, carried questions, model). Otherwise it is
   **discarded** silently and the ordinary request starts: `none`, failures, `other`, `request`,
   `room`, a moved-on window, a changed ledger, expiry, a dropped candidate, Stop/reconnect/pin
   change, its own provider failure or timeout. Cooldown and ledger coverage are consumed only on
