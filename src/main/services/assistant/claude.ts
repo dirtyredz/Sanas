@@ -57,6 +57,7 @@ export const claudeProvider: AssistantProvider = {
         model: req.model,
         max_tokens: req.maxTokens,
         ...(supportsEffort(req.model) ? { output_config: { effort: req.effort } } : {}),
+        ...(req.thinking === 'off' ? { thinking: { type: 'disabled' as const } } : {}),
         // job context pack is stable for the whole meeting — cache it
         system: [req.system, ...(req.cacheableContext ? [req.cacheableContext] : [])].map(
           (text) => ({

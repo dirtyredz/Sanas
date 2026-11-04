@@ -46,6 +46,43 @@ it('distinguishes deadline and malformed verdict without retaining output', asyn
   expect(malformed).toMatchObject({ reason: 'malformed', diagnostic: { category: 'malformed' } })
   expect(JSON.stringify(malformed)).not.toContain('PRIVATE')
 })
+it('keeps a sanitized error class name and a connection category, never the message', async () => {
+  const named = (name: string, message: string): Error =>
+    Object.assign(new Error(message), { name })
+  const connection = await classifyTurn(
+    {
+      complete: async () => {
+        throw named('APIConnectionError', 'SECRET_KEY PRIVATE_BODY')
+      },
+    },
+    req,
+  )
+  expect(connection).toMatchObject({
+    diagnostic: { category: 'connection', errorName: 'APIConnectionError' },
+  })
+  const budget = await classifyTurn(
+    {
+      complete: async () => {
+        throw named('TokenBudgetError', 'PRIVATE_BODY')
+      },
+    },
+    req,
+  )
+  expect(budget).toMatchObject({
+    reason: 'provider',
+    diagnostic: { category: 'provider', errorName: 'TokenBudgetError' },
+  })
+  const hostile = await classifyTurn(
+    {
+      complete: async () => {
+        throw named('SECRET_KEY has spaces', 'PRIVATE_BODY')
+      },
+    },
+    req,
+  )
+  expect(hostile.status === 'failed' && hostile.diagnostic).not.toHaveProperty('errorName')
+  expect(JSON.stringify([connection, budget, hostile])).not.toMatch(/SECRET|PRIVATE/)
+})
 it('rejects arbitrary request-id text and error bodies', async () => {
   const result = await classifyTurn(
     {

@@ -53,6 +53,9 @@ describe('turn classifier', () => {
       system: CLASSIFIER_SYSTEM,
       maxTokens: 64,
       effort: 'low',
+      // regression: Haiku thinking first exhausts the 64-token budget -> empty text -> every
+      // classification failed and automatic answers were suspended
+      thinking: 'off',
       maxRetries: 0,
       timeoutMs: CLASSIFIER_DEADLINE_MS,
     })

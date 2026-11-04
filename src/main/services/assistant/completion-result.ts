@@ -6,7 +6,9 @@ export interface CompletionResult {
 /** Refuse to turn an exhausted, empty response into a blank whisper. */
 export function completionText(result: CompletionResult): string {
   if (!result.text && result.stopReason === 'max_tokens') {
-    throw new Error('Answer budget used up — raise the max token budget for this answer.')
+    const error = new Error('Answer budget used up — raise the max token budget for this answer.')
+    error.name = 'TokenBudgetError'
+    throw error
   }
   return result.text
 }

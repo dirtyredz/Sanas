@@ -62,6 +62,13 @@ describe('Claude provider request options', () => {
     expect(sdk.calls[0].body).not.toHaveProperty('output_config')
   })
 
+  it('disables thinking only when asked, so short-output calls cannot spend their budget on it', async () => {
+    await claudeProvider.complete({ ...base, thinking: 'off' })
+    await claudeProvider.complete(base)
+    expect(sdk.calls[0].body).toMatchObject({ thinking: { type: 'disabled' } })
+    expect(sdk.calls[1].body).not.toHaveProperty('thinking')
+  })
+
   it('leaves the SDK retry default alone for existing callers', async () => {
     await claudeProvider.complete({ ...base, model: 'claude-sonnet-5-5', timeoutMs: 25_000 })
     expect(sdk.calls[0].options).not.toHaveProperty('maxRetries')

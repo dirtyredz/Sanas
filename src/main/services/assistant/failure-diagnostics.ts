@@ -1,9 +1,18 @@
 /** Only allowlisted transport metadata may cross the provider boundary into diagnostics. */
 export interface FailureDiagnostic {
   category:
-    'authentication' | 'rate-limit' | 'http' | 'provider' | 'timeout' | 'malformed' | 'cancelled'
+    | 'authentication'
+    | 'rate-limit'
+    | 'http'
+    | 'connection'
+    | 'provider'
+    | 'timeout'
+    | 'malformed'
+    | 'cancelled'
   httpStatus?: number
   requestId?: string
+  /** Error class name only (e.g. APIConnectionError, TokenBudgetError) — never a message. */
+  errorName?: string
   model: string
   elapsedMs: number
 }
@@ -25,6 +34,10 @@ export function failureDiagnostic(
     typeof value.request_id === 'string' && /^req_[a-zA-Z0-9]{1,80}$/.test(value.request_id)
       ? value.request_id
       : undefined
+  const errorName =
+    typeof value.name === 'string' && /^[A-Za-z][A-Za-z0-9]{0,63}$/.test(value.name)
+      ? value.name
+      : undefined
   const timeout = value.name === 'APIConnectionTimeoutError' || value.name === 'TimeoutError'
   return {
     category:
@@ -32,15 +45,18 @@ export function failureDiagnostic(
         ? reason
         : timeout
           ? 'timeout'
-          : status === 401 || status === 403
-            ? 'authentication'
-            : status === 429
-              ? 'rate-limit'
-              : status
-                ? 'http'
-                : 'provider',
+          : value.name === 'APIConnectionError'
+            ? 'connection'
+            : status === 401 || status === 403
+              ? 'authentication'
+              : status === 429
+                ? 'rate-limit'
+                : status
+                  ? 'http'
+                  : 'provider',
     ...(status ? { httpStatus: status } : {}),
     ...(requestId ? { requestId } : {}),
+    ...(errorName ? { errorName } : {}),
     model:
       /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,127}$/.test(model) && !model.startsWith('sk-')
         ? model

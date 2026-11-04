@@ -553,3 +553,4 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   from the latest schema must remove the v10 trigger and column before rerunning migrations.
 - Hint normalization must use /\s+/ (whitespace), not /s+/: the latter silently corrupts
   employer and technology names. Profile hints share the corrected resume/glossary helper.
+- Short-output model calls (turn classifier, 64 tokens) must pass `thinking: 'off'`. Haiku 5.5 sometimes emits a thinking block first, spends the whole budget on it, and returns no text (stop_reason max_tokens); the provider throws `TokenBudgetError` with no HTTP status, so every classification failed closed and automatic answers stayed suspended while Answer now (large budget) still worked. Diagnostics now log `errorName` and a `connection` category.
