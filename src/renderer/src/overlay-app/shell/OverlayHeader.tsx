@@ -3,6 +3,7 @@ import type { MeetingState } from '@shared/types'
 import { OverlayButton } from '../controls/OverlayButton'
 import { IconGhost } from '../controls/overlay-icons'
 import type { OverlayWindowState } from './useOverlayWindowState'
+import { OverlayTip } from '../controls/OverlayTip'
 
 const STATUS_LABEL: Record<MeetingState['status'], string> = {
   idle: 'Idle',
@@ -32,15 +33,16 @@ export function OverlayHeader({
       </span>
       <span className="overlay-header-actions">
         {children}
-        <OverlayButton
-          variant="icon"
-          aria-label="Ghost mode"
-          title={`Ghost mode: clicks pass through. Press ${restore} to restore.`}
-          aria-pressed={windowState.ghost}
-          onClick={() => void window.sanas.overlay.setClickThrough(true)}
-        >
-          <IconGhost />
-        </OverlayButton>
+        <OverlayTip text={`Ghost mode: clicks pass through. Press ${restore} to restore.`}>
+          <OverlayButton
+            variant="icon"
+            aria-label="Ghost mode"
+            aria-pressed={windowState.ghost}
+            onClick={() => void window.sanas.overlay.setClickThrough(true)}
+          >
+            <IconGhost />
+          </OverlayButton>
+        </OverlayTip>
       </span>
     </header>
   )

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { PresentationState } from '@shared/presentation/types'
 import { hotkeyLabel } from '../../lib/hotkey-label'
 import { OverlayButton } from '../controls/OverlayButton'
+import { OverlayTip } from '../controls/OverlayTip'
 
 /** Slide: ordinal and title, Previous/Next, the scrolling script and key facts, plus the shared
  *  Ask the audience action. A new revision scrolls back to the top. */
@@ -45,22 +46,24 @@ export function SlidePanel({
         <span className="slide-ordinal">
           Slide {state.ordinal + 1} of {state.count}
         </span>
-        <OverlayButton
-          size="sm"
-          disabled={busy || state.ordinal === 0}
-          title={hints[0] ? `Previous slide (${hints[0]})` : 'Previous slide'}
-          onClick={() => void move('prev')}
-        >
-          Previous
-        </OverlayButton>
-        <OverlayButton
-          size="sm"
-          disabled={busy || state.ordinal + 1 >= state.count}
-          title={hints[1] ? `Next slide (${hints[1]})` : 'Next slide'}
-          onClick={() => void move('next')}
-        >
-          Next
-        </OverlayButton>
+        <OverlayTip text={hints[0] ? `Previous slide (${hints[0]})` : 'Previous slide'}>
+          <OverlayButton
+            size="sm"
+            disabled={busy || state.ordinal === 0}
+            onClick={() => void move('prev')}
+          >
+            Previous
+          </OverlayButton>
+        </OverlayTip>
+        <OverlayTip text={hints[1] ? `Next slide (${hints[1]})` : 'Next slide'}>
+          <OverlayButton
+            size="sm"
+            disabled={busy || state.ordinal + 1 >= state.count}
+            onClick={() => void move('next')}
+          >
+            Next
+          </OverlayButton>
+        </OverlayTip>
       </div>
       {(error || state.error) && (
         <p className="ov-message ov-message--error" role="alert">

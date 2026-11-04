@@ -11,6 +11,7 @@ import { OverlayHeader } from './OverlayHeader'
 import { OverlayPreferences } from './OverlayPreferences'
 import type { OverlaySessionModel } from './OverlaySession'
 import { OverlayStatus } from './OverlayStatus'
+import { OverlayTip } from '../controls/OverlayTip'
 
 /** Window layout: header, persistent status, then the rail beside the answer surface. In a
  *  secondary workspace the answer becomes a preview above a draggable divider; Answer gives
@@ -30,22 +31,23 @@ export function OverlayShell({ session }: { session: OverlaySessionModel }): Rea
     <div className="overlay-panel">
       <OverlayHeader status={meeting.status} windowState={session.windowState}>
         {session.answerEveryQuestion.enabled && (
-          <span className="ov-badge ov-badge--accent" title="Answer every question is on">
-            Every question
-          </span>
+          <OverlayTip text="Answer every question is on">
+            <span className="ov-badge ov-badge--accent">Every question</span>
+          </OverlayTip>
         )}
-        <OverlayButton
-          ref={navigation.preferencesTriggerRef}
-          variant="icon"
-          aria-label="Overlay preferences"
-          title="Overlay preferences (Ctrl+,)"
-          aria-haspopup="dialog"
-          aria-expanded={navigation.preferencesOpen}
-          aria-controls={navigation.preferencesOpen ? 'overlay-preferences' : undefined}
-          onClick={() => setPreferencesOpen(!navigation.preferencesOpen)}
-        >
-          <IconMore />
-        </OverlayButton>
+        <OverlayTip text="Overlay preferences (Ctrl+,)">
+          <OverlayButton
+            ref={navigation.preferencesTriggerRef}
+            variant="icon"
+            aria-label="Overlay preferences"
+            aria-haspopup="dialog"
+            aria-expanded={navigation.preferencesOpen}
+            aria-controls={navigation.preferencesOpen ? 'overlay-preferences' : undefined}
+            onClick={() => setPreferencesOpen(!navigation.preferencesOpen)}
+          >
+            <IconMore />
+          </OverlayButton>
+        </OverlayTip>
       </OverlayHeader>
       {navigation.preferencesOpen && (
         <OverlayPreferences
@@ -78,17 +80,18 @@ export function OverlayShell({ session }: { session: OverlaySessionModel }): Rea
               onReadFull={() => select('answer')}
             />
           </div>
-          <div
-            className="overlay-divider"
-            role="separator"
-            aria-orientation="horizontal"
-            aria-label="Resize the answer preview"
-            title="Drag to resize the answer preview; double-click for the full answer"
-            tabIndex={fullAnswer ? -1 : 0}
-            hidden={fullAnswer}
-            onDoubleClick={() => select('answer')}
-            {...split.dividerProps}
-          />
+          <OverlayTip text="Drag to resize the answer preview; double-click for the full answer">
+            <div
+              className="overlay-divider"
+              role="separator"
+              aria-orientation="horizontal"
+              aria-label="Resize the answer preview"
+              tabIndex={fullAnswer ? -1 : 0}
+              hidden={fullAnswer}
+              onDoubleClick={() => select('answer')}
+              {...split.dividerProps}
+            />
+          </OverlayTip>
           <div className="workspace-region" aria-hidden={fullAnswer} inert={fullAnswer}>
             <OverlayWorkspaces session={session} workspace={navigation.workspace} />
           </div>

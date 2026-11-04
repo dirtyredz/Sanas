@@ -7,6 +7,7 @@ import { OpenSanasButton } from '../controls/OpenSanasButton'
 import { canRequestDetail, findStored } from './manual-requests'
 import type { ManualRequestsModel } from './useManualRequests'
 import type { OverlaySuggestionsModel } from './useOverlaySuggestions'
+import { OverlayTip } from '../controls/OverlayTip'
 
 /** The selected answer: label, Answer now, history, card actions and the body. `preview` is
  *  the compact form shown above a secondary workspace (history and card actions live in the
@@ -42,9 +43,9 @@ export function OverlaySuggestions({
           {selected?.streaming && <span className="cursor" aria-hidden="true" />}
         </span>
         {model.earlierContext && (
-          <span className="ov-badge" title="Grounded in an earlier version of the meeting context">
-            Earlier context
-          </span>
+          <OverlayTip text="Grounded in an earlier version of the meeting context">
+            <span className="ov-badge">Earlier context</span>
+          </OverlayTip>
         )}
         {model.hasNewAnswer && latest && (
           <OverlayButton
@@ -58,14 +59,11 @@ export function OverlaySuggestions({
         )}
         <span className="suggestion-bar-end">
           {!full && selected && onReadFull && (
-            <OverlayButton
-              variant="icon"
-              aria-label="Read the full answer"
-              title="Read the full answer (Ctrl+1)"
-              onClick={onReadFull}
-            >
-              <IconExpand />
-            </OverlayButton>
+            <OverlayTip text="Read the full answer (Ctrl+1)">
+              <OverlayButton variant="icon" aria-label="Read the full answer" onClick={onReadFull}>
+                <IconExpand />
+              </OverlayButton>
+            </OverlayTip>
           )}
           <OverlayButton
             variant="primary"

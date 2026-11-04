@@ -235,7 +235,7 @@ sanas/
 - `src/renderer/src/overlay-app/shell/navigation/` — pure workspace reducer, local shortcut table/dispatch, the rail, and the compose readiness/focus handshake
 - `src/renderer/src/overlay-app/suggestions/` — the answer surface (full and preview), history/reading coordination and manual-request (detail/audience) policy
 - `src/renderer/src/overlay-app/workspaces/` — the frame that keeps secondary views mounted plus one file per view (`OverlayCapturePanel`, `SlidePanel`, `OverlayTranscript`, `OverlayContext`); `composer/` (Ask: draft state, submission, view) is the only subfolder, kept because it has several files
-- `src/renderer/src/overlay-app/controls/` — the overlay's small control wrappers (button variants, labelled textarea, Open Sanas) and local icons; not a general component framework
+- `src/renderer/src/overlay-app/controls/` — the overlay's small control wrappers (button variants, in-DOM `OverlayTip` tooltip, labelled textarea, Open Sanas) and local icons; not a general component framework
 - `src/renderer/src/overlay-app/layout/` — overlay opacity and divider-ratio persistence, divider drag/measurement, and the three resize grips
 - `src/renderer/src/overlay-app/capture/` — Capture screen action, capture status subscription/helpers and the composer's screen-attachment state (hooks only; the Screen view lives in `workspaces/`)
 - `src/renderer/src/audio/` — renderer capture and AudioWorklet downsampling

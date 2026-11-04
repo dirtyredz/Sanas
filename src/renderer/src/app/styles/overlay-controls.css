@@ -416,3 +416,25 @@
   outline-offset: 4px;
   border-radius: 999px;
 }
+
+/* In-DOM tooltip (OverlayTip). Never use title=: native tooltips are separate OS windows that
+   leak into screen shares. Positioned by script; hidden until measured. */
+.ov-tip-host {
+  display: contents;
+}
+.ov-tip {
+  position: fixed;
+  top: 0;
+  left: 0;
+  visibility: hidden;
+  z-index: 1000;
+  max-width: min(260px, calc(100vw - 12px));
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #15171c;
+  color: #f2f3f5;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  font-size: 11px;
+  line-height: 1.35;
+  pointer-events: none;
+}

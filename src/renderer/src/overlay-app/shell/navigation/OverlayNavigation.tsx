@@ -11,6 +11,7 @@ import {
 import { WORKSPACE_LABELS } from '../../../lib/overlay-workspaces'
 import { WORKSPACES, panelId, tabId, type Workspace } from './overlay-navigation'
 import { workspaceShortcut } from './overlay-shortcuts'
+import { OverlayTip } from '../../controls/OverlayTip'
 
 const ICONS: Record<Workspace, () => React.JSX.Element> = {
   answer: IconAnswer,
@@ -49,24 +50,27 @@ export function OverlayNavigation({
           const Icon = ICONS[id]
           const selected = id === workspace
           return (
-            <button
+            <OverlayTip
               key={id}
-              ref={(el) => {
-                refs.current[id] = el
-              }}
-              type="button"
-              role="tab"
-              id={tabId(id)}
-              className="rail-item"
-              aria-selected={selected}
-              aria-controls={panelId(id)}
-              tabIndex={selected ? 0 : -1}
-              title={`${WORKSPACE_LABELS[id]} (${workspaceShortcut(id)} while the overlay is focused)`}
-              onClick={() => onSelect(id)}
+              text={`${WORKSPACE_LABELS[id]} (${workspaceShortcut(id)} while the overlay is focused)`}
             >
-              <Icon />
-              <span className="rail-label">{WORKSPACE_LABELS[id]}</span>
-            </button>
+              <button
+                ref={(el) => {
+                  refs.current[id] = el
+                }}
+                type="button"
+                role="tab"
+                id={tabId(id)}
+                className="rail-item"
+                aria-selected={selected}
+                aria-controls={panelId(id)}
+                tabIndex={selected ? 0 : -1}
+                onClick={() => onSelect(id)}
+              >
+                <Icon />
+                <span className="rail-label">{WORKSPACE_LABELS[id]}</span>
+              </button>
+            </OverlayTip>
           )
         })}
       </div>

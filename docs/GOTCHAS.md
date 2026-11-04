@@ -64,6 +64,13 @@ starts this logger or writes there.
 - **`better-sqlite3` is a native module** — must be rebuilt for Electron's ABI
   (`electron-rebuild` / electron-builder handles it). Version bumps of Electron require
   a rebuild; CI/packaging must not skip it.
+- **Content protection covers only the overlay window itself.** `setContentProtection` hides
+  the overlay from screen shares, but Chromium draws native `title=` tooltips, `<select>`
+  dropdowns, context menus, `<input type=date/color>` pickers and `alert`/`confirm` dialogs
+  as separate OS windows that are NOT protected, so they appear in a share. The overlay uses
+  `controls/OverlayTip` (in-DOM, clamped to the window) and in-DOM controls only;
+  `overlay-app/no-native-popups.test.ts` fails on `title=`, `<select>`, pickers, context-menu
+  handlers and native dialogs. The same applies to any other protected window.
 - **API keys never in the renderer.** All Deepgram/Anthropic traffic goes through the
   main process. `contextIsolation: true`, `nodeIntegration: false`, no exceptions.
 - **The main window's header is its title bar** (`titleBarStyle: 'hidden'` + `titleBarOverlay`).
