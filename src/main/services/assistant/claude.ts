@@ -10,12 +10,28 @@ function supportsEffort(model: string): boolean {
 
 /** Calls whose output budget is at or under this are short, speakable answers (classifier,
  *  points, smart, coach, interviewer). A model that thinks first would spend the whole
- *  budget on reasoning and return no text (stop_reason max_tokens), so thinking is disabled.
+ *  budget on reasoning and return no text (stop_reason max_tokens), so thinking is turned off.
  *  'Full' answers (1200+) keep the model's default. This is the one place the rule lives. */
-export const SHORT_BUDGET_MAX_TOKENS = 500
+const SHORT_BUDGET_MAX_TOKENS = 500
 
-export function thinkingDisabled(req: Pick<AssistRequest, 'maxTokens'>): boolean {
-  return req.maxTokens <= SHORT_BUDGET_MAX_TOKENS
+type ThinkingOff = { type: 'disabled' } | { type: 'between_tools' }
+
+/** The API rejects the wrong "off" value with a 400, so it is per model family:
+ *  Haiku takes 'disabled'; Sonnet takes 'between_tools' (and 400s on 'disabled'); Opus takes
+ *  neither (omit); unknown custom ids get nothing so choosing one cannot break calls. */
+function thinkingOff(model: string): ThinkingOff | undefined {
+  if (/^claude-haiku-5(?:-|$)/.test(model)) return { type: 'disabled' }
+  if (/^claude-sonnet-5(?:-|$)/.test(model)) return { type: 'between_tools' }
+  return undefined
+}
+
+function thinkingParam(req: Pick<AssistRequest, 'model' | 'maxTokens'>): {
+  thinking?: Anthropic.ThinkingConfigParam
+} {
+  if (req.maxTokens > SHORT_BUDGET_MAX_TOKENS) return {}
+  const off = thinkingOff(req.model)
+  // the SDK types lag the API: 'between_tools' is valid on the wire but not in ThinkingConfigParam
+  return off ? { thinking: off as Anthropic.ThinkingConfigParam } : {}
 }
 
 interface SdkRequestOptions {
@@ -67,7 +83,7 @@ export const claudeProvider: AssistantProvider = {
         model: req.model,
         max_tokens: req.maxTokens,
         ...(supportsEffort(req.model) ? { output_config: { effort: req.effort } } : {}),
-        ...(thinkingDisabled(req) ? { thinking: { type: 'disabled' as const } } : {}),
+        ...thinkingParam(req),
         // job context pack is stable for the whole meeting — cache it
         system: [req.system, ...(req.cacheableContext ? [req.cacheableContext] : [])].map(
           (text) => ({

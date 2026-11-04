@@ -318,7 +318,7 @@ main-process code belongs in a responsibility folder above, not beside them.
 - `windows/main-window.ts`, `overlay-window.ts` and `interviewer-window.ts` share webPreferences/load-URL
   boilerplate. The third window has arrived; a shared `createAppWindow(opts)` factory is tracked as a P1 item.
 - `AssistRequest.model`, `AssistRequest.effort` and `AssistRequest.workspaceId` map closely to
-  Anthropic-specific knobs, and the Claude provider derives "no thinking" from a short `maxTokens`
+  Anthropic-specific knobs, and the Claude provider derives a per-model "thinking off" value from a short `maxTokens`
   (`SHORT_BUDGET_MAX_TOKENS` in claude.ts), also Anthropic-specific. A second provider will need its own model settings and interpretation.
 - Live assistance and summaries select `AssistantProvider` through `services/assistant/provider.ts`.
   Normal startup selects Claude; explicit rehearsal startup may install a canned provider.

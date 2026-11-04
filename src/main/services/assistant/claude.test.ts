@@ -67,17 +67,36 @@ describe('Claude provider request options', () => {
     ['points', 220],
     ['smart', 500],
   ])(
-    'disables thinking for the short %s budget so it cannot spend it all on reasoning',
+    'turns thinking off for the short %s budget so it cannot spend it all on reasoning',
     async (_n, maxTokens) => {
       await claudeProvider.complete({ ...base, maxTokens })
       expect(sdk.calls[0].body).toMatchObject({ thinking: { type: 'disabled' } })
     },
   )
 
-  it('keeps default thinking for full answers', async () => {
-    await claudeProvider.complete({ ...base, maxTokens: 1200 })
-    expect(sdk.calls[0].body).not.toHaveProperty('thinking')
+  it('sends between_tools plus effort for Sonnet at a short budget', async () => {
+    await claudeProvider.complete({ ...base, model: 'claude-sonnet-5-5', maxTokens: 220 })
+    expect(sdk.calls[0].body).toMatchObject({
+      thinking: { type: 'between_tools' },
+      output_config: { effort: 'low' },
+    })
   })
+
+  it.each(['claude-opus-5-5', 'my-custom-model'])(
+    'sends no thinking parameter for %s at a short budget (the API would 400)',
+    async (model) => {
+      await claudeProvider.complete({ ...base, model, maxTokens: 220 })
+      expect(sdk.calls[0].body).not.toHaveProperty('thinking')
+    },
+  )
+
+  it.each(['claude-haiku-5-5', 'claude-sonnet-5-5'])(
+    'keeps default thinking for full answers on %s',
+    async (model) => {
+      await claudeProvider.complete({ ...base, model, maxTokens: 1200 })
+      expect(sdk.calls[0].body).not.toHaveProperty('thinking')
+    },
+  )
 
   it('leaves the SDK retry default alone for existing callers', async () => {
     await claudeProvider.complete({ ...base, model: 'claude-sonnet-5-5', timeoutMs: 25_000 })
