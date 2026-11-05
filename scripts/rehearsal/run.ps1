@@ -4,7 +4,7 @@ Run an isolated Sanas meeting rehearsal from any directory.
 .DESCRIPTION
 Builds local sources, launches explicit rehearsal mode, prints each assertion and exits
 with 0 on success or 1 on failure. No downloads. Logs are redacted and timestamped.
-Audio and Claude incur provider charges; missing credentials come from 1Password via op.
+Audio and Claude incur provider charges; missing credentials come from the 1Password vault broker (vault-exec; no prompt).
 .PARAMETER Scenario
 Starter name (client-checkin, meeting-context, standup) or JSON path relative to the repository.
 .PARAMETER Tier

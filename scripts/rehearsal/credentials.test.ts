@@ -15,7 +15,7 @@ function run(body: string): string {
     $env:ANTHROPIC_API_KEY = $null; $env:DEEPGRAM_API_KEY = $null
     function Write-Log([string]$s) { Write-Output $s }
     function Add-LogSecret([string]$s) {}
-    function op { $global:LASTEXITCODE = 0; $script:calls += 1; 'stub-secret' }
+    function Read-VaultSecret([string]$Ref) { $script:calls += 1; 'stub-secret' }
     $script:calls = 0
     ${body}
   `,
@@ -24,7 +24,7 @@ function run(body: string): string {
   )
 }
 windows(
-  'retired live credentials cannot invoke op',
+  'retired live credentials cannot read the vault',
   () => {
     const out = run(
       "try { Get-RehearsalCredentials live canned $false } catch { Write-Output $_.Exception.Message }; Write-Output ('calls=' + $script:calls)",
@@ -35,7 +35,7 @@ windows(
   30000,
 )
 windows(
-  'dry run names only needed references without invoking op',
+  'dry run names only needed references without reading the vault',
   () => {
     const out = run(
       "Get-RehearsalCredentials audio claude $true; Write-Output ('calls=' + $script:calls)",
@@ -66,29 +66,29 @@ windows(
   30000,
 )
 windows(
-  'signed-out op gives an actionable message without exposing output',
+  'a vault-exec failure gives the error code and scope hint without exposing output',
   () => {
     const out = run(`
-    function op { $global:LASTEXITCODE = 1; 'sensitive-error-output' }
+    function Read-VaultSecret([string]$Ref) { throw 'POLICY_DENIED' }
     try { Get-RehearsalCredentials audio canned $false; throw 'unexpected success' }
     catch { Write-Output $_.Exception.Message }
   `)
-    expect(out).toContain('Unlock/sign in')
-    expect(out).not.toContain('sensitive-error-output')
+    expect(out).toContain('POLICY_DENIED')
+    expect(out).toContain('Rotate')
+    expect(out).not.toContain('stub-secret')
   },
   30000,
 )
 windows(
-  'missing op gives a clear message without attempting a read',
+  'an unlocatable vault-exec gives a clear message',
   () => {
     const out = run(`
-    function Get-Command { return $null }
+    $env:ONEPASSWORD_VAULT_MCP_DIR = 'C:\no\such\dir'
+    function Read-VaultSecret([string]$Ref) { Get-VaultExecPath }
     try { Get-RehearsalCredentials scripted claude $false }
     catch { Write-Output $_.Exception.Message }
-    Write-Output ('calls=' + $script:calls)
   `)
-    expect(out).toContain('1Password CLI (op) is missing')
-    expect(out).toContain('calls=0')
+    expect(out).toContain('VAULT_EXEC_FAILED')
   },
   30000,
 )
