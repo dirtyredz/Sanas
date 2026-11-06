@@ -139,6 +139,12 @@ function capSet<K, V>(map: Map<K, V>, key: K, value: V): number {
 const diff = (to?: number, from?: number): number | undefined =>
   to === undefined || from === undefined ? undefined : Math.round(to - from)
 
+/** Whole milliseconds: sub-millisecond monotonic noise is not evidence. */
+const rounded = (a: TurnAssemblyTiming): TurnAssemblyTiming =>
+  Object.fromEntries(
+    Object.entries(a).map(([k, v]) => [k, typeof v === 'number' ? Math.round(v) : v]),
+  ) as unknown as TurnAssemblyTiming
+
 export class LatencyTracker {
   private candidates = new Map<number, Candidate>()
   private runs = new Map<number, Run>()
@@ -161,7 +167,7 @@ export class LatencyTracker {
         id: turn.id,
         closedAt: turn.completedAt,
         completion: turn.reason,
-        assembly: turn.assembly ? { ...turn.assembly } : undefined,
+        assembly: turn.assembly ? rounded(turn.assembly) : undefined,
       })
       return
     }
