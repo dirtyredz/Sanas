@@ -36,7 +36,7 @@ order, punctuation flags), never its text. Prompt, deadline, cancellation and su
 ## 2026-11-05 — Reconnect offsets follow the PCM stream; stalled sockets are retired at 9 s
 
 The old "offset = last final's end" rule stamped speech after a reconnect earlier than the WAV.
-`stt/deepgram-session.ts` now counts every PCM byte handed to `sendAudio` (including chunks dropped
+`stt/deepgram/deepgram-session.ts` now counts every PCM byte handed to `sendAudio` (including chunks dropped
 during backoff) and freezes each socket's offset at the cursor where its first transmitted chunk
 started; it applies to finals, interims, endpoint, utterance-end and VAD alike. A `ResultWatchdog`
 (9 s without any Results while audio flows) retires a silently stalled socket, emits one reset and

@@ -1,10 +1,10 @@
 import type { SuggestionPurpose } from '@shared/types'
 import type { MalformedShape } from '../../assistant/classifier-verdict'
-import { isNoSuggestion } from '../../assistant/compact-contract'
 import type { ProviderUsage } from '../../assistant/types'
 import type { TurnAssemblyTiming, TurnCompletion } from '../../turns/types'
-import type { AssistDiagnostic } from './diagnostics'
-import type { RunObservation } from './run-observation'
+import { subscribeAssistance, type AssistDiagnostic, type DiscardCategory } from './diagnostics'
+import { summarizeLatency, type LatencySummary } from './latency-summary'
+import { subscribeRuns, type RunObservation } from './run-observation'
 import type { SuggestionOutcome } from './suggestion-runner'
 
 // Stage timing for automatic and requested answers, as redacted evidence.
@@ -27,34 +27,6 @@ const OPEN_CAP = 64
 const RECORD_CAP = 200
 
 export type RunPath = 'speculative' | 'ordinary' | 'fallback' | 'manual' | 'next-point'
-
-/** Why an unpublished speculation was discarded, as a bounded category. */
-export type DiscardCategory =
-  | 'prompt-changed'
-  | 'rejected'
-  | 'classifier-failed'
-  | 'ended-before-verdict'
-  | 'overtaken'
-  | 'invalidated'
-  | 'not-generated'
-  | 'no-snapshot'
-  | 'other'
-
-export function discardCategory(reason: string | undefined): DiscardCategory {
-  if (!reason) return 'other'
-  if (reason === 'prompt-changed' || reason === 'ended-before-verdict') return reason
-  if (reason === 'not-generated' || reason === 'no-snapshot') return reason
-  if (reason === 'new-final' || reason === 'user-final') return 'overtaken'
-  if (reason.startsWith('verdict ')) {
-    const v = reason.slice('verdict '.length)
-    return ['timeout', 'cancelled', 'malformed', 'provider'].includes(v)
-      ? 'classifier-failed'
-      : 'rejected'
-  }
-  if (['start', 'stop-or-pause', 'connection-reset', 'identity-change'].includes(reason))
-    return 'invalidated'
-  return 'other'
-}
 
 /** One finished record: an answer run (with its candidate's stages when it had one), or a
  *  candidate the classifier did not accept. */
@@ -101,6 +73,8 @@ interface Candidate {
   classifierStartAt?: number
   classifierEndAt?: number
   verdict?: string
+  /** The classifier named something to answer (the event's typed flag). */
+  accepted?: boolean
   shape?: MalformedShape
   classifierUsage?: ProviderUsage
   speculationRunId?: number
@@ -118,15 +92,6 @@ interface Run {
   firstReadableAt?: number
   discard?: DiscardCategory
   usage?: ProviderUsage
-}
-
-const ACCEPTED = /^(?:question|request|objection) (?:me|room|other)$/
-
-/** True when broadcast text shows something a person can read: not the no-op, not only
- *  Markdown delimiters, filler markers or whitespace. */
-export function hasReadableText(text: string): boolean {
-  if (isNoSuggestion(text)) return false
-  return /[\p{L}\p{N}]/u.test(text.replace(/<none>/gi, ''))
 }
 
 function capSet<K, V>(map: Map<K, V>, key: K, value: V): number {
@@ -159,6 +124,11 @@ export class LatencyTracker {
     return this.finished
   }
 
+  /** Bounded counts and medians over the finished records (see latency-summary.ts). */
+  summary(): LatencySummary {
+    return summarizeLatency(this.finished, this.overflow)
+  }
+
   assist(e: AssistDiagnostic): void {
     const turn = e.turn
     if (e.event === 'turn-completed' && turn) {
@@ -174,7 +144,7 @@ export class LatencyTracker {
     if (e.event === 'speculation-discarded') {
       // its candidate may already be finished (a rejected verdict ends it first)
       const run = e.suggestionId === undefined ? undefined : this.runs.get(e.suggestionId)
-      if (run) run.discard = discardCategory(e.reason)
+      if (run) run.discard = e.discard ?? 'other'
       return
     }
     const c = turn ? this.candidates.get(turn.id) : undefined
@@ -187,8 +157,9 @@ export class LatencyTracker {
       case 'classified':
         c.classifierEndAt = e.at
         c.verdict = typeof e.reason === 'string' ? e.reason.slice(0, 24) : undefined
+        c.accepted = e.accepted === true
         if (e.shape) c.shape = { ...e.shape, tokens: [...e.shape.tokens] }
-        if (!this.accepted(c)) this.finishCandidate(c)
+        if (!c.accepted) this.finishCandidate(c)
         return
       case 'classifier-usage':
         if (e.usage) c.classifierUsage = { ...e.usage }
@@ -231,10 +202,6 @@ export class LatencyTracker {
       this.runs.delete(r.id)
       this.push(this.runRecord(r, e.outcome))
     }
-  }
-
-  private accepted(c: Candidate): boolean {
-    return c.verdict !== undefined && ACCEPTED.test(c.verdict)
   }
 
   private link(runId: number | undefined, c: Candidate, path: RunPath): void {
@@ -309,69 +276,23 @@ export class LatencyTracker {
   }
 }
 
-/** Median of the defined values, or null when there are none. */
-function median(values: (number | undefined)[]): number | null {
-  const v = values.filter((x): x is number => x !== undefined).sort((a, b) => a - b)
-  if (!v.length) return null
-  const mid = Math.floor(v.length / 2)
-  return v.length % 2 ? v[mid] : Math.round((v[mid - 1] + v[mid]) / 2)
-}
-
-function tally(keys: (string | undefined)[]): Record<string, number> {
-  const out: Record<string, number> = {}
-  for (const k of keys) if (k !== undefined) out[k] = (out[k] ?? 0) + 1
-  return out
-}
-
-export interface LatencyGroup {
-  count: number
-  closeToFirstReadableMs: number | null
-  closeToFirstTextMs: number | null
-  classifierMs: number | null
-  lastFinalToFirstReadableMs: number | null
-}
-
-/** Bounded counts and medians for a report: delivered automatic answers grouped by verdict
- *  and completion path; failures, no-ops and discarded work are counted apart, never averaged
- *  in. Each candidate's verdict is counted once (a fallback run repeats it, so it is skipped). */
-export function summarizeLatency(records: readonly LatencyRecord[], overflow = 0) {
-  const runs = records.filter((r) => r.kind === 'run')
-  const automatic = runs.filter((r) => r.classification === 'applies')
-  const key = (r: LatencyRecord): string => `${r.verdict ?? 'unknown'} · ${r.path}`
-  const delivered = automatic.filter((r) => r.outcome === 'done')
-  const groups: Record<string, LatencyGroup> = {}
-  for (const k of new Set(delivered.map(key))) {
-    const g = delivered.filter((r) => key(r) === k)
-    groups[k] = {
-      count: g.length,
-      closeToFirstReadableMs: median(g.map((r) => r.closeToFirstReadableMs)),
-      closeToFirstTextMs: median(g.map((r) => r.closeToFirstTextMs)),
-      classifierMs: median(g.map((r) => r.classifierMs)),
-      lastFinalToFirstReadableMs: median(g.map((r) => r.lastFinalToFirstReadableMs)),
-    }
-  }
-  const speculative = automatic.filter((r) => r.path === 'speculative')
+/** A tracker fed by the process-wide assistance and run observation streams, for callers
+ *  that own the whole process's evidence (main log, rehearsal). `stop` unsubscribes both. */
+export function observeLatency(onRecord?: (record: LatencyRecord) => void): {
+  tracker: LatencyTracker
+  summary(): LatencySummary
+  stop(): void
+} {
+  const tracker = new LatencyTracker(onRecord)
+  const unsubscribe = [
+    subscribeAssistance((e) => tracker.assist(e)),
+    subscribeRuns((e) => tracker.run(e)),
+  ]
   return {
-    records: records.length,
-    overflow,
-    classifier: tally(
-      records
-        .filter((r) => r.kind === 'candidate' || r.path === 'speculative' || r.path === 'ordinary')
-        .map((r) => r.verdict),
-    ),
-    speculation: {
-      started: speculative.length,
-      promoted: speculative.filter((r) => r.outcome !== 'discarded').length,
-      discarded: speculative.filter((r) => r.outcome === 'discarded').length,
-      discardReasons: tally(speculative.map((r) => r.discard)),
+    tracker,
+    summary: () => tracker.summary(),
+    stop: () => {
+      for (const off of unsubscribe) off()
     },
-    fallbacks: automatic.filter((r) => r.path === 'fallback').length,
-    outcomes: tally(runs.map((r) => `${r.path} ${r.outcome}`)),
-    /** Runs that settled without any provider usage: unknown, not zero. */
-    missingUsage: runs.filter((r) => !r.usage).length,
-    partialUsage: runs.filter((r) => r.usage?.partial).length,
-    byVerdictAndPath: groups,
   }
 }
-
-export type LatencySummary = ReturnType<typeof summarizeLatency>

@@ -176,7 +176,7 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   Do NOT use the provider's last transcript time as the cursor: it only moves on a final
   result, so pausing during silence would rewind the clock and the resumed session would
   overlap what was already stored.
-- **Reconnect offsets follow the PCM stream, never finals.** `stt/deepgram-session.ts` counts
+- **Reconnect offsets follow the PCM stream, never finals.** `stt/deepgram/deepgram-session.ts` counts
   every PCM byte handed to `sendAudio` (even chunks dropped during backoff) and freezes each
   socket's offset at the cursor where its first transmitted chunk started, applied to finals,
   interims, endpoint, utterance-end and VAD alike. Live times therefore stay on the WAV clock after
@@ -348,6 +348,11 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   verdict (`formatVerdict`), and a rejected reply only as a shape (category, length bucket, token
   order, flags). Never store or log the reply text. Hedge/negation words (not, or, maybe, ...) must
   keep failing closed.
+- **Latency evidence reads typed flags, never reason text.** `classified` events carry `accepted`
+  (verdict was not `none`/a failure) and `speculation-discarded` events carry `discard` (a
+  `DiscardCategory`, assigned in `speculative-answer.ts`); `latency.ts` must not re-parse `reason`.
+  A new verdict or discard reason is added to `classifier-verdict.ts` / `DiscardReason` so the
+  compiler finds every mapping.
 - **Missing provider usage is unknown, not zero, and cache fields are never summed twice.**
   `ProviderUsage` fields stay separate; total input = inputCount + cacheReadCount +
   cacheWriteCount (Anthropic reports cache reads/writes apart from uncached input). Field names
@@ -559,7 +564,7 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   activity at replay time without changing production turn assembly.
 - Scripted STT emits a final at utterance end with no endpointing latency, so it must model
   endpoint _suppression_: a final gets no boundary when the scenario resumes speech on that
-  channel within `ENDPOINTING_MS` (600, in `stt/endpointing.ts`, used by `stt/deepgram.ts`). Without it, short
+  channel within `ENDPOINTING_MS` (600, in `stt/endpointing.ts`, used by `stt/deepgram/deepgram-stream-url.ts`). Without it, short
   assembly gaps (rapid-qa, stacked pairs) split into separate turns once the grace is shorter
   than the 250 ms boundary tolerance. Its `fromFinal` latencies therefore exclude the acoustic
   600 ms that live speech pays.

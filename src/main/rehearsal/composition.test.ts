@@ -2,7 +2,7 @@ import { expect, it, vi } from 'vitest'
 vi.mock('electron', () => ({ BrowserWindow: { getAllWindows: () => [] } }))
 vi.mock('../services/assistant/claude', () => ({ claudeProvider: { complete: vi.fn() } }))
 import { installRehearsalStt, sttProvider } from '../services/stt'
-import { deepgramProvider } from '../services/stt/deepgram'
+import { deepgramProvider } from '../services/stt/deepgram/deepgram'
 import { installRehearsalAssistant, assistantProvider } from '../services/assistant/provider'
 import { claudeProvider } from '../services/assistant/claude'
 import { observeRehearsalBroadcast } from '../windows/broadcast'

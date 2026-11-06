@@ -1,4 +1,5 @@
-import { observeAssistance, type AssistDiagnostic } from './diagnostics'
+import { observeAssistance, type AssistDiagnostic, type InvalidationReason } from './diagnostics'
+import { formatVerdict, isAcceptedVerdict } from '../../assistant/classifier-verdict'
 import { TurnAssembler } from '../../turns/turn-assembler'
 import {
   ANSWER_NOW_QUESTION_MS,
@@ -315,7 +316,10 @@ export class LiveAssistance {
     }
   }
 
-  private dropCandidate(c: Candidate, reason: string): void {
+  private dropCandidate(
+    c: Candidate,
+    reason: 'new-final' | 'user-final' | InvalidationReason,
+  ): void {
     this.observe({ event: 'invalidated', turn: c.turn, reason })
     c.dropped = true
     c.abort?.abort()
@@ -410,16 +414,12 @@ export class LiveAssistance {
   }
 
   private onClassified(c: Candidate, epoch: number, outcome: ClassifierOutcome): void {
-    const verdict =
-      outcome.status === 'failed'
-        ? outcome.reason
-        : outcome.kind === 'none'
-          ? 'none'
-          : outcome.kind + ' ' + outcome.addressee
+    const verdict = outcome.status === 'failed' ? outcome.reason : formatVerdict(outcome)
     this.observe({
       event: 'classified',
       turn: c.turn,
       reason: verdict,
+      accepted: outcome.status === 'classified' && isAcceptedVerdict(outcome),
       attempt: c.attempt,
       shape: outcome.status === 'failed' ? outcome.shape : undefined,
     })
@@ -463,7 +463,7 @@ export class LiveAssistance {
     // a rejected, failed or stale verdict ends the speculation silently; an accepted one
     // promotes or discards it in tryGenerate
     if (accepted) this.tryGenerate()
-    else this.speculation.discard(c.turn, 'verdict ' + verdict)
+    else this.speculation.discard(c.turn, `verdict ${verdict}`)
     this.tryClassify()
     if (this.active) this.evaluateCoach(this.deps.now())
   }
@@ -658,7 +658,7 @@ export class LiveAssistance {
   }
 
   /** Discards the unfinished turn and every pending automatic request. */
-  private invalidate(reason: string): void {
+  private invalidate(reason: InvalidationReason): void {
     this.observe({ event: 'invalidate', reason })
     this.epoch++
     for (const name of this.timers.keys()) this.clearTimer(name)

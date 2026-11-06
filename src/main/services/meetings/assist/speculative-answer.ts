@@ -1,4 +1,5 @@
-import { observeAssistance } from './diagnostics'
+import { isClassifierFailure } from '../../assistant/classifier-verdict'
+import { observeAssistance, type DiscardCategory, type DiscardReason } from './diagnostics'
 import type { CompletedTurn } from '../../turns/types'
 import { samePrompt } from './suggestion-requests'
 import type { SpeculativeHandle, SuggestionRequest, SuggestionRunner } from './suggestion-runner'
@@ -19,6 +20,28 @@ import type { SpeculativeHandle, SuggestionRequest, SuggestionRunner } from './s
 // Cost: every prefilter candidate classified while the ambient lane is free pays for one
 // answer call, including those the classifier then rejects. The started / promoted /
 // discarded diagnostics make that spend countable.
+
+/** The bounded category of a discard reason, emitted with the event so evidence never
+ *  re-parses the reason string. */
+export function discardCategory(reason: DiscardReason): DiscardCategory {
+  switch (reason) {
+    case 'prompt-changed':
+    case 'ended-before-verdict':
+    case 'not-generated':
+    case 'no-snapshot':
+      return reason
+    case 'new-final':
+    case 'user-final':
+      return 'overtaken'
+    case 'start':
+    case 'stop-or-pause':
+    case 'connection-reset':
+    case 'identity-change':
+      return 'invalidated'
+    default:
+      return isClassifierFailure(reason.slice('verdict '.length)) ? 'classifier-failed' : 'rejected'
+  }
+}
 
 interface Pending {
   turn: CompletedTurn
@@ -72,6 +95,7 @@ export class SpeculativeAnswer {
         turn,
         suggestionId: p.handle.id,
         reason: 'ended-before-verdict',
+        discard: 'ended-before-verdict',
       })
       return null
     }
@@ -85,7 +109,7 @@ export class SpeculativeAnswer {
   }
 
   /** Discards the pending speculation (for `turn` only, when given). Idempotent. */
-  discard(turn: CompletedTurn | null, reason: string): void {
+  discard(turn: CompletedTurn | null, reason: DiscardReason): void {
     const p = this.pending
     if (!p || (turn && p.turn !== turn)) return
     this.pending = null
@@ -96,6 +120,7 @@ export class SpeculativeAnswer {
       turn: p.turn,
       suggestionId: p.handle.id,
       reason,
+      discard: discardCategory(reason),
     })
   }
 

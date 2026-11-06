@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   couldBeNoSuggestion,
+  hasReadableText,
   headlineOf,
   isNoSuggestion,
   recentSuggestionsBlock,
@@ -49,5 +50,19 @@ describe('recently shown suggestions', () => {
     expect(block).not.toContain('- a')
     expect(block).toContain('Do not repeat or re-assert these')
     expect(block).toContain('output exactly <none>')
+  })
+})
+
+describe('readable text', () => {
+  it.each([
+    ['', false],
+    ['<none>', false],
+    ['**', false],
+    ['  __ ** ` ', false],
+    ['⟨⟩', false],
+    ['**Use', true],
+    ['42', true],
+  ])('readable %j → %s', (text, readable) => {
+    expect(hasReadableText(text)).toBe(readable)
   })
 })

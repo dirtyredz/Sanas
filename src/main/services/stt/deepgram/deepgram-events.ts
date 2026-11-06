@@ -1,4 +1,4 @@
-import type { SttSignal, SttTranscript } from './types'
+import type { SttSignal, SttTranscript } from '../types'
 
 // Pure interpretation of Deepgram streaming messages, kept apart from the socket adapter so
 // the protocol rules can be tested without a network:

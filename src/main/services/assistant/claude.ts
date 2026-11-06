@@ -1,7 +1,8 @@
 import Anthropic from '@anthropic-ai/sdk'
 import type { AssistantProvider, AssistRequest } from './types'
 import { completionText } from './completion-result'
-import { reportUsage, usageFromAnthropic } from './provider-usage'
+import { usageFromAnthropic } from './claude-usage'
+import { reportUsage } from './provider-usage'
 
 // Adaptive thinking is model-specific. Opus and Sonnet 5.x accept effort; Haiku and
 // unknown custom model IDs get the portable request shape so choosing one cannot break calls.

@@ -4,7 +4,6 @@ import {
   CLASSIFIER_SYSTEM,
   buildClassifierInput,
   classifyTurn,
-  parseClassification,
   type ClassifyRequest,
 } from './classifier'
 import type { AssistantProvider, AssistRequest } from './types'
@@ -159,11 +158,5 @@ describe('classifier input', () => {
     expect(input).toContain('S2: recent')
     const context = input.slice(input.indexOf('<<<') + 4, input.indexOf('>>>'))
     expect(context.length).toBeLessThanOrEqual(1_501)
-  })
-
-  it('parses a verdict and rejects prose (full matrix in classifier-verdict.test.ts)', () => {
-    expect(parseClassification('none')).toEqual({ kind: 'none' })
-    expect(parseClassification('room question')).toEqual({ kind: 'question', addressee: 'room' })
-    expect(parseClassification('question me or room')).toBeNull()
   })
 })

@@ -2,9 +2,8 @@ import { observeRun } from './run-observation'
 import type { SuggestionMetadata } from '@shared/live-controls/types'
 import type { SuggestionEvent, SuggestionPurpose, SuggestionTrigger } from '@shared/types'
 import type { AssistantProvider, AssistImage } from '../../assistant/types'
-import { isNoSuggestion } from '../../assistant/compact-contract'
+import { hasReadableText, isNoSuggestion } from '../../assistant/compact-contract'
 import { RunPublication } from './run-publication'
-import { hasReadableText } from './latency'
 import { canStartSuggestion, type SuggestionInFlight } from './suggestion-in-flight'
 
 // Runs one suggestion end to end: lane ownership, deadline, provider call, events,

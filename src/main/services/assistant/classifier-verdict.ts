@@ -111,9 +111,28 @@ export function parseClassification(text: string): ClassifierVerdict | null {
   return parsed.ok ? parsed.verdict : null
 }
 
+/** Why a classification produced no verdict. The one list: ClassifierOutcome and the
+ *  evidence vocabulary both read it. */
+export const CLASSIFIER_FAILURE_REASONS = ['timeout', 'cancelled', 'malformed', 'provider'] as const
+export type ClassifierFailureReason = (typeof CLASSIFIER_FAILURE_REASONS)[number]
+
+export function isClassifierFailure(text: string): text is ClassifierFailureReason {
+  return (CLASSIFIER_FAILURE_REASONS as readonly string[]).includes(text)
+}
+
 /** Canonical text for evidence: "none" or "<kind> <addressee>". */
-export function formatVerdict(v: ClassifierVerdict): string {
+export type VerdictLabel = 'none' | `${ResponseKind} ${Addressee}`
+
+export function formatVerdict(v: ClassifierVerdict): VerdictLabel {
   return v.kind === 'none' ? 'none' : `${v.kind} ${v.addressee}`
+}
+
+/** True when the classifier named something to answer (anything but `none`). Whether the
+ *  addressee then permits an answer is the caller's policy, not the verdict's. */
+export function isAcceptedVerdict(
+  v: ClassifierVerdict,
+): v is Exclude<ClassifierVerdict, { kind: 'none' }> {
+  return v.kind !== 'none'
 }
 
 function lengthBucket(n: number): MalformedShape['lengthBucket'] {

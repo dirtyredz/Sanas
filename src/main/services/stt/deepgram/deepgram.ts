@@ -1,12 +1,12 @@
 import { readFileSync } from 'fs'
-import { fitKeyterms } from './keyterm-budget'
+import { fitKeyterms } from '../keyterm-budget'
 import type {
   SttBatchOptions,
   SttBatchTranscript,
   SttProvider,
   SttSession,
   SttSessionOptions,
-} from './types'
+} from '../types'
 import { runText, splitBatchWords, type DeepgramWord } from './deepgram-events'
 import { DeepgramSession } from './deepgram-session'
 

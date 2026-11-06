@@ -1,12 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { CompletedTurn } from '../../turns/types'
-import {
-  LatencyTracker,
-  discardCategory,
-  hasReadableText,
-  summarizeLatency,
-  type LatencyRecord,
-} from './latency'
+import { observeAssistance, type AssistDiagnostic } from './diagnostics'
+import { LatencyTracker, observeLatency } from './latency'
+import { observeRun } from './run-observation'
 
 const SECRET = 'Sarah: our secret project Falcon costs $4M'
 
@@ -52,7 +48,14 @@ function answer(t: LatencyTracker, id: number, at: number, verdict = 'question r
   })
   t.assist({ event: 'speculation-started', turn: c, suggestionId: id, at })
   t.run({ kind: 'first-text', id, meetingId: 1, at: at + 700 })
-  t.assist({ event: 'classified', turn: c, reason: verdict, attempt: id, at: at + 1_200 })
+  t.assist({
+    event: 'classified',
+    turn: c,
+    reason: verdict,
+    accepted: verdict !== 'none',
+    attempt: id,
+    at: at + 1_200,
+  })
   t.run({ kind: 'promoted', id, meetingId: 1, at: at + 1_200 })
   t.run({
     kind: 'visible',
@@ -133,91 +136,72 @@ describe('latency tracker', () => {
     expect(t.overflow).toBe(30 + 36)
   })
 
+  it('finishes a candidate as soon as the typed accepted flag is false', () => {
+    const t = new LatencyTracker()
+    const c = turn(1, 0)
+    t.assist({ event: 'turn-completed', turn: c, at: 0 })
+    t.assist({ event: 'classified', turn: c, reason: 'timeout', accepted: false, at: 5 })
+    expect(t.records()).toEqual([
+      expect.objectContaining({ kind: 'candidate', verdict: 'timeout' }),
+    ])
+  })
+
+  it('takes the discard category from the event, not from the reason text', () => {
+    const t = new LatencyTracker()
+    answer(t, 1, 0)
+    const discard = (e: Partial<AssistDiagnostic>): void =>
+      t.assist({ event: 'speculation-discarded', suggestionId: 2, ...e })
+    t.run({
+      kind: 'begin',
+      id: 2,
+      meetingId: 1,
+      purpose: 'answer',
+      trigger: 'ambient',
+      spans: [],
+      speculative: true,
+      at: 0,
+    })
+    discard({ reason: 'whatever', discard: 'overtaken' })
+    t.run({ kind: 'settled', id: 2, meetingId: 1, outcome: 'discarded', at: 1 })
+    expect(t.records()[1]).toMatchObject({ discard: 'overtaken' })
+  })
+
+  it('observeLatency owns both subscriptions and summarizes', () => {
+    const logged: string[] = []
+    const latency = observeLatency((r) => logged.push(r.kind))
+    const t = latency.tracker
+    expect(t.records()).toEqual([])
+    const c = turn(1, 0)
+    observeAssistance({ event: 'turn-completed', turn: c, at: 0 })
+    observeAssistance({ event: 'classified', turn: c, reason: 'none', accepted: false, at: 5 })
+    observeRun({
+      kind: 'begin',
+      id: 3,
+      meetingId: 1,
+      purpose: 'answer',
+      trigger: 'hotkey',
+      spans: [],
+      at: 0,
+    })
+    observeRun({ kind: 'settled', id: 3, meetingId: 1, outcome: 'done', at: 9 })
+    expect(logged).toEqual(['candidate', 'run'])
+    expect(latency.summary()).toMatchObject({ records: 2, overflow: 0 })
+    latency.stop()
+    observeAssistance({ event: 'turn-completed', turn: turn(2, 0), at: 0 })
+    observeAssistance({
+      event: 'classified',
+      turn: turn(2, 0),
+      reason: 'none',
+      accepted: false,
+      at: 5,
+    })
+    expect(t.records()).toHaveLength(2)
+  })
+
   it('an observer failure never escapes', () => {
     const t = new LatencyTracker(() => {
       throw new Error('log failed')
     })
     expect(() => answer(t, 1, 0)).not.toThrow()
-  })
-})
-
-describe('latency helpers', () => {
-  it.each([
-    ['prompt-changed', 'prompt-changed'],
-    ['verdict none', 'rejected'],
-    ['verdict question other', 'rejected'],
-    ['verdict timeout', 'classifier-failed'],
-    ['verdict malformed', 'classifier-failed'],
-    ['new-final', 'overtaken'],
-    ['stop-or-pause', 'invalidated'],
-    ['ended-before-verdict', 'ended-before-verdict'],
-    ['something new', 'other'],
-  ])('discard reason %j is category %j', (reason, category) => {
-    expect(discardCategory(reason)).toBe(category)
-  })
-
-  it.each([
-    ['', false],
-    ['<none>', false],
-    ['**', false],
-    ['  __ ** ` ', false],
-    ['⟨⟩', false],
-    ['**Use', true],
-    ['42', true],
-  ])('readable %j → %s', (text, readable) => {
-    expect(hasReadableText(text)).toBe(readable)
-  })
-
-  it('summarizes by verdict and path, keeping failures and missing usage apart', () => {
-    const records: LatencyRecord[] = [
-      { kind: 'candidate', classification: 'applies', verdict: 'none' },
-      {
-        kind: 'run',
-        classification: 'applies',
-        path: 'speculative',
-        verdict: 'request room',
-        outcome: 'done',
-        closeToFirstReadableMs: 1_000,
-        usage: { partial: false, outputCount: 3 },
-      },
-      {
-        kind: 'run',
-        classification: 'applies',
-        path: 'speculative',
-        verdict: 'request room',
-        outcome: 'done',
-        closeToFirstReadableMs: 2_000,
-      },
-      {
-        kind: 'run',
-        classification: 'applies',
-        path: 'speculative',
-        verdict: 'question me',
-        outcome: 'discarded',
-        discard: 'prompt-changed',
-      },
-      {
-        kind: 'run',
-        classification: 'applies',
-        path: 'fallback',
-        verdict: 'question me',
-        outcome: 'timeout',
-      },
-    ]
-    const s = summarizeLatency(records, 2)
-    expect(s.byVerdictAndPath).toEqual({
-      'request room · speculative': expect.objectContaining({
-        count: 2,
-        closeToFirstReadableMs: 1_500,
-      }),
-    })
-    expect(s.classifier).toEqual({ none: 1, 'request room': 2, 'question me': 1 })
-    expect(s.speculation).toEqual({
-      started: 3,
-      promoted: 2,
-      discarded: 1,
-      discardReasons: { 'prompt-changed': 1 },
-    })
-    expect(s).toMatchObject({ fallbacks: 1, missingUsage: 3, overflow: 2 })
   })
 })

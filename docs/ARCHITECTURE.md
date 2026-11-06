@@ -118,12 +118,12 @@ Mic (getUserMedia, renderer)
   feeds the AI also improves STT accuracy on jargon. (This is the _sanas_ double meaning.)
 - Interim results update the overlay live; only finals are persisted.
 - Turn signals: `endpointing=600`, `utterance_end_ms=1000`, `vad_events=true`.
-  `stt/deepgram-events.ts` normalizes messages into finals plus `SttSignal`s (boundary:
+  `stt/deepgram/deepgram-events.ts` normalizes messages into finals plus `SttSignal`s (boundary:
   endpoint | utterance-end; activity; reset) via the optional `onSignal` callback. A stereo
   message with a missing or invalid channel index becomes channel -1 (identity unknown), never
   implicitly "Me". An unexpected socket close emits `reset` at once, before the backoff.
-- **Session and clock:** `stt/deepgram-session.ts` (`DeepgramSession`) owns the socket lifecycle;
-  `deepgram.ts` keeps the provider and batch transcription; `deepgram-stream-url.ts` builds the URL.
+- **Session and clock:** `stt/deepgram/deepgram-session.ts` (`DeepgramSession`) owns the socket lifecycle;
+  `deepgram.ts` (same folder) keeps the provider and batch transcription; `deepgram-stream-url.ts` builds the URL.
   Every PCM byte handed to `sendAudio` is counted (including chunks dropped in reconnect backoff)
   from `startOffsetMs`; each socket's offset is frozen where its first transmitted chunk started and
   applied to finals, interims, endpoint, utterance-end and VAD, so timestamps stay on the meeting
@@ -190,7 +190,7 @@ Mic (getUserMedia, renderer)
   promotion. "Answer now" uses the hotkey lane and never touches it. Every speculation is a paid
   call, discarded or not: `speculation-started/promoted/discarded` diagnostics and a
   `speculative answers: started=… promoted=… discarded=…` log line at Stop count it.
-- **Stage timing evidence** (`assist/diagnostics.ts`, `run-observation.ts`, `assist/latency.ts`):
+- **Stage timing evidence** (`assist/diagnostics.ts`, `run-observation.ts`, `assist/latency.ts`, `assist/latency-summary.ts`):
   assistance events `turn-completed`, `classifier-started`, `classified`, `answer-started` (with the
   `suggestionId`, correlating candidate turn and run) and the speculation events; run events
   `begin`, `first-text`, `first-readable`, `promoted`, `visible`, `usage`, `settled`, each stamped
@@ -204,7 +204,7 @@ Mic (getUserMedia, renderer)
   overflow counter, nothing per delta. "First readable" = first broadcast whose visible text has a
   letter or digit (a proxy for visibility, not renderer paint). Manual and next-point runs are
   classified `n/a`. `live-session.ts` logs one `[sanas] latency {json}` line per finished record;
-  `summarizeLatency()` gives counts and medians per "verdict · path", speculation
+  `summarizeLatency()` (latency-summary.ts) gives counts and medians per "verdict · path", speculation
   started/promoted/discarded with reasons, fallbacks, outcomes and missing/partial usage.
   Rehearsal reports and Mock feed the same tracker (docs/REHEARSAL.md).
 - **Turn-close measurement:** `TurnFinal` carries optional `ingressAt` (monotonic, stamped in
@@ -214,7 +214,7 @@ Mic (getUserMedia, renderer)
   audio clock). Measurement only; no timing policy changed.
 - **Provider usage:** `AssistRequest.onUsage` (optional, best effort, once per call) reports
   `ProviderUsage` {inputCount, outputCount, cacheReadCount, cacheWriteCount, partial}
-  (`assistant/provider-usage.ts`; `claude.ts` reports final usage, or partial from the stream
+  (`assistant/claude-usage.ts` extracts, `provider-usage.ts` reports best effort; `claude.ts` reports final usage, or partial from the stream
   snapshot on failure/cancel). Missing fields are unknown, never zero; total input =
   input + cacheRead + cacheWrite. No token-count API calls.
 - **Clocks:** durations use the monotonic receipt clock; audio-clock values (STT/WAV time,

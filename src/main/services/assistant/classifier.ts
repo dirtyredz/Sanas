@@ -4,12 +4,12 @@ import { boundedExcerpt } from './excerpt'
 import {
   malformedShape,
   parseVerdict,
+  type ClassifierFailureReason,
   type ClassifierVerdict,
   type MalformedShape,
 } from './classifier-verdict'
 
 export type { Addressee, ClassifierVerdict, ResponseKind } from './classifier-verdict'
-export { parseClassification } from './classifier-verdict'
 
 // "Does this completed turn need a response from Me?" — one bounded, non-streaming call
 // through the AssistantProvider seam. It FAILS CLOSED: a timeout, cancellation, provider
@@ -25,7 +25,7 @@ export type ClassifierOutcome =
   | ({ status: 'classified' } & ClassifierVerdict)
   | {
       status: 'failed'
-      reason: 'timeout' | 'cancelled' | 'malformed' | 'provider'
+      reason: ClassifierFailureReason
       diagnostic?: FailureDiagnostic
       /** Malformed only: what the reply looked like, never its text. */
       shape?: MalformedShape

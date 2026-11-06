@@ -1,7 +1,8 @@
 import type { MockResult } from '@shared/mock-interview/types'
 import type { RunObservation } from '../meetings/assist/run-observation'
 import type { AssistDiagnostic } from '../meetings/assist/diagnostics'
-import { LatencyTracker, summarizeLatency, type LatencySummary } from '../meetings/assist/latency'
+import { LatencyTracker } from '../meetings/assist/latency'
+import type { LatencySummary } from '../meetings/assist/latency-summary'
 import { proseWords, type RequestOutcome } from '../meetings/assist/outcomes'
 import { liveTurnReport, type LiveTransition } from './report'
 import type { LiveEngine } from './turns/engine'
@@ -18,7 +19,7 @@ export class MockEvidence {
     this.latency.assist(event)
   }
   latencySummary(): LatencySummary {
-    return summarizeLatency(this.latency.records(), this.latency.overflow)
+    return this.latency.summary()
   }
   run(event: RunObservation): void {
     this.latency.run(event)

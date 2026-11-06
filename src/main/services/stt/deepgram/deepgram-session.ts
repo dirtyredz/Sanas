@@ -1,7 +1,7 @@
 import { normalizeDeepgramMessage } from './deepgram-events'
 import { buildStreamUrl } from './deepgram-stream-url'
 import { ResultWatchdog } from './deepgram-watchdog'
-import type { SttSession, SttSessionOptions, SttSignal } from './types'
+import type { SttSession, SttSessionOptions, SttSignal } from '../types'
 
 // Deepgram streaming over Node's built-in WebSocket.
 // Auth rides the Sec-WebSocket-Protocol header (['token', key]) since the

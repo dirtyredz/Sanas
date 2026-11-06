@@ -48,7 +48,7 @@ export async function runRehearsal(): Promise<void> {
     const now = (): number => Math.round(performance.now() - epoch)
     const stt = new ScriptedSttProvider(scenario.steps)
     const { installRehearsalStt } = await import('../services/stt')
-    const { deepgramProvider } = await import('../services/stt/deepgram')
+    const { deepgramProvider } = await import('../services/stt/deepgram/deepgram')
     let batchCount = 0
     const selectedStt = tier === 'audio' ? deepgramProvider : stt
     installRehearsalStt({

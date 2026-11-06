@@ -1,5 +1,5 @@
-import { ENDPOINTING_MS } from './endpointing'
-import { fitKeyterms } from './keyterm-budget'
+import { ENDPOINTING_MS } from '../endpointing'
+import { fitKeyterms } from '../keyterm-budget'
 
 const WS_BASE = 'wss://api.deepgram.com/v1/listen'
 

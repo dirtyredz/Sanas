@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DeepgramSession } from './deepgram-session'
-import type { SttSessionOptions, SttSignal, SttTranscript } from './types'
+import type { SttSessionOptions, SttSignal, SttTranscript } from '../types'
 
 // A fake WebSocket: no network. Tests drive open/message/close by hand.
 type Listener = (ev: unknown) => void

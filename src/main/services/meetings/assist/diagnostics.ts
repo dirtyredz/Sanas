@@ -1,6 +1,37 @@
-import type { MalformedShape } from '../../assistant/classifier-verdict'
+import type {
+  ClassifierFailureReason,
+  MalformedShape,
+  VerdictLabel,
+} from '../../assistant/classifier-verdict'
 import type { ProviderUsage } from '../../assistant/types'
 import type { CompletedTurn } from '../../turns/types'
+
+/** Why a speculation was discarded: the source's own reason (also the event's `reason`). */
+export type DiscardReason =
+  | 'prompt-changed'
+  | 'ended-before-verdict'
+  | 'not-generated'
+  | 'no-snapshot'
+  | 'new-final'
+  | 'user-final'
+  | InvalidationReason
+  | `verdict ${VerdictLabel | ClassifierFailureReason}`
+
+/** A lifecycle change that drops the candidate and its speculation. */
+export type InvalidationReason = 'start' | 'stop-or-pause' | 'connection-reset' | 'identity-change'
+
+/** A discarded speculation's reason as a bounded category (latency evidence). */
+export type DiscardCategory =
+  | 'prompt-changed'
+  | 'rejected'
+  | 'classifier-failed'
+  | 'ended-before-verdict'
+  | 'overtaken'
+  | 'invalidated'
+  | 'not-generated'
+  | 'no-snapshot'
+  /** Settled as discarded with no discard event seen. */
+  | 'other'
 
 /** Optional local observation only. No decisions, timers, IPC, keys or persistence. The turn
  *  carries transcript text: consumers copy allowlisted fields, never the event wholesale. */
@@ -19,6 +50,10 @@ export interface AssistDiagnostic {
   shape?: MalformedShape
   /** classifier-usage: what the classifier call consumed. */
   usage?: ProviderUsage
+  /** classified only: the verdict named something to answer (not `none`, not a failure). */
+  accepted?: boolean
+  /** speculation-discarded only: the category of `reason`, assigned where it was discarded. */
+  discard?: DiscardCategory
 }
 let observer: ((event: AssistDiagnostic) => void) | undefined
 export function observeRehearsalAssistance(next?: (event: AssistDiagnostic) => void): void {
