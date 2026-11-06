@@ -70,6 +70,7 @@ export function setup(over: Partial<AssistSettings> = {}, opts: { speculate?: bo
     hold: () => holds++,
     release: () => holds--,
     log: () => undefined,
+    now: () => Date.now(), // the same fake clock as the coordinator, for stage evidence
   })
   const window: { speaker: number; isUser: boolean; text: string; tStartMs?: number }[] = []
   const recent: string[] = []

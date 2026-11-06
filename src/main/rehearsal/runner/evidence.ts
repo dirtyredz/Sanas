@@ -4,7 +4,12 @@ import type { Evidence } from '../scenario/assertions'
 import type { Scenario } from '../scenario/scenario'
 import type { RehearsalAssistant } from '../outcomes/providers'
 import { turnSteps } from '../outcomes/outcomes'
-import { observeRehearsalAssistance } from '../../services/meetings/assist/diagnostics'
+import {
+  observeRehearsalAssistance,
+  subscribeAssistance,
+} from '../../services/meetings/assist/diagnostics'
+import { subscribeRuns } from '../../services/meetings/assist/run-observation'
+import { LatencyTracker, summarizeLatency } from '../../services/meetings/assist/latency'
 import { observeRehearsalBroadcast } from '../../windows/broadcast'
 export function collectEvidence(scenario: Scenario, model: RehearsalAssistant, now: () => number) {
   const evidence: Evidence[] = []
@@ -18,6 +23,12 @@ export function collectEvidence(scenario: Scenario, model: RehearsalAssistant, n
     reason?: string
     suggestionId?: number
   }[] = []
+  // the same redacted stage records the main log gets (ids, enums, durations, usage only)
+  const latency = new LatencyTracker()
+  const stopLatency = [
+    subscribeAssistance((e) => latency.assist(e)),
+    subscribeRuns((e) => latency.run(e)),
+  ]
   observeRehearsalAssistance((e) => {
     const stepIds = e.turn ? turnSteps(scenario.steps, [e.turn]) : []
     if (e.event === 'turn-completed') for (const id of stepIds) turnCompletions.set(id, now())
@@ -72,7 +83,12 @@ export function collectEvidence(scenario: Scenario, model: RehearsalAssistant, n
     get interimCount() {
       return interimCount
     },
+    latency: () => ({
+      summary: summarizeLatency(latency.records(), latency.overflow),
+      records: latency.records(),
+    }),
     close() {
+      for (const stop of stopLatency) stop()
       observeRehearsalBroadcast(undefined)
       observeRehearsalAssistance(undefined)
     },

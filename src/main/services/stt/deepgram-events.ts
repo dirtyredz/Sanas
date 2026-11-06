@@ -24,19 +24,21 @@ export type DeepgramEvent =
 export interface NormalizeContext {
   /** Channels the session was opened with (1 = mono, 2 = mic + loopback). */
   channels: number
-  /** Added to the connection's clock, which restarts at zero per socket. */
+  /** Added to the connection's clock, which restarts at zero per socket. May be fractional;
+   *  rounding happens once, on the sum. */
   offsetMs: number
 }
 
 export interface NormalizedMessage {
   events: DeepgramEvent[]
-  /** Latest absolute end time of a FINAL word in this message, if any (reconnect offset). */
-  finalEndMs: number | null
+  /** True when the message parsed as a `Results` message, even with an empty transcript.
+   *  The stall watchdog counts these as proof the socket is still answering. */
+  results: boolean
   /** Set when a multichannel message had no usable channel index (diagnostic only). */
   invalidChannel: boolean
 }
 
-const EMPTY: NormalizedMessage = { events: [], finalEndMs: null, invalidChannel: false }
+const EMPTY: NormalizedMessage = { events: [], results: false, invalidChannel: false }
 
 /** Split a final result into contiguous same-speaker runs so one segment never
  *  flattens two voices into one label. */
@@ -96,7 +98,7 @@ export function normalizeDeepgramMessage(data: string, ctx: NormalizeContext): N
   } catch {
     return EMPTY
   }
-  const t = (sec: number): number => Math.round(sec * 1000) + ctx.offsetMs
+  const t = (sec: number): number => Math.round(sec * 1000 + ctx.offsetMs)
 
   if (msg.type === 'UtteranceEnd') {
     // -1 means "no word yet on this connection": not a usable boundary
@@ -110,7 +112,7 @@ export function normalizeDeepgramMessage(data: string, ctx: NormalizeContext): N
           signal: { kind: 'boundary', channel, atMs: t(lastWordEnd), source: 'utterance-end' },
         },
       ],
-      finalEndMs: null,
+      results: false,
       invalidChannel: invalid,
     }
   }
@@ -120,7 +122,7 @@ export function normalizeDeepgramMessage(data: string, ctx: NormalizeContext): N
     const { channel, invalid } = channelOf(msg.channel, ctx.channels)
     return {
       events: [{ type: 'signal', signal: { kind: 'activity', channel, atMs: t(msg.timestamp) } }],
-      finalEndMs: null,
+      results: false,
       invalidChannel: invalid,
     }
   }
@@ -140,7 +142,6 @@ export function normalizeDeepgramMessage(data: string, ctx: NormalizeContext): N
     resultStart !== null && resultDuration !== null ? resultStart + resultDuration : null
 
   const events: DeepgramEvent[] = []
-  let finalEndMs: number | null = null
 
   if (text) {
     if (!isFinal) {
@@ -166,11 +167,9 @@ export function normalizeDeepgramMessage(data: string, ctx: NormalizeContext): N
           text,
         },
       })
-      if (resultEnd !== null) finalEndMs = tEndMs
     } else {
       for (const run of splitBySpeaker(words)) {
         const tEndMs = t(run[run.length - 1].end)
-        finalEndMs = Math.max(finalEndMs ?? tEndMs, tEndMs)
         events.push({
           type: 'transcript',
           transcript: {
@@ -196,5 +195,5 @@ export function normalizeDeepgramMessage(data: string, ctx: NormalizeContext): N
     }
   }
 
-  return { events, finalEndMs, invalidChannel: invalid && events.length > 0 }
+  return { events, results: true, invalidChannel: invalid && events.length > 0 }
 }

@@ -18,13 +18,17 @@ import { clearPostProcessing, markPostProcessing } from '../status/post-processi
 import { LiveAssistance } from './live-assistance'
 import { SuggestionRunner } from './suggestion-runner'
 import { MeetingPrompts } from './meeting-prompts'
+import { subscribeAssistance } from './diagnostics'
+import { subscribeRuns } from './run-observation'
+import { LatencyTracker } from './latency'
 
 // The live-assist side of the running meeting, assembled in one place: the rolling
 // transcript window the prompts read, the headlines and stories already shown (so prompts do
 // not repeat them), the job's system prompt, and the SuggestionRunner + LiveAssistance pair
 // wired to the provider, the DB and the windows. The meeting orchestrator (../index.ts)
 // owns lifecycle, STT and the audio clock; it hands this the identity-resolved finals and
-// drives `assistance` with lifecycle calls.
+// drives `assistance` with lifecycle calls. Stage timing (./latency.ts) goes to the main
+// log as one redacted line per finished answer or rejected candidate.
 
 const WINDOW_LINES = 200 // rolling finals kept for prompt assembly
 
@@ -35,6 +39,9 @@ export class LiveSession {
   private readonly runner: SuggestionRunner
   private snapshot: () => AssistSnapshot | null = () => null
   private readonly prompts = new MeetingPrompts()
+  private readonly latency = new LatencyTracker((record) =>
+    console.warn(`[sanas] latency ${JSON.stringify(record)}`),
+  )
 
   /** `clockMs` is the meeting's audio clock, so suggestions line up with the transcript. */
   constructor(
@@ -53,7 +60,10 @@ export class LiveSession {
       hold: markPostProcessing,
       release: clearPostProcessing,
       log: (message) => console.warn(`[sanas] ${message}`),
+      now: () => performance.now(),
     }))
+    subscribeAssistance((e) => this.latency.assist(e))
+    subscribeRuns((e) => this.latency.run(e))
     this.assistance = new LiveAssistance({
       now: () => performance.now(),
       setTimer: (fn, ms) => setTimeout(fn, ms),

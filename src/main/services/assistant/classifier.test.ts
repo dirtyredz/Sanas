@@ -73,23 +73,27 @@ describe('turn classifier', () => {
     })
   })
 
-  it.each([
-    '',
-    'question',
-    'Question me',
-    'question  me',
-    'question everyone',
-    'none room',
-    'question me.',
-    'question me because they asked',
-    'yes',
-  ])('fails closed on malformed output %j', async (text) => {
-    const { p } = provider(async () => text)
-    await expect(classifyTurn(p, request())).resolves.toMatchObject({
-      status: 'failed',
-      reason: 'malformed',
-    })
-  })
+  it.each(['', 'question', 'question everyone', 'none room', 'question me or room', 'yes'])(
+    'fails closed on malformed output %j, keeping only its shape',
+    async (text) => {
+      const { p } = provider(async () => text)
+      const out = await classifyTurn(p, request())
+      expect(out).toMatchObject({ status: 'failed', reason: 'malformed' })
+      expect(out).toHaveProperty('shape.rejection')
+    },
+  )
+
+  it.each(['Question me', 'question  me', 'question me.', 'me, question'])(
+    'accepts an unambiguous verdict in any case, spacing or order: %j',
+    async (text) => {
+      const { p } = provider(async () => text)
+      await expect(classifyTurn(p, request())).resolves.toEqual({
+        status: 'classified',
+        kind: 'question',
+        addressee: 'me',
+      })
+    },
+  )
 
   it('fails closed when the provider rejects, without retrying', async () => {
     const { p, calls } = provider(async () => {
@@ -157,8 +161,9 @@ describe('classifier input', () => {
     expect(context.length).toBeLessThanOrEqual(1_501)
   })
 
-  it('parses strictly', () => {
+  it('parses a verdict and rejects prose (full matrix in classifier-verdict.test.ts)', () => {
     expect(parseClassification('none')).toEqual({ kind: 'none' })
-    expect(parseClassification('NONE')).toBeNull()
+    expect(parseClassification('room question')).toEqual({ kind: 'question', addressee: 'room' })
+    expect(parseClassification('question me or room')).toBeNull()
   })
 })

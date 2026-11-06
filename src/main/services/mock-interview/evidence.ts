@@ -1,15 +1,27 @@
 import type { MockResult } from '@shared/mock-interview/types'
 import type { RunObservation } from '../meetings/assist/run-observation'
+import type { AssistDiagnostic } from '../meetings/assist/diagnostics'
+import { LatencyTracker, summarizeLatency, type LatencySummary } from '../meetings/assist/latency'
 import { proseWords, type RequestOutcome } from '../meetings/assist/outcomes'
 import { liveTurnReport, type LiveTransition } from './report'
 import type { LiveEngine } from './turns/engine'
 
-/** Keeps only metadata and counts; Sanas answer text never enters the interviewer. */
+/** Keeps only metadata and counts; Sanas answer text never enters the interviewer. Stage
+ *  timing (the same redacted records the main log gets) is kept for a diagnostic summary,
+ *  discarded speculations and their usage included; the practice result does not show it. */
 export class MockEvidence {
   readonly requests: RequestOutcome[] = []
   readonly transitions: LiveTransition[] = []
+  private readonly latency = new LatencyTracker()
   constructor(private now: () => number) {}
+  assist(event: AssistDiagnostic): void {
+    this.latency.assist(event)
+  }
+  latencySummary(): LatencySummary {
+    return summarizeLatency(this.latency.records(), this.latency.overflow)
+  }
   run(event: RunObservation): void {
+    this.latency.run(event)
     if (event.kind === 'begin') {
       this.requests.push({
         id: event.id,
@@ -27,7 +39,8 @@ export class MockEvidence {
     const r = this.requests.find((r) => r.id === id)
     if (!r) return
     if (event.kind === 'first-text') r.firstDeltaMs ??= this.now()
-    else if (event.kind === 'promoted') return
+    else if (event.kind === 'usage') r.usage = { ...event.usage }
+    else if (event.kind === 'promoted' || event.kind === 'first-readable') return
     else if (event.kind === 'settled' && event.outcome === 'discarded') {
       // an unpublished speculation was never an answer: it stays out of the per-question
       // report (its count lives in the assistance transitions)

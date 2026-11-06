@@ -134,6 +134,7 @@ export async function runRehearsal(): Promise<void> {
         discarded: transitions.filter((t) => t.event === 'speculation-discarded').length,
       },
       admissions,
+      latency: collected.latency(),
       finalReceipts: Object.fromEntries(finalReceipts),
       turnCompletions: Object.fromEntries(turnCompletions),
       captures: screens.captures.map(({ base64, ...c }) => ({

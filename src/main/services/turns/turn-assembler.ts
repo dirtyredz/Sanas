@@ -1,4 +1,10 @@
-import type { CompletedTurn, IdentityRole, TurnCompletion, TurnFinal } from './types'
+import type {
+  CompletedTurn,
+  IdentityRole,
+  TurnAssemblyTiming,
+  TurnCompletion,
+  TurnFinal,
+} from './types'
 
 // Pure turn assembly: finals in, completed turns out. Owns no timers and calls no APIs —
 // the caller passes receipt time (`now`, monotonic ms) and calls `tick` when
@@ -14,6 +20,10 @@ import type { CompletedTurn, IdentityRole, TurnCompletion, TurnFinal } from './t
 //    cannot complete twice;
 //  - with no usable boundary, a turn closes after a stretch without advancing speech;
 //  - reset discards everything unfinished (pause, stop, reconnect, identity change).
+//
+// Each completed turn also carries timing evidence (`assembly`) for the turn-close delay:
+// ingress → assembly, boundary → close, timer lateness and boundary counters. It is measured
+// only; nothing here reads it back.
 
 /** Kept short: it adds to every answer's latency (DECISIONS 2026-11-04, was 350). */
 export const CONTINUATION_GRACE_MS = 150
@@ -26,6 +36,7 @@ const TAIL_CHARS = TURN_TEXT_CAP - HEAD_CHARS - OMISSION.length
  *  is always further away than this: endpointing needs 600 ms of silence. */
 const BOUNDARY_TOLERANCE_MS = 250
 const SEEN_LIMIT = 400
+const COUNTER_CAP = 999
 
 interface OpenTurn {
   id: number
@@ -43,6 +54,42 @@ interface OpenTurn {
   completeAt: number | null
   completeSource: 'endpoint' | 'utterance-end' | null
   boundaryAtMs: number
+  timing: OpenTiming
+}
+
+/** Raw stamps behind TurnAssemblyTiming. */
+interface OpenTiming {
+  lastFinalAt: number
+  lastFinalIngressAt?: number
+  lastFinalAudioGapMs?: number
+  boundaryReceivedAt?: number
+  boundariesAccepted: number
+  boundariesRejected: number
+  completionsCancelled: number
+}
+
+const bump = (n: number): number => Math.min(COUNTER_CAP, n + 1)
+
+function assemblyTiming(t: OpenTurn, reason: TurnCompletion, now: number): TurnAssemblyTiming {
+  const m = t.timing
+  const out: TurnAssemblyTiming = {
+    lastFinalToCloseMs: now - m.lastFinalAt,
+    boundariesAccepted: m.boundariesAccepted,
+    boundariesRejected: m.boundariesRejected,
+    completionsCancelled: m.completionsCancelled,
+  }
+  if (m.lastFinalIngressAt !== undefined)
+    out.ingressToAssemblyMs = m.lastFinalAt - m.lastFinalIngressAt
+  if (m.lastFinalAudioGapMs !== undefined) out.audioCursorGapMs = m.lastFinalAudioGapMs
+  const byBoundary = reason === 'endpoint' || reason === 'utterance-end'
+  if (byBoundary && m.boundaryReceivedAt !== undefined && t.completeAt !== null) {
+    out.boundarySource = reason
+    out.boundaryToCloseMs = now - m.boundaryReceivedAt
+    out.timerLatenessMs = now - t.completeAt
+  } else if (reason === 'silence') {
+    out.timerLatenessMs = now - (t.lastAdvanceAt + SILENCE_FALLBACK_MS)
+  }
+  return out
 }
 
 /** An unfinished turn as seen from outside: no completion state. */
@@ -97,6 +144,7 @@ export class TurnAssembler {
     const t = ch.open as OpenTurn
     ch.open = null
     return {
+      assembly: assemblyTiming(t, reason, now),
       id: t.id,
       channel: t.channel,
       speaker: t.speaker,
@@ -146,6 +194,12 @@ export class TurnAssembler {
         completeAt: null,
         completeSource: null,
         boundaryAtMs: Number.NEGATIVE_INFINITY,
+        timing: {
+          lastFinalAt: now,
+          boundariesAccepted: 0,
+          boundariesRejected: 0,
+          completionsCancelled: 0,
+        },
       }
     }
     const turn = ch.open
@@ -155,10 +209,15 @@ export class TurnAssembler {
     turn.words += wordCount(text)
     turn.fragments++
     turn.lastAdvanceAt = now
+    turn.timing.lastFinalAt = now
+    turn.timing.lastFinalIngressAt = f.ingressAt
+    turn.timing.lastFinalAudioGapMs =
+      f.audioCursorMs === undefined ? undefined : f.audioCursorMs - f.tEndMs
     ch.speechMs = Math.max(ch.speechMs, f.tEndMs)
     if (turn.completeAt !== null && f.tEndMs > turn.boundaryAtMs + BOUNDARY_TOLERANCE_MS) {
       turn.completeAt = null // the speaker carried on past the boundary
       turn.completeSource = null
+      turn.timing.completionsCancelled = bump(turn.timing.completionsCancelled)
     }
     return { accepted: true, completed: out }
   }
@@ -174,6 +233,7 @@ export class TurnAssembler {
     if (turn.completeAt !== null && atMs > turn.boundaryAtMs + BOUNDARY_TOLERANCE_MS) {
       turn.completeAt = null
       turn.completeSource = null
+      turn.timing.completionsCancelled = bump(turn.timing.completionsCancelled)
     }
   }
 
@@ -182,11 +242,16 @@ export class TurnAssembler {
     const ch = this.channels.get(channel)
     const turn = ch?.open
     if (!ch || !turn) return // nothing open: a duplicate, or speech we never saw
-    if (ch.speechMs > atMs + BOUNDARY_TOLERANCE_MS) return // older than newer speech
-    if (turn.completeAt !== null) return // already scheduled
+    // older than newer speech, or a completion is already scheduled
+    if (ch.speechMs > atMs + BOUNDARY_TOLERANCE_MS || turn.completeAt !== null) {
+      turn.timing.boundariesRejected = bump(turn.timing.boundariesRejected)
+      return
+    }
     turn.completeAt = now + CONTINUATION_GRACE_MS
     turn.completeSource = source
     turn.boundaryAtMs = atMs
+    turn.timing.boundaryReceivedAt = now
+    turn.timing.boundariesAccepted = bump(turn.timing.boundariesAccepted)
   }
 
   /** Completes every turn whose grace or silence fallback has run out. */

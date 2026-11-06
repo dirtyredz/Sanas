@@ -90,13 +90,13 @@ describe('speculative answer: timing (injected provider times, not live)', () =>
 })
 
 describe('speculative answer: promotion', () => {
-  it('starts with the classifier, unpublished, using the ordinary question-me prompt', async () => {
+  it('starts with the classifier, unpublished, using the neutral automatic prompt', async () => {
     const t = speculating()
     await otherTurn(t.assist, 'How do you make a linked list?', 0, 1_000)
     expect(t.classifications).toHaveLength(1)
     expect(t.generations).toHaveLength(1)
     expect(t.generations[0].req.userContent).toContain(
-      'Respond to this completed turn (a question):\nS2: How do you make a linked list?',
+      'Respond to this completed turn:\nS2: How do you make a linked list?',
     )
     t.generations[0].req.onDelta?.('**Use nodes** with a next pointer.')
     await vi.advanceTimersByTimeAsync(0)
@@ -195,17 +195,15 @@ describe('speculative answer: rejection is silent', () => {
     await nothingLeaked(t)
   })
 
-  it.each([
-    ['request me', { kind: 'request', addressee: 'me' }, 'a request'],
-    ['question room', { kind: 'question', addressee: 'room' }, 'put to the room'],
-  ] as const)('%s: discards it and starts the ordinary answer', async (_, v, wording) => {
+  it('question other under Answer every question: discards it for the reference answer', async () => {
     const t = speculating()
-    await otherTurn(t.assist, 'So any questions about the models?', 0, 1_500)
+    t.assist.setAnswerEveryQuestion(true)
+    await otherTurn(t.assist, 'Sam, what do you think?', 0, 1_500)
     t.generations[0].req.onDelta?.('**Speculated text.**')
-    await t.classify(0, { status: 'classified', ...v })
+    await t.classify(0, { status: 'classified', kind: 'question', addressee: 'other' })
     expect(t.generations).toHaveLength(2)
     expect(t.generations[0].req.signal?.aborted).toBe(true)
-    expect(t.generations[1].req.userContent).toContain(wording)
+    expect(t.generations[1].req.userContent).toContain('It was put to another participant.')
     expect(t.events).toEqual([]) // the speculated text never showed
     t.generations[1].req.onDelta?.('**Ordinary answer.**')
     expect(t.events.map((e) => e.text)).toEqual(['', '**Ordinary answer.**'])

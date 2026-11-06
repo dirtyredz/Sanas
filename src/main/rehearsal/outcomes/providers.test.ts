@@ -135,7 +135,7 @@ it('uses the actual image request and forwards real provider calls without inven
   expect(p.requests.at(-1)?.imageDigest).toBe(imageDigest('actual-bytes'))
   const complete = vi.fn().mockResolvedValue('real answer')
   expect(await new RehearsalAssistant(() => 0, { complete }).complete(req)).toBe('real answer')
-  expect(complete).toHaveBeenCalledWith(req)
+  expect(complete).toHaveBeenCalledWith({ ...req, onUsage: expect.any(Function) })
 })
 it('supports delay, abort and failure without leaking timers', async () => {
   vi.useFakeTimers()

@@ -112,8 +112,6 @@ it.each([true, false])('assembles concrete behavioural policy with resume = %s',
       turn: {
         speaker: 'S1',
         text: 'Tell me about a recent project you owned and the impact you had.',
-        kind: 'request',
-        addressee: 'me',
       },
     },
   )

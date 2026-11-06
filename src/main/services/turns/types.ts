@@ -16,6 +16,11 @@ export interface TurnFinal {
   tStartMs: number
   tEndMs: number
   text: string
+  /** Monotonic time the provider message carrying it reached the meeting, before it was
+   *  persisted (evidence only). */
+  ingressAt?: number
+  /** The meeting's audio clock (PCM received) at that moment (evidence only). */
+  audioCursorMs?: number
 }
 
 export type TurnCompletion = 'endpoint' | 'utterance-end' | 'silence' | 'speaker-change'
@@ -36,6 +41,30 @@ export interface CompletedTurn {
   /** Receipt time (monotonic, ms) the turn completed. */
   completedAt: number
   reason: TurnCompletion
+  /** How the turn came to close, as timing evidence. Never drives policy. */
+  assembly?: TurnAssemblyTiming
+}
+
+/** Turn-close timing for one completed turn (monotonic ms unless named audio). Each field is
+ *  absent when it does not apply (no boundary, no ingress stamp, a speaker-change close). */
+export interface TurnAssemblyTiming {
+  /** Ingress of the last final → the assembler receiving it (synchronous persistence etc.). */
+  ingressToAssemblyMs?: number
+  /** The assembler receiving the last final → the turn closing. */
+  lastFinalToCloseMs: number
+  /** The accepted boundary's receipt → the turn closing (grace plus timer lateness). */
+  boundaryToCloseMs?: number
+  /** How late the completion timer fired after its deadline. */
+  timerLatenessMs?: number
+  boundarySource?: 'endpoint' | 'utterance-end'
+  /** Boundaries accepted, rejected as stale/duplicate, and pending completions cancelled by
+   *  advancing speech, over the turn's life (capped counters). */
+  boundariesAccepted: number
+  boundariesRejected: number
+  completionsCancelled: number
+  /** PROXY, audio clock: how far captured audio had run past the last final's end when that
+   *  final arrived. Not speech-end latency; never mixed with monotonic times. */
+  audioCursorGapMs?: number
 }
 
 /** What happened in response to one input: turns that completed because of it. */

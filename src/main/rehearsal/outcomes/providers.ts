@@ -1,6 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import type { AssistantProvider, AssistRequest } from '../../services/assistant/types'
-import { CLASSIFIER_SYSTEM, parseClassification } from '../../services/assistant/classifier'
+import { CLASSIFIER_SYSTEM } from '../../services/assistant/classifier'
+import { formatVerdict, parseClassification } from '../../services/assistant/classifier-verdict'
 import type {
   SttProvider,
   SttSession,
@@ -150,6 +151,7 @@ export class RehearsalAssistant implements AssistantProvider {
     this.requests.push(record)
     this.contents.set(record.id, req.userContent)
     const originalDelta = req.onDelta
+    const originalUsage = req.onUsage
     req = {
       ...req,
       onDelta: originalDelta
@@ -158,6 +160,11 @@ export class RehearsalAssistant implements AssistantProvider {
             originalDelta(text)
           }
         : undefined,
+      // a real provider's usage, recorded and passed on; canned replies have none (unknown)
+      onUsage: (usage) => {
+        record.usage = { ...usage }
+        originalUsage?.(usage)
+      },
     }
     try {
       const delay = Math.max(0, this.slowUntil - this.now())
@@ -191,8 +198,11 @@ export class RehearsalAssistant implements AssistantProvider {
       record.answer = answer
       record.completedMs = this.now()
       record.status = isNoSuggestion(answer) ? 'declined' : 'completed'
-      if (req.system === CLASSIFIER_SYSTEM)
-        record.classifier = parseClassification(answer) ? answer.trim() : 'malformed'
+      if (req.system === CLASSIFIER_SYSTEM) {
+        // canonical only: tolerant parsing must not carry surrounding provider prose into evidence
+        const verdict = parseClassification(answer)
+        record.classifier = verdict ? formatVerdict(verdict) : 'malformed'
+      }
       return answer
     } catch {
       record.completedMs = this.now()

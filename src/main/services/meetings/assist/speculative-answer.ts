@@ -6,21 +6,19 @@ import type { SpeculativeHandle, SuggestionRequest, SuggestionRunner } from './s
 // The one automatic answer started BEFORE the classifier has spoken, so the classifier's
 // latency overlaps the answer's time to first text instead of adding to it.
 //
-// It speculates exactly the prompt the ordinary path would build for a `question me` verdict.
+// It speculates the one neutral automatic prompt (answer-context/automatic-turn.ts), which
+// serves every accepted verdict: question, request or objection, put to Me or to the room.
 // When the verdict arrives, the caller builds the ordinary request again from the state at
 // that moment; the speculation is published only if that request is the SAME prompt (same
 // transcript window, grounding, recent answers, carried questions, model and budget).
-// Anything else (another verdict, a moved-on window, a changed ledger) discards it and the
-// caller takes the ordinary path. A discarded speculation shows nothing and stores nothing;
-// cooldown and ledger coverage are the caller's, applied only to a promoted answer.
+// Anything else (a rejected verdict, a reference answer for another participant, a moved-on
+// window, a changed ledger) discards it and the caller takes the ordinary path. A discarded
+// speculation shows nothing and stores nothing; cooldown and ledger coverage are the
+// caller's, applied only to a promoted answer.
 //
 // Cost: every prefilter candidate classified while the ambient lane is free pays for one
 // answer call, including those the classifier then rejects. The started / promoted /
 // discarded diagnostics make that spend countable.
-
-/** The verdict a speculation assumes: the common interview case, and the only one whose
- *  prompt it may be published for. */
-export const SPECULATED_VERDICT = { kind: 'question', addressee: 'me' } as const
 
 interface Pending {
   turn: CompletedTurn

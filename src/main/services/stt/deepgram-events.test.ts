@@ -60,7 +60,7 @@ describe('Deepgram message normalization', () => {
     expect(boundary).toMatchObject({
       signal: { kind: 'boundary', channel: 0, atMs: 1500, source: 'endpoint' },
     })
-    expect(out.finalEndMs).toBe(1500)
+    expect(out.results).toBe(true)
   })
 
   it('keeps the endpoint of an empty speech_final', () => {
@@ -126,7 +126,7 @@ describe('Deepgram message normalization', () => {
     )
     expect(kinds(out.events)).toEqual(['transcript', 'activity'])
     expect(out.events[0]).toMatchObject({ transcript: { isFinal: false } })
-    expect(out.finalEndMs).toBeNull()
+    expect(out.results).toBe(true)
   })
 
   it('keeps a wordless final with result-level timing and unknown speaker', () => {
@@ -166,6 +166,26 @@ describe('Deepgram message normalization', () => {
       mono,
     )
     expect(out.events[0]).toMatchObject({ transcript: { channel: 0 } })
+  })
+
+  it('flags only Results messages, empty or not, as results', () => {
+    expect(normalizeDeepgramMessage(results({ transcript: '' }), mono).results).toBe(true)
+    for (const raw of [
+      JSON.stringify({ type: 'Metadata' }),
+      JSON.stringify({ type: 'UtteranceEnd', channel: [0, 1], last_word_end: 2 }),
+      JSON.stringify({ type: 'SpeechStarted', channel: [0], timestamp: 1 }),
+      'not json',
+    ]) {
+      expect(normalizeDeepgramMessage(raw, mono).results).toBe(false)
+    }
+  })
+
+  it('rounds once on the sum when the offset is fractional', () => {
+    const out = normalizeDeepgramMessage(results({ words: [word('Hi.', 0, 0.3, 0)] }), {
+      channels: 1,
+      offsetMs: 1000.4,
+    })
+    expect(out.events[0]).toMatchObject({ transcript: { tStartMs: 1000, tEndMs: 1300 } })
   })
 
   it('ignores malformed messages without throwing', () => {

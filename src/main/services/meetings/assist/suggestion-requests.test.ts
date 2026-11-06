@@ -83,10 +83,7 @@ it.each(['points', 'smart', 'full'] as const)(
 
 describe('samePrompt', () => {
   const turn = { text: 'Why?', speaker: 1 } as unknown as CompletedTurn
-  const base = (): SuggestionRequest =>
-    automaticAnswerRequest(snapshot(), settings, turn, { kind: 'question', addressee: 'me' }, [
-      turn,
-    ])
+  const base = (): SuggestionRequest => automaticAnswerRequest(snapshot(), settings, turn, [turn])
 
   it('ignores only audio time and the accept closure', () => {
     expect(samePrompt(base(), { ...base(), atMs: 999, accept: () => true })).toBe(true)
@@ -113,13 +110,20 @@ describe('samePrompt', () => {
         { ...snapshot(), window: [...window], told: [...told] },
         settings,
         asked,
-        { kind: 'question', addressee: 'me' },
         [asked],
       )
     const story = { headline: 'At Acme I ran the federation.', detail: 'Invoicing was mine.' }
     expect(live([story]).userContent).toContain('Current exchange')
     expect(samePrompt(live([story]), live([story]))).toBe(true)
     expect(samePrompt(live([story]), live([story, { headline: 'New', detail: '' }]))).toBe(false)
+  })
+  it('is one prompt for every accepted verdict except a reference answer', () => {
+    // built before the classifier speaks and rebuilt after: the verdict is not in it
+    expect(samePrompt(base(), base())).toBe(true)
+    expect(base().userContent).not.toMatch(/\(a (?:question|request|objection)\)|put to Me\./)
+    const reference = automaticAnswerRequest(snapshot(), settings, turn, [turn], 'reference')
+    expect(reference.userContent).toContain('put to another participant')
+    expect(samePrompt(base(), reference)).toBe(false)
   })
   it('compares a field it has never heard of by default', () => {
     const future = { ...base(), someFutureField: 'x' } as unknown as SuggestionRequest

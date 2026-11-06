@@ -102,10 +102,7 @@ function newVersion(): Version {
   return {
     name: 'new',
     system,
-    automatic: (w, t) =>
-      current.automaticAnswerRequest(snap(w), settings, t, { kind: 'question', addressee: 'me' }, [
-        t,
-      ]),
+    automatic: (w, t) => current.automaticAnswerRequest(snap(w), settings, t, [t]),
     answerNow: (w, q) => current.answerNowRequest(snap(w), settings, { speaker: 0, ...q }),
     // both lanes produce answers the user may say aloud (the production persist path)
     remember: (text) => shown.record({ text, purpose: 'answer' }),

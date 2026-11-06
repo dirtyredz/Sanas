@@ -95,6 +95,7 @@ export async function startMock(
         }
       },
       controls: registerMockShortcuts,
+      log: (message) => console.warn(`[sanas] ${message}`),
     },
   )
   session = own

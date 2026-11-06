@@ -39,6 +39,21 @@ export interface AssistRequest {
   maxRetries?: number
   /** Streaming callback; omit for one-shot completions (e.g. summaries). */
   onDelta?: (text: string) => void
+  /** Best-effort usage report, at most once per call: on completion, or partial on
+   *  failure/cancellation when the provider saw some. Never sent anywhere; a throwing
+   *  callback cannot fail generation. */
+  onUsage?: (usage: ProviderUsage) => void
+}
+
+/** Provider-reported counts, kept as separate fields (never summed here: cache reads and
+ *  writes are reported apart from uncached input). A missing field is UNKNOWN, not zero. */
+export interface ProviderUsage {
+  inputCount?: number
+  outputCount?: number
+  cacheReadCount?: number
+  cacheWriteCount?: number
+  /** True when the call did not complete, so the counts cover only what was seen. */
+  partial: boolean
 }
 
 export interface AssistantProvider {

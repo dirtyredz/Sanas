@@ -73,13 +73,11 @@ describe('whisper prompt modes', () => {
         turn: {
           speaker: 'S2',
           text: 'Can you make me a linked list in JavaScript?',
-          kind: 'request',
-          addressee: 'me',
         },
       },
     })
     expect(prompt).toContain(
-      'Respond to this completed turn (a request):\nS2: Can you make me a linked list in JavaScript?',
+      'Respond to this completed turn:\nS2: Can you make me a linked list in JavaScript?',
     )
     expect(prompt).toContain('Answer THAT turn, about the topic being discussed now.')
     expect(prompt.indexOf('Respond to this completed turn')).toBeLessThan(
@@ -88,20 +86,29 @@ describe('whisper prompt modes', () => {
     expect(buildUserContent(lines, 'hotkey', 'smart')).not.toContain('Respond to this completed')
   })
 
-  it('lets an open-floor question yield a suggestion only if it is genuinely useful', () => {
+  it('lets an open-floor turn yield a suggestion only if it is genuinely useful', () => {
     const prompt = buildUserContent(window, 'ambient', 'smart', {
       focus: {
         kind: 'turn',
-        turn: {
-          speaker: 'S1',
-          text: 'So any questions about the use of these models?',
-          kind: 'question',
-          addressee: 'room',
-        },
+        turn: { speaker: 'S1', text: 'So any questions about the use of these models?' },
       },
     })
-    expect(prompt).toContain('It was put to the room, not to Me specifically.')
-    expect(prompt).toContain('otherwise output\nexactly <none>')
+    expect(prompt).toContain('If it was put to the group as an open floor')
+    expect(prompt).toContain('otherwise output exactly <none>')
+  })
+
+  it('asks for the response that fits the turn without asserting a verdict', () => {
+    const prompt = buildUserContent(window, 'ambient', 'smart', {
+      focus: { kind: 'turn', turn: { speaker: 'S1', text: 'That will never scale.' } },
+    }).replace(/\s+/g, ' ')
+    expect(prompt).toContain('if it challenges something, reply to the objection')
+    expect(prompt).toContain('respond to that request')
+    expect(prompt).not.toMatch(/\(an? (?:question|request|objection)\)|It was put to Me\./)
+    const reference = buildUserContent(window, 'ambient', 'smart', {
+      focus: { kind: 'turn', turn: { speaker: 'S1', text: 'Sam, your view?', reference: true } },
+    })
+    expect(reference).toContain('It was put to another participant.')
+    expect(reference).not.toContain('open floor')
   })
 
   it('includes stories already told so answers do not re-tell them', () => {
@@ -195,8 +202,6 @@ describe('buildUserContent: stacked questions', () => {
         turn: {
           speaker: 'S2',
           text: 'Who owns the rollout?',
-          kind: 'question',
-          addressee: 'me',
           earlier: [{ speaker: 'S2', text: 'What is the delivery date?' }],
         },
       },
@@ -213,8 +218,6 @@ describe('topic switch: answers anchor on the current question (DECISIONS 2026-1
   const turn = {
     speaker: 'S1',
     text: ex.question,
-    kind: 'question' as const,
-    addressee: 'me' as const,
     startMs: question.startMs,
   }
 

@@ -4,6 +4,7 @@ import type { SuggestionEvent, SuggestionPurpose, SuggestionTrigger } from '@sha
 import type { AssistantProvider, AssistImage } from '../../assistant/types'
 import { isNoSuggestion } from '../../assistant/compact-contract'
 import { RunPublication } from './run-publication'
+import { hasReadableText } from './latency'
 import { canStartSuggestion, type SuggestionInFlight } from './suggestion-in-flight'
 
 // Runs one suggestion end to end: lane ownership, deadline, provider call, events,
@@ -93,6 +94,8 @@ export interface SuggestionRunnerDeps {
   hold: (meetingId: number) => void
   release: (meetingId: number) => void
   log: (message: string) => void
+  /** Monotonic clock for stage evidence; performance.now() when omitted. */
+  now?: () => number
 }
 
 const NO_KEY = 'No Anthropic API key set — add it in Settings.'
@@ -101,7 +104,11 @@ export class SuggestionRunner {
   private lanes: Record<SuggestionTrigger, symbol | null> = { ambient: null, hotkey: null }
   private seq = 0
 
-  constructor(private deps: SuggestionRunnerDeps) {}
+  private readonly now: () => number
+
+  constructor(private deps: SuggestionRunnerDeps) {
+    this.now = deps.now ?? (() => performance.now())
+  }
 
   inFlight(): SuggestionInFlight {
     return { ambient: this.lanes.ambient !== null, hotkey: this.lanes.hotkey !== null }
@@ -141,9 +148,18 @@ export class SuggestionRunner {
       id: sid,
       meetingId: req.meetingId,
       purpose: req.purpose,
+      trigger: req.trigger,
       spans: req.diagnosticTurns ?? [],
       ...(speculative ? { speculative: true } : {}),
+      at: this.now(),
     })
+    let shownText = ''
+    let readable = false
+    const markReadable = (text: string): void => {
+      if (readable || !hasReadableText(text)) return
+      readable = true
+      observeRun({ kind: 'first-readable', id: sid, meetingId: req.meetingId, at: this.now() })
+    }
     const emit = (kind: SuggestionEvent['kind'], text: string): void => {
       const event: SuggestionEvent = {
         ...metadata,
@@ -156,12 +172,20 @@ export class SuggestionRunner {
         text,
       }
       this.deps.emit(event)
+      if (kind === 'delta') markReadable((shownText += text))
+      else if (kind === 'done') markReadable(text)
       observeRun({ kind: 'visible', event })
     }
     const streamed = req.delivery === 'stream'
     if (!req.apiKey) {
       if (streamed) emit('error', NO_KEY)
-      observeRun({ kind: 'settled', id: sid, meetingId: req.meetingId, outcome: 'error' })
+      observeRun({
+        kind: 'settled',
+        id: sid,
+        meetingId: req.meetingId,
+        outcome: 'error',
+        at: this.now(),
+      })
       return null
     }
 
@@ -184,7 +208,7 @@ export class SuggestionRunner {
       if (cancelled) return // late text from a discarded speculation
       if (!sawText && delta) {
         sawText = true
-        observeRun({ kind: 'first-text', id: sid, meetingId: req.meetingId })
+        observeRun({ kind: 'first-text', id: sid, meetingId: req.meetingId, at: this.now() })
       }
       gate.push(delta)
     }
@@ -219,6 +243,9 @@ export class SuggestionRunner {
           timeoutMs: req.timeoutMs,
           maxRetries: req.maxRetries,
           onDelta: streamed ? onDelta : undefined,
+          // evidence only; a discarded speculation's spend is still counted
+          onUsage: (usage) =>
+            observeRun({ kind: 'usage', id: sid, meetingId: req.meetingId, usage }),
         })
         if (!gate.published && !(await gate.decision)) return 'discarded'
         if (cancelled) return 'cancelled'
@@ -265,7 +292,7 @@ export class SuggestionRunner {
     }
 
     const done = run().then((outcome) => {
-      observeRun({ kind: 'settled', id: sid, meetingId: req.meetingId, outcome })
+      observeRun({ kind: 'settled', id: sid, meetingId: req.meetingId, outcome, at: this.now() })
       return outcome
     })
     return {
@@ -274,7 +301,7 @@ export class SuggestionRunner {
       promote: () => {
         if (gate.published) return !cancelled
         if (cancelled || !gate.publish()) return false
-        observeRun({ kind: 'promoted', id: sid, meetingId: req.meetingId })
+        observeRun({ kind: 'promoted', id: sid, meetingId: req.meetingId, at: this.now() })
         gate.reveal() // text already held is shown now, unless it could still be the no-op
         return true
       },

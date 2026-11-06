@@ -61,7 +61,7 @@ describe('live assistance: answers to completed turns', () => {
     await t.classify(0, t.question)
     expect(t.generations).toHaveLength(1)
     expect(t.generations[0].req.userContent).toContain(
-      'Respond to this completed turn (a question):\nS2: How do you make a linked list?',
+      'Respond to this completed turn:\nS2: How do you make a linked list?',
     )
     expect(t.events).toEqual([]) // held until the text cannot be the no-op
     t.generations[0].req.onDelta?.('**Use nodes')
@@ -304,11 +304,13 @@ describe('live assistance: answers to completed turns', () => {
     expect(t.generations).toHaveLength(0)
   })
 
-  it('tells the answer an open-floor question was put to the room', async () => {
+  it('gives an open-floor question the conditional room guidance', async () => {
     const t = setup()
     await otherTurn(t.assist, 'So any questions about the use of these models?', 0, 1_500)
     await t.classify(0, { status: 'classified', kind: 'question', addressee: 'room' })
-    expect(t.generations[0].req.userContent).toContain('It was put to the room')
+    expect(t.generations[0].req.userContent).toContain(
+      'If it was put to the group as an open floor',
+    )
   })
 
   it('shows the model what was already shown, and lets it decline', async () => {

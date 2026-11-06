@@ -5,18 +5,11 @@ import {
   type FormattableLine,
   type SpeakerNames,
 } from '../turns/transcript-format'
-import { COMPACT_CONTRACT, INITIAL_ANSWER_DEPTH, NO_SUGGESTION } from './compact-contract'
-import { boundedExcerpt } from './excerpt'
-import type { ResponseKind } from './classifier'
+import { COMPACT_CONTRACT, INITIAL_ANSWER_DEPTH } from './compact-contract'
 import { renderConversation } from './answer-context/conversation-window'
 import { toldStoriesBlock, type ToldStory } from './answer-context/told-stories'
-import {
-  ANCHOR_REMINDER,
-  CURRENT_QUESTION_RULE,
-  QUESTION_CHARS,
-  latestBlock,
-  type LatestQuestion,
-} from './answer-context/anchor'
+import { CURRENT_QUESTION_RULE, latestBlock, type LatestQuestion } from './answer-context/anchor'
+import { automaticTurnBlock, type TriggeringTurn } from './answer-context/automatic-turn'
 
 // Prompt assembly: stable system prompt (cacheable, per meeting) + volatile
 // transcript in the user turn: the current exchange plus a capped, labelled background
@@ -24,7 +17,6 @@ import {
 
 export type TranscriptLine = FormattableLine
 
-const EARLIER_QUESTION_CHARS = 600 // each carried-forward question
 export const SUMMARY_CHARS = 120_000 // enough for a long technical meeting, while still bounded
 const MIN_SUMMARY_TOKENS = 1500
 const MAX_SUMMARY_TOKENS = 8000
@@ -124,23 +116,6 @@ question — never a default topic to steer back to, and never a reason to repea
 
   return parts.join('\n\n')
 }
-/** The completed turn an automatic answer responds to, so generation answers THAT turn
- *  rather than whichever line happens to be the latest in the window. */
-export interface TriggeringTurn {
-  /** Display label of the speaker ("Sarah", "S2", "?"). */
-  speaker: string
-  text: string
-  kind: ResponseKind
-  /** Who it was put to: Me specifically, or the room (an open floor). */
-  addressee: 'me' | 'room' | 'other'
-  /** Earlier questions overtaken before any suggestion covered them, oldest first. The
-   *  suggestion answers these and `text` together. */
-  earlier?: readonly { speaker: string; text: string }[]
-  /** Audio time the exchange began (the first question's first word). Splits the window into
-   *  the current exchange and background; without it the rolling window is sent. */
-  startMs?: number
-}
-
 /** What an answer prompt is anchored on: an automatic answer's classified turn, or Answer
  *  now's latest question. No focus answers from the rolling window alone. */
 export type AnswerFocus =
@@ -154,32 +129,6 @@ export interface UserContentOptions {
   told?: readonly ToldStory[]
 }
 
-function focusBlock(turn: TriggeringTurn): string {
-  const who =
-    turn.addressee === 'room'
-      ? `It was put to the room, not to Me specifically. Only suggest something if there is a
-genuinely useful, non-repeated contribution or question for Me to raise; otherwise output
-exactly ${NO_SUGGESTION}.`
-      : turn.addressee === 'other'
-        ? 'It was put to another participant. The owner has enabled answering every question; provide an answer for the owner’s reference.'
-        : 'It was put to Me.'
-  if (turn.earlier?.length) {
-    const lines = [
-      ...turn.earlier.map((e) => ({ ...e, text: boundedExcerpt(e.text, EARLIER_QUESTION_CHARS) })),
-      { speaker: turn.speaker, text: boundedExcerpt(turn.text, QUESTION_CHARS) },
-    ].map((q, i) => `${i + 1}. ${q.speaker}: ${q.text}`)
-    const list = lines.join('\n')
-    return `Questions to answer (oldest first; the last is the newest, a ${turn.kind}):
-${list}
-These were asked back to back and none has been answered yet. Address EACH one, briefly and in
-order, in ONE suggestion the user can scan mid-conversation: one short labelled line or point
-per question, no preamble. ${who}`
-  }
-  return `Respond to this completed turn (a ${turn.kind}):
-${turn.speaker}: ${boundedExcerpt(turn.text, QUESTION_CHARS)}
-Answer THAT turn, about the topic being discussed now. ${ANCHOR_REMINDER} ${who}`
-}
-
 export function buildUserContent(
   window: TranscriptLine[],
   trigger: 'ambient' | 'hotkey',
@@ -189,7 +138,9 @@ export function buildUserContent(
   const f = opts.focus
   const exchangeStartMs = f?.kind === 'turn' ? f.turn.startMs : f?.question.startMs
   const transcript = renderConversation(window, exchangeStartMs, opts.names)
-  const focus = f ? `\n\n${f.kind === 'turn' ? focusBlock(f.turn) : latestBlock(f.question)}` : ''
+  const focus = f
+    ? `\n\n${f.kind === 'turn' ? automaticTurnBlock(f.turn) : latestBlock(f.question)}`
+    : ''
   const told = opts.told ? `\n\n${toldStoriesBlock(opts.told, trigger === 'ambient')}` : ''
   const profile = assistProfile(trigger, mode)
   const ask = {

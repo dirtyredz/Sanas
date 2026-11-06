@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import type { AssistantProvider, AssistRequest } from './types'
 import { completionText } from './completion-result'
+import { reportUsage, usageFromAnthropic } from './provider-usage'
 
 // Adaptive thinking is model-specific. Opus and Sonnet 5.x accept effort; Haiku and
 // unknown custom model IDs get the portable request shape so choosing one cannot break calls.
@@ -97,7 +98,15 @@ export const claudeProvider: AssistantProvider = {
       requestOptions(req),
     )
     if (req.onDelta) stream.on('text', req.onDelta)
-    const final = await stream.finalMessage()
+    let final: Anthropic.Message
+    try {
+      final = await stream.finalMessage()
+    } catch (e) {
+      // whatever usage the stream saw before it failed or was cancelled, marked partial
+      reportUsage(req.onUsage, usageFromAnthropic(stream.currentMessage?.usage, true))
+      throw e
+    }
+    reportUsage(req.onUsage, usageFromAnthropic(final.usage, false))
     const text = final.content
       .filter((b): b is Anthropic.TextBlock => b.type === 'text')
       .map((b) => b.text)

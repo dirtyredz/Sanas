@@ -2,7 +2,6 @@ import { meetingContextBlock } from '../../assistant/live-controls/prompts'
 import type { Settings } from '@shared/types'
 import { speakerLabel, type SpeakerNames } from '../../turns/transcript-format'
 import type { CompletedTurn } from '../../turns/types'
-import type { Addressee, ResponseKind } from '../../assistant/classifier'
 import {
   assistProfile,
   buildUserContent,
@@ -92,14 +91,18 @@ export function answerRequest(
   }
 }
 
-/** The automatic answer to a classified turn, carrying the still-unanswered questions
- *  `asked` (oldest first; may include `turn` itself, which is always the focus). */
+/** The automatic answer to a completed turn, carrying the still-unanswered questions
+ *  `asked` (oldest first; may include `turn` itself, which is always the focus). One neutral
+ *  prompt serves every accepted verdict, so the request built before the classifier speaks
+ *  (the speculation) and the one rebuilt after it are the same prompt when nothing else
+ *  moved. 'reference': a turn put to another participant, answered for the owner's reference
+ *  under Answer every question (a different prompt, never a published speculation). */
 export function automaticAnswerRequest(
   snap: AssistSnapshot,
   s: AssistSettings,
   turn: CompletedTurn,
-  verdict: { kind: ResponseKind; addressee: Addressee },
   asked: CompletedTurn[],
+  audience: 'automatic' | 'reference' = 'automatic',
 ): SuggestionRequest {
   const label = (t: CompletedTurn): string =>
     speakerLabel({ speaker: t.speaker, isUser: false }, snap.names)
@@ -110,8 +113,7 @@ export function automaticAnswerRequest(
       turn: {
         speaker: label(turn),
         text: turn.text,
-        kind: verdict.kind,
-        addressee: verdict.addressee,
+        ...(audience === 'reference' ? { reference: true } : {}),
         earlier: earlier.length
           ? earlier.map((t) => ({ speaker: label(t), text: t.text }))
           : undefined,

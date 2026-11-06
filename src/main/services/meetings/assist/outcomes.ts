@@ -1,3 +1,5 @@
+import type { ProviderUsage } from '../../assistant/types'
+
 export interface RequestOutcome {
   id: number
   suggestionId?: number
@@ -15,7 +17,10 @@ export interface RequestOutcome {
   pendingAtStop?: boolean
   answer: string
   proseWords?: number
+  /** Canonical verdict ("question room", "none") or "malformed"; never the reply text. */
   classifier?: string
+  /** Provider usage when reported; absent means unknown, not zero. */
+  usage?: ProviderUsage
 }
 
 /** Public report contains timing, IDs and counts; synthetic text stays in private profile. */

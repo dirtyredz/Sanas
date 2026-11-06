@@ -116,7 +116,9 @@ it('records first-visible/completion/counts for late suggestions without passing
     id: 1,
     meetingId: 7,
     purpose: 'answer',
+    trigger: 'ambient',
     spans: [{ startMs: 1, endMs: 100, completedAt: 0 }],
+    at: 0,
   })
   await vi.advanceTimersByTimeAsync(100)
   const event = {
@@ -130,7 +132,7 @@ it('records first-visible/completion/counts for late suggestions without passing
   await f.session.end()
   await vi.advanceTimersByTimeAsync(100)
   f.run({ kind: 'visible', event: { ...event, kind: 'done' } })
-  f.run({ kind: 'settled', id: 1, meetingId: 7, outcome: 'done' })
+  f.run({ kind: 'settled', id: 1, meetingId: 7, outcome: 'done', at: 0 })
   expect(f.session.state().result?.questions[0]).toMatchObject({
     producedSuggestion: true,
     firstVisibleLatencyMs: 100,

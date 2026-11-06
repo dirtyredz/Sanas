@@ -50,8 +50,8 @@ import { hideOverlay, overlayBounds } from '../../windows/overlay-window'
 // audio the WAV holds, so the clock, the recording and everything this module timestamps
 // agree — and a pause simply does not advance it. Provider transcript times are never used
 // as the cursor: they only advance on a final result, so pausing during silence would
-// rewind the clock. (Segment times come from the provider and can drift earlier across its
-// own internal reconnect — see docs/GOTCHAS.md.)
+// rewind the clock. (Segment times come from the provider; across its own internal reconnect
+// it keeps them on this same clock by counting the PCM it is handed — see docs/GOTCHAS.md.)
 //
 // Every lifecycle call is serialized and each session carries a generation, because
 // start/pause/resume/stop all mutate this module's state across awaits: without that, two
@@ -189,6 +189,9 @@ async function discardSession(): Promise<void> {
 function handleTranscript(t: SttTranscript): void {
   const id = liveMeetingId()
   if (id === null) return
+  // turn-close evidence: when this reached us, before the synchronous persistence below
+  const ingressAt = performance.now()
+  const audioCursorMs = audioMsReceived
   // stereo: channel IS identity; mono: manual "that's me" pinning
   const stereo = meetingChannels === 2
   const who = resolveSpeakerIdentity(t.channel, t.speaker, stereo, userSpeakers)
@@ -232,6 +235,8 @@ function handleTranscript(t: SttTranscript): void {
         tStartMs: t.tStartMs,
         tEndMs: t.tEndMs,
         text: t.text,
+        ingressAt,
+        audioCursorMs,
       },
     )
   } else {

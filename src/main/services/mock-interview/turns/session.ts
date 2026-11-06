@@ -23,6 +23,8 @@ export interface MockSessionDeps {
   save(result: MockResult): void
   now(): number
   observeOwner?(closed: () => void): () => void
+  /** Main-log line (redacted, metadata only). */
+  log?(message: string): void
 }
 
 /** Owns one practice meeting and its output window, never a second capture/provider path. */
@@ -106,6 +108,7 @@ export class MockSession {
       )
       this.liveCleanups.push(
         this.deps.subscribeAssistance((e) => {
+          this.evidence.assist(e)
           this.evidence.transitions.push({
             atMs: this.deps.now(),
             event: e.event,
@@ -238,9 +241,13 @@ export class MockSession {
   dispose(): void {
     clearInterval(this.timer)
     this.timer = undefined
+    const subscribed = this.cleanups.length > 0
     for (const cleanup of this.cleanups.splice(0)) cleanup()
     for (const cleanup of this.liveCleanups.splice(0)) cleanup()
     this.persist()
+    // once per session: bounded counts and medians, no text
+    if (subscribed && this.meetingId !== null)
+      this.deps.log?.(`mock latency ${JSON.stringify(this.evidence.latencySummary())}`)
   }
   private persist(): void {
     if (this.meetingId === null) return
