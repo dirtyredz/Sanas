@@ -450,8 +450,8 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   Chromium** (and bring back arrow buttons). The overlay layer uses only the webkit pseudos.
 - **`overlayWhisperRatio` now means the answer preview's share above the divider.** The name
   is kept for settings compatibility; it always meant "the answer's share".
-- **Vitest has no `@shared` alias.** A renderer test that imports a component with a runtime
-  `@shared/...` import must `vi.mock` it (e.g. by path: `() => import('../../../../shared/x')`).
+- **Vitest configures the `@shared` alias** (`vitest.config.ts`), so renderer tests may import
+  runtime `@shared/...` modules directly; only Electron imports still need mocks.
 - **Open Sanas must not route or reload the main renderer.** The Live and Mock pages own
   microphone capture sessions and stay mounted across tab switches. Reloading the renderer
   would interrupt capture. `MainWindowShow` is parameterless and only restores/shows/focuses.
@@ -658,3 +658,14 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
 - **Answer-context window needs line timing.** The current-exchange split uses `tStartMs`; untimed lines before the exchange count as background, and if no line is at/after the question start the section reads "(only the question below so far)". Answer now anchoring depends on turn assembly: backchannel under 3 words never counts as the question and one older than 90 s (`ANSWER_NOW_QUESTION_MS`) is dropped, falling back to the rolling 6,000-char window. Told stories are in-memory per meeting (cleared at begin, not rebuilt from the DB on resume) and live inside `userContent`, so a story added during classification makes a speculative answer fall back to the ordinary path.
 
 - **The topic-switch eval is noisy at one sample.** The same prompts moved corrected carryover 1 / 2 / 4 of 10 and factual-over-40 2 / 2 / 1 across three single-sample runs (2026-11-04); judge a prompt change on `-Samples 3`, not one run. The automatic lane (Sonnet) is the stubborn one: "recently" pulls it to the most recent role. The scorer reports a strict count (bare employer name included) and a corrected one (technology/story terms only; terms from the exchange a question refers back to are exempt).
+
+- **Job deletion and resumes packs (2026-11-06).**
+  - Practice meetings are excluded by `listMeetings`; deletion counts query every table directly (`db/repos/job/job-deletion.ts`). Never reuse `listMeetings` to count what a job holds.
+  - Unsorted is name-resolved, not guaranteed to be ID 1. Both ID 1 and the row named `Unsorted` are protected (`isProtectedJob` and the trigger), so a legacy ordinary job at ID 1 is also undeletable.
+  - The database backup does not include WAV recordings, and file deletion is not atomic: a partial deletion keeps the job and reports what is gone. The confirmation says recordings cannot be recovered.
+  - Never `DELETE FROM jobs` for a job that has meetings: the v13 `jobs_delete_guard` trigger refuses it. Meetings must go through `services/meetings/remove.ts` first (it deletes the WAV), then `deleteJobRow`.
+  - Resumes CLI failure (missing script, non-zero exit, timeout) is not fatal: the picker shows "Couldn't refresh from resumes" and lists the packs already on disk. The producer is not built yet, so this is today's normal state. Only a sanitized first stderr line (max 160 chars) is ever shown, never stdout.
+  - The persona limit is 20,000 characters everywhere (`JOB_PERSONA_MAX_CHARS` in `shared/jobs/limits.ts`, widened from 2,000); do not re-hardcode it.
+  - A pack's `contentHash` can be missing or reused; refresh change detection also compares Sanas's own pack fingerprint (sha256 of normalized content excluding `contentHash`/`updatedAt`).
+  - Draft-at-import sends notes, project scope and company/role/companyInfo to the provider but never the resume. Keep it that way; refresh must never draft.
+  - `listPackFiles` tests use the injectable `maxFiles` bound; creating 500 real files is slow on Windows.

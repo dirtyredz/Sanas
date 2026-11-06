@@ -71,6 +71,10 @@ describe('requireJob', () => {
     persona: 'calm',
     summaryEmail: 'a@b.c',
   }
+  it('accepts an imported persona up to the shared 20,000-character limit', () => {
+    expect(requireJob({ ...full, persona: 'p'.repeat(20_000) }).persona).toHaveLength(20_000)
+    expect(() => requireJob({ ...full, persona: 'p'.repeat(20_001) })).toThrow('Invalid persona')
+  })
   it('keeps the editable fields and drops unknown keys', () => {
     expect(requireJob({ ...full, archived: true, createdAt: 'yesterday', evil: 1 })).toEqual({
       ...full,

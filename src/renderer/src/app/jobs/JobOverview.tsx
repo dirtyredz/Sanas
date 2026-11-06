@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react'
 import type { GlossaryTerm, Job } from '@shared/types'
 import { parseGlossaryInput } from '../../lib/glossary-input'
+import {
+  JOB_CONTEXT_MAX_CHARS,
+  JOB_NAME_MAX_CHARS,
+  JOB_PERSONA_MAX_CHARS,
+} from '@shared/jobs/limits'
 const PACK_FIELDS = [
   { key: 'companyInfo', label: 'Company info', hint: 'Who they are, org quirks, key people' },
   { key: 'projectScope', label: 'Project scope', hint: 'What you are building or doing for them' },
@@ -59,7 +64,7 @@ export function JobOverview({
           <input
             className="title-input"
             value={job.name}
-            maxLength={120}
+            maxLength={JOB_NAME_MAX_CHARS}
             aria-label="Job name"
             onChange={(e) => setJob({ ...job, name: e.target.value })}
           />
@@ -97,6 +102,7 @@ export function JobOverview({
               <span className="label">{f.label}</span>
               <textarea
                 rows={f.key === 'persona' ? 2 : 4}
+                maxLength={f.key === 'persona' ? JOB_PERSONA_MAX_CHARS : JOB_CONTEXT_MAX_CHARS}
                 placeholder={f.hint}
                 value={job[f.key]}
                 onChange={(e) => setJob({ ...job, [f.key]: e.target.value })}

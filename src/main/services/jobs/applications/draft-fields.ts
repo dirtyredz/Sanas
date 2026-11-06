@@ -68,11 +68,8 @@ export function buildDraftPrompt(
 }
 
 // eslint-disable-next-line no-control-regex
-const clean = (s: string): string =>
-  s
-    .replace(/\r\n?/g, '\n')
-    .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '')
-    .trim()
+const DISALLOWED = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g
+const clean = (s: string): string => s.replace(/\r\n?/g, '\n').replace(DISALLOWED, '').trim()
 
 function parseDraft(text: string, missing: readonly JudgementField[]): Omit<DraftResult, 'notice'> {
   const start = text.indexOf('{')

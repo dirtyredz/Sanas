@@ -33,6 +33,14 @@ it('a reload after a job is created offers the new job and keeps the selection',
   expect(after.jobId).toBe(2)
 })
 
+it('drops a deleted job (and its remembered choice) on the next visible reload', () => {
+  const before = applyJobList(store('3'), owner)
+  expect(before.jobId).toBe(3)
+  const after = applyJobList(store('3'), owner.slice(0, 2), before.jobId)
+  expect(after.jobs.map((j) => j.id)).toEqual([2])
+  expect(after.jobId).toBe('')
+})
+
 it('falls back to Unsorted when the selected job was archived or is the bucket row', () => {
   expect(applyJobList(store(), owner.slice(0, 2), 3).jobId).toBe('')
   expect(applyJobList(store('1'), owner).jobId).toBe('')

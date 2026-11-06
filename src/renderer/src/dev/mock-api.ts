@@ -21,6 +21,7 @@ import {
   speakerNames,
   suggestions,
 } from './mock-fixtures'
+import { mockJobApplications, mockJobDeletion } from './mock-jobs'
 import { mockLiveControls } from './mock-live-controls'
 import {
   emit,
@@ -155,7 +156,9 @@ const api: SanasApi = {
     onSuggestion: on(suggestionListeners),
   },
   jobs: {
-    list: async () => jobs.filter((j) => !j.archived),
+    ...mockJobDeletion(jobResumes),
+    list: async (options) =>
+      options?.includeArchived ? [...jobs] : jobs.filter((j) => !j.archived),
     create: async (name) => {
       const job: Job = { ...jobs[2], id: Date.now(), name, createdAt: new Date().toISOString() }
       jobs.push(job)
@@ -180,6 +183,7 @@ const api: SanasApi = {
       throw new Error('Resume import needs the desktop app; paste the text instead.')
     },
   },
+  jobApplications: mockJobApplications(jobResumes),
   glossary: {
     list: async (jobId) => glossary.filter((g) => g.jobId === jobId),
     add: async (jobId, term, note) => {

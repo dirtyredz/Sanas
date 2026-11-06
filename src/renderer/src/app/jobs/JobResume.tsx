@@ -8,9 +8,16 @@ import { resumeDraftProblem, sameResume } from './resume-draft'
  * The job's saved resume. Every new Live or Mock meeting for this job snapshots what is saved
  * here at Start; meetings already started keep their own copy. Edits are a local draft until
  * "Save resume" (the header's Save does not cover this tab). A failed import
- * or save leaves the draft as it was.
+ * or save leaves the draft as it was. `onDirtyChange` lets the job page refuse an application
+ * refresh over unsaved edits; after a refresh the page remounts this editor to reload.
  */
-export function JobResume({ jobId }: { jobId: number }): React.JSX.Element {
+export function JobResume({
+  jobId,
+  onDirtyChange,
+}: {
+  jobId: number
+  onDirtyChange?: (dirty: boolean) => void
+}): React.JSX.Element {
   const [saved, setSaved] = useState<MeetingResume | null>(null)
   const [draft, setDraft] = useState<MeetingResume | null>(null)
   const [loaded, setLoaded] = useState(false)
@@ -67,6 +74,7 @@ export function JobResume({ jobId }: { jobId: number }): React.JSX.Element {
   }
 
   const dirty = !sameResume(saved, draft)
+  useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange])
   return (
     <section className="card job-resume">
       <h2>Resume</h2>

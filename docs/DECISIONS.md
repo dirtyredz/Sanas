@@ -2,6 +2,54 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-11-06 — Deleting a job deletes its history (cascade)
+
+Owner choice. Plan: `docs/plans/job-import-and-delete-v2.md`. Deleting a job removes the job and
+all its meetings (normal and practice), transcripts, summaries, suggestions, snapshots, practice
+results and audio recordings, plus glossary, saved resume, application link and legacy slides.
+The confirmation states exact counts and that recordings are not covered by the database backup
+and cannot be recovered; the default button is Cancel. A SQLite backup runs first and a failed
+backup aborts. Unsorted (ID 1 and the name-resolved row) can never be deleted; a live, paused or
+post-processing child meeting blocks deletion.
+
+- **Why:** a job is one engagement; keeping its meetings under a deleted job, or under Unsorted,
+  leaves history nobody can place and recordings nobody will clean up. The owner wants delete to
+  mean delete, made safe by exact counts, a backup and a default of Cancel.
+- Rejected: moving the meetings to Unsorted (silently mixes unrelated history into the catch-all
+  and makes deletion unrecoverable in a different way); refusing while any meeting exists (forces
+  deleting meetings one at a time first, with no single place that states what will be lost).
+- The v13 `jobs_delete_guard` trigger refuses a job row that still has meetings, so no code path
+  can cascade meetings away without `services/meetings/remove.ts` deleting their WAVs. Deletion
+  is not atomic across files and the database: a failed removal keeps the job and reports what
+  was already deleted.
+
+## 2026-11-06 — Jobs from resumes interview packs
+
+The resumes project produces one pack per application at interview stage and later; Sanas lists
+them and creates or refreshes a linked job. Sanas only reads the packs and never writes the
+resumes tree.
+
+- **Source identity:** a job is linked by application ID plus the resumes root it came from. A
+  different root is `source-mismatch`; Sanas never silently rebinds a link.
+- **Conservative conflicts:** refresh is a three-way comparison (base/local/incoming). The resume
+  is one unit and the glossary one collection (local notes count as local changes), never merged
+  per term. Conflicts default to Keep Sanas, and the baseline advances to incoming after a
+  confirmed review so an unchanged pack never re-challenges a kept value. Refresh never renames
+  the job; closed offers an explicit archive, never a delete.
+- **Snapshots preserved:** a meeting's resume/profile snapshots never change on refresh; only
+  future meetings see new values.
+- **Notes vs resume stay separate:** notes are verified master facts; the resume is candidate
+  material and is never merged into job context.
+- **Draft-at-import:** when a judgement field (talking points, persona, glossary, company info) is
+  empty at create, Sanas drafts it once from notes, project scope and company/role/companyInfo,
+  never from the resume, so unverified resume claims cannot leak into context. Drafts are labelled
+  "Drafted by Sanas", editable before Create, and a provider failure never blocks creation.
+  Refresh never drafts. Rejected: drafting from the resume (leaks unverified claims) and drafting
+  on every refresh (would overwrite deliberate local values).
+- **CLI contract:** `node <root>/_hunt/cli/sanas-packs.js --json`, one file per command; exit 0
+  with a JSON summary, or non-zero with one stderr line (shown sanitized, max 160 chars). The
+  producer owns generation and also removes packs that dropped below interview.
+
 ## 2026-11-05 — Neutral speculation for every accepted verdict (answer latency, round 2)
 
 Supersedes the 2026-11-04 "question me only" speculation. Plan: `docs/plans/answer-latency-round2.md`.

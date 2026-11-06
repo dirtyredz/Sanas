@@ -281,7 +281,7 @@ objection` + `me | room | other`, or `none`. Parsing (`classifier-verdict.ts`) i
   after launch and every 6 h; Settings shows what is past its limit and can run it now.
   Live meetings are never touched. Deleting a meeting by hand goes through the same
   `removeMeeting` (file + row).
-- Schema (current v12: v1 base, v2 `speakers`, v3 `jobs.summary_email`, v4 `segments_fts`, v5 `suggestions.purpose`, v6 presentation, v7 live context/grounding, v8 practice/results, v9 `meetings.resume_name`/`resume_text` with an immutability trigger, v10 immutable meetings.interview_profile, v11 `job_resumes`, v12 snapshot-clear guard; later tables described below):
+- Schema (current v13: v1 base, v2 `speakers`, v3 `jobs.summary_email`, v4 `segments_fts`, v5 `suggestions.purpose`, v6 presentation, v7 live context/grounding, v8 practice/results, v9 `meetings.resume_name`/`resume_text` with an immutability trigger, v10 immutable meetings.interview_profile, v11 `job_resumes`, v12 snapshot-clear guard, v13 `job_applications` + `jobs_delete_guard`; later tables described below):
 
 ```
 jobs        (id, name, company_info, project_scope, notes,
@@ -289,6 +289,9 @@ jobs        (id, name, company_info, project_scope, notes,
              summary_email)                 -- per-job recipient (v3)
 glossary    (id, job_id, term, note)
 job_resumes (job_id PK, name, text)          -- saved job resume, copied at Start (v11)
+job_applications (job_id PK, application_id UNIQUE, source_root,
+             content_hash, fingerprint, source_stage,
+             source_updated_at, imported_at, baseline)  -- link to a resumes pack (v13)
 meetings    (id, job_id, title, started_at, ended_at,
              audio_path, summary, action_items, practice)
 segments    (id, meeting_id, t_start_ms, t_end_ms, speaker,
@@ -473,6 +476,54 @@ The meeting snapshot: the service hands `createMeeting` (`db/repos/meeting/meeti
 Capitalized names, acronyms, mixed-case technology and a small lowercase technology vocabulary become STT hints. Resume terms alternate with job glossary terms, deduplicate case-insensitively and respect conservative count/length/byte limits. Streaming start/resume and batch transcription use `SttProvider`; no new provider or network path exists.
 
 Resume file import: the job Resume tab invokes a parameterless typed IPC picker (`jobs.importResume`). Main reads at most 5 MB plus one sentinel byte, parses PDF/DOCX locally, applies the existing text validation, and returns only the basename and text as an unsaved draft. Cancellation/errors preserve the draft. The source file is never copied into storage; Save resume stores the same name/text shape as pasted text.
+
+## Jobs from resumes interview packs (v13)
+
+The resumes project (`resumesRoot`, default `C:\Users\dirty\projects\resumes`) owns the data and
+its producer: `node <root>/_hunt/cli/sanas-packs.js --json` writes one pack per application at
+`<root>/job-hunt/sanas/<applicationId>.json` (and removes packs that dropped below interview).
+Exit 0 prints a JSON summary; non-zero prints one stderr line, of which Sanas shows a sanitized
+first line (max 160 chars) and never stdout. The producer is not built yet; a missing CLI
+degrades to "Couldn't refresh from resumes" plus the packs already on disk. Sanas never writes
+into the resumes tree.
+
+- **Source edge** (`services/jobs/applications/source/`): settings are re-validated at use time
+  (absolute local path, no UNC/device/`..`/control chars, realpath stays local). The runner is
+  `execFile`, no shell, 30 s, 256 KiB output, credential-like env stripped, concurrent refreshes of
+  one configuration coalesced. Pack files: regular `.json` only, ≤ 2 MiB, ≤ 500 listed (`limited`),
+  canonical containment, a file that changes or vanishes mid-read is a retryable row error.
+  `validate-pack.ts` enforces schema v1 and limits; the pack fingerprint is a sha256 of normalized
+  content excluding `contentHash`/`updatedAt`, so a missing or reused `contentHash` cannot hide a change.
+- **Flow** (library window only): `job-applications:list` (run the CLI, then read packs) →
+  `:preview` (create form, or three-way refresh review; returns a main-owned token) → `:apply`
+  (re-read the pack, re-check everything, one repository transaction). Tokens are single-use,
+  10 minutes, bound to the sender window, source config, pack fingerprint and, for refresh, the
+  job's saved-state aggregate; any drift answers "Changed since preview—review again."
+- **Create** writes the job, glossary, resume and `job_applications` link (with the import
+  baseline) in one transaction; `application_id` is unique, so a concurrent second import fails.
+- **Refresh** compares base (baseline) / local (saved job) / incoming (pack). The resume is one
+  unit and the glossary one collection (local notes count as local changes); conflicts default to
+  Keep Sanas; the baseline always advances to incoming after a confirmed review. Stage changes are
+  reviewed; `closed` offers "Archive linked job" (never deletes); interview/offer never unarchives;
+  a different resumes root is `source-mismatch` and never rebinds; refresh never renames the job.
+  Meeting snapshots are untouched.
+- **Draft-at-import** (create only): empty judgement fields (talking points, persona, glossary,
+  company info) are drafted once through `AssistantProvider` (`answerModel`, main only) from notes,
+  project scope and company/role/companyInfo, never the resume. Per-field sources
+  ("From resumes" / "Drafted by Sanas") persist in the baseline; a drafted field's baseline value
+  is the pack's own empty value, so later refreshes treat the draft as local. Refresh never drafts.
+
+## Job deletion (cascade)
+
+Deleting a job deletes its history (docs/DECISIONS.md). `jobs:delete-preview` (library window
+only) counts every table directly (`db/repos/job/job-deletion.ts`; `listMeetings` excludes
+practice) and returns a token; it is blocked for Unsorted and while any child meeting is live,
+paused or post-processing. `jobs:delete` consumes the token, re-checks the snapshot, takes a
+SQLite backup (`backups/before-job-delete-*.db`, abort on failure), removes each meeting through
+`services/meetings/remove.ts` (row and WAV), then deletes the job row; glossary, resume, link and
+legacy `job_slides` cascade. A failed meeting removal keeps the job and reports what is already
+gone. The v13 `jobs_delete_guard` trigger refuses the protected jobs and any job that still has
+meetings, so no path can cascade meetings away without deleting their recordings.
 
 ## Interview profile lifecycle
 

@@ -7,22 +7,27 @@ import { JobDetail } from './JobDetail'
 import { JobOverview } from '../jobs/JobOverview'
 import { JobEmail } from '../jobs/JobEmail'
 import { JobResume } from '../jobs/JobResume'
+import { JobDeleteDialog } from '../jobs/deletion/JobDeleteDialog'
+import { ApplicationPreview } from '../jobs/applications/ApplicationPreview'
 
 // Exercise page callbacks and successive renders without adding a DOM dependency.
 // Child identity assertions cover the mounted editor boundary.
-const hooks = vi.hoisted(() => ({ values: [] as unknown[], cursor: 0 }))
+const hooks = vi.hoisted(() => ({
+  values: [] as unknown[],
+  setters: [] as ((next: unknown) => void)[],
+  cursor: 0,
+}))
 vi.mock('react', async (original) => ({
   ...(await original<typeof import('react')>()),
   useEffect: () => {},
   useState: (initial: unknown) => {
     const slot = hooks.cursor++
     if (!(slot in hooks.values)) hooks.values[slot] = initial
-    return [
-      hooks.values[slot],
-      (next: unknown) => {
-        hooks.values[slot] = typeof next === 'function' ? next(hooks.values[slot]) : next
-      },
-    ]
+    // A stable setter per slot, like React's (JobResume receives one as a prop).
+    hooks.setters[slot] ??= (next: unknown) => {
+      hooks.values[slot] = typeof next === 'function' ? next(hooks.values[slot]) : next
+    }
+    return [hooks.values[slot], hooks.setters[slot]]
   },
 }))
 vi.mock('./MeetingView', () => ({ MeetingView: () => null }))
@@ -143,4 +148,46 @@ it('supports keyboard navigation with wrapping, Home and End', () => {
     expect(getElementById).toHaveBeenLastCalledWith(`job-tab-${to}`)
     expect(preventDefault).toHaveBeenCalledOnce()
   }
+})
+
+// useState slots in JobDetail: 0 job, 6 savedJob, 7 resumeDirty, 8 step, 9 contentVersion.
+const linked = () => ({ ...jobs[0], applicationId: 'acme-platform' })
+const button = (page: ReturnType<typeof render>, label: string) =>
+  page.all.find((n) => n.type === 'button' && n.props.children === label)
+
+it('offers Refresh from application only for a linked job', () => {
+  hooks.values[0] = linked()
+  expect(button(render(), 'Refresh from application')).toBeDefined()
+  hooks.values = [{ ...jobs[0], applicationId: null }]
+  expect(button(render(), 'Refresh from application')).toBeUndefined()
+})
+
+it('asks before refreshing over unsaved edits; discarding restores the saved job and previews', () => {
+  const saved = linked()
+  hooks.values[0] = { ...saved, name: 'Unsaved name' }
+  hooks.values[6] = saved
+  button(render(), 'Refresh from application')!.props.onClick()
+  let page = render()
+  expect(page.all.some((n) => n.type === ApplicationPreview)).toBe(false)
+  expect(page.all.some((n) => n.props.role === 'alertdialog')).toBe(true)
+
+  button(page, 'Discard changes and review')!.props.onClick()
+  expect(hooks.values[0]).toBe(saved)
+  page = render()
+  expect(page.child(ApplicationPreview).props).toMatchObject({ applicationId: 'acme-platform' })
+})
+
+it('goes straight to the application preview with nothing unsaved', () => {
+  const saved = linked()
+  hooks.values[0] = { ...saved }
+  hooks.values[6] = saved
+  button(render(), 'Refresh from application')!.props.onClick()
+  const page = render()
+  expect(page.child(ApplicationPreview).props).toMatchObject({ applicationId: 'acme-platform' })
+})
+
+it('opens the counted delete dialog for this job', () => {
+  hooks.values[0] = linked()
+  button(render(), 'Delete job…')!.props.onClick()
+  expect(render().child(JobDeleteDialog).props).toMatchObject({ jobId: jobs[0].id })
 })

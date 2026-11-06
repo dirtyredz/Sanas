@@ -45,15 +45,21 @@ and pauses of at least two seconds; streaming behavior is unchanged.
 
 ## Organization
 
-| Feature                                                                            | Status | Notes                                                                                                            |
-| ---------------------------------------------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------- |
-| Jobs (create/edit/archive)                                                         | ✅     | Overview (name/context/glossary), Resume, Email, Meetings sub-tabs; drafts survive switching; archive UI pending |
-| Job context pack: company info, project scope, notes, talking points, persona/tone | ✅     | feeds AI in Phase 3                                                                                              |
-| Per-job glossary (terms + notes)                                                   | ✅     | bulk paste on the glossary row; feeds STT now and AI in Phase 3                                                  |
-| Meetings under a job; transcript view                                              | ✅     | job picker on Live, history per job, rename, move to another job                                                 |
-| Post-meeting knowledge summary + action items                                      | ✅     | sectioned Markdown knowledge extract; detail scales with transcript length; fire-and-forget on stop              |
-| On-demand summary (Summarize / Regenerate)                                         | ✅     | stored transcript (capped ~120k chars) + job context; timeout-safe generation                                    |
-| Email summary to the job's address                                                 | ✅     | recipient per job; SMTP (nodemailer); button + auto-send on stop                                                 |
+| Feature                                                                            | Status | Notes                                                                                                                                                                     |
+| ---------------------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Jobs (create/edit/archive)                                                         | ✅     | Overview (name/context/glossary), Resume, Email, Meetings sub-tabs; drafts survive switching; archive via a closed application; manual archive UI pending                 |
+| Job context pack: company info, project scope, notes, talking points, persona/tone | ✅     | feeds AI in Phase 3                                                                                                                                                       |
+| Per-job glossary (terms + notes)                                                   | ✅     | bulk paste on the glossary row; feeds STT now and AI in Phase 3                                                                                                           |
+| Meetings under a job; transcript view                                              | ✅     | job picker on Live, history per job, rename, move to another job                                                                                                          |
+| Post-meeting knowledge summary + action items                                      | ✅     | sectioned Markdown knowledge extract; detail scales with transcript length; fire-and-forget on stop                                                                       |
+| On-demand summary (Summarize / Regenerate)                                         | ✅     | stored transcript (capped ~120k chars) + job context; timeout-safe generation                                                                                             |
+| Email summary to the job's address                                                 | ✅     | recipient per job; SMTP (nodemailer); button + auto-send on stop                                                                                                          |
+| New job from application                                                           | ✅     | Jobs page picker over resumes interview packs, preview then Create; built, producer CLI (`sanas-packs.js`) pending; missing CLI falls back to existing packs (2026-11-06) |
+| Refresh from application: review and archive offer                                 | ✅     | job-page three-way review, conflicts default to Keep Sanas; stage changes reviewed; closed offers "Archive linked job" (2026-11-06)                                       |
+| Draft-at-import                                                                    | ✅     | empty talking points/persona/glossary/company info drafted once at create from notes, never the resume; "Drafted by Sanas", editable; refresh never drafts (2026-11-06)   |
+| Job deletion with counts                                                           | ✅     | "Delete job…" cascades to meetings, recordings and context; exact counts, DB backup first, default Cancel; Unsorted undeletable (2026-11-06)                              |
+| Show archived jobs                                                                 | ✅     | Jobs page toggle; `jobs:list` takes `{ includeArchived }` (2026-11-06)                                                                                                    |
+| Settings → Applications                                                            | ✅     | `resumesRoot` (default `C:\Users\dirty\projects\resumes`) and `resumesNodeExecutable` (default `node.exe`) (2026-11-06)                                                   |
 
 ## App
 

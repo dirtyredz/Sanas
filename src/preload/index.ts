@@ -19,6 +19,13 @@ import type { PresentationHistory } from '../shared/presentation/types'
 import type { MeetingStartOptions } from '../shared/meeting-start'
 import type { HotkeyStatus } from '../shared/hotkeys/types'
 import type {
+  ApplicationListing,
+  ApplicationPreview,
+  ApplyRequest,
+  ApplyResult,
+} from '../shared/jobs/applications'
+import type { JobDeletionPreview, JobDeletionResult } from '../shared/jobs/deletion'
+import type {
   GlossaryTerm,
   HistoryEvent,
   HistoryHit,
@@ -186,7 +193,9 @@ const api = {
     run: (): Promise<RetentionResult> => ipcRenderer.invoke(IPC.RetentionRun),
   },
   jobs: {
-    list: (): Promise<Job[]> => ipcRenderer.invoke(IPC.JobsList),
+    /** Active jobs; `includeArchived` adds archived ones (each carries `archived`). */
+    list: (options?: { includeArchived?: boolean }): Promise<Job[]> =>
+      ipcRenderer.invoke(IPC.JobsList, options),
     create: (name: string): Promise<Job> => ipcRenderer.invoke(IPC.JobsCreate, name),
     update: (job: Omit<Job, 'createdAt' | 'archived'>): Promise<Job> =>
       ipcRenderer.invoke(IPC.JobsUpdate, job),
@@ -200,6 +209,21 @@ const api = {
       ipcRenderer.invoke(IPC.JobsSetResume, jobId, resume),
     /** Native PDF/DOCX picker; resolves with an unsaved draft, or null when cancelled. */
     importResume: (): Promise<MeetingResume | null> => ipcRenderer.invoke(IPC.JobsImportResume),
+    /** Counts everything deleting the job removes; a token when deletion is allowed. */
+    deletePreview: (jobId: number): Promise<JobDeletionPreview> =>
+      ipcRenderer.invoke(IPC.JobsDeletePreview, jobId),
+    /** Backs up the database, then deletes the job and everything counted. */
+    delete: (token: string): Promise<JobDeletionResult> =>
+      ipcRenderer.invoke(IPC.JobsDelete, token),
+  },
+  /** Jobs from resumes interview packs: main reads packs; the renderer only names them. */
+  jobApplications: {
+    /** Runs the resumes pack command, then lists the packs on disk with their link state. */
+    list: (): Promise<ApplicationListing> => ipcRenderer.invoke(IPC.JobApplicationsList),
+    preview: (applicationId: string): Promise<ApplicationPreview> =>
+      ipcRenderer.invoke(IPC.JobApplicationsPreview, applicationId),
+    apply: (request: ApplyRequest): Promise<ApplyResult> =>
+      ipcRenderer.invoke(IPC.JobApplicationsApply, request),
   },
   glossary: {
     list: (jobId: number): Promise<GlossaryTerm[]> => ipcRenderer.invoke(IPC.GlossaryList, jobId),

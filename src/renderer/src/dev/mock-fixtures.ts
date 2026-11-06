@@ -1,3 +1,4 @@
+import type { ApplicationStage } from '@shared/jobs/applications'
 import type { GlossaryTerm, Job, Meeting, Segment, SettingsView, Suggestion } from '@shared/types'
 
 // Static sample data for the browser preview. The arrays are shared mutable state: the mock
@@ -27,6 +28,7 @@ export const jobs: Job[] = [
     summaryEmail: '',
     createdAt: '2026-08-20 13:40:00',
     archived: false,
+    applicationId: 'acme-platform',
   },
   {
     id: 3,
@@ -39,6 +41,19 @@ export const jobs: Job[] = [
     summaryEmail: '',
     createdAt: '2026-08-12 09:00:00',
     archived: false,
+  },
+  {
+    id: 4,
+    name: 'Globex — Staff Engineer',
+    companyInfo: 'Manufacturing automation vendor.',
+    projectScope: 'Own the plant telemetry pipeline.',
+    notes: 'Process closed after the final round.',
+    talkingPoints: '',
+    persona: '',
+    summaryEmail: '',
+    createdAt: '2026-07-01 10:00:00',
+    archived: true,
+    applicationId: 'globex-closed',
   },
 ]
 
@@ -224,4 +239,79 @@ export const sampleSettings: SettingsView = {
   smtpPassSet: true,
   audioRetentionDays: 90,
   meetingRetentionDays: 0,
+}
+
+/** What a resumes pack carries, standing in for the pack files on disk. */
+export interface SamplePack {
+  company: string
+  role: string
+  stage: ApplicationStage
+  jdUrl: string
+  updatedAt: string | null
+  companyInfo: string
+  projectScope: string
+  notes: string
+  talkingPoints: string
+  persona: string
+  glossary: string
+  resume: string
+}
+
+export const samplePacks: Record<string, SamplePack> = {
+  'initech-sre': {
+    company: 'Initech',
+    role: 'SRE',
+    stage: 'interview',
+    jdUrl: 'https://initech.example/careers/sre',
+    updatedAt: '2026-11-04T16:20:00Z',
+    companyInfo: '',
+    projectScope: 'Own on-call and reliability for the billing platform.',
+    notes: 'Panel of three; the last round includes a systems design exercise.',
+    talkingPoints: '',
+    persona: '',
+    glossary: '',
+    resume: 'Site reliability engineer, 8 years. Led the move to Kubernetes at a payments firm.',
+  },
+  'acme-platform': {
+    company: 'Acme',
+    role: 'Platform Engineer',
+    stage: 'interview',
+    jdUrl: 'https://acme.example/jobs/platform',
+    updatedAt: '2026-11-05T09:00:00Z',
+    companyInfo: 'Three-clinic group. Compliance officer joins most calls.',
+    projectScope: 'HIPAA-safe patient intake forms with e-signature.',
+    notes: 'Hiring manager confirmed the pilot starts at the Beaverton clinic in October.',
+    talkingPoints: 'Pilot at the Beaverton clinic first. Offer an audit-log walkthrough.',
+    persona: 'Warm, careful with promises.',
+    glossary: 'intake form',
+    resume: 'Platform engineer focused on regulated environments.',
+  },
+  'globex-closed': {
+    company: 'Globex',
+    role: 'Staff Engineer',
+    stage: 'closed',
+    jdUrl: 'https://globex.example/careers/staff',
+    updatedAt: '2026-10-20T12:00:00Z',
+    companyInfo: 'Manufacturing automation vendor.',
+    projectScope: 'Own the plant telemetry pipeline.',
+    notes: 'Process closed after the final round.',
+    talkingPoints: '',
+    persona: '',
+    glossary: '',
+    resume: '',
+  },
+  'umbrella-closed': {
+    company: 'Umbrella',
+    role: 'Backend Engineer',
+    stage: 'closed',
+    jdUrl: 'https://umbrella.example/jobs/backend',
+    updatedAt: '2026-09-30T08:00:00Z',
+    companyInfo: '',
+    projectScope: '',
+    notes: '',
+    talkingPoints: '',
+    persona: '',
+    glossary: '',
+    resume: '',
+  },
 }

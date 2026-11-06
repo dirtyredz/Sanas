@@ -14,6 +14,8 @@ export const PACK_SCRIPT = ['_hunt', 'cli', 'sanas-packs.js'] as const
 export const REFRESH_TIMEOUT_MS = 30_000
 export const REFRESH_MAX_OUTPUT_BYTES = 256 * 1024
 const REASON_MAX_CHARS = 160
+// eslint-disable-next-line no-control-regex
+const CONTROL = /[\u0000-\u001f\u007f]/g
 
 export type RefreshOutcome = { ok: true } | { ok: false; reason: string }
 
@@ -43,11 +45,7 @@ export function childEnvironment(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
 /** One printable line, bounded: the producer reports failures as a single stderr line. */
 function firstLine(text: string): string {
   const line = text.split(/\r?\n/).find((l) => l.trim()) ?? ''
-  // eslint-disable-next-line no-control-regex
-  return line
-    .replace(/[\u0000-\u001f\u007f]/g, '')
-    .trim()
-    .slice(0, REASON_MAX_CHARS)
+  return line.replace(CONTROL, '').trim().slice(0, REASON_MAX_CHARS)
 }
 
 function failure(error: ExecFileException, stderr: string, node: string): string {
