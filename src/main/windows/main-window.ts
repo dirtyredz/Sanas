@@ -4,6 +4,11 @@ import { mainWindowChromeOptions } from './window-chrome'
 
 let mainWindow: BrowserWindow | null = null
 
+/** True when an IPC sender is the library window (privileged job deletion/import). */
+export function isMainWindowSender(id: number): boolean {
+  return !!mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents.id === id
+}
+
 /** Reveals the existing main window without reloading it: restore if minimized, show if
  *  hidden, then focus. The Live page (and its microphone session) stays mounted. */
 function reveal(window: BrowserWindow): BrowserWindow {

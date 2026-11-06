@@ -68,6 +68,16 @@ export const IPC = {
   JobsGetResume: 'jobs:get-resume',
   JobsSetResume: 'jobs:set-resume',
   JobsImportResume: 'jobs:import-resume',
+  /** Authoritative counts of everything deleting a job removes, plus a confirmation token. */
+  JobsDeletePreview: 'jobs:delete-preview',
+  /** Consume the confirmation token: back up the database, then delete the job and its history. */
+  JobsDelete: 'jobs:delete',
+  /** Refresh the resumes interview packs, then list them with their link state. */
+  JobApplicationsList: 'job-applications:list',
+  /** Create or refresh preview for one listed application. */
+  JobApplicationsPreview: 'job-applications:preview',
+  /** Apply a preview token with conflict/archive choices and draft edits. */
+  JobApplicationsApply: 'job-applications:apply',
   GlossaryList: 'glossary:list',
   GlossaryAdd: 'glossary:add',
   GlossaryRemove: 'glossary:remove',

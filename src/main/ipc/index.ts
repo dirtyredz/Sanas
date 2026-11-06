@@ -1,4 +1,7 @@
 import { registerJobResumeIpc } from './job-resume/job-resume'
+import { registerJobsIpc } from './jobs/jobs'
+import { registerJobApplicationsIpc } from './jobs/applications'
+import { registerJobDeletionIpc } from './jobs/deletion'
 import { registerMockInterviewIpc } from './mock-interview'
 import { registerUpdatesIpc } from './updates'
 import { ipcMain } from 'electron'
@@ -27,20 +30,10 @@ import {
   requireMeetingStart,
   requireId,
   requireIdList,
-  requireJob,
   requireSettingsPatch,
   requireSpeaker,
   requireText,
 } from './validate'
-import {
-  listJobs,
-  createJob,
-  updateJob,
-  setJobArchived,
-  listGlossary,
-  addGlossaryTerm,
-  removeGlossaryTerm,
-} from '../db/repos/jobs'
 import { getMeetingGrounding } from '../db/repos/meeting/meeting-grounding'
 import { listMeetings, getMeeting, renameMeeting } from '../db/repos/meeting/meetings'
 import { fileMeeting } from '../services/meetings/status/filing'
@@ -59,6 +52,9 @@ import { broadcast } from '../windows/broadcast'
 // Thin handlers only — validate (./validate.ts) and delegate (see STRUCTURE.md).
 
 export function registerIpcHandlers(): void {
+  registerJobsIpc()
+  registerJobDeletionIpc()
+  registerJobApplicationsIpc()
   registerJobResumeIpc()
   registerMockInterviewIpc()
   registerUpdatesIpc()
@@ -103,27 +99,6 @@ export function registerIpcHandlers(): void {
   ipcMain.on(IPC.AudioChunk, (_e, chunk: unknown) => {
     if (chunk instanceof ArrayBuffer) sendAudioChunk(Buffer.from(chunk)) // anything else is dropped
   })
-
-  // jobs + context packs
-  ipcMain.handle(IPC.JobsList, () => listJobs())
-  ipcMain.handle(IPC.JobsCreate, (_e, name: unknown) =>
-    createJob(requireText(name, 'job name', 120)),
-  )
-  ipcMain.handle(IPC.JobsUpdate, (_e, job: unknown) => updateJob(requireJob(job)))
-  ipcMain.handle(IPC.JobsArchive, (_e, id: unknown, archived: unknown) =>
-    setJobArchived(requireId(id, 'job id'), requireBool(archived, 'archived')),
-  )
-  ipcMain.handle(IPC.GlossaryList, (_e, jobId: unknown) => listGlossary(requireId(jobId, 'job id')))
-  ipcMain.handle(IPC.GlossaryAdd, (_e, jobId: unknown, term: unknown, note: unknown) =>
-    addGlossaryTerm(
-      requireId(jobId, 'job id'),
-      requireText(term, 'term', 100),
-      optionalText(note, 500),
-    ),
-  )
-  ipcMain.handle(IPC.GlossaryRemove, (_e, id: unknown) =>
-    removeGlossaryTerm(requireId(id, 'glossary id')),
-  )
 
   // meeting history
   ipcMain.handle(IPC.MeetingsList, (_e, jobId: unknown) => listMeetings(requireId(jobId, 'job id')))

@@ -2,6 +2,12 @@ import type { Job, OverlayResizeRequest, Settings } from '@shared/types'
 import { SETTINGS_SCHEMA } from '../config/settings-schema'
 import { MEETING_CONTEXT_MAX_CHARS } from '@shared/meeting-context'
 import type { MeetingStartOptions } from '@shared/meeting-start'
+import {
+  JOB_CONTEXT_MAX_CHARS,
+  JOB_NAME_MAX_CHARS,
+  JOB_PERSONA_MAX_CHARS,
+  JOB_SUMMARY_EMAIL_MAX_CHARS,
+} from '@shared/jobs/limits'
 
 // Ingress checks for what the renderer sends over IPC. Preload's TypeScript types do not
 // survive the hop, so every handler argument goes through one of these before delegating.
@@ -73,8 +79,6 @@ export function requireIdList(v: unknown, what: string, min: number): number[] {
   return ids
 }
 
-const PACK_MAX = 20_000 // a context-pack field; the whole pack is sent on every suggestion
-
 /** The editable job fields for a full-row update: every field must be present as a
  *  string (empty allowed) so a malformed payload cannot erase stored context; unknown
  *  keys are dropped. */
@@ -83,13 +87,13 @@ export function requireJob(v: unknown): Omit<Job, 'createdAt' | 'archived'> {
   const j = v as Record<string, unknown>
   return {
     id: requireId(j.id, 'job id'),
-    name: requireText(j.name, 'job name', 120),
-    companyInfo: boundedText(j.companyInfo, 'company info', PACK_MAX),
-    projectScope: boundedText(j.projectScope, 'project scope', PACK_MAX),
-    notes: boundedText(j.notes, 'notes', PACK_MAX),
-    talkingPoints: boundedText(j.talkingPoints, 'talking points', PACK_MAX),
-    persona: boundedText(j.persona, 'persona', 2_000),
-    summaryEmail: boundedText(j.summaryEmail, 'summary email', 200),
+    name: requireText(j.name, 'job name', JOB_NAME_MAX_CHARS),
+    companyInfo: boundedText(j.companyInfo, 'company info', JOB_CONTEXT_MAX_CHARS),
+    projectScope: boundedText(j.projectScope, 'project scope', JOB_CONTEXT_MAX_CHARS),
+    notes: boundedText(j.notes, 'notes', JOB_CONTEXT_MAX_CHARS),
+    talkingPoints: boundedText(j.talkingPoints, 'talking points', JOB_CONTEXT_MAX_CHARS),
+    persona: boundedText(j.persona, 'persona', JOB_PERSONA_MAX_CHARS),
+    summaryEmail: boundedText(j.summaryEmail, 'summary email', JOB_SUMMARY_EMAIL_MAX_CHARS),
   }
 }
 
