@@ -196,6 +196,30 @@ image bytes; captures retain SHA-256 digests and pixel errors. Successful full p
 remain in the private isolated SQLite profile. Failed/no-op calls retain metadata only.
 Treat retained profiles and custom scenario text as private and remove them when no longer needed.
 
+### Latency evidence
+
+The report also has `latency: { summary, records }` from the same `LatencyTracker` the app uses
+(`meetings/assist/latency.ts`), plus `RequestOutcome.classifier` (canonical verdict) and
+`RequestOutcome.usage` (absent = unknown; canned replies report none). Denominators:
+
+- `records` are the finished per-candidate/run records (up to 200); `summary` has counts and
+  medians grouped by "verdict · path", speculation started/promoted/discarded with discard reasons,
+  fallbacks, outcomes and missing/partial usage. Failures, no-ops and discarded speculations are
+  counted apart, never averaged into answer medians.
+- "First readable" is the first main-process broadcast whose visible text has a letter or digit
+  (not the no-op, not Markdown delimiters or filler alone): a proxy for visibility, not paint.
+- Records are redacted to ids, enums, canonical verdicts, malformed shapes and durations; never
+  text, prompts, names, raw provider output or error bodies. Durations are monotonic; audio-clock
+  values are not mixed in.
+- Mock feeds the same tracker in `MockEvidence` and logs one `[sanas] mock latency {summary}` line
+  at session end. Practice results and metrics are unchanged; discarded speculations stay out of
+  per-question results but are in the summary.
+
+Canned and scripted runs prove the plumbing, not live latency or answer quality. Owner live
+acceptance: automatic speech-end-to-first-readable median <= 2.5 s; per-verdict counts and medians
+showing request/room parity; failures, no-ops and discards reported separately; reconnect
+timestamps aligned with playback; watchdog behaviour during long silence.
+
 Checks distinguish never-requested, declined, failed/cancelled, pending-at-stop, delivered-late
 and wrong-content/undelivered. Compare `requests`, `transitions`, `admissions`, `finalReceipts`
 and `turnCompletions` to locate a lost answer. Request coverage is not answer acceptance.
@@ -247,7 +271,7 @@ npm run typecheck
 npm run lint
 npm exec -- vitest run src/main/services/mock-interview src/main/db/repos src/main/ipc src/main/rehearsal scripts/rehearsal src/main/services/meetings/assist/suggestion-runner.test.ts src/main/services/meetings/index.test.ts src/main/services/meetings/merge src/main/services/history src/renderer/src/lib/meeting/start-captured-meeting.test.ts src/renderer/src/app/pages/MockInterviewPage.test.tsx src/renderer/src/app/settings src/renderer/src/interviewer-app
 npm run build
-./scripts/rehearsal/run.ps1 -Scenario mock-interview -Tier scripted -Assistant canned
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/rehearsal/run.ps1 -Scenario mock-interview -Tier scripted -Assistant canned
 ```
 
 Run that ONE free scripted rehearsal, serially. Add another canned scenario only when the

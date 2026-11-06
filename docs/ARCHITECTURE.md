@@ -122,6 +122,16 @@ Mic (getUserMedia, renderer)
   endpoint | utterance-end; activity; reset) via the optional `onSignal` callback. A stereo
   message with a missing or invalid channel index becomes channel -1 (identity unknown), never
   implicitly "Me". An unexpected socket close emits `reset` at once, before the backoff.
+- **Session and clock:** `stt/deepgram-session.ts` (`DeepgramSession`) owns the socket lifecycle;
+  `deepgram.ts` keeps the provider and batch transcription; `deepgram-stream-url.ts` builds the URL.
+  Every PCM byte handed to `sendAudio` is counted (including chunks dropped in reconnect backoff)
+  from `startOffsetMs`; each socket's offset is frozen where its first transmitted chunk started and
+  applied to finals, interims, endpoint, utterance-end and VAD, so timestamps stay on the meeting
+  audio clock (= the WAV) across reconnects. `deepgram-watchdog.ts` (`ResultWatchdog`): armed by the
+  first transmitted chunk; any Results message (even empty) refreshes it; stall = audio sent in the
+  last 2 s and 9 s without Results. A stall retires the socket, emits one reset, closes it (4000
+  `stalled`) and runs the bounded backoff (1, 2, 4, 8, 8 s), then reports "connection lost
+  (stalled)". Opening is bounded at 10 s; Stop never resurrects a socket. No audio is replayed.
 - Speaker labels: in This-PC (stereo) mode the user is structural (channel 0); in Elsewhere
   (mono) mode the user pins their own diarized voice ("that's me"), persisted per meeting and
   carried through re-diarization by time overlap.
@@ -159,33 +169,63 @@ Mic (getUserMedia, renderer)
   A turn closes after a boundary plus a 150 ms continuation grace (350 ms before 2026-11-04),
   after 1,800 ms with no advancing speech, or on a confirmed speaker change in final text;
   channels are independent.
-- **Latency path (speech end → first readable answer):** endpoint arrival (Deepgram
-  `endpointing=600`) + 150 ms grace + max(classifier complete, answer first text) + IPC/paint.
-  The classifier and the answer overlap because of speculation (next bullet). Warm live
-  measurement 2026-11-04: Haiku verdict median 697 ms, Sonnet first token median 1,182 ms, so
-  first text lands ≈1.9 s after speech end instead of ≈2.8 s.
+- **Latency paths (speech end → first readable answer):** a turn closes by endpoint
+  (`endpointing=600`) + 150 ms grace; by UtteranceEnd (`utterance_end_ms=1000`, ≈1.15 s path); or by
+  the 1,800 ms fallback after the last ADVANCING receipt (not acoustic speech end). Then
+  max(classifier complete, answer first text) + IPC/paint; the classifier and answer overlap through
+  speculation (next bullet). Warm 2026-11-04 medians (Haiku 697 ms, Sonnet first token 1,182 ms)
+  give a nominal ≈1.9 s on the endpoint path, but owner measurements are slower: treat it as
+  nominal; the stage timing evidence below is how to find where the time goes.
 - **Speculative answer** (`assist/speculative-answer.ts`, `SuggestionRunner.speculate`): when the
-  classifier starts on a free ambient lane, the answer a `question me` verdict would get starts
-  with it, **unpublished**: it owns the ambient lane and the meeting hold, but emits no event and
+  classifier starts on a free ambient lane, the answer is built with the neutral automatic
+  focus block (`answer-context/automatic-turn.ts`: one wording for all six accepted verdicts, never
+  stating kind or addressee) and starts with it, **unpublished**: it owns the ambient lane and the meeting hold, but emits no event and
   stores nothing; deltas are buffered. On the verdict, the ordinary request is rebuilt from the
-  state at that moment; the speculation is **promoted** (held text shown at once, then it streams
-  and persists like any answer) only if that request is the identical prompt (same verdict
-  wording, window, told stories, grounding, carried questions, model). Otherwise it is
-  **discarded** silently and the ordinary request starts: `none`, failures, `other`, `request`,
-  `room`, a moved-on window, a changed ledger, expiry, a dropped candidate, Stop/reconnect/pin
+  state at that moment with the same builder; the speculation is **promoted** (held text shown at once, then it streams
+  and persists like any answer) only if that request is the identical prompt (same
+  window, told stories, grounding, carried questions, model). Otherwise it is
+  **discarded** silently and the ordinary request starts: `none`, failures, `other` under Answer
+  every question (explicit reference-answer prompt), a moved-on window, a changed ledger, expiry, a dropped candidate, Stop/reconnect/pin
   change, its own provider failure or timeout. Cooldown and ledger coverage are consumed only on
   promotion. "Answer now" uses the hotkey lane and never touches it. Every speculation is a paid
   call, discarded or not: `speculation-started/promoted/discarded` diagnostics and a
   `speculative answers: started=… promoted=… discarded=…` log line at Stop count it.
-- **Stage timing evidence** (`assist/diagnostics.ts`, `run-observation.ts`): assistance events
-  `turn-completed`, `classifier-started`, `classified`, `answer-started` (with the
+- **Stage timing evidence** (`assist/diagnostics.ts`, `run-observation.ts`, `assist/latency.ts`):
+  assistance events `turn-completed`, `classifier-started`, `classified`, `answer-started` (with the
   `suggestionId`, correlating candidate turn and run) and the speculation events; run events
-  `begin`, `first-text` (provider text, shown or not), `promoted`, `visible` (main-process
-  broadcast), `settled`. Observers stamp their own receipt clock; no prompt or answer text.
+  `begin`, `first-text`, `first-readable`, `promoted`, `visible`, `usage`, `settled`, each stamped
+  `at` (monotonic) with `trigger`. `LatencyTracker` correlates them by candidate (completed turn id),
+  classifier attempt and run (a fallback run links to its discarded speculation) into allowlisted
+  records: ids, enums, canonical verdict or failure category, malformed shape, completion reason,
+  turn-assembly timing, durations (classifierMs, closeToRequestMs, requestToFirstTextMs,
+  closeToFirstTextMs, closeToPromotionMs, closeToFirstReadableMs, requestToFirstReadableMs,
+  lastFinalToFirstReadableMs), discard category, outcome, usage. Never text, prompts, names, raw
+  provider output or error bodies. Bounded: 64 open candidates/runs, 200 finished records, an
+  overflow counter, nothing per delta. "First readable" = first broadcast whose visible text has a
+  letter or digit (a proxy for visibility, not renderer paint). Manual and next-point runs are
+  classified `n/a`. `live-session.ts` logs one `[sanas] latency {json}` line per finished record;
+  `summarizeLatency()` gives counts and medians per "verdict · path", speculation
+  started/promoted/discarded with reasons, fallbacks, outcomes and missing/partial usage.
+  Rehearsal reports and Mock feed the same tracker (docs/REHEARSAL.md).
+- **Turn-close measurement:** `TurnFinal` carries optional `ingressAt` (monotonic, stamped in
+  `meetings/index.ts` before the synchronous insert) and `audioCursorMs`; `TurnAssembler` attaches
+  `CompletedTurn.assembly` (ingress→assembly, last-final→close, boundary→close, timer lateness,
+  boundary source, capped accepted/rejected/cancelled counters, audio-cursor gap as a PROXY on the
+  audio clock). Measurement only; no timing policy changed.
+- **Provider usage:** `AssistRequest.onUsage` (optional, best effort, once per call) reports
+  `ProviderUsage` {inputCount, outputCount, cacheReadCount, cacheWriteCount, partial}
+  (`assistant/provider-usage.ts`; `claude.ts` reports final usage, or partial from the stream
+  snapshot on failure/cancel). Missing fields are unknown, never zero; total input =
+  input + cacheRead + cacheWrite. No token-count API calls.
+- **Clocks:** durations use the monotonic receipt clock; audio-clock values (STT/WAV time,
+  `audioCursorMs`) are never mixed with them.
 - **Classifier** (`assistant/classifier.ts`): one non-streaming call with `classifierModel`
   (default Haiku), 64 tokens, 2.5 s hard deadline, answering one of `question | request |
-objection | none`. It **fails closed**: timeout, cancel, malformed output or provider error
-  means no automatic answer. A single provider failure or timeout skips only its turn; 3 consecutive ones suspend classification for 30 s (rate-limited
+objection` + `me | room | other`, or `none`. Parsing (`classifier-verdict.ts`) is tolerant but
+  conservative: one kind and one addressee as whole words in either order and any case or
+  punctuation, else fail closed (competing, hedged, incomplete or over-long replies); evidence keeps
+  the canonical verdict or a content-free malformed shape, never the reply. It **fails closed**:
+  timeout, cancel, unaccepted output or provider error means no automatic answer. A single provider failure or timeout skips only its turn; 3 consecutive ones suspend classification for 30 s (rate-limited
   sanitized diagnostics without transcript text, with library/overlay availability status).
 - **Admission:** one classifier at a time, one newest replacement candidate, ≥1 s between
   starts; a candidate lives 6 s from completion (checked before classifying and before

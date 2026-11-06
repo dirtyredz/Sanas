@@ -2,6 +2,47 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-11-05 — Neutral speculation for every accepted verdict (answer latency, round 2)
+
+Supersedes the 2026-11-04 "question me only" speculation. Plan: `docs/plans/answer-latency-round2.md`.
+The automatic focus block (`answer-context/automatic-turn.ts`) now uses ONE neutral wording for all
+six accepted verdicts (question/request/objection × me/room): respond to this completed turn; answer
+if it asks for information or an opinion, act on it if it asks Me to explain, demonstrate, decide or
+act, reply if it challenges something; plus the anchor reminder and a conditional room rule (put to
+the group rather than to Me: suggest only if genuinely useful and non-repeated, else `<none>`). It
+never states the classifier's kind or addressee, so the speculation built before the classifier is
+the same prompt as the ordinary one and is promoted for every accepted verdict when nothing else
+moved. `other` under Answer every question keeps the explicit reference-answer prompt, so that
+speculation is discarded and the ordinary path answers.
+
+- **Cost unchanged:** at most one speculative call per classified candidate on a free lane; no
+  verdict-only replacement call for request/room any more.
+- **Tradeoff accepted:** the model must infer direct-vs-room from context instead of being told, so
+  answer quality needs owner observation (live acceptance, docs/REHEARSAL.md).
+- Rejected: six per-verdict speculations (6x spend); a follow-up instruction after the verdict (it
+  cannot retroactively fit held text); keeping verdict wording in the prompt (forces a replacement
+  call for request/room).
+
+## 2026-11-05 — Tolerant but conservative classifier verdict parsing
+
+Haiku returned "room question" (dk-98a73491) and the strict parser failed the turn closed.
+`assistant/classifier-verdict.ts` now accepts exactly one kind and one addressee as whole words in
+either order, any case/punctuation/labels, or `none` alone. It still fails closed on empty or
+over-long (>120) replies, competing kinds/addressees, `none` mixed with a positive, incomplete pairs,
+substrings/plurals and any hedge/negation/alternative word (not, or, maybe, unclear, ...). Evidence
+stores the canonical verdict, and a rejected reply only as a shape (category, length bucket, token
+order, punctuation flags), never its text. Prompt, deadline, cancellation and suspension unchanged.
+
+## 2026-11-05 — Reconnect offsets follow the PCM stream; stalled sockets are retired at 9 s
+
+The old "offset = last final's end" rule stamped speech after a reconnect earlier than the WAV.
+`stt/deepgram-session.ts` now counts every PCM byte handed to `sendAudio` (including chunks dropped
+during backoff) and freezes each socket's offset at the cursor where its first transmitted chunk
+started; it applies to finals, interims, endpoint, utterance-end and VAD alike. A `ResultWatchdog`
+(9 s without any Results while audio flows) retires a silently stalled socket, emits one reset and
+reuses the bounded backoff. Lost text is not recovered; audio replay stays dk-0af7b509. Rejected:
+wall-clock offsets (jitter), offset from socket open (ignores the first chunk's real position).
+
 ## 2026-11-04 — Presentation mode retired; meeting context can be entered before Start
 
 Owner decision: drop presentation (slides) mode completely. It supersedes the 2026-10-30
@@ -125,6 +166,8 @@ of the question, so reading a suggestion or thinking got cut off.
 
 ## 2026-11-04 — Speculative answers and a 150 ms turn grace (answer latency)
 
+_Speculation scope superseded 2026-11-05: now neutral for every accepted verdict._
+
 The owner found automatic answers slow. The path was serial: endpoint + 350 ms grace + Haiku
 verdict (warm median 697 ms) + Sonnet first token (warm median 1,182 ms). Plan:
 `docs/plans/answer-latency-diagnosis.md`.
@@ -141,11 +184,11 @@ verdict (warm median 697 ms) + Sonnet first token (warm median 1,182 ms). Plan:
   boundary-completed turn. Tradeoff: speech resuming 150–350 ms after a boundary's arrival now
   starts a new turn instead of continuing (a premature answer, then a superseded one). Live,
   Deepgram only endpoints after 600 ms of silence, so short pauses never reach the grace.
-- Rejected: speculating every verdict type (silently changes addressee semantics); speculating on
+- Rejected: speculating every verdict type (silently changes addressee semantics; superseded 2026-11-05 by neutral wording); speculating on
   interims (unstable text, far more spend); a second automatic-answer pipeline; removing classifier
   spacing or cooldown (no measured cost); a shorter classifier prompt or endpointing change in the
   same step (one proven change at a time).
-- Expected: first readable text ≈1.9 s after speech end, from ≈2.8 s.
+- Expected: first readable text ≈1.9 s after speech end, from ≈2.8 s (nominal; owner measurements were slower, see 2026-11-05 stage timing evidence).
 
 ## 2026-11-03 — One meeting-grounding read
 
@@ -545,11 +588,8 @@ provider, which cannot see audio the socket dropped; the seam only takes a `star
 telling a new connection where its clock begins, and `sendAudioChunk` accepts nothing until
 the session and the recording are both ready, so the count never starts ahead of either.
 
-The agreement is exact for pause and resume, and for everything main timestamps. It is NOT
-exact across the provider's own internal reconnect: that resumes from the last final word,
-so speech after a network wobble is stamped earlier than its position in the WAV by the
-length of the dropped audio. Buffering and replaying that audio is backlogged; until then,
-re-diarization is what restores true times, and only when recording is on.
+The agreement is exact for pause and resume, and for everything main timestamps. Before
+2026-11-05 it was NOT exact across the provider's own internal reconnect; since then reconnect offsets follow the PCM stream (see that entry), so live times stay on the WAV clock. Lost audio is still not replayed (backlogged).
 
 ## 2026-09-09 — Pause keeps one meeting; a lost connection pauses rather than errors
 

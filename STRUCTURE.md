@@ -188,18 +188,19 @@ sanas/
 - `src/main/ipc/` — typed IPC handlers; validate ingress and delegate, with no business logic (`windows.ts`: overlay toggle/resize/ghost, compose handshake and the parameterless Open Sanas; `validate.ts` also owns `requireMeetingStart`, the Start options check; `presentation-history.ts`: read-only historical slide markers; `hotkeys.ts`: global-shortcut status)
 - `src/main/` — process entry (`index.ts`, normal vs `--smoke` dispatch) and the display-media loopback handler (`system-audio.ts`)
 - `src/main/services/` — main-process services and provider seams
-- `src/main/services/stt/` — the swappable STT seam, Deepgram implementation and message normalization; `keyterm-budget.ts` holds Deepgram's keyterm limits so callers pass an ordered list and never a vendor budget; `endpointing.ts` the shared endpointing silence the scripted STT mirrors
+- `src/main/services/stt/` — the swappable STT seam, Deepgram provider and batch (`deepgram.ts`), socket lifecycle and PCM-anchored clock (`deepgram-session.ts`, `DeepgramSession`), stall watchdog (`deepgram-watchdog.ts`), stream URL (`deepgram-stream-url.ts`) and message normalization; `keyterm-budget.ts` holds Deepgram's keyterm limits so callers pass an ordered list and never a vendor budget; `endpointing.ts` the shared endpointing silence the scripted STT mirrors
+- `src/main/services/assistant/classifier-verdict.ts` — pure tolerant-but-conservative verdict parsing, canonical `formatVerdict` and content-free malformed shapes; `provider-usage.ts` extracts Anthropic usage into `ProviderUsage` (missing = unknown)
 - `src/main/services/assistant/failure-diagnostics.ts` — allowlists provider failure metadata for classifier diagnostics (category incl. `connection`, error class `errorName`, status, request ID, model, elapsed); the assistance coordinator owns the suspension timer and publishes availability through MeetingState
 - `src/main/ipc/job-resume/` — `jobs.getResume`/`setResume` (validated by `validateResume`) and `resume-import.ts`, the native PDF/DOCX picker returning an unsaved draft; the renderer never supplies a filesystem path
 - `src/renderer/src/lib/meeting/start-selection.ts` — remembered Start selection persistence and the Interview default/override rule
 - `src/renderer/src/lib/meeting/resume/` — `useJobHasResume`, whether the selected job has a saved resume (Live's Interview default), stale-reply safe
 - `src/main/services/turns/` — pure turn assembly and identity-role types; no I/O or timers; `latest-question.ts` picks the question Answer now answers
 - `src/main/services/assistant/` — the swappable assistant seam and shared answer/classification logic
-- `src/main/services/assistant/answer-context/` — answer prompt context: current-exchange/background window split, anchor text (`anchor.ts`: `CURRENT_QUESTION_RULE`, `ANCHOR_REMINDER`, `LatestQuestion`), told stories, `ShownLedger` (`shown-ledger.ts`: the one place a shown suggestion is routed into the recent/told/coach memories, used by `LiveSession` and the eval), and `topic-switch-fixture.ts` (invented data + window builder; scoring lives in `scripts/eval/carried-terms.ts`)
+- `src/main/services/assistant/answer-context/` — `automatic-turn.ts` owns the neutral automatic focus block and `TriggeringTurn`; answer prompt context: current-exchange/background window split, anchor text (`anchor.ts`: `CURRENT_QUESTION_RULE`, `ANCHOR_REMINDER`, `LatestQuestion`), told stories, `ShownLedger` (`shown-ledger.ts`: the one place a shown suggestion is routed into the recent/told/coach memories, used by `LiveSession` and the eval), and `topic-switch-fixture.ts` (invented data + window builder; scoring lives in `scripts/eval/carried-terms.ts`)
 - `src/main/services/assistant/coach/` — next-point eligibility policy and coach prompt construction
 - `src/main/services/assistant/live-controls/` — typed, detail, audience and screen-capture request instructions
 - `src/main/services/meetings/` — meeting lifecycle/STT/audio orchestration plus meeting-level facades
-- `src/main/services/meetings/assist/` — per-meeting prompt/grounding state, manual and screen-capture admission, in-memory composer screen drafts (`capture-drafts.ts`), automatic coordination (`question-ledger.ts` carries uncovered stacked questions into one suggestion; `speculative-answer.ts` owns the one unpublished answer started alongside the classifier and its promote/discard rule; `samePrompt` in `suggestion-requests.ts` decides when two requests are the same prompt, comparing every field except an explicit short list) and suggestion execution (`suggestion-runner.ts` owns lanes, deadline and persistence; `run-publication.ts` the per-run held-text and publish gate)
+- `src/main/services/meetings/assist/` — per-meeting prompt/grounding state, manual and screen-capture admission, in-memory composer screen drafts (`capture-drafts.ts`), automatic coordination (`question-ledger.ts` carries uncovered stacked questions into one suggestion; `speculative-answer.ts` owns the one unpublished answer started alongside the classifier and its promote/discard rule; `samePrompt` in `suggestion-requests.ts` decides when two requests are the same prompt, comparing every field except an explicit short list) and suggestion execution (`latency.ts` `LatencyTracker` correlates diagnostics and run observations into bounded, allowlisted stage-timing records and summaries; `suggestion-runner.ts` owns lanes, deadline and persistence; `run-publication.ts` the per-run held-text and publish gate)
 - `src/main/services/meetings/assist/testing/` — test-only fake-clock harness shared by the live-assistance suites
 - `src/main/services/meetings/capture/` — AUDIO capture-side identity and capture-health policy (screen capture lives in `services/screen-capture/`)
 - `src/main/services/meetings/context/` — pure preparation followed by commit/publication of live context changes; `meeting-keyterms.ts` builds the STT hints (glossary plus resume/profile terms) for streaming and batch
@@ -313,9 +314,11 @@ main-process code belongs in a responsibility folder above, not beside them.
 - The overlay's CSS layers (`overlay-controls/-shell/-panels/-suggestions.css`) live in
   `app/styles/` beside the library's, so the shared folder mixes two bundles; `.workspace-body` /
   `.workspace-actions` sit in `overlay-panels.css` while the workspace frame is in `overlay-shell.css`.
+- `services/assistant/` has 15 entries; a `classifier/` subfolder for `classifier.ts`,
+  `classifier-verdict.ts` and `failure-diagnostics.ts` is the natural next split.
 - `services/meetings/` and `services/assistant/` are both broad (many files plus subfolders);
-  group by lifecycle vs. policy before adding more siblings. `meetings/assist/` holds 16 code files
-  (over the 12 cap) after `speculative-answer.ts`; a split into automatic (live-assistance, ledger,
+  group by lifecycle vs. policy before adding more siblings. `meetings/assist/` holds 17 code files
+  (over the 12 cap) after `latency.ts`; a split into automatic (live-assistance, ledger,
   speculation, runner) and manual (manual/capture requests, drafts) subfolders is the natural seam.
 - `shell/` and `workspaces/` are coupled through `OverlaySessionModel`: workspaces take the whole
   session, and `OverlaySession` imports the composer hook. Narrow the props per workspace if the

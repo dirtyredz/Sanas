@@ -176,14 +176,13 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   Do NOT use the provider's last transcript time as the cursor: it only moves on a final
   result, so pausing during silence would rewind the clock and the resumed session would
   overlap what was already stored.
-- **Segment timestamps come from the provider, so they are NOT guaranteed to match the WAV.**
-  They agree with it in the normal case, but an internal reconnect resumes counting from the
-  last final word (`stt/deepgram.ts`), and the audio lost during the backoff is never sent —
-  so everything spoken after such a reconnect is stamped EARLIER than its true position in
-  the recording, by roughly the length of the gap. Explicit pause/resume does not have this
-  problem (main supplies the offset from its own count). Treat live segment times as
-  approximate after a network wobble; re-diarization, which reads the WAV, is what restores
-  true times, and only when `recordAudio` is on.
+- **Reconnect offsets follow the PCM stream, never finals.** `stt/deepgram-session.ts` counts
+  every PCM byte handed to `sendAudio` (even chunks dropped during backoff) and freezes each
+  socket's offset at the cursor where its first transmitted chunk started, applied to finals,
+  interims, endpoint, utterance-end and VAD alike. Live times therefore stay on the WAV clock after
+  a reconnect. The old "offset = last final's end" rule drifted earlier after silence; do not
+  reintroduce it, and do not use the socket-open time, last final or wall clock. Audio dropped
+  during backoff still produces no live text (re-diarization recovers it when `recordAudio` is on).
 - **A lost connection pauses, it does not error.** The Deepgram session retries with backoff
   on its own; only when those are exhausted does it report, and the orchestrator turns that
   into a pause so the meeting row survives. The UI shows the reason and a Resume button.
@@ -341,6 +340,22 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   context, grounding id/revision, carried turns, model, budget). A new final, a hotkey answer
   adding a told story, or "Answer now" clearing the ledger all make it a mismatch and the
   ordinary request replaces it. Do not loosen this to "the verdict is a question".
+- **Monotonic and audio clocks have different origins.** Latency durations use the monotonic
+  receipt clock (`ingressAt`, observer `at`); STT/WAV time and `audioCursorMs` are on the audio
+  clock. Never subtract one from the other; `audioCursorGapMs` is a labelled proxy only.
+- **Tolerant verdict parsing needs canonical evidence.** `classifier-verdict.ts` accepts messy
+  but unambiguous replies ("Verdict: ROOM, QUESTION."); evidence and rehearsal store the canonical
+  verdict (`formatVerdict`), and a rejected reply only as a shape (category, length bucket, token
+  order, flags). Never store or log the reply text. Hedge/negation words (not, or, maybe, ...) must
+  keep failing closed.
+- **Missing provider usage is unknown, not zero, and cache fields are never summed twice.**
+  `ProviderUsage` fields stay separate; total input = inputCount + cacheReadCount +
+  cacheWriteCount (Anthropic reports cache reads/writes apart from uncached input). Field names
+  avoid "token" because the main log (`lifecycle/main-log.ts`) redacts any key containing it.
+- **The stall watchdog relies on Results during silence.** `ResultWatchdog` treats 9 s without any
+  Results (even empty ones) while audio was sent in the last 2 s as a stall. Whether Deepgram sends
+  Results through sustained silence is unverified live; owner acceptance check (long silence must
+  not reset the socket).
 - **Latency clocks differ by origin.** Assistance/run observers stamp their own receipt clocks
   (rehearsal: harness `now()`; Mock: its `now`); turn timing in `live-assistance` is receipt time
   (`performance.now`); provider and STT timestamps are audio time. Mock's `firstVisibleLatencyMs`
