@@ -349,8 +349,14 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   order, flags). Never store or log the reply text. Hedge/negation words (not, or, maybe, ...) must
   keep failing closed.
 - **Latency evidence reads typed flags, never reason text.** `classified` events carry `accepted`
-  (verdict was not `none`/a failure) and `speculation-discarded` events carry `discard` (a
-  `DiscardCategory`, assigned in `speculative-answer.ts`); `latency.ts` must not re-parse `reason`.
+  (the coordinator's own decision: it will answer this verdict. False for `none`, a failure, a
+  stale/dropped candidate, and a verdict turned down by policy such as `question other` without
+  Answer every question), `speculation-discarded` events carry `discard` (a `DiscardCategory`,
+  assigned in `speculative-answer.ts`), and every event that ends a candidate without an answer
+  (`classified` turned down, `not-classified`, `not-generated`, `superseded`, `invalidated`)
+  carries `turnedDown` (a `TurnedDownCategory`; `policy` = addressee/cooldown/no key/suspended).
+  `latency.ts` must not re-parse `reason`, and finishes each candidate in exactly one record: a
+  new way to end a candidate must emit `turnedDown`, or it leaks into `overflow`.
   A new verdict or discard reason is added to `classifier-verdict.ts` / `DiscardReason` so the
   compiler finds every mapping.
 - **Missing provider usage is unknown, not zero, and cache fields are never summed twice.**

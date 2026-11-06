@@ -286,14 +286,20 @@ export class LiveAssistance {
         continue
       }
       if (looksLikeResponseCandidate(turn.text)) this.admit({ turn, previous, dropped: false })
-      else this.observe({ event: 'not-classified', turn, reason: 'prefilter' })
+      else
+        this.observe({
+          event: 'not-classified',
+          turn,
+          reason: 'prefilter',
+          turnedDown: 'prefilter',
+        })
     }
   }
 
   private admit(c: Candidate): void {
     this.cancelCoach() // answer assistance has priority
-    if (this.ready) this.observe({ event: 'superseded', turn: this.ready.turn })
-    if (this.queued) this.observe({ event: 'superseded', turn: this.queued.turn })
+    for (const old of [this.ready, this.queued])
+      if (old) this.observe({ event: 'superseded', turn: old.turn, turnedDown: 'superseded' })
     this.ready = null // a newer completed turn supersedes one still waiting for the lane
     this.queued = c // the newest only: never a queue — it carries the overtaken questions
     this.unanswered.record(c.turn, this.deps.now())
@@ -320,7 +326,7 @@ export class LiveAssistance {
     c: Candidate,
     reason: 'new-final' | 'user-final' | InvalidationReason,
   ): void {
-    this.observe({ event: 'invalidated', turn: c.turn, reason })
+    this.observe({ event: 'invalidated', turn: c.turn, reason, turnedDown: 'invalidated' })
     c.dropped = true
     c.abort?.abort()
     this.speculation.discard(c.turn, reason)
@@ -350,6 +356,7 @@ export class LiveAssistance {
       this.observe({
         event: 'not-classified',
         turn: c.turn,
+        turnedDown: this.expired(c, now) ? 'expired' : 'policy',
         reason: this.expired(c, now)
           ? 'expired'
           : now < this.suspendedUntil
@@ -415,17 +422,23 @@ export class LiveAssistance {
 
   private onClassified(c: Candidate, epoch: number, outcome: ClassifierOutcome): void {
     const verdict = outcome.status === 'failed' ? outcome.reason : formatVerdict(outcome)
+    // the coordinator's own decision, taken before it is reported: `accepted` means this
+    // verdict will go on to be answered, not merely that it named something to answer
+    const live = epoch === this.epoch && !c.dropped
+    const named = outcome.status === 'classified' && isAcceptedVerdict(outcome)
+    const willAnswer = live && named && (outcome.addressee !== 'other' || this.answerEveryQuestion)
     this.observe({
       event: 'classified',
       turn: c.turn,
       reason: verdict,
-      accepted: outcome.status === 'classified' && isAcceptedVerdict(outcome),
+      accepted: willAnswer,
+      turnedDown: live && named && !willAnswer ? 'policy' : undefined,
       attempt: c.attempt,
       shape: outcome.status === 'failed' ? outcome.shape : undefined,
     })
     if (this.classifying === c) this.classifying = null
     let accepted = false
-    if (epoch === this.epoch && !c.dropped) {
+    if (live) {
       if (outcome.status === 'classified') this.classifierFailures = 0
       if (outcome.status === 'failed') {
         let suspended = false
@@ -449,10 +462,7 @@ export class LiveAssistance {
           this.logFailure(
             `turn classifier ${outcome.reason}; failing closed (${this.classifierFailures} consecutive) ${JSON.stringify(outcome.diagnostic ?? {})}`,
           )
-      } else if (
-        outcome.kind !== 'none' &&
-        (outcome.addressee !== 'other' || this.answerEveryQuestion)
-      ) {
+      } else if (willAnswer) {
         // put to someone else: not Me's to answer. Me or the room: the prompt says which.
         c.kind = outcome.kind
         c.addressee = outcome.addressee
@@ -482,6 +492,7 @@ export class LiveAssistance {
         event: 'not-generated',
         turn: c.turn,
         reason: this.expired(c, now) ? 'expired' : 'addressee-or-cooldown',
+        turnedDown: this.expired(c, now) ? 'expired' : 'policy',
       })
       this.ready = null
       this.speculation.discard(c.turn, 'not-generated')

@@ -24,12 +24,17 @@ const VERDICTS: [ResponseKind, Addressee][] = [
 
 let tracker: LatencyTracker
 let unsubscribe: () => void
+let seen: AssistDiagnostic[]
 
 beforeEach(() => {
   vi.useFakeTimers()
   vi.setSystemTime(1_000_000)
   tracker = new LatencyTracker()
-  sink.fn = (e) => tracker.assist(e)
+  seen = []
+  sink.fn = (e) => {
+    seen.push(e)
+    tracker.assist(e)
+  }
   unsubscribe = subscribeRuns((e) => tracker.run(e))
 })
 afterEach(() => {
@@ -152,5 +157,93 @@ describe('stage evidence beyond promotion', () => {
     t.generations.at(-1)!.d.resolve('**Nothing more.**')
     await vi.advanceTimersByTimeAsync(0)
     expect(runs().at(-1)).toMatchObject({ path: 'manual', classification: 'n/a' })
+  })
+})
+
+// Every candidate ends in exactly one latency record, including the ones the coordinator
+// turns down after the classifier named something to answer (none may be left open to be
+// evicted into `overflow`).
+const other = { status: 'classified', kind: 'question', addressee: 'other' } as const
+
+describe('coordinator decision', () => {
+  it('reports a question put to someone else as not accepted, and records it once', async () => {
+    const t = setup()
+    await otherTurn(t.assist, 'Sarah, can you share the numbers?', 0, 1_000)
+    await t.classify(0, other)
+    expect(t.generations).toHaveLength(0)
+    expect(seen.find((e) => e.event === 'classified')).toMatchObject({
+      accepted: false,
+      turnedDown: 'policy',
+    })
+    expect(tracker.records()).toEqual([
+      expect.objectContaining({
+        kind: 'candidate',
+        verdict: 'question other',
+        turnedDown: 'policy',
+      }),
+    ])
+    expect(tracker.overflow).toBe(0)
+  })
+
+  it('reports the same verdict as accepted when Answer every question is on', async () => {
+    const t = setup()
+    t.assist.setAnswerEveryQuestion(true)
+    await otherTurn(t.assist, 'Sarah, can you share the numbers?', 0, 1_000)
+    await t.classify(0, other)
+    expect(seen.find((e) => e.event === 'classified')).toMatchObject({ accepted: true })
+    expect(tracker.records()).toEqual([]) // still open: its run will end it
+    t.assist.setAnswerEveryQuestion(false)
+  })
+
+  it('an expired accepted candidate (not-generated) is one record, speculating or not', async () => {
+    for (const speculate of [false, true]) {
+      tracker = new LatencyTracker()
+      const t = setup({}, { speculate })
+      await otherTurn(t.assist, 'Can you explain it?', 0, 800)
+      await vi.advanceTimersByTimeAsync(6_100)
+      await t.classify(0, t.question)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(t.generations.length).toBe(speculate ? 1 : 0)
+      expect(tracker.records().filter((r) => r.candidateId !== undefined)).toEqual([
+        expect.objectContaining({
+          verdict: 'question me',
+          turnedDown: 'expired',
+        }),
+      ])
+      expect(tracker.overflow).toBe(0)
+    }
+  })
+
+  it('Stop with a candidate in flight is one record', async () => {
+    const t = setup()
+    await otherTurn(t.assist, 'Can you explain it?', 0, 800)
+    t.assist.halt()
+    await t.classify(0, t.question) // arrives after the invalidation: stale
+    expect(seen.find((e) => e.event === 'classified')).toMatchObject({ accepted: false })
+    expect(tracker.records()).toEqual([
+      expect.objectContaining({ kind: 'candidate', turnedDown: 'invalidated' }),
+    ])
+    expect(tracker.overflow).toBe(0)
+  })
+
+  it('a newer final overtaking a candidate is one record', async () => {
+    const t = setup({ nudgeCooldownSec: 0 })
+    await otherTurn(t.assist, 'Can you explain it?', 0, 800)
+    await otherTurn(t.assist, 'And what about the cost of it all?', 2_000, 3_000)
+    await t.classify(0, t.question)
+    const first = tracker.records().filter((r) => r.candidateId === 1)
+    expect(first).toHaveLength(1)
+    expect(first[0]).toMatchObject({ kind: 'candidate', turnedDown: 'invalidated' })
+    expect(tracker.overflow).toBe(0)
+  })
+
+  it('a speculation in flight when the candidate is turned down yields one run record', async () => {
+    const t = setup({}, { speculate: true })
+    await otherTurn(t.assist, 'Sarah, can you share the numbers?', 0, 1_000)
+    expect(t.generations).toHaveLength(1)
+    await t.classify(0, other)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(tracker.records().filter((r) => r.candidateId !== undefined)).toHaveLength(1)
+    expect(tracker.overflow).toBe(0)
   })
 })

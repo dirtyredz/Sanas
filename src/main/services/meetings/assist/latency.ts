@@ -2,7 +2,12 @@ import type { SuggestionPurpose } from '@shared/types'
 import type { MalformedShape } from '../../assistant/classifier-verdict'
 import type { ProviderUsage } from '../../assistant/types'
 import type { TurnAssemblyTiming, TurnCompletion } from '../../turns/types'
-import { subscribeAssistance, type AssistDiagnostic, type DiscardCategory } from './diagnostics'
+import {
+  subscribeAssistance,
+  type AssistDiagnostic,
+  type DiscardCategory,
+  type TurnedDownCategory,
+} from './diagnostics'
 import { summarizeLatency, type LatencySummary } from './latency-summary'
 import { subscribeRuns, type RunObservation } from './run-observation'
 import type { SuggestionOutcome } from './suggestion-runner'
@@ -48,6 +53,8 @@ export interface LatencyRecord {
   fallbackOf?: number
   outcome?: SuggestionOutcome
   discard?: DiscardCategory
+  /** The candidate ended without an answer: why (policy = the coordinator turned it down). */
+  turnedDown?: TurnedDownCategory
   classifierMs?: number
   /** Turn close → this run's request start. */
   closeToRequestMs?: number
@@ -78,6 +85,10 @@ interface Candidate {
   shape?: MalformedShape
   classifierUsage?: ProviderUsage
   speculationRunId?: number
+  /** Ended without an answer; recorded when its last open run settles, else at once. */
+  turnedDown?: TurnedDownCategory
+  /** A run record already carries this candidate's stages (a discarded speculation). */
+  hadRun?: boolean
 }
 
 interface Run {
@@ -159,7 +170,16 @@ export class LatencyTracker {
         c.verdict = typeof e.reason === 'string' ? e.reason.slice(0, 24) : undefined
         c.accepted = e.accepted === true
         if (e.shape) c.shape = { ...e.shape, tokens: [...e.shape.tokens] }
-        if (!c.accepted) this.finishCandidate(c)
+        if (!c.accepted) {
+          c.turnedDown = e.turnedDown
+          this.finishCandidate(c)
+        }
+        return
+      case 'not-classified':
+      case 'not-generated':
+      case 'superseded':
+      case 'invalidated':
+        this.turnDown(c, e.turnedDown ?? 'policy')
         return
       case 'classifier-usage':
         if (e.usage) c.classifierUsage = { ...e.usage }
@@ -222,7 +242,19 @@ export class LatencyTracker {
       assembly: c.assembly,
       classifierMs: diff(c.classifierEndAt, c.classifierStartAt),
       classifierUsage: c.classifierUsage,
+      turnedDown: c.turnedDown,
     }
+  }
+
+  /** A candidate that will get no answer. With a run still open, that run's record carries it
+   *  (see runRecord); with a discarded run already recorded, nothing more is owed; otherwise
+   *  the candidate is its own record. Already finished candidates are not in the map. */
+  private turnDown(c: Candidate, why: TurnedDownCategory): void {
+    c.turnedDown ??= why
+    const open = [...this.runs.values()].some((r) => r.candidateId === c.id)
+    if (open) return
+    if (c.hadRun) this.candidates.delete(c.id)
+    else this.finishCandidate(c)
   }
 
   private finishCandidate(c: Candidate): void {
@@ -233,7 +265,10 @@ export class LatencyTracker {
   private runRecord(r: Run, outcome: SuggestionOutcome): LatencyRecord {
     const c = r.candidateId === undefined ? undefined : this.candidates.get(r.candidateId)
     // a published answer ends its candidate; a discarded speculation leaves it for the fallback
-    if (c && outcome !== 'discarded') this.candidates.delete(c.id)
+    if (c) {
+      if (outcome !== 'discarded' || c.turnedDown) this.candidates.delete(c.id)
+      else c.hadRun = true
+    }
     const closedAt = c?.closedAt
     const lastFinalAt =
       closedAt === undefined || !c?.assembly ? undefined : closedAt - c.assembly.lastFinalToCloseMs

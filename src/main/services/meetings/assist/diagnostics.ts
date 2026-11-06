@@ -33,6 +33,10 @@ export type DiscardCategory =
   /** Settled as discarded with no discard event seen. */
   | 'other'
 
+/** Why a candidate ended without an answer, as a bounded category (latency evidence):
+ *  `policy` = the coordinator turned it down (addressee, cooldown, no key, suspended). */
+export type TurnedDownCategory = 'policy' | 'expired' | 'prefilter' | 'superseded' | 'invalidated'
+
 /** Optional local observation only. No decisions, timers, IPC, keys or persistence. The turn
  *  carries transcript text: consumers copy allowlisted fields, never the event wholesale. */
 export interface AssistDiagnostic {
@@ -50,7 +54,11 @@ export interface AssistDiagnostic {
   shape?: MalformedShape
   /** classifier-usage: what the classifier call consumed. */
   usage?: ProviderUsage
-  /** classified only: the verdict named something to answer (not `none`, not a failure). */
+  /** The candidate ends here without an answer (classified, not-classified, not-generated,
+   *  superseded, invalidated): the typed reason, so evidence never parses `reason`. */
+  turnedDown?: TurnedDownCategory
+  /** classified only: the coordinator will answer this verdict. False for `none`, a failure,
+   *  and a verdict it turns down (e.g. a question put to someone else). */
   accepted?: boolean
   /** speculation-discarded only: the category of `reason`, assigned where it was discarded. */
   discard?: DiscardCategory

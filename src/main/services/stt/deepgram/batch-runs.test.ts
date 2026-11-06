@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest'
-import { splitBySpeaker, splitBatchWords } from './deepgram/deepgram-events'
-import { deepgramProvider } from './deepgram/deepgram'
+import { splitBySpeaker, splitBatchWords } from './deepgram-events'
+import { deepgramProvider } from './deepgram'
 
 vi.mock('node:fs', () => ({ readFileSync: () => Buffer.alloc(44) }))
 afterEach(() => vi.unstubAllGlobals())

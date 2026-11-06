@@ -205,3 +205,56 @@ describe('latency tracker', () => {
     expect(() => answer(t, 1, 0)).not.toThrow()
   })
 })
+
+describe('turned-down candidates', () => {
+  const turn = (id: number): CompletedTurn =>
+    ({
+      id,
+      channel: 1,
+      speaker: 2,
+      role: 'other',
+      text: 'x',
+      startMs: 0,
+      endMs: 1,
+      words: 1,
+      fragments: 1,
+      completedAt: 0,
+      reason: 'endpoint',
+    }) as CompletedTurn
+
+  const accepted = (t: LatencyTracker, id: number): void => {
+    const c = turn(id)
+    t.assist({ event: 'turn-completed', turn: c, at: 0 })
+    t.assist({ event: 'classified', turn: c, reason: 'question me', accepted: true, at: 5 })
+  }
+
+  it('a cooldown not-generated finishes the candidate with the policy category', () => {
+    const t = new LatencyTracker()
+    accepted(t, 1)
+    expect(t.records()).toEqual([])
+    t.assist({ event: 'not-generated', turn: turn(1), turnedDown: 'policy', at: 9 })
+    expect(t.records()).toEqual([
+      expect.objectContaining({ kind: 'candidate', turnedDown: 'policy' }),
+    ])
+  })
+
+  it('later events for a finished candidate never make a second record', () => {
+    const t = new LatencyTracker()
+    accepted(t, 1)
+    t.assist({ event: 'not-generated', turn: turn(1), turnedDown: 'expired', at: 9 })
+    t.assist({ event: 'invalidated', turn: turn(1), turnedDown: 'invalidated', at: 10 })
+    t.assist({ event: 'superseded', turn: turn(1), turnedDown: 'superseded', at: 11 })
+    expect(t.records()).toHaveLength(1)
+    expect(t.records()[0]).toMatchObject({ turnedDown: 'expired' })
+  })
+
+  it('a prefiltered turn and a queued candidate that never classified are each one record', () => {
+    const t = new LatencyTracker()
+    t.assist({ event: 'turn-completed', turn: turn(1), at: 0 })
+    t.assist({ event: 'not-classified', turn: turn(1), turnedDown: 'prefilter', at: 1 })
+    t.assist({ event: 'turn-completed', turn: turn(2), at: 0 })
+    t.assist({ event: 'superseded', turn: turn(2), turnedDown: 'superseded', at: 1 })
+    expect(t.records().map((r) => r.turnedDown)).toEqual(['prefilter', 'superseded'])
+    expect(t.overflow).toBe(0)
+  })
+})
