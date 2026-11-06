@@ -9,8 +9,8 @@ vi.mock('../../../db/repos/jobs', () => ({
     talkingPoints: 'OPTIONAL_PRIORITY',
     persona: '',
   }),
-  listGlossary: () => [],
 }))
+vi.mock('../../../db/repos/job/glossary', () => ({ listGlossary: () => [] }))
 vi.mock('../../../db/repos/suggestion-grounding', () => ({ saveGrounding: () => 1 }))
 vi.mock('../../../db/repos/meeting/meeting-grounding', () => ({
   getMeetingGrounding: () => ({ resume: null, interviewProfile: '', hasBiography: false }),

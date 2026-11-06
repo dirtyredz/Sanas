@@ -39,7 +39,7 @@ const settings = {
 it('upgrades v8, preserving old meetings and keeping resume text immutable after filing', () => {
   database()
   sqlite.exec(
-    'DROP TABLE job_resumes; DROP TRIGGER meetings_interview_profile_immutable; ALTER TABLE meetings DROP COLUMN interview_profile; DROP TRIGGER meetings_resume_immutable; ALTER TABLE meetings DROP COLUMN resume_name; ALTER TABLE meetings DROP COLUMN resume_text; PRAGMA user_version = 8',
+    'DROP TRIGGER jobs_delete_guard; DROP TABLE job_applications; DROP TABLE job_resumes; DROP TRIGGER meetings_interview_profile_immutable; ALTER TABLE meetings DROP COLUMN interview_profile; DROP TRIGGER meetings_resume_immutable; ALTER TABLE meetings DROP COLUMN resume_name; ALTER TABLE meetings DROP COLUMN resume_text; PRAGMA user_version = 8',
   )
   const job = ensureDefaultJob()
   sqlite.prepare('INSERT INTO meetings (job_id, title) VALUES (?, ?)').run(job, 'Before resume')

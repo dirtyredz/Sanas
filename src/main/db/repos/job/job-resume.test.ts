@@ -59,7 +59,9 @@ it('meeting snapshots outlive later job edits and removal', () => {
 
 it('upgrades v10 without inventing job resumes or touching historical snapshots', () => {
   database()
-  sqlite.exec('DROP TABLE job_resumes; PRAGMA user_version = 10')
+  sqlite.exec(
+    'DROP TRIGGER jobs_delete_guard; DROP TABLE job_applications; DROP TABLE job_resumes; PRAGMA user_version = 10',
+  )
   const job = createJob('Acme').id
   sqlite
     .prepare(
@@ -68,7 +70,7 @@ it('upgrades v10 without inventing job resumes or touching historical snapshots'
     .run(job, 'Old interview', resume.name, resume.text, 'Old profile')
   runMigrations(mock.db)
   expect(mock.db.pragma('user_version', { simple: true })).toBe(schemaVersion)
-  expect(schemaVersion).toBe(12)
+  expect(schemaVersion).toBe(13)
   expect(getJobResume(job)).toBeNull() // no backfill from past meetings
   expect(getMeetingGrounding(1)).toMatchObject({ resume, interviewProfile: 'Old profile' })
 })

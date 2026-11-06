@@ -201,6 +201,8 @@ export const sampleSettings: SettingsView = {
   answerModel: 'claude-opus-5-5',
   classifierModel: 'claude-haiku-5-5',
   interviewProfile: '',
+  resumesRoot: 'C:\\Users\\dirty\\projects\\resumes',
+  resumesNodeExecutable: 'node.exe',
   answerEveryQuestion: false,
   composeHotkey: 'Control+Shift+K',
   coachWhileTalking: false,

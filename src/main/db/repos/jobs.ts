@@ -1,5 +1,5 @@
 import { getDb } from '../index'
-import type { GlossaryTerm, Job } from '@shared/types'
+import type { Job } from '@shared/types'
 
 interface JobRow {
   id: number
@@ -12,7 +12,12 @@ interface JobRow {
   summary_email: string
   created_at: string
   archived: number
+  application_id?: string | null
 }
+
+/** The list view carries the v13 application link; single-row reads stay on jobs alone. */
+const JOB_SELECT = `SELECT j.*, a.application_id FROM jobs j
+  LEFT JOIN job_applications a ON a.job_id = j.id`
 
 function toJob(r: JobRow): Job {
   return {
@@ -26,13 +31,14 @@ function toJob(r: JobRow): Job {
     summaryEmail: r.summary_email,
     createdAt: r.created_at,
     archived: r.archived === 1,
+    ...(r.application_id !== undefined && { applicationId: r.application_id }),
   }
 }
 
 export function listJobs(includeArchived = false): Job[] {
   const rows = getDb()
     .prepare(
-      `SELECT * FROM jobs ${includeArchived ? '' : 'WHERE archived = 0'} ORDER BY name COLLATE NOCASE`,
+      `${JOB_SELECT} ${includeArchived ? '' : 'WHERE j.archived = 0'} ORDER BY j.name COLLATE NOCASE`,
     )
     .all() as JobRow[]
   return rows.map(toJob)
@@ -81,32 +87,4 @@ export function ensureDefaultJob(): number {
   if (existing) return existing.id
   const res = db.prepare(`INSERT INTO jobs (name) VALUES ('Unsorted')`).run()
   return Number(res.lastInsertRowid)
-}
-
-// --- glossary ---
-
-export function listGlossary(jobId: number): GlossaryTerm[] {
-  return getDb()
-    .prepare(
-      `SELECT id, job_id AS jobId, term, note FROM glossary WHERE job_id = ? ORDER BY term COLLATE NOCASE`,
-    )
-    .all(jobId) as GlossaryTerm[]
-}
-
-export function getGlossaryTerms(jobId: number): string[] {
-  const rows = getDb().prepare(`SELECT term FROM glossary WHERE job_id = ?`).all(jobId) as {
-    term: string
-  }[]
-  return rows.map((r) => r.term)
-}
-
-export function addGlossaryTerm(jobId: number, term: string, note: string): GlossaryTerm {
-  const res = getDb()
-    .prepare(`INSERT INTO glossary (job_id, term, note) VALUES (?, ?, ?)`)
-    .run(jobId, term, note)
-  return { id: Number(res.lastInsertRowid), jobId, term, note }
-}
-
-export function removeGlossaryTerm(id: number): void {
-  getDb().prepare(`DELETE FROM glossary WHERE id = ?`).run(id)
 }

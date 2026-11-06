@@ -1,7 +1,8 @@
 import { getMeetingGrounding } from '../../../db/repos/meeting/meeting-grounding'
 import { meetingCandidateFacts } from '../context/meeting-facts'
 import type { MeetingContext } from '@shared/live-controls/types'
-import { getJob, listGlossary } from '../../../db/repos/jobs'
+import { getJob } from '../../../db/repos/jobs'
+import { listGlossary } from '../../../db/repos/job/glossary'
 import { saveGrounding } from '../../../db/repos/suggestion-grounding'
 import { buildSystemPrompt } from '../../assistant/prompts'
 

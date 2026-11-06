@@ -1,3 +1,4 @@
+import { nodeExecutableProblem, resumesRootProblem } from '@shared/jobs/source-settings'
 import { SETTINGS_LIMITS } from '@shared/settings-limits'
 import type { Settings, SettingsView } from '@shared/types'
 import type { SettingsSectionId } from './settings-sections'
@@ -14,6 +15,8 @@ export const NO_SECRETS: Readonly<Record<SecretKey, string>> = {
 /** Settings the Settings page edits and Save sends. */
 export const PAGE_OWNED = [
   'interviewProfile',
+  'resumesRoot',
+  'resumesNodeExecutable',
   'overlayHotkey',
   'assistHotkey',
   'captureHotkey',
@@ -59,6 +62,8 @@ void everyKeyClassified
 
 /** Free-text settings the schema expects clean; trimmed on the way out. */
 const TRIMMED = new Set<string>([
+  'resumesRoot',
+  'resumesNodeExecutable',
   'anthropicWorkspaceId',
   'nudgeModel',
   'answerModel',
@@ -130,6 +135,13 @@ export function settingsProblems(view: SettingsView): SettingsProblem[] {
       section: 'assistant',
       message: `Use a number of seconds from ${limit.min} to ${limit.max}.`,
     })
+  }
+  const resumes = [
+    ['resumesRoot', resumesRootProblem(view.resumesRoot.trim())],
+    ['resumesNodeExecutable', nodeExecutableProblem(view.resumesNodeExecutable.trim())],
+  ] as const
+  for (const [key, message] of resumes) {
+    if (message) problems.push({ key, section: 'applications', message })
   }
   return problems
 }

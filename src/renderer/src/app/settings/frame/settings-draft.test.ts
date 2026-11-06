@@ -42,6 +42,15 @@ describe('settingsPatch', () => {
     expect('smtpPass' in patch).toBe(false)
   })
 
+  it('sends the resumes settings, trimmed', () => {
+    const patch = settingsPatch(
+      edit({ resumesRoot: '  D:\\resumes  ', resumesNodeExecutable: ' node.exe ' }),
+      NO_SECRETS,
+    )
+    expect(patch.resumesRoot).toBe('D:\\resumes')
+    expect(patch.resumesNodeExecutable).toBe('node.exe')
+  })
+
   it('never sends what the page does not own (bounds, split, meeting source)', () => {
     const patch = settingsPatch(saved, NO_SECRETS)
     expect('overlayBounds' in patch).toBe(false)
@@ -82,6 +91,25 @@ describe('settingsProblems', () => {
     expect(
       problemFor(settingsProblems(edit({ nudgeCooldownSec: Number.NaN })), 'nudgeCooldownSec'),
     ).toBeDefined()
+  })
+})
+
+describe('settingsProblems resumes settings', () => {
+  it('flags a relative folder and a blank node executable in Applications', () => {
+    const problems = settingsProblems(edit({ resumesRoot: 'resumes', resumesNodeExecutable: ' ' }))
+    expect(problemFor(problems, 'resumesRoot')).toMatch(/absolute/)
+    expect(problemFor(problems, 'resumesNodeExecutable')).toMatch(/node\.exe/)
+    expect(problems.every((p) => p.section === 'applications')).toBe(true)
+  })
+
+  it('accepts a full node path and trims before checking', () => {
+    const problems = settingsProblems(
+      edit({
+        resumesRoot: ' D:\\resumes ',
+        resumesNodeExecutable: 'C:\\Program Files\\nodejs\\node.exe',
+      }),
+    )
+    expect(problems).toEqual([])
   })
 })
 

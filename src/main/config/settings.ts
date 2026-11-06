@@ -2,12 +2,15 @@ import { app } from 'electron'
 import { readFileSync, writeFileSync, existsSync } from 'fs'
 import { join } from 'path'
 import type { Settings, SettingsView } from '@shared/types'
+import { RESUMES_NODE_DEFAULT, RESUMES_ROOT_DEFAULT } from '@shared/jobs/source-settings'
 
 // Plain JSON in userData. API keys stay in the main process; the renderer only
 // ever sees the masked SettingsView (see CLAUDE.md privacy boundary).
 
 const DEFAULTS: Settings = {
   interviewProfile: '',
+  resumesRoot: RESUMES_ROOT_DEFAULT,
+  resumesNodeExecutable: RESUMES_NODE_DEFAULT,
   deepgramApiKey: '',
   anthropicApiKey: '',
   anthropicWorkspaceId: '',

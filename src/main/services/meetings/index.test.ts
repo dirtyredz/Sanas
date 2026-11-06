@@ -48,8 +48,8 @@ vi.mock('../stt', () => ({
 }))
 vi.mock('../../db/repos/jobs', () => ({
   ensureDefaultJob: () => 3,
-  getGlossaryTerms: () => [],
 }))
+vi.mock('../../db/repos/job/glossary', () => ({ getGlossaryTerms: () => [] }))
 vi.mock('../../db/repos/job/job-resume', () => ({
   getJobResume: (id: number) => fakes.jobResumes.get(id) ?? null,
 }))

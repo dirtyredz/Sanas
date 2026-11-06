@@ -29,7 +29,7 @@ const profile =
 it('upgrades v9 with empty historical snapshots; freezes new snapshots after edits and filing', () => {
   const job = database()
   sqlite.exec(
-    'DROP TABLE job_resumes; DROP TRIGGER meetings_interview_profile_immutable; ALTER TABLE meetings DROP COLUMN interview_profile; PRAGMA user_version = 9',
+    'DROP TRIGGER jobs_delete_guard; DROP TABLE job_applications; DROP TABLE job_resumes; DROP TRIGGER meetings_interview_profile_immutable; ALTER TABLE meetings DROP COLUMN interview_profile; PRAGMA user_version = 9',
   )
   sqlite.prepare('INSERT INTO meetings (job_id, title) VALUES (?, ?)').run(job, 'Old work meeting')
   runMigrations(mock.db)

@@ -4,6 +4,7 @@ export const SETTINGS_SECTIONS = [
   { id: 'api-keys', title: 'API keys' },
   { id: 'assistant', title: 'Assistant' },
   { id: 'interview-profile', title: 'Interview profile' },
+  { id: 'applications', title: 'Applications' },
   { id: 'hotkeys', title: 'Hotkeys' },
   { id: 'microphone', title: 'Microphone' },
   { id: 'overlay', title: 'Overlay' },

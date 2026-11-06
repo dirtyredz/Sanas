@@ -1,4 +1,5 @@
 import { INTERVIEW_PROFILE_MAX_CHARS } from '@shared/interview-profile'
+import { nodeExecutableProblem, resumesRootProblem } from '@shared/jobs/source-settings'
 import { SETTINGS_LIMITS } from '@shared/settings-limits'
 import type { MeetingSource, Settings, WhisperMode } from '@shared/types'
 
@@ -20,6 +21,11 @@ const nonEmptyText =
     if (typeof v !== 'string' || v.length > max || v.trim().length === 0) return undefined
     return v.trim()
   }
+
+const checked =
+  (problem: (value: string) => string | null): Check<string> =>
+  (v) =>
+    typeof v === 'string' && problem(v) === null ? v : undefined
 
 const bool: Check<boolean> = (v) => (typeof v === 'boolean' ? v : undefined)
 
@@ -57,6 +63,8 @@ export const SETTINGS_SCHEMA: { [K in keyof Settings]: Check<Settings[K]> } = {
     typeof v === 'string' && v.length <= INTERVIEW_PROFILE_MAX_CHARS
       ? v.replaceAll('\0', '')
       : undefined,
+  resumesRoot: checked(resumesRootProblem),
+  resumesNodeExecutable: checked(nodeExecutableProblem),
   deepgramApiKey: text(500),
   anthropicApiKey: text(500),
   anthropicWorkspaceId: text(200),

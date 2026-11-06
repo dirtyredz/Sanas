@@ -1,5 +1,6 @@
 import { InterviewProfileSection } from './InterviewProfileSection'
 import type { SettingsView } from '@shared/types'
+import { ApplicationsSection } from './ApplicationsSection'
 import { ApiKeysSection } from './ApiKeysSection'
 import { AssistantSection } from './AssistantSection'
 import { EmailSection } from './EmailSection'
@@ -39,6 +40,8 @@ export function SettingsSectionPage({
       return <AssistantSection view={view} problems={problems} onChange={onChange} />
     case 'interview-profile':
       return <InterviewProfileSection view={view} onChange={onChange} />
+    case 'applications':
+      return <ApplicationsSection view={view} problems={problems} onChange={onChange} />
     case 'hotkeys':
       return <HotkeysSection view={view} onChange={onChange} />
     case 'microphone':

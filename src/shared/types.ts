@@ -14,6 +14,8 @@ export interface Job {
   summaryEmail: string
   createdAt: string
   archived: boolean
+  /** The resumes application this job was created from, when linked (v13). */
+  applicationId?: string | null
 }
 
 export interface GlossaryTerm {
@@ -149,6 +151,10 @@ export interface OverlayResizeRequest {
 
 export interface Settings {
   interviewProfile: string
+  /** The resumes project folder Sanas reads interview packs from (an absolute local directory). */
+  resumesRoot: string
+  /** `node.exe` (on PATH) or the absolute path to Node, used to run the resumes pack command. */
+  resumesNodeExecutable: string
   deepgramApiKey: string
   anthropicApiKey: string
   /** Only needed for org-level (non-workspace) Anthropic keys; sent as anthropic-workspace-id. */
