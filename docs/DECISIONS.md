@@ -2,6 +2,16 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-11-06 — Closed applications are hidden unless a job is linked
+
+Owner choice: "closed means we got a notice of a failure", so the New-job picker lists only
+`interview`/`offer` applications. A `closed` application appears only while a Sanas job is
+linked to it, and then only to archive that job. Closed with no linked job is filtered out in
+main's listing (`import/listing.ts`), so the renderer never receives it; the `closed-unlinked`
+row status is removed.
+
+- Rejected: showing closed rows greyed out or behind a filter (noise the owner does not want).
+
 ## 2026-11-06 — Deleting a job deletes its history (cascade)
 
 Owner choice. Plan: `docs/plans/job-import-and-delete-v2.md`. Deleting a job removes the job and

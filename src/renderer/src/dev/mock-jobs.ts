@@ -163,7 +163,6 @@ export function mockJobApplications(
         applicationRow('initech-sre', 'new'),
         applicationRow('acme-platform', 'imported'),
         applicationRow('globex-closed', 'imported'),
-        applicationRow('umbrella-closed', 'closed-unlinked'),
         {
           applicationId: 'broken-pack',
           company: '',

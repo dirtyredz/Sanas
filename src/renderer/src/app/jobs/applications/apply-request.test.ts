@@ -119,7 +119,6 @@ const row = (over: Partial<ApplicationSummary>): ApplicationSummary => ({
 
 it('maps every picker state to its action and badge', () => {
   expect(rowView(row({}))).toMatchObject({ action: 'preview', label: 'Preview and create' })
-  expect(rowView(row({ status: 'closed-unlinked' }))).toMatchObject({ action: 'none' })
   expect(rowView(row({ status: 'imported', jobId: 3 }))).toMatchObject({
     action: 'open',
     label: 'Open job',

@@ -97,10 +97,21 @@ it('lists packs with their state, and still lists them when the refresh fails', 
   expect(listing.packs.map((p) => [p.applicationId, p.status])).toEqual([
     ['broken', 'invalid'],
     ['acme-1', 'new'],
-    ['globex-2', 'closed-unlinked'],
   ])
   mock.settings.resumesRoot = 'relative\\path'
   expect((await listApplications()).folder).toBe('invalid-settings')
+})
+
+it('lists a closed pack only while a job is linked, and then only to archive it', async () => {
+  pack('globex-2', { company: 'Globex', stage: 'closed' })
+  expect((await listApplications()).packs).toEqual([])
+  pack('acme-1')
+  const jobId = await create('acme-1')
+  pack('acme-1', { stage: 'closed' })
+  const listed = (await listApplications()).packs
+  expect(listed.map((p) => [p.applicationId, p.status, p.jobId])).toEqual([
+    ['acme-1', 'archive-available', jobId],
+  ])
 })
 
 it('drafts empty judgement fields from notes only, labels sources, and saves edits', async () => {

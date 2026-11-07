@@ -18,13 +18,6 @@ export function rowView(row: ApplicationSummary): RowView {
   switch (row.status) {
     case 'new':
       return { action: 'preview', label: 'Preview and create', badges, hint: null }
-    case 'closed-unlinked':
-      return {
-        action: 'none',
-        label: 'Closed',
-        badges: [{ label: 'Closed', tone: 'neutral' }],
-        hint: 'Closed applications cannot create a new job.',
-      }
     case 'imported':
       return {
         action: 'open',

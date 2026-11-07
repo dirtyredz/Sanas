@@ -29,7 +29,7 @@ function summarize(
   pack: ValidPack,
   link: ApplicationLink | undefined,
   root: string,
-): ApplicationSummary {
+): ApplicationSummary | null {
   const base = {
     applicationId: pack.applicationId,
     company: pack.company,
@@ -39,14 +39,12 @@ function summarize(
     error: null,
     retryable: false,
   }
-  if (!link)
-    return {
-      ...base,
-      status: pack.stage === 'closed' ? 'closed-unlinked' : 'new',
-      jobId: null,
-      jobName: null,
-      archived: false,
-    }
+  // A closed application means a failure notice: it is shown only while a job is linked to it
+  // (so that job can be archived), never as something to start from.
+  if (!link) {
+    if (pack.stage === 'closed') return null
+    return { ...base, status: 'new', jobId: null, jobName: null, archived: false }
+  }
   return {
     ...base,
     jobId: link.jobId,
@@ -83,12 +81,20 @@ export async function listApplications(): Promise<ApplicationListing> {
   const outcome = await refreshPacks(resolved.config)
   const folder = await listPackFiles(root)
   const links = new Map(listApplicationLinks().map((l) => [l.applicationId, l]))
-  const packs = folder.files.map((file) => {
-    if (!file.ok) return invalidRow(file.stem, file.error, file.retryable)
+  const packs: ApplicationSummary[] = []
+  for (const file of folder.files) {
+    if (!file.ok) {
+      packs.push(invalidRow(file.stem, file.error, file.retryable))
+      continue
+    }
     const valid = validatePack(file.raw, file.stem)
-    if (!valid.ok) return invalidRow(file.stem, valid.error, false)
-    return summarize(valid.pack, links.get(valid.pack.applicationId), root)
-  })
+    if (!valid.ok) {
+      packs.push(invalidRow(file.stem, valid.error, false))
+      continue
+    }
+    const row = summarize(valid.pack, links.get(valid.pack.applicationId), root)
+    if (row) packs.push(row)
+  }
   packs.sort(
     (a, b) => a.company.localeCompare(b.company) || a.applicationId.localeCompare(b.applicationId),
   )

@@ -32,8 +32,6 @@ export type ValueSource = 'resumes' | 'drafted'
 export type ApplicationRowStatus =
   /** Not imported; interview/offer: can be previewed and created. */
   | 'new'
-  /** Not imported and closed: visible but cannot create an active job. */
-  | 'closed-unlinked'
   /** Linked and nothing new to review. */
   | 'imported'
   /** Linked and the pack (content or stage) changed since the last import or review. */
