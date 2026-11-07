@@ -3,16 +3,17 @@ import type {
   ApplicationPreview,
   ApplicationSummary,
   PreviewField,
+  PreviewValue,
 } from '@shared/jobs/applications'
 import { applyProblem, buildApplyRequest, initialChoices, retainChoices } from './apply-request'
 import { formatUpdated, rowView, sourceLabel } from './picker-rows'
 
+const text = (value: string): PreviewValue => ({ kind: 'text', text: value })
 const field = (over: Partial<PreviewField>): PreviewField => ({
   key: 'notes',
-  label: 'Notes',
   outcome: 'new',
   local: null,
-  incoming: '',
+  incoming: text(''),
   source: null,
   editable: false,
   draftError: null,

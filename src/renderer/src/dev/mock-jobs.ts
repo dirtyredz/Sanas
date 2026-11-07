@@ -11,6 +11,7 @@ import {
   type ImportFieldKey,
   type JobTextField,
   type PreviewField,
+  type PreviewValue,
 } from '@shared/jobs/applications'
 import type {
   JobDeletionCounts,
@@ -24,14 +25,26 @@ type SanasApi = Window['sanas']
 const deletionTokens = new Map<string, { jobId: number; counts: JobDeletionCounts }>()
 const previewTokens = new Map<string, ApplicationPreview>()
 
-const FIELD_LABELS: Record<ImportFieldKey, string> = {
-  companyInfo: 'Company info',
-  projectScope: 'Project scope',
-  notes: 'Notes (verified facts)',
-  talkingPoints: 'Talking points',
-  persona: 'Persona / tone',
-  glossary: 'Glossary',
-  resume: 'Resume (candidate material, separate from Notes)',
+/** A typed preview value built from the mock's plain strings. */
+function previewValue(key: ImportFieldKey, value: string): PreviewValue {
+  if (key === 'glossary')
+    return {
+      kind: 'glossary',
+      terms: value
+        .split('\n')
+        .filter(Boolean)
+        .map((term) => ({ term, note: '' })),
+    }
+  if (key === 'resume')
+    return { kind: 'resume', resume: value ? { name: 'Resume', text: value } : null }
+  return { kind: 'text', text: value }
+}
+
+/** The plain string a typed preview value stands for in the mock's store. */
+function plainValue(value: PreviewValue): string {
+  if (value.kind === 'glossary') return value.terms.map((g) => g.term).join('\n')
+  if (value.kind === 'resume') return value.resume?.text ?? ''
+  return value.text
 }
 
 function removeFrom<T>(items: T[], match: (item: T) => boolean): void {
@@ -188,10 +201,9 @@ export function mockJobApplications(
         const local = (key: JobTextField): string => job[key]
         const field = (key: ImportFieldKey, outcome: FieldOutcome, from: string, to: string) => ({
           key,
-          label: FIELD_LABELS[key],
           outcome,
-          local: from,
-          incoming: to,
+          local: previewValue(key, from),
+          incoming: previewValue(key, to),
           source: 'resumes' as const,
           editable: false,
           draftError: null,
@@ -225,10 +237,9 @@ export function mockJobApplications(
       } else {
         const drafted = (key: ImportFieldKey, text: string): PreviewField => ({
           key,
-          label: FIELD_LABELS[key],
           outcome: 'new',
           local: null,
-          incoming: text,
+          incoming: previewValue(key, text),
           source: 'drafted',
           editable: true,
           draftError: null,
@@ -276,7 +287,7 @@ export function mockJobApplications(
       const value = (key: ImportFieldKey): string => {
         const f = preview.fields.find((x) => x.key === key)
         const edited = key === 'resume' ? undefined : request.edits?.[key]
-        return edited ?? f?.incoming ?? ''
+        return edited ?? (f ? plainValue(f.incoming) : '')
       }
       if (preview.mode === 'create') {
         const id = Date.now()
@@ -307,7 +318,8 @@ export function mockJobApplications(
         const takeIncoming =
           f.outcome === 'incoming' ||
           (f.outcome === 'conflict' && request.choices?.[f.key] === 'incoming')
-        if (takeIncoming && f.key !== 'glossary' && f.key !== 'resume') job[f.key] = f.incoming
+        if (takeIncoming && f.key !== 'glossary' && f.key !== 'resume')
+          job[f.key] = plainValue(f.incoming)
       }
       if (request.archive) job.archived = true
       return { status: 'updated', jobId: job.id, archived: job.archived }

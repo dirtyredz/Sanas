@@ -114,11 +114,17 @@ it('drafts empty judgement fields from notes only, labels sources, and saves edi
   expect(field('persona')).toMatchObject({
     source: 'drafted',
     editable: true,
-    incoming: 'Calm and senior.',
+    incoming: { kind: 'text', text: 'Calm and senior.' },
   })
   expect(field('notes')).toMatchObject({ source: 'resumes', editable: false })
-  expect(field('glossary').incoming).toBe('Camunda\nKotlin')
-  expect(field('notes').incoming).not.toContain('Rust')
+  expect(field('glossary').incoming).toEqual({
+    kind: 'glossary',
+    terms: [
+      { term: 'Camunda', note: '' },
+      { term: 'Kotlin', note: '' },
+    ],
+  })
+  expect(JSON.stringify(field('notes').incoming)).not.toContain('Rust')
   const result = await applyApplication(1, {
     token: preview.token,
     name: preview.name!.proposed,
@@ -145,7 +151,7 @@ it('creates the job with empty fields when drafting fails', async () => {
   const preview = await previewApplication(1, 'acme-1')
   expect(preview.draftNotice).toMatch(/could not draft/)
   expect(preview.fields.find((f) => f.key === 'persona')).toMatchObject({
-    incoming: '',
+    incoming: { kind: 'text', text: '' },
     source: null,
   })
   const id = await create('acme-1')

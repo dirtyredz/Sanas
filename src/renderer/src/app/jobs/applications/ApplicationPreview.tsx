@@ -8,6 +8,7 @@ import {
   retainChoices,
   type PreviewChoices,
 } from './apply-request'
+import { FIELD_LABELS, formatPreviewValue } from './preview-format'
 import { formatUpdated, sourceLabel } from './picker-rows'
 
 const OUTCOME_TEXT: Record<PreviewField['outcome'], string> = {
@@ -187,11 +188,13 @@ function PreviewFieldView({
   onChange: (patch: Partial<PreviewChoices>) => void
 }): React.JSX.Element {
   const source = sourceLabel(field.source)
+  const label = FIELD_LABELS[field.key]
+  const incoming = formatPreviewValue(field.incoming)
   const edit = choices.edits[field.key as keyof PreviewChoices['edits']]
   return (
     <div className={`import-field import-field--${field.outcome}`}>
       <div className="import-field-head">
-        <span className="label">{field.label}</span>
+        <span className="label">{label}</span>
         {source && (
           <span className={`badge ${field.source === 'drafted' ? 'badge--accent' : 'badge--ok'}`}>
             {source}
@@ -202,9 +205,9 @@ function PreviewFieldView({
       {field.outcome === 'new' && field.editable ? (
         <textarea
           rows={field.key === 'glossary' ? 4 : 3}
-          aria-label={field.label}
+          aria-label={label}
           placeholder={field.key === 'glossary' ? 'One term per line' : ''}
-          value={edit ?? field.incoming}
+          value={edit ?? incoming}
           onChange={(e) => onChange({ edits: { ...choices.edits, [field.key]: e.target.value } })}
         />
       ) : field.outcome === 'conflict' ? (
@@ -217,7 +220,7 @@ function PreviewFieldView({
               onChange={() => onChange({ choices: { ...choices.choices, [field.key]: 'keep' } })}
             />{' '}
             Keep Sanas
-            <pre className="import-value">{field.local || '(empty)'}</pre>
+            <pre className="import-value">{formatPreviewValue(field.local) || '(empty)'}</pre>
           </label>
           <label>
             <input
@@ -229,11 +232,11 @@ function PreviewFieldView({
               }
             />{' '}
             Use application
-            <pre className="import-value">{field.incoming || '(empty)'}</pre>
+            <pre className="import-value">{incoming || '(empty)'}</pre>
           </label>
         </div>
       ) : field.outcome === 'unchanged' || field.outcome === 'keep-local' ? null : (
-        <pre className="import-value">{field.incoming || '(empty)'}</pre>
+        <pre className="import-value">{incoming || '(empty)'}</pre>
       )}
       {field.draftError && <p className="hint">{field.draftError}</p>}
     </div>

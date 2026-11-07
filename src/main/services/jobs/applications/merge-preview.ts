@@ -11,19 +11,13 @@ import {
   type JudgementField,
   type ValueSource,
 } from '@shared/jobs/applications'
-import type { ImportBaseline } from '../../../db/repos/job/applications'
+import type { ImportBaseline, LocalValues } from '@shared/jobs/import-baseline'
 import type { SourceValues } from './map-pack'
 
 // Pure three-way comparison for refreshing a linked job: base = the source values of the
 // last import/review, local = what Sanas has saved now, incoming = the new pack. Resume
 // {name,text} is one unit; the glossary is one collection whose local notes count as local
 // changes (conservative: no automatic per-term merge).
-
-export interface LocalValues {
-  fields: Record<JobTextField, string>
-  glossary: readonly { term: string; note: string }[]
-  resume: MeetingResume | null
-}
 
 export type RefreshOutcome = Exclude<FieldOutcome, 'new'>
 

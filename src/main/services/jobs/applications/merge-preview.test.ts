@@ -3,7 +3,8 @@ import { describe, expect, it, vi } from 'vitest'
 // The repo module only needs the DB for its query functions; keep electron out of the test.
 vi.mock('../../../db/index', () => ({ getDb: vi.fn() }))
 
-import { emptyBaseline, type ImportBaseline } from '../../../db/repos/job/applications'
+import type { ImportBaseline, LocalValues } from '@shared/jobs/import-baseline'
+import { emptyBaseline } from '../../../db/repos/job/applications'
 import type { SourceValues } from './map-pack'
 import {
   linkedStatus,
@@ -11,7 +12,6 @@ import {
   planRefresh,
   resolveRefresh,
   threeWay,
-  type LocalValues,
   type PlanItem,
 } from './merge-preview'
 

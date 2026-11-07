@@ -3,6 +3,8 @@
 // application ID, an opaque preview token and its choices. It never sends a pack, a path or
 // command arguments.
 
+import type { MeetingResume } from '../meeting-resume'
+
 export const APPLICATION_STAGES = ['interview', 'offer', 'closed'] as const
 export type ApplicationStage = (typeof APPLICATION_STAGES)[number]
 
@@ -86,14 +88,20 @@ export type FieldOutcome =
   /** Both changed differently: choose; Keep Sanas is the default. */
   | 'conflict'
 
+/** A typed value the preview compares. Main never formats it: labels and display text are
+ *  the renderer's job. Glossary terms carry their saved note (empty for pack terms). */
+export type PreviewValue =
+  | { kind: 'text'; text: string }
+  | { kind: 'glossary'; terms: { term: string; note: string }[] }
+  | { kind: 'resume'; resume: MeetingResume | null }
+
 export interface PreviewField {
   key: ImportFieldKey
-  label: string
   outcome: FieldOutcome
-  /** Saved Sanas value (refresh only), as display text. */
-  local: string | null
-  /** The application's value, as display text (a draft when `source` is 'drafted'). */
-  incoming: string
+  /** Saved Sanas value (refresh only). */
+  local: PreviewValue | null
+  /** The application's value (a draft when `source` is 'drafted'). */
+  incoming: PreviewValue
   source: ValueSource | null
   /** Drafted fields can be edited in the preview before the job is created. */
   editable: boolean

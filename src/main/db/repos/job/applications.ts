@@ -4,22 +4,12 @@ import {
   type ApplicationStage,
   type JobTextField,
   type JudgementField,
-  type ValueSource,
 } from '@shared/jobs/applications'
+import type { ImportBaseline } from '@shared/jobs/import-baseline'
 import { getDb } from '../../index'
 
 // The job ↔ resumes-application link (v13 job_applications) and the one-transaction writes
 // that create or refresh a linked job. Callers validate and resolve choices first.
-
-/** Source values as last imported or reviewed: the "base" of the three-way refresh
- *  comparison. Per-field `sources` records which saved values Sanas drafted at import. */
-export interface ImportBaseline {
-  version: 1
-  fields: Record<JobTextField, string>
-  glossary: string[]
-  resume: MeetingResume | null
-  sources: Partial<Record<JudgementField, ValueSource>>
-}
 
 export interface LinkWrite {
   applicationId: string

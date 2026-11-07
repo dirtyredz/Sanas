@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { isValidElement, type ReactElement, type ReactNode } from 'react'
-import type { ApplicationPreview as Preview, PreviewField } from '@shared/jobs/applications'
+import type {
+  ApplicationPreview as Preview,
+  PreviewField,
+  PreviewValue,
+} from '@shared/jobs/applications'
 import { ApplicationPreview } from './ApplicationPreview'
 
 // DOM-free: hooks become plain slots and the effects are run by hand.
@@ -105,13 +109,13 @@ function render() {
   }
 }
 
+const txt = (value: string): PreviewValue => ({ kind: 'text', text: value })
 function field(over: Partial<PreviewField>): PreviewField {
   return {
     key: 'notes',
-    label: 'Notes',
     outcome: 'new',
     local: null,
-    incoming: '',
+    incoming: txt(''),
     source: 'resumes',
     editable: false,
     draftError: null,
@@ -145,12 +149,11 @@ const createPreview = preview({
   fields: [
     field({
       key: 'companyInfo',
-      label: 'Company info',
-      incoming: 'Drafted info',
+      incoming: txt('Drafted info'),
       source: 'drafted',
       editable: true,
     }),
-    field({ key: 'projectScope', label: 'Project scope', incoming: 'Scope from pack' }),
+    field({ key: 'projectScope', incoming: txt('Scope from pack') }),
   ],
 })
 const refreshConflict = preview({
@@ -160,10 +163,9 @@ const refreshConflict = preview({
   fields: [
     field({
       key: 'notes',
-      label: 'Notes',
       outcome: 'conflict',
-      local: 'mine',
-      incoming: 'theirs',
+      local: txt('mine'),
+      incoming: txt('theirs'),
     }),
   ],
 })
@@ -290,16 +292,13 @@ it('on a stale result shows the message, then Review again re-previews and keeps
     name: null,
     fields: [
       ...refreshConflict.fields,
-      field({ key: 'persona', label: 'Persona', outcome: 'conflict', local: 'a', incoming: 'b' }),
+      field({ key: 'persona', outcome: 'conflict', local: txt('a'), incoming: txt('b') }),
     ],
   })
   const second = preview({
     ...stillConflict,
     token: 'tok-2',
-    fields: [
-      ...stillConflict.fields,
-      field({ key: 'persona', label: 'Persona', outcome: 'unchanged' }),
-    ],
+    fields: [...stillConflict.fields, field({ key: 'persona', outcome: 'unchanged' })],
   })
   api.preview.mockResolvedValueOnce(first).mockResolvedValueOnce(second)
   api.apply
