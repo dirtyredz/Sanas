@@ -24,7 +24,7 @@ const interviewPack = {
     name: 'Acme - resume sent (Resume_Acme.pdf)',
     selection: 'sent',
     text: 'Resume body',
-    pdfPath: 'C:\Users\someone\resumes\Resume_Acme.pdf',
+    pdfPath: 'C:/Users/someone/resumes/Resume_Acme.pdf',
   },
   companyInfo: 'Company info',
   talkingPoints: 'Points',
