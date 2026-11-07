@@ -145,7 +145,8 @@ export function linkedStatus(input: {
   packStage: ApplicationStage
 }): ApplicationRowStatus {
   if (input.linkRoot !== input.currentRoot) return 'source-mismatch'
-  if (input.packStage === 'closed' && !input.archived) return 'archive-available'
+  // Closed means archive-only: never offer a refresh for a closed application.
+  if (input.packStage === 'closed') return input.archived ? 'imported' : 'archive-available'
   const changed =
     input.packHash !== input.linkHash ||
     input.packFingerprint !== input.linkFingerprint ||

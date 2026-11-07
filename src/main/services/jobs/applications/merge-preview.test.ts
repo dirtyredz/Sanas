@@ -294,6 +294,17 @@ describe('linkedStatus', () => {
       linkedStatus({ ...same, linkStage: 'closed', packStage: 'closed', archived: true }),
     ).toBe('imported'))
 
+  it('closed and archived is imported even when the pack changed, never refresh-available', () =>
+    expect(
+      linkedStatus({
+        ...same,
+        packStage: 'closed',
+        packHash: 'h2',
+        packFingerprint: 'f2',
+        archived: true,
+      }),
+    ).toBe('imported'))
+
   it('changed hash with same fingerprint is refresh-available', () =>
     expect(linkedStatus({ ...same, packHash: 'h2' })).toBe('refresh-available'))
 
