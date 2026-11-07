@@ -1,3 +1,5 @@
+> **Superseded 2026-11-06 (deletion policy).** The owner chose cascade deletion; the "refuse while meetings exist" policy in this plan is not the design. See [docs/DECISIONS.md](../DECISIONS.md) ("Deleting a job deletes its history (cascade)"). Kept as written for history.
+
 ## 1. Goal
 
 Add explicitly confirmed job deletion and a Jobs-area workflow that creates or refreshes linked jobs from resumes interview packs. Keep verified notes separate from resume claims, preserve local edits, and leave meeting history unchanged.
@@ -99,6 +101,8 @@ Existing Live and Mock job selectors already reload on visibility. Preserve that
 **Existing discrepancy:** `ensureDefaultJob()` finds or creates a row named `Unsorted`; it does not guarantee ID 1. Protect both ID 1 and name-based Unsorted rows. Do not renumber existing jobs or rewrite meeting references.
 
 ### Slice 2 — Counted job deletion
+
+> **Superseded 2026-11-06.** The owner chose cascade deletion, so the "refuse while any meeting exists" policy below is no longer the design. See [docs/DECISIONS.md](../DECISIONS.md) ("Deleting a job deletes its history (cascade)") and `src/main/services/jobs/deletion.ts`. The text below is kept as written for history.
 
 Present these alternatives to the owner:
 

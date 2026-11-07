@@ -125,8 +125,8 @@ shows installed/available versions, progress and recoverable errors in Settings 
 to update is explicit and disabled during live/paused meetings and background meeting writes.
 Development and packaged smoke perform no update checks. Ordinary quit installs nothing.
 
-Storage is schema v12 (v6–v7 presentation snapshots and context revisions, v8 practice, v9–v12
-resume/profile snapshots and guards). Presentation tables remain for historical records only. Startup backs up existing older databases before migration and rejects
+Storage is schema v13 (v6–v7 presentation snapshots and context revisions, v8 practice, v9–v12
+resume/profile snapshots and guards, v13 job↔application links and the job-delete guard). Presentation tables remain for historical records only. Startup backs up existing older databases before migration and rejects
 newer schemas without opening the application.
 
 ## Meeting rehearsal harness

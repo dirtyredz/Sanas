@@ -51,7 +51,7 @@ sanas/
 │   │   ├── diagnostics/                   # isolated packaged smoke diagnostics
 │   │   ├── windows/                       # BrowserWindow builders and main → all-windows broadcast
 │   │   │   └── interviewer-window.ts      # restricted mock output window
-│   │   ├── ipc/                           # validated typed IPC handlers; delegate only (job-resume/: job resume get/set + native resume picker)
+│   │   ├── ipc/                           # validated typed IPC handlers; delegate only (job-resume/: job resume get/set + native resume picker; jobs/: jobs, glossary, deletion and application IPC)
 │   │   ├── system-audio.ts                # display-media loopback handler
 │   │   ├── services/
 │   │   │   ├── stt/                       # SttProvider seam, endpointing and keyterm budget
@@ -91,6 +91,10 @@ sanas/
 │   │   │   │   ├── updates/                    # updater service and meeting-aware restart checks
 │   │   │   │   ├── email/                      # EmailProvider seam and SMTP transport
 │   │   │   │   └── retention/                  # scheduled/on-demand recording and meeting cleanup
+│   │   │   ├── jobs/                       # counted job deletion and single-use preview tokens
+│   │   │   │   └── applications/           # resumes-pack import: map, merge, draft; application-import.ts is the facade
+│   │   │   │       ├── import/             # list, preview (+ typed fields/session) and apply (+ values)
+│   │   │   │       └── source/             # read-only edge to the resumes project: refresh, files, validation, config
 │   │   │   ├── history/                    # grounded ask-your-history retrieval and answers
 │   │   │   ├── audio-store/                # WAV recording of accepted capture audio
 │   │   │   └── screen-capture/             # display choice, one-shot screenshot and encoding
@@ -109,6 +113,8 @@ sanas/
 │   │       │   ├── controls/               # Switch, FieldRow, Badge, KeyBadge — the library's small control components
 │   │       │   ├── pages/                  # route/page components
 │   │       │   ├── jobs/                   # job detail tabs and the resume editor
+│   │       │   │   ├── applications/       # New job from / refresh from application: picker, preview, preview-format
+│   │       │   │   └── deletion/           # counted job-delete dialog and its wording
 │   │       │   ├── settings/
 │   │       │   │   ├── sections/           # one component per Settings section + section index (+ pure hotkey/update status)
 │   │       │   │   │   └── InterviewProfileSection.tsx # the one plain-text Interview profile editor
@@ -128,12 +134,14 @@ sanas/
 │   │       ├── lib/                        # pure shared renderer helpers (incl. overlay-workspaces.ts: workspace names + local shortcut table)
 │   │       │   ├── meeting/                # meeting/context state and hooks (start-selection.ts: Start choices and options)
 │   │       │   │   └── resume/             # useJobHasResume: Live's Interview default
+│   │       │   ├── navigation/             # pure orientation-aware tab arrow/Home/End rule (JobTabs, OverlayNavigation)
 │   │       │   └── suggestions/            # safe suggestion rendering and history reducer
 │   │       ├── dev/                        # typed browser-preview bridge mocks
 │   │       └── env.d.ts                    # Vite client types
 │   └── shared/                              # cross-process IPC and domain contracts
 │       ├── filler-marker.ts                # ⟨…⟩ improvised-answer marker: constants, split and strip
 │       ├── interview-profile.ts            # Interview profile text limit
+│       ├── jobs/                           # renderer-safe job contracts: applications, import baseline, deletion, limits
 │       ├── mock-interview/                 # typed setup/state/result IPC contracts
 │       ├── presentation/                   # historical slide and timeline contracts (read-only)
 │       ├── live-controls/                  # context, admission, suggestion metadata and capture contracts
@@ -227,10 +235,10 @@ sanas/
 - `src/main/db/repos/meeting/` — the meeting repos: `meetings.ts` (row), `meeting-columns.ts` (the one meeting column projection: no resume/profile text, `interview_profile_used` computed in SQL), `meeting-create.ts` (`createMeeting(jobId, title, MeetingCreateInput)`, the one creation transaction; the input is main-resolved and carries the profile snapshot and the Start context, saved as revision 0), `meeting-grounding.ts` (`getMeetingGrounding(id)`: `{ resume, interviewProfile, hasBiography }`, the only read of both snapshots), `meeting-resume-schema.ts` / `meeting-interview-profile-schema.ts` (append-only v9/v10 SQL; their original guards are superseded by v12), `meeting-snapshot-clear-schema.ts` (v12: the live immutability triggers on the resume/profile snapshot columns, which allow a clear-to-empty only while a `meeting_snapshot_clear` guard row exists; `moveMeetingToJob` in `meetings.ts` is the only sanctioned clearer, on a job change), `meeting-context.ts` (text-only context revisions, `hasMeetingContext`, merge `moveContextHistory`), `meeting-presentation.ts` (read-only historical slides: `getPresentationHistory`, `hasLegacySlides`)
 - `src/main/db/repos/job/` — job-owned content: `job-resume.ts` (`getJobResume`/`setJobResume`, one optional row per job) with its append-only v11 schema (`job-resume-schema.ts`); `glossary.ts` (the glossary SQL, moved out of `repos/jobs.ts`); `applications.ts` (the job↔resumes-application link, `LocalJobState`, and the one-transaction create/refresh writes) with its v13 schema (`application-schema.ts`: `job_applications` plus the `jobs_delete_guard` trigger); `job-deletion.ts` (per-table counts, the job/meeting snapshot, `isProtectedJob`, and the final `deleteJobRow`)
 - `src/main/services/jobs/` — job deletion (`deletion.ts`: counted preview, SQLite backup, per-meeting removal through `meetings/remove.ts`, then the job row) and `preview-tokens.ts`, the main-owned single-use confirmation tokens shared by deletion and application import
-- `src/main/services/jobs/applications/` — importing a job from a resumes interview pack: `application-import.ts` composes list → preview → apply; `map-pack.ts` maps a validated pack to job values (name, glossary normalization); `merge-preview.ts` is the pure three-way refresh comparison; `draft-fields.ts` is draft-at-import (create only) through `AssistantProvider`
+- `src/main/services/jobs/applications/` — importing a job from a resumes interview pack: `application-import.ts` is the thin facade over `import/` (`listing.ts` row projection, `preview.ts` create/refresh preview, `preview-fields.ts` typed field values, `preview-session.ts` token payload + pack reload, `apply.ts` confirmed apply, `apply-values.ts` create-value and name resolution); `map-pack.ts` maps a validated pack to job values (name, glossary normalization); `merge-preview.ts` is the pure three-way refresh comparison; `draft-fields.ts` is draft-at-import (create only) through `AssistantProvider`
 - `src/main/services/jobs/applications/source/` — the read-only edge to the resumes project: `refresh-runner.ts` (runs its pack CLI), `pack-files.ts` (bounded, contained listing/reading of `.json` packs), `validate-pack.ts` (schema v1 + limits + `packFingerprint`) and `source-config.ts` (re-validated `resumesRoot`/node settings)
 - `src/main/ipc/jobs/` — jobs, glossary, deletion and application IPC (`jobs.ts`, `deletion.ts`, `applications.ts`, `validate.ts`); the privileged channels answer only the library window (`requireLibrarySender`)
-- `src/shared/jobs/` — renderer-safe job contracts and limits: `applications.ts` (pack/preview/apply types), `deletion.ts`, `limits.ts` (job, glossary and `JOB_PERSONA_MAX_CHARS` limits) and `source-settings.ts` (resumes settings defaults/validation)
+- `src/shared/jobs/` — renderer-safe job contracts and limits: `applications.ts` (pack/preview/apply types; preview values are typed, never display text), `import-baseline.ts` (storage-independent `ImportBaseline`/`LocalValues`), `deletion.ts`, `limits.ts` (job, glossary and `JOB_PERSONA_MAX_CHARS` limits) and `source-settings.ts` (resumes settings defaults/validation)
 - `src/shared/filler-marker.ts` — `FILLER_OPEN`/`FILLER_CLOSE` for prompts, `splitFiller`/`stripFillerMarkers` for rendering; `src/shared/interview-profile.ts` — the profile text limit
 - `src/renderer/src/app/settings/sections/InterviewProfileSection.tsx` — the one plain-text Interview profile editor; the Settings draft/pager/save flow owns editing state
 - `src/main/db/repos/` — per-entity repositories (incl. the screen-answer storage codec `manual-kind.ts`); the only place SQL strings live
@@ -241,7 +249,7 @@ sanas/
 - `src/renderer/src/app/controls/` — small shared library controls (`Switch`, `FieldRow`, `Badge`, `KeyBadge`); styles live in `styles/controls.css`
 - `src/renderer/src/app/pages/` — one component per library route/page; `SettingsPage` is layout and wiring only (its state is `useSettingsDraft`)
 - `src/renderer/src/app/jobs/` — `JobOverview` (name, context, glossary), `JobResume` (saved resume with its own Save resume; `ResumeDraftEditor` paste/import/preview, `resume-draft.ts` pure draft rules), `JobEmail` (recipient), and `JobMeetings` (history/merge). `JobTabs` owns tab/panel IDs, keyboard focus and mounted panels from a name/render table. `pages/JobDetail` owns load, shared draft/save, composition and meeting drill-in; its selected index survives the drill-in. `job-draft.ts` holds the pure job-draft rules (unsaved-edit check before a refresh)
-- `src/renderer/src/app/jobs/applications/` — New job from application / Refresh from application: `ApplicationPicker` (rows and statuses via `picker-rows.ts`), `ApplicationPreview` (create form or per-field refresh review, conflicts defaulting to Keep Sanas), `apply-request.ts` (builds the apply request) and `useApplicationImport.ts`
+- `src/renderer/src/app/jobs/applications/` — New job from application / Refresh from application: `ApplicationPicker` (rows and statuses via `picker-rows.ts`), `ApplicationPreview` (create form or per-field refresh review, conflicts defaulting to Keep Sanas), `preview-format.ts` (field labels and display text for the typed preview values), `apply-request.ts` (builds the apply request) and `useApplicationImport.ts`
 - `src/renderer/src/app/jobs/deletion/` — `JobDeleteDialog` (exact-count confirmation, default button Cancel) and `deletion-copy.ts` (pure count wording)
 - `src/renderer/src/app/settings/` — only the cross-section tests (`settings-pages.test.tsx`, `settings-controls.test.tsx`); everything else is in the folders below
 - `src/renderer/src/app/settings/sections/` — one component per Settings section, including independent update state, plus pure status wording (`hotkey-status.ts`, `update-status.ts`); `SettingsSectionPage.tsx` is the section index that renders the selected section
@@ -332,8 +340,8 @@ main-process code belongs in a responsibility folder above, not beside them.
 - `shell/` and `workspaces/` are coupled through `OverlaySessionModel`: workspaces take the whole
   session, and `OverlaySession` imports the composer hook. Narrow the props per workspace if the
   session grows.
-- `services/` has 9 children after grouping platform integrations and moving transcript formatting
-  into `turns/`; `meetings/` breadth remains tracked by dk-bd2e1ebf.
+- `services/` has 10 children (the new `jobs/` took it from 9 after grouping platform integrations
+  and moving transcript formatting into `turns/`); `meetings/` breadth remains tracked by dk-bd2e1ebf.
 - `src/shared/` (21 entries) and `src/main/ipc/` (18) exceed the 10-entry breadth guideline;
   `ipc/job-resume/` could move under `ipc/jobs/`, and the loose `shared/*.ts` contracts group by
   domain the way `shared/jobs/` now does.
