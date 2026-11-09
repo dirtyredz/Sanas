@@ -40,7 +40,7 @@ its identity regression test sits beside it.
 Resumes are owned by the job: `db/repos/job/` (`job-resume.ts` + v11 schema), `ipc/jobs/resume/` (get/set + the main-owned PDF/DOCX import picker) and the
 job page's Resume tab (`app/jobs/resume/`: `JobResume.tsx`, `ResumeDraftEditor.tsx`, `resume-draft.ts`).
 Start resolves the snapshot in `services/meetings/context/start-grounding.ts` for both Live
-and Mock; `lib/meeting/resume/useJobHasResume.ts` gives Live its Interview default. The
+and Mock; `lib/meeting/useJobHasResume.ts` gives Live its Interview default. The
 importer/validator now live in `services/jobs/resume/`; the type stays in
 `shared/meeting/meeting-resume.ts` (it is also the meeting snapshot contract; renaming it is deferred).
 
@@ -184,7 +184,7 @@ sanas/
 │   │       │   └── capture/                # capture action, status subscription, composer attachment state
 │   │       ├── audio/                      # mic/loopback capture and worklet bridge
 │   │       ├── lib/                        # pure shared renderer helpers
-│   │       │   ├── meeting/                # meeting state/transcript hooks + context/, start/, resume/
+│   │       │   ├── meeting/                # meeting state/transcript hooks + context/, start/
 │   │       │   ├── format/                 # time, speaker and hotkey label formatters
 │   │       │   ├── navigation/             # orientation-aware tab arrow/Home/End rule
 │   │       │   └── suggestions/            # safe suggestion rendering and history reducer
@@ -338,10 +338,9 @@ handler (`system-audio.ts`); new main-process code belongs in a responsibility f
 - `src/renderer/src/audio/` — renderer capture and AudioWorklet downsampling.
 - `src/renderer/src/lib/` — shared renderer helpers and small shared components, grouped into the folders below (loose: `overlay-workspaces.ts` workspace names and the local shortcut table shared by the overlay and Settings → Hotkeys; `ipc-error.ts`, `glossary-input.ts`, `icons.tsx`, `SummaryMarkdown.tsx`).
 - `src/renderer/src/lib/format/` — `format-time.ts` (clock/when), `speaker-label.ts`, `hotkey-label.ts`: pure label/format helpers.
-- `src/renderer/src/lib/meeting/` — live-meeting state: `meeting-state.ts` + `useMeetingState.ts` (reducer/hook), `useTranscript.ts`; the three folders below hold the rest.
+- `src/renderer/src/lib/meeting/` — live-meeting state: `meeting-state.ts` + `useMeetingState.ts` (reducer/hook), `useTranscript.ts`, `useJobHasResume.ts` (whether the selected job has a saved resume, Live's Interview default, stale-reply safe); the two folders below hold the rest.
 - `src/renderer/src/lib/meeting/context/` — `meeting-context-draft.ts` + `useMeetingContextDraft.ts` are the draft/apply/reload/conflict logic shared by the Live page's `MeetingContextEditor` and the overlay's Context; `meeting-context-state.ts`, `useMeetingContext.ts`.
 - `src/renderer/src/lib/meeting/start/` — `start-selection.ts` is the Interview default/override rule and builds the Start options (`meetingStartOptions`) and the pre-Start context draft rule; `job-choices.ts` (Live picker choices — `startableJobs` drops the Unsorted bucket via `isUnsortedJob` — the remembered job `rememberedJob`/`rememberJob` and `selectionAfterReload`); `start-captured-meeting.ts` (shared capture acquisition/adoption/cleanup).
-- `src/renderer/src/lib/meeting/resume/` — `useJobHasResume.ts` (whether the selected job has a saved resume, Live's Interview default, stale-reply safe).
 - `src/renderer/src/lib/navigation/` — `next-tab-index.ts` and colocated tests: pure orientation-aware wrapping arrows/Home/End rule shared by JobTabs and OverlayNavigation. Settings keeps its distinct clamped, arrow-only page navigation.
 - `src/renderer/src/lib/suggestions/` — text-safe compact/detail renderers and live history state (`FillerText` renders the ⟨…⟩ improvised-answer marker; `src/shared/suggestion/filler-marker.ts` splits/strips it).
 - `src/renderer/src/dev/` — browser-preview implementation of the typed preload bridge: `mock-api.ts` assembles it, `mock-fixtures.ts` holds the static sample data, `mock-live-meeting.ts` the scripted live meeting; `overlay-scenarios.ts` holds the deterministic overlay preview states (`overlay.html?scenario=<name>`) driven through `mockDriver`.
