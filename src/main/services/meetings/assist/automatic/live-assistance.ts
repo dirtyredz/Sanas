@@ -2,28 +2,28 @@ import {
   observeAssistance,
   type AssistDiagnostic,
   type InvalidationReason,
-} from '../observation/diagnostics'
-import { formatVerdict, isAcceptedVerdict } from '../../assistant/classifier-verdict'
-import { TurnAssembler } from '../../turns/turn-assembler'
+} from '../../observation/diagnostics'
+import { formatVerdict, isAcceptedVerdict } from '../../../assistant/classifier-verdict'
+import { TurnAssembler } from '../../../turns/turn-assembler'
 import {
   ANSWER_NOW_QUESTION_MS,
   COACH_QUESTION_MS,
   couldBeQuestion,
   latestQuestion,
-} from '../../turns/latest-question'
-import type { CompletedTurn, IdentityRole, TurnFinal } from '../../turns/types'
-import { answerCooldownAllows, looksLikeResponseCandidate } from '../../assistant/triggers'
+} from '../../../turns/latest-question'
+import type { CompletedTurn, IdentityRole, TurnFinal } from '../../../turns/types'
+import { answerCooldownAllows, looksLikeResponseCandidate } from '../../../assistant/triggers'
 import type {
   ClassifierOutcome,
   ClassifierTurn,
   ClassifyRequest,
   Addressee,
   ResponseKind,
-} from '../../assistant/classifier'
+} from '../../../assistant/classifier'
 import { QuestionLedger } from './question-ledger'
-import { CoachPolicy } from '../../assistant/coach/coach-policy'
-import { speakerLabel } from '../../turns/transcript-format'
-import type { SuggestionHandle, SuggestionRunner } from './suggestion-runner'
+import { CoachPolicy } from '../../../assistant/coach/coach-policy'
+import { speakerLabel } from '../../../turns/transcript-format'
+import type { SuggestionHandle, SuggestionRunner } from '../suggestion/suggestion-runner'
 import { SpeculativeAnswer } from './speculative-answer'
 import { ClassifierBreaker } from './classifier/classifier-breaker'
 import {
@@ -32,7 +32,7 @@ import {
   coachRequest,
   type AssistSettings,
   type AssistSnapshot,
-} from './suggestion-requests'
+} from '../suggestion/suggestion-requests'
 
 // Live assistance for one meeting at a time: turns resolved transcript events into
 // automatic answers and next points.

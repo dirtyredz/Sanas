@@ -238,7 +238,7 @@ Treat retained profiles and custom scenario text as private and remove them when
 ### Latency evidence
 
 The report also has `latency: { summary, records }` from the same `LatencyTracker` the app uses
-(`meetings/assist/latency.ts`), plus `RequestOutcome.classifier` (canonical verdict) and
+(`meetings/assist/latency/latency.ts`), plus `RequestOutcome.classifier` (canonical verdict) and
 `RequestOutcome.usage` (absent = unknown; canned replies report none). Denominators:
 
 - `records` are the finished per-candidate/run records (up to 200); `summary` has counts and
@@ -308,7 +308,7 @@ test prompt delivery and persistence, not summarization quality.
 ```powershell
 npm run typecheck
 npm run lint
-npm exec -- vitest run src/main/services/mock-interview src/main/db/repos src/main/ipc src/main/rehearsal scripts/rehearsal src/main/services/meetings/assist/suggestion-runner.test.ts src/main/services/meetings/index.test.ts src/main/services/meetings/merge src/main/services/history src/renderer/src/lib/meeting/start-captured-meeting.test.ts src/renderer/src/app/pages/MockInterviewPage.test.tsx src/renderer/src/app/settings src/renderer/src/interviewer-app
+npm exec -- vitest run src/main/services/mock-interview src/main/db/repos src/main/ipc src/main/rehearsal scripts/rehearsal src/main/services/meetings/assist/suggestion/suggestion-runner.test.ts src/main/services/meetings/index.test.ts src/main/services/meetings/merge src/main/services/history src/renderer/src/lib/meeting/start-captured-meeting.test.ts src/renderer/src/app/pages/MockInterviewPage.test.tsx src/renderer/src/app/settings src/renderer/src/interviewer-app
 npm run build
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/rehearsal/run.ps1 -Scenario mock-interview -Tier scripted -Assistant canned
 ```

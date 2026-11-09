@@ -1,4 +1,4 @@
-import type { TurnAssemblyTiming } from '../../turns/types'
+import type { TurnAssemblyTiming } from '../../../turns/types'
 import type { LatencyRecord } from './latency'
 
 // Bounded counts and medians for a report, computed from finished latency records.

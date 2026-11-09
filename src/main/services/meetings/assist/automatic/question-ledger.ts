@@ -1,4 +1,4 @@
-import type { CompletedTurn } from '../../turns/types'
+import type { CompletedTurn } from '../../../turns/types'
 
 // Pure bookkeeping for stacked questions: the other side asks several in a row and the
 // automatic lane must answer them together instead of only the newest. A question enters the

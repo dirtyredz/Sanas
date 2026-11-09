@@ -1,17 +1,17 @@
 import { expect, it, vi } from 'vitest'
-import type { SuggestionGroundingRow } from '../../../db/repos/suggestion-grounding'
+import type { SuggestionGroundingRow } from '../../../../db/repos/suggestion-grounding'
 import { admitManual, manualRequest, type ManualAdmissionDeps } from './manual-requests'
 import {
   TOPIC_SWITCH_EXCHANGES,
   topicSwitchWindow,
-} from '../../assistant/answer-context/topic-switch-fixture'
+} from '../../../assistant/answer-context/topic-switch-fixture'
 import {
   answerNowRequest,
   answerRequest,
   coachRequest,
   type AssistSettings,
   type AssistSnapshot,
-} from './suggestion-requests'
+} from '../suggestion/suggestion-requests'
 const settings: AssistSettings = {
   anthropicApiKey: 'key',
   anthropicWorkspaceId: '',

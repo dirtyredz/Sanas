@@ -30,9 +30,9 @@ import { broadcast } from '../../windows/broadcast'
 import { createMeeting } from '../../db/repos/meeting/meeting-create'
 import { ensureDefaultJob } from '../../db/repos/jobs'
 import { createLiveControls } from './live-controls'
-import { CaptureRequests } from './assist/capture-requests'
+import { CaptureRequests } from './assist/manual/capture-requests'
 import { createScreenCapture } from '../screen-capture'
-import { CaptureDrafts } from './assist/capture-drafts'
+import { CaptureDrafts } from './assist/manual/capture-drafts'
 import { overlayBounds } from '../../windows/overlay-window'
 
 // Orchestrates one live meeting at a time: STT session, persistence, event fan-out, and

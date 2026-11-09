@@ -7,10 +7,10 @@ import {
   type AssistSettings,
   type AssistSnapshot,
 } from './suggestion-requests'
-import type { CompletedTurn } from '../../turns/types'
-import type { AssistImage } from '../../assistant/types'
+import type { CompletedTurn } from '../../../turns/types'
+import type { AssistImage } from '../../../assistant/types'
 import type { SuggestionRequest } from './suggestion-runner'
-import { topicSwitchWindow } from '../../assistant/answer-context/topic-switch-fixture'
+import { topicSwitchWindow } from '../../../assistant/answer-context/topic-switch-fixture'
 const settings: AssistSettings = {
   anthropicApiKey: 'key',
   anthropicWorkspaceId: '',

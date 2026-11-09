@@ -1,6 +1,6 @@
 import type { FrozenEvidence, RetrievalReply } from './protocol'
 
-/** Structurally satisfies the consumer-owned EvidenceHandle in meetings/assist/live-assistance. */
+/** Structurally satisfies the consumer-owned EvidenceHandle in meetings/assist/automatic/live-assistance. */
 export interface FrozenEvidenceHandle {
   ready: Promise<string>
   cancel(): void

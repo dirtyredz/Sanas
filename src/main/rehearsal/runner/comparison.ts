@@ -2,10 +2,10 @@ import { RehearsalAssistant } from '../outcomes/providers'
 import {
   automaticAnswerRequest,
   type AssistSettings,
-} from '../../services/meetings/assist/suggestion-requests'
+} from '../../services/meetings/assist/suggestion/suggestion-requests'
 import { buildSystemPrompt } from '../../services/assistant/prompts'
-import { SuggestionRunner } from '../../services/meetings/assist/suggestion-runner'
-import { observeLatency } from '../../services/meetings/assist/latency'
+import { SuggestionRunner } from '../../services/meetings/assist/suggestion/suggestion-runner'
+import { observeLatency } from '../../services/meetings/assist/latency/latency'
 import type { CompletedTurn } from '../../services/turns/types'
 
 export const comparisonQuestions = [

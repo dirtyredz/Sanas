@@ -8,8 +8,8 @@ import { runMigrations } from '../../db/migrations'
 import { HistoryWorker } from '../../services/history/live/worker-client'
 import { freezeEvidence } from '../../services/history/live/session'
 import { RehearsalAssistant } from '../outcomes/providers'
-import { SuggestionRunner } from '../../services/meetings/assist/suggestion-runner'
-import { automaticAnswerRequest } from '../../services/meetings/assist/suggestion-requests'
+import { SuggestionRunner } from '../../services/meetings/assist/suggestion/suggestion-runner'
+import { automaticAnswerRequest } from '../../services/meetings/assist/suggestion/suggestion-requests'
 import type { CompletedTurn } from '../../services/turns/types'
 
 async function canned(evidence: string): Promise<void> {

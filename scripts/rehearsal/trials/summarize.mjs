@@ -8,14 +8,14 @@ const root = fileURLToPath(new URL('../../../', import.meta.url))
 
 let rules
 /** The in-app latency rules (delivered rule, rounded median, stage lists), bundled from
- *  src/main/services/meetings/assist/latency-summary.ts so this report cannot drift from it. */
+ *  src/main/services/meetings/assist/latency/latency-summary.ts so this report cannot drift from it. */
 export async function loadLatencyRules() {
   if (rules) return rules
   const folder = resolve(root, '.tmp/owner-runs')
   await mkdir(folder, { recursive: true })
   const bundle = resolve(folder, `latency-rules-${process.pid}.mjs`)
   await build({
-    entryPoints: [resolve(root, 'src/main/services/meetings/assist/latency-summary.ts')],
+    entryPoints: [resolve(root, 'src/main/services/meetings/assist/latency/latency-summary.ts')],
     outfile: bundle,
     bundle: true,
     platform: 'node',

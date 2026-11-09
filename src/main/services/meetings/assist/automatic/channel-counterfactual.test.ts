@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest'
 import { LiveAssistance } from './live-assistance'
-import { resolveSpeakerIdentity } from '../capture/channel-identity'
+import { resolveSpeakerIdentity } from '../../capture/channel-identity'
 afterEach(() => vi.useRealTimers())
 function setup(fail = false) {
   const classify = vi.fn(async () =>

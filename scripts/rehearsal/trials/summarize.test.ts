@@ -2,7 +2,7 @@ import { expect, it } from 'vitest'
 import {
   distribution,
   isDeliveredAutomatic,
-} from '../../../src/main/services/meetings/assist/latency-summary'
+} from '../../../src/main/services/meetings/assist/latency/latency-summary'
 // @ts-expect-error standalone Node tool has no declaration file
 import { summarizeLogs } from './summarize.mjs'
 

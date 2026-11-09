@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { ClassifierOutcome } from '../../assistant/classifier'
-import { CONTINUATION_GRACE_MS } from '../../turns/turn-assembler'
+import type { ClassifierOutcome } from '../../../assistant/classifier'
+import { CONTINUATION_GRACE_MS } from '../../../turns/turn-assembler'
 import { me, otherTurn, setup, them } from './testing/live-assistance-harness'
-import { freezeEvidence } from '../../history/live/session'
+import { freezeEvidence } from '../../../history/live/session'
 
 const diagnostics = vi.hoisted(() => vi.fn())
-vi.mock('../observation/diagnostics', () => ({ observeAssistance: diagnostics }))
+vi.mock('../../observation/diagnostics', () => ({ observeAssistance: diagnostics }))
 
 const T0 = 1_000_000
 

@@ -5,7 +5,7 @@ import type {
 } from '../../assistant/classifier-verdict'
 import type { ProviderUsage } from '../../assistant/types'
 import type { CompletedTurn } from '../../turns/types'
-import type { PromptMismatchCategory } from '../assist/suggestion-requests'
+import type { PromptMismatchCategory } from '../assist/suggestion/suggestion-requests'
 import { createObserverBus } from './observer-bus'
 
 /** Why a speculation was discarded: the source's own reason (also the event's `reason`). */

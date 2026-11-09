@@ -4,7 +4,7 @@ import type {
   SuggestionVisibilityState,
 } from '@shared/live-controls/visibility'
 import type { ProviderUsage, ProviderTiming } from '../../assistant/types'
-import type { SuggestionOutcome, SuggestionRequest } from '../assist/suggestion-runner'
+import type { SuggestionOutcome, SuggestionRequest } from '../assist/suggestion/suggestion-runner'
 import { createObserverBus } from './observer-bus'
 
 /** The model policy a run actually used (product profile, not provider vocabulary). */

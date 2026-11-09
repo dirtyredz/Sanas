@@ -1,22 +1,26 @@
 import type { Admission, ManualRequest } from '@shared/live-controls/types'
-import type { SuggestionGroundingRow } from '../../../db/repos/suggestion-grounding'
-import { COMPACT_CONTRACT } from '../../assistant/compact-contract'
+import type { SuggestionGroundingRow } from '../../../../db/repos/suggestion-grounding'
+import { COMPACT_CONTRACT } from '../../../assistant/compact-contract'
 import {
   AUDIENCE_INSTRUCTION,
   DETAIL_INSTRUCTION,
   TYPED_INSTRUCTION,
   meetingContextBlock,
-} from '../../assistant/live-controls/prompts'
+} from '../../../assistant/live-controls/prompts'
 import {
   CAPTURE_DETAIL_NOTE,
   CAPTURE_INSTRUCTION,
   CAPTURE_MAX_TOKENS,
   TYPED_CAPTURE_INSTRUCTION,
-} from '../../assistant/live-controls/capture-prompts'
-import type { AssistImage } from '../../assistant/types'
-import { renderTranscriptWindow } from '../../turns/transcript-format'
-import { answerRequest, type AssistSettings, type AssistSnapshot } from './suggestion-requests'
-import type { SuggestionHandle, SuggestionRequest } from './suggestion-runner'
+} from '../../../assistant/live-controls/capture-prompts'
+import type { AssistImage } from '../../../assistant/types'
+import { renderTranscriptWindow } from '../../../turns/transcript-format'
+import {
+  answerRequest,
+  type AssistSettings,
+  type AssistSnapshot,
+} from '../suggestion/suggestion-requests'
+import type { SuggestionHandle, SuggestionRequest } from '../suggestion/suggestion-runner'
 
 /** A request that carries a screenshot. Built only in main, from a fresh capture or a
  *  main-owned composer draft — never from renderer input directly. */

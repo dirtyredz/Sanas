@@ -8,7 +8,7 @@ import { IPC } from '@shared/ipc'
 import { getMeetingContext, saveMeetingContext } from '../../db/repos/meeting/meeting-context'
 import { broadcast } from '../../windows/broadcast'
 import type { LiveSession } from './assist/live-session'
-import type { CaptureRequests } from './assist/capture-requests'
+import type { CaptureRequests } from './assist/manual/capture-requests'
 import { applyContext } from './context/session'
 import { isLiveMeeting, liveMeetingId } from './status/live-meeting'
 

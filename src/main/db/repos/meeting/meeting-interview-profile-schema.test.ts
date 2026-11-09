@@ -11,7 +11,7 @@ import { getMeetingGrounding } from './meeting-grounding'
 import { getMeeting, moveMeetingToJob } from './meetings'
 import { getMeetingContext } from './meeting-context'
 import { MeetingPrompts } from '../../../services/meetings/assist/meeting-prompts'
-import { answerRequest } from '../../../services/meetings/assist/suggestion-requests'
+import { answerRequest } from '../../../services/meetings/assist/suggestion/suggestion-requests'
 import { interviewProfileSnapshot } from '../../../services/meetings/context/profile'
 import { meetingKeyterms } from '../../../services/meetings/context/meeting-keyterms'
 let sqlite: DatabaseSync

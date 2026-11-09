@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { CompletedTurn } from '../../turns/types'
+import type { CompletedTurn } from '../../../turns/types'
 import { QUESTION_CARRY_CAP, QUESTION_CARRY_WINDOW_MS, QuestionLedger } from './question-ledger'
 
 function turn(text: string, completedAt: number): CompletedTurn {

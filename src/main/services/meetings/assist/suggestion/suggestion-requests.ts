@@ -1,21 +1,21 @@
-import { meetingContextBlock } from '../../assistant/live-controls/prompts'
+import { meetingContextBlock } from '../../../assistant/live-controls/prompts'
 import type { Settings } from '@shared/types'
-import { speakerLabel, type SpeakerNames } from '../../turns/transcript-format'
-import type { CompletedTurn } from '../../turns/types'
+import { speakerLabel, type SpeakerNames } from '../../../turns/transcript-format'
+import type { CompletedTurn } from '../../../turns/types'
 import {
   assistProfile,
   buildUserContent,
   type AnswerFocus,
   type TranscriptLine,
-} from '../../assistant/prompts'
-import type { LatestQuestion } from '../../assistant/answer-context/anchor'
-import type { ToldStory } from '../../assistant/answer-context/told-stories'
-import type { QuestionTurn } from '../../turns/latest-question'
+} from '../../../assistant/prompts'
+import type { LatestQuestion } from '../../../assistant/answer-context/anchor'
+import type { ToldStory } from '../../../assistant/answer-context/told-stories'
+import type { QuestionTurn } from '../../../turns/latest-question'
 import {
   COACH_PROFILE,
   buildCoachUserContent,
   type CoachPromptInput,
-} from '../../assistant/coach/coach-prompts'
+} from '../../../assistant/coach/coach-prompts'
 import { suggestionTimeoutMs, type SuggestionTrigger } from './suggestion-in-flight'
 import type { SuggestionRequest } from './suggestion-runner'
 

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import type { CompletedTurn } from '../../turns/types'
-import { observeAssistance, type AssistDiagnostic } from '../observation/diagnostics'
+import type { CompletedTurn } from '../../../turns/types'
+import { observeAssistance, type AssistDiagnostic } from '../../observation/diagnostics'
 import { LatencyTracker, observeLatency } from './latency'
-import { observeRun } from '../observation/run-observation'
+import { observeRun } from '../../observation/run-observation'
 
 const SECRET = 'Sarah: our secret project Falcon costs $4M'
 

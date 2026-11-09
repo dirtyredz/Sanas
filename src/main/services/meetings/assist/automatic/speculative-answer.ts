@@ -1,12 +1,19 @@
-import { isClassifierFailure } from '../../assistant/classifier-verdict'
+import { isClassifierFailure } from '../../../assistant/classifier-verdict'
 import {
   observeAssistance,
   type DiscardCategory,
   type DiscardReason,
-} from '../observation/diagnostics'
-import type { CompletedTurn } from '../../turns/types'
-import { promptMismatchCategories, type PromptMismatchCategory } from './suggestion-requests'
-import type { SpeculativeHandle, SuggestionRequest, SuggestionRunner } from './suggestion-runner'
+} from '../../observation/diagnostics'
+import type { CompletedTurn } from '../../../turns/types'
+import {
+  promptMismatchCategories,
+  type PromptMismatchCategory,
+} from '../suggestion/suggestion-requests'
+import type {
+  SpeculativeHandle,
+  SuggestionRequest,
+  SuggestionRunner,
+} from '../suggestion/suggestion-runner'
 
 // The one automatic answer started BEFORE the classifier has spoken, so the classifier's
 // latency overlaps the answer's time to first text instead of adding to it.

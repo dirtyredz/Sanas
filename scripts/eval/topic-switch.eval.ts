@@ -4,7 +4,7 @@ import { pathToFileURL } from 'url'
 import { it } from 'vitest'
 import { claudeProvider } from '../../src/main/services/assistant/claude'
 import { candidateFacts } from '../../src/main/services/meetings/context/candidate-data'
-import * as current from '../../src/main/services/meetings/assist/suggestion-requests'
+import * as current from '../../src/main/services/meetings/assist/suggestion/suggestion-requests'
 import { buildSystemPrompt } from '../../src/main/services/assistant/prompts'
 import { ShownLedger } from '../../src/main/services/assistant/answer-context/shown-ledger'
 import {
@@ -17,7 +17,7 @@ import {
 } from '../../src/main/services/assistant/answer-context/topic-switch-fixture'
 import { carriedTerms } from './carried-terms'
 import type { CompletedTurn } from '../../src/main/services/turns/types'
-import type { SuggestionRequest } from '../../src/main/services/meetings/assist/suggestion-runner'
+import type { SuggestionRequest } from '../../src/main/services/meetings/assist/suggestion/suggestion-runner'
 
 // Old-vs-new answer prompts on the INVENTED topic-switch interview (no owner data, no DB).
 // Run through scripts/eval/topic-switch.ps1, which extracts the old tree and sets the env:
@@ -113,7 +113,7 @@ function newVersion(): Version {
 async function oldVersion(root: string): Promise<Version> {
   const load = (rel: string): Promise<Record<string, any>> =>
     import(pathToFileURL(join(root, rel)).href)
-  const requests = await load('src/main/services/meetings/assist/suggestion-requests.ts')
+  const requests = await load('src/main/services/meetings/assist/suggestion/suggestion-requests.ts')
   const prompts = await load('src/main/services/assistant/prompts.ts')
   const contract = await load('src/main/services/assistant/compact-contract.ts')
   const recent: string[] = []

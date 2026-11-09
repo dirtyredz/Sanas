@@ -4,7 +4,7 @@ import type {
   CaptureDraftView,
   CaptureStatus,
 } from '@shared/live-controls/capture'
-import type { AcquiredCapture } from '../../screen-capture'
+import type { AcquiredCapture } from '../../../screen-capture'
 import type { CaptureDrafts } from './capture-drafts'
 import type { AssistInput } from './manual-requests'
 

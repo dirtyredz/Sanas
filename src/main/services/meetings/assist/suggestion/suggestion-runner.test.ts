@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SuggestionEvent } from '@shared/types'
-import type { AssistRequest } from '../../assistant/types'
-import { observeLatency } from './latency'
-import { observeRun } from '../observation/run-observation'
+import type { AssistRequest } from '../../../assistant/types'
+import { observeLatency } from '../latency/latency'
+import { observeRun } from '../../observation/run-observation'
 import {
   SuggestionRunner,
   type StoredSuggestion,

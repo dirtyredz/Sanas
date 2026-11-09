@@ -1,5 +1,5 @@
 // The focus block of an AUTOMATIC answer: the completed turn it responds to, plus any
-// questions carried over from before it (meetings/assist/question-ledger.ts).
+// questions carried over from before it (meetings/assist/automatic/question-ledger.ts).
 //
 // One neutral wording for every accepted verdict (question / request / objection, put to Me or
 // to the room). The prompt is built BEFORE the classifier has spoken, so a speculative answer

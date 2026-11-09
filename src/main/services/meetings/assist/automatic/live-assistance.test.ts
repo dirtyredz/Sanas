@@ -1,12 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { CONTINUATION_GRACE_MS } from '../../turns/turn-assembler'
-import { ENDPOINTING_MS } from '../../stt/endpointing'
+import { CONTINUATION_GRACE_MS } from '../../../turns/turn-assembler'
+import { ENDPOINTING_MS } from '../../../stt/endpointing'
 import { CLASSIFIER_SUSPEND_MS } from './classifier/classifier-breaker'
-import { ANSWER_NOW_QUESTION_MS } from '../../turns/latest-question'
+import { ANSWER_NOW_QUESTION_MS } from '../../../turns/latest-question'
 import { me, otherTurn, setup, them, words } from './testing/live-assistance-harness'
 
 const diagnostics = vi.hoisted(() => vi.fn())
-vi.mock('../observation/diagnostics', () => ({ observeAssistance: diagnostics }))
+vi.mock('../../observation/diagnostics', () => ({ observeAssistance: diagnostics }))
 beforeEach(() => diagnostics.mockClear())
 
 describe('live assistance: answers to completed turns', () => {

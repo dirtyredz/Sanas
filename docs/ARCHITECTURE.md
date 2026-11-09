@@ -176,7 +176,7 @@ Mic (getUserMedia, renderer)
   speculation (next bullet). Warm 2026-11-04 medians (Haiku 697 ms, Sonnet first token 1,182 ms)
   give a nominal ≈1.9 s on the endpoint path, but owner measurements are slower: treat it as
   nominal; the stage timing evidence below is how to find where the time goes.
-- **Speculative answer** (`assist/speculative-answer.ts`, `SuggestionRunner.speculate`): when the
+- **Speculative answer** (`assist/automatic/speculative-answer.ts`, `SuggestionRunner.speculate`): when the
   classifier starts on a free ambient lane, the answer is built with the neutral automatic
   focus block (`answer-context/automatic-turn.ts`: one wording for all six accepted verdicts, never
   stating kind or addressee) and starts with it, **unpublished**: it owns the ambient lane and the meeting hold, but emits no event and
@@ -190,7 +190,7 @@ Mic (getUserMedia, renderer)
   promotion. "Answer now" uses the hotkey lane and never touches it. Every speculation is a paid
   call, discarded or not: `speculation-started/promoted/discarded` diagnostics and a
   `speculative answers: started=… promoted=… discarded=…` log line at Stop count it.
-- **Stage timing evidence** (`observation/diagnostics.ts`, `observation/run-observation.ts`, `assist/latency.ts`, `assist/latency-summary.ts`):
+- **Stage timing evidence** (`observation/diagnostics.ts`, `observation/run-observation.ts`, `assist/latency/latency.ts`, `assist/latency/latency-summary.ts`):
   assistance events `turn-completed`, `classifier-started`, `classified`, `answer-started` (with the
   `suggestionId`, correlating candidate turn and run) and the speculation events; run events
   `begin`, `first-text`, `first-readable`, `promoted`, `visible`, `usage`, `settled`, each stamped
@@ -272,7 +272,7 @@ objection` + `me | room | other`, or `none`. Parsing (`classifier-verdict.ts`) i
   point is `trigger='ambient'` with `purpose='next-point'`. While the ambient lane is busy only
   the newest classified candidate waits.
 - **Transient state and the epoch:** assembler, candidates, timers and coaching state are
-  in-memory in `meetings/assist/live-assistance.ts`. Pause/stop invalidate assistance BEFORE
+  in-memory in `meetings/assist/automatic/live-assistance.ts`. Pause/stop invalidate assistance BEFORE
   awaiting socket shutdown; reconnect resets and pin changes discard the unfinished turn and all
   pending automatic work (epoch). An answer already streaming still finishes and persists after
   Stop. Receipt time (`performance.now`) drives grace/cooldowns; provider audio time orders
@@ -435,7 +435,7 @@ interleave markers with segments by audio time, markers first at ties, never as 
 
 ### Screen capture (no persistence)
 
-Capture screen (IPC or the global shortcut) and Attach screen enter `meetings/assist/capture-requests.ts`.
+Capture screen (IPC or the global shortcut) and Attach screen enter `meetings/assist/manual/capture-requests.ts`.
 It checks the live meeting, the requested lane, the API key and a single "preparing" flag, then
 captures OUTSIDE the lifecycle queue (`services/screen-capture/`: display under the overlay →
 `desktopCapturer` source by `display_id` → bounded PNG/JPEG + thumbnail, 5 s deadline) so Pause and

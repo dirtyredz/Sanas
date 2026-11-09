@@ -77,7 +77,11 @@ sanas/
 │   │   │   ├── meetings/                  # live lifecycle/STT/audio orchestrator, export and removal
 │   │   │   │   ├── index.ts               # lifecycle, STT wiring, audio and final persistence
 │   │   │   │   ├── live-controls.ts       # context/manual/answer-mode control facade
-│   │   │   │   ├── assist/                # assembly, prompt state, admission, coordinator and runner
+│   │   │   │   ├── assist/                # assembly (live-session.ts), prompt state (meeting-prompts.ts), shared outcome types
+│   │   │   │   │   ├── automatic/         # coordinator, question ledger, speculative answer, classifier/ breaker, testing/ harness
+│   │   │   │   │   ├── manual/            # manual and screen-capture admission, composer screen drafts
+│   │   │   │   │   ├── suggestion/        # request building, in-flight policy, runner, run publication
+│   │   │   │   │   └── latency/           # stage-timing correlation and summary
 │   │   │   │   ├── observation/           # best-effort observers: meeting stream, run events, assistance decisions
 │   │   │   │   ├── capture/               # channel identity and capture health
 │   │   │   │   ├── context/               # prepare/commit/publish meeting-context changes + meeting grounding
@@ -230,16 +234,20 @@ sanas/
 - `src/main/services/assistant/coach/` — next-point eligibility policy and coach prompt construction
 - `src/main/services/assistant/live-controls/` — typed, detail, audience and screen-capture request instructions
 - `src/main/services/meetings/` — meeting lifecycle/STT/audio orchestration plus meeting-level facades
-- `src/main/services/meetings/assist/` — per-meeting prompt/grounding state, manual and screen-capture admission, in-memory composer screen drafts (`capture-drafts.ts`), automatic coordination (`question-ledger.ts` carries uncovered stacked questions into one suggestion; `speculative-answer.ts` owns the one unpublished answer started alongside the classifier and its promote/discard rule; `promptMismatchCategories` in `suggestion-requests.ts` decides when two requests are the same prompt (empty result), comparing every field except an explicit short list; `observation/run-observation.ts` also owns `EffectiveProfile`, the full/smart/points policy a run used) and suggestion execution (`latency.ts` `LatencyTracker` + `observeLatency()` (owns both subscriptions) correlate diagnostics and run observations into bounded, allowlisted stage-timing records, `latency-summary.ts` `summarizeLatency` reports them; `suggestion-runner.ts` owns lanes, deadline and persistence; `run-publication.ts` the per-run held-text and publish gate)
+- `src/main/services/meetings/assist/` (root: `live-session.ts` assembly, `meeting-prompts.ts`, `outcomes.ts`; code lives in the four homes below) — per-meeting prompt/grounding state, manual and screen-capture admission, in-memory composer screen drafts (`capture-drafts.ts`), automatic coordination (`question-ledger.ts` carries uncovered stacked questions into one suggestion; `speculative-answer.ts` owns the one unpublished answer started alongside the classifier and its promote/discard rule; `promptMismatchCategories` in `suggestion-requests.ts` decides when two requests are the same prompt (empty result), comparing every field except an explicit short list; `observation/run-observation.ts` also owns `EffectiveProfile`, the full/smart/points policy a run used) and suggestion execution (`latency.ts` `LatencyTracker` + `observeLatency()` (owns both subscriptions) correlate diagnostics and run observations into bounded, allowlisted stage-timing records, `latency-summary.ts` `summarizeLatency` reports them; `suggestion-runner.ts` owns lanes, deadline and persistence; `run-publication.ts` the per-run held-text and publish gate)
 - `src/main/services/meetings/observation/` — the one home for observation: `observer-bus.ts` (shared typed pub/sub; a throwing listener is dropped, never policy), `meeting-observation.ts` (transcript/signal/state; window policy and mock-interview consume it), `run-observation.ts` (runner events plus `EffectiveProfile`), `diagnostics.ts` (coordinator decisions plus the rehearsal-only observer). They stay separate streams with their own payloads and consumers and share only the bus and the rule that observation never changes behaviour; payload types come from `assist/`, which emits into them
-- `src/main/services/meetings/assist/classifier/` — `classifier-breaker.ts`: the consecutive-failure circuit breaker (count, suspend, recover, throttled failure log) the coordinator asks about the turn classifier
-- `src/main/services/meetings/assist/testing/` — test-only fake-clock harness shared by the live-assistance suites
+- `src/main/services/meetings/assist/automatic/` — the automatic coordinator (`live-assistance.ts`), `question-ledger.ts` and `speculative-answer.ts`
+- `src/main/services/meetings/assist/manual/` — manual and screen-capture admission (`manual-requests.ts`, `capture-requests.ts`) and `capture-drafts.ts`
+- `src/main/services/meetings/assist/suggestion/` — `suggestion-requests.ts` (request building, prompt-mismatch categories), `suggestion-in-flight.ts`, `suggestion-runner.ts`, `run-publication.ts`
+- `src/main/services/meetings/assist/latency/` — `latency.ts` tracker/observer and `latency-summary.ts`
+- `src/main/services/meetings/assist/automatic/classifier/` — `classifier-breaker.ts`: the consecutive-failure circuit breaker (count, suspend, recover, throttled failure log) the coordinator asks about the turn classifier
+- `src/main/services/meetings/assist/automatic/testing/` — test-only fake-clock harness shared by the live-assistance suites
 - `src/main/services/meetings/capture/` — AUDIO capture-side identity and capture-health policy (screen capture lives in `services/screen-capture/`)
 - `src/main/services/meetings/context/` — pure preparation followed by commit/publication of live context changes; `meeting-keyterms.ts` builds the STT hints (glossary plus resume/profile terms) for streaming and batch
 - `src/main/services/jobs/resume/` — job resume: ingress validation (`resume.ts`), bounded PDF/DOCX parsing (`import-file.ts`); (term extraction lives beside `candidate-data.ts` in `context/candidate-keyterms.ts`: `candidateKeyterms`, shared by resume and profile)
 - `src/main/services/jobs/memory/` — job memory, and the one owner of its review rules: `source.ts` (eligible source, fingerprint, `proposalIsCurrent`), `generate.ts` (serialized per-job rewrites against the last approved revision; skip-if-unchanged and the stale/failed/pending settling; `enqueueMemory` after summaries), `review.ts` (get/save/approve/dismiss/retry and the view status rules such as stale and failed; IPC only validates shapes) and `prompts.ts`
 - `src/main/db/repos/job/memory/` — persistence and one compare-and-set only: `approved.ts` (owner-approved text, 3,000-char cap, revisioned), `proposals.ts` (plain reads/writes plus `markApprovedIf`, the single-transaction approval) and `schema.ts`; no staleness, skip or retry rules. `repos/job/eligible-meeting.ts` is the one SQL predicate for an eligible meeting (ended, not practice, not Unsorted), shared with `repos/history/live.ts`
-- `src/main/services/history/live/` — live same-job evidence: `policy.ts` (query specificity), `hits.ts` (ranking: interleave transcript and summary indexes, dedup, neighbour expansion, prompt kind labels), `excerpts.ts` (strict 2,400-char rendering), `session.ts` (frozen, deadline-bounded evidence), `worker-client.ts`/`worker.ts` (read-only worker thread, a separate main build entry running the same `hits.ts` on its own connection); assistance consumes it only through the `EvidenceHandle` it defines in `meetings/assist/live-assistance.ts`
+- `src/main/services/history/live/` — live same-job evidence: `policy.ts` (query specificity), `hits.ts` (ranking: interleave transcript and summary indexes, dedup, neighbour expansion, prompt kind labels), `excerpts.ts` (strict 2,400-char rendering), `session.ts` (frozen, deadline-bounded evidence), `worker-client.ts`/`worker.ts` (read-only worker thread, a separate main build entry running the same `hits.ts` on its own connection); assistance consumes it only through the `EvidenceHandle` it defines in `meetings/assist/automatic/live-assistance.ts`
 - `src/main/db/repos/history/` — bounded reads only: `transcripts.ts` (ranked transcript search, `searchSegments`), `live.ts` (transcript/summary/neighbour reads that take a connection so the worker can run them), `summary-schema.ts` (summary FTS index); no ranking, dedup or prompt labelling
 - `src/renderer/src/app/meeting/` — pieces of the saved-meeting record: `MeetingRecordHeader` (title and summarize/email/export/delete actions), `TranscriptPanel` (transcript with slide markers plus `SpeakerEditor`), `MeetingSuggestionsTab` and `usePresentationHistory`; `pages/MeetingView` loads the record and composes them with the filing, summary and context cards
 - `src/renderer/src/app/mock-interview/` — `MockResults` (practice results table) and `useMockInterview` (setup, job/plan choice, mock state, past sessions, mic capture); `pages/MockInterviewPage` is layout and wiring
@@ -339,7 +347,7 @@ main-process code belongs in a responsibility folder above, not beside them.
   and final persistence. `meetings/live-controls.ts` serializes context, manual request and answer-mode
   actions against injected lifecycle state.
 - **Assistance policy stays split.** `turns/turn-assembler` closes turns; assistant triggers,
-  classifier and coach policy decide; `meetings/assist/manual-requests` admits explicit requests;
+  classifier and coach policy decide; `meetings/assist/manual/manual-requests` admits explicit requests;
   `live-assistance` coordinates automatic work; `speculative-answer` decides whether an early
   answer may be published; `suggestion-runner` owns generation, the unpublished state and persistence.
 - **Prompt snapshots are synchronous and read-only.** `meetings/assist/meeting-prompts.ts` resolves and
@@ -369,9 +377,7 @@ main-process code belongs in a responsibility folder above, not beside them.
   it to opaque provider-tagged strings when a second `AssistantProvider` arrives; until then
   `claude.ts` computes one `wirePolicy()` per request for both the body and the event.
 - `services/meetings/` and `services/assistant/` are both broad (many files plus subfolders);
-  group by lifecycle vs. policy before adding more siblings. `meetings/assist/` holds 17 code files
-  (over the 12 cap) after `latency.ts`; a split into automatic (live-assistance, ledger,
-  speculation, runner) and manual (manual/capture requests, drafts) subfolders is the natural seam.
+  group by lifecycle vs. policy before adding more siblings. `meetings/assist/` is split into automatic/, manual/, suggestion/ and latency/ (dk-c0cd0363).
 - `shell/` and `workspaces/` are coupled through `OverlaySessionModel`: workspaces take the whole
   session, and `OverlaySession` imports the composer hook. Narrow the props per workspace if the
   session grows.

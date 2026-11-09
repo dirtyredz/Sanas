@@ -1,20 +1,20 @@
 import type { SuggestionPurpose } from '@shared/types'
 import type { SuggestionVisibilityState } from '@shared/live-controls/visibility'
 import { randomUUID } from 'node:crypto'
-import type { MalformedShape } from '../../assistant/classifier-verdict'
-import type { ProviderUsage, ProviderTiming } from '../../assistant/types'
-import type { EffectiveProfile } from '../observation/run-observation'
-import type { TurnAssemblyTiming, TurnCompletion } from '../../turns/types'
+import type { MalformedShape } from '../../../assistant/classifier-verdict'
+import type { ProviderUsage, ProviderTiming } from '../../../assistant/types'
+import type { EffectiveProfile } from '../../observation/run-observation'
+import type { TurnAssemblyTiming, TurnCompletion } from '../../../turns/types'
 import {
   subscribeAssistance,
   type AssistDiagnostic,
   type DiscardCategory,
   type TurnedDownCategory,
-} from '../observation/diagnostics'
+} from '../../observation/diagnostics'
 import { summarizeLatency, type LatencySummary } from './latency-summary'
-import { subscribeRuns, type RunObservation } from '../observation/run-observation'
-import type { SuggestionOutcome } from './suggestion-runner'
-import type { PromptMismatchCategory } from './suggestion-requests'
+import { subscribeRuns, type RunObservation } from '../../observation/run-observation'
+import type { SuggestionOutcome } from '../suggestion/suggestion-runner'
+import type { PromptMismatchCategory } from '../suggestion/suggestion-requests'
 
 // Stage timing for automatic and requested answers, as redacted evidence.
 //

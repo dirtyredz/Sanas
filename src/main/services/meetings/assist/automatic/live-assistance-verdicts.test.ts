@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Addressee, ResponseKind } from '../../assistant/classifier'
-import { CONTINUATION_GRACE_MS } from '../../turns/turn-assembler'
-import type { AssistDiagnostic } from '../observation/diagnostics'
-import { LatencyTracker, type LatencyRecord } from './latency'
-import { subscribeRuns } from '../observation/run-observation'
+import type { Addressee, ResponseKind } from '../../../assistant/classifier'
+import { CONTINUATION_GRACE_MS } from '../../../turns/turn-assembler'
+import type { AssistDiagnostic } from '../../observation/diagnostics'
+import { LatencyTracker, type LatencyRecord } from '../latency/latency'
+import { subscribeRuns } from '../../observation/run-observation'
 import { otherTurn, setup, them } from './testing/live-assistance-harness'
 
 // The six accepted automatic verdicts share one neutral speculative prompt: each promotes the
@@ -11,7 +11,7 @@ import { otherTurn, setup, them } from './testing/live-assistance-harness'
 // evidence is read through the real LatencyTracker, fed by both observation streams.
 
 const sink = vi.hoisted(() => ({ fn: (_e: AssistDiagnostic): void => undefined }))
-vi.mock('../observation/diagnostics', () => ({
+vi.mock('../../observation/diagnostics', () => ({
   observeAssistance: (e: AssistDiagnostic) => sink.fn(e),
 }))
 
