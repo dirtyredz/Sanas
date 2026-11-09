@@ -14,7 +14,7 @@ export function createChangeSignal(): ChangeSignal {
       return () => listeners.delete(listener)
     },
     notify() {
-      for (const listener of [...listeners]) {
+      for (const listener of listeners) {
         try {
           listener()
         } catch {
