@@ -1,5 +1,5 @@
 import type { SuggestionEvent, SuggestionPurpose, SuggestionTrigger } from '@shared/types'
-import type { ProviderUsage } from '../../assistant/types'
+import type { ProviderUsage, ProviderTiming, EffectiveProfile } from '../../assistant/types'
 import type { SuggestionOutcome, SuggestionRequest } from './suggestion-runner'
 
 // `at` is the runner's monotonic clock where the event happened (latency evidence). The
@@ -15,6 +15,7 @@ export type RunObservation =
       /** Started unpublished alongside the classifier; it shows nothing until 'promoted'. */
       speculative?: boolean
       at: number
+      effective?: EffectiveProfile
     }
   | { kind: 'visible'; event: SuggestionEvent }
   /** The provider's first non-empty text, shown or not (held no-op prefix, speculation). */
@@ -25,7 +26,22 @@ export type RunObservation =
   | { kind: 'promoted'; id: number; meetingId: number; at: number }
   /** Provider usage for the run, partial when it did not complete. */
   | { kind: 'usage'; id: number; meetingId: number; usage: ProviderUsage }
-  | { kind: 'settled'; id: number; meetingId: number; outcome: SuggestionOutcome; at: number }
+  | { kind: 'provider'; id: number; meetingId: number; timing: ProviderTiming }
+  | {
+      kind: 'renderer'
+      id: number
+      meetingId: number
+      state: 'frame-after-commit' | 'hidden' | 'unselected'
+      at: number
+    }
+  | {
+      kind: 'settled'
+      id: number
+      meetingId: number
+      outcome: SuggestionOutcome
+      storedSuggestionId?: number
+      at: number
+    }
 const listeners = new Set<(event: RunObservation) => void>()
 export function subscribeRuns(listener: (event: RunObservation) => void): () => void {
   listeners.add(listener)

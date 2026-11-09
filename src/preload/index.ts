@@ -1,4 +1,5 @@
 import type { MeetingResume } from '../shared/meeting-resume'
+import type { SuggestionVisibility } from '../shared/live-controls/visibility'
 import type {
   MockPlanId,
   MockSetup,
@@ -159,6 +160,8 @@ const api = {
     },
   },
   assist: {
+    acknowledgeVisibility: (value: SuggestionVisibility): Promise<void> =>
+      ipcRenderer.invoke(IPC.SuggestionVisibility, value),
     request: (request: ManualRequest): Promise<Admission> =>
       ipcRenderer.invoke(IPC.AssistRequest, request),
     getAnswerEveryQuestion: (): Promise<{ meetingId: number | null; enabled: boolean }> =>

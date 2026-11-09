@@ -1,4 +1,15 @@
-import type { ProviderUsage } from './types'
+import type { ProviderUsage, ProviderTiming } from './types'
+
+export function reportTiming(
+  observer: ((event: ProviderTiming) => void) | undefined,
+  event: ProviderTiming,
+): void {
+  try {
+    observer?.(event)
+  } catch {
+    /* evidence is best effort */
+  }
+}
 
 // Provider-neutral usage reporting: best effort, so evidence never fails generation. Each
 // provider extracts its own counts (claude-usage.ts for Anthropic).

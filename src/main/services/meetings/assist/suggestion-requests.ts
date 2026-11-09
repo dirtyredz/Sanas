@@ -69,6 +69,7 @@ export function answerRequest(
     meetingId: snap.meetingId,
     trigger,
     purpose: 'answer',
+    profile: profile.kind,
     atMs: snap.atMs,
     apiKey: s.anthropicApiKey,
     workspaceId: s.anthropicWorkspaceId || undefined,
@@ -163,16 +164,39 @@ const NOT_PROMPT = new Set<keyof SuggestionRequest>(['atMs', 'accept'])
  *  speculation started for `a` may be published as the answer to `b`. Screenshots never
  *  match (a held image is single-use), and the diagnostic turn spans match by identity. */
 export function samePrompt(a: SuggestionRequest, b: SuggestionRequest): boolean {
-  if (a.image || b.image) return false
+  return promptMismatchCategories(a, b).length === 0
+}
+
+export type PromptMismatchCategory =
+  'image' | 'carried-turns' | 'user-content' | 'grounding-context' | 'model-profile' | 'other'
+
+/** Names only. User content combines transcript, ledger and meeting context; do not infer
+ *  which sub-block changed from a flattened prompt. New fields still compare by default. */
+export function promptMismatchCategories(
+  a: SuggestionRequest,
+  b: SuggestionRequest,
+): PromptMismatchCategory[] {
+  const changed = new Set<PromptMismatchCategory>()
+  if (a.image || b.image) changed.add('image')
   const turnsA = a.diagnosticTurns ?? []
   const turnsB = b.diagnosticTurns ?? []
-  if (turnsA.length !== turnsB.length || !turnsA.every((t, i) => t === turnsB[i])) return false
+  if (turnsA.length !== turnsB.length || !turnsA.every((t, i) => t === turnsB[i]))
+    changed.add('carried-turns')
   const keys = new Set([...Object.keys(a), ...Object.keys(b)] as (keyof SuggestionRequest)[])
   for (const k of keys) {
     if (k === 'diagnosticTurns' || k === 'image' || NOT_PROMPT.has(k)) continue
-    if (a[k] !== b[k]) return false
+    if (a[k] !== b[k])
+      changed.add(
+        k === 'userContent'
+          ? 'user-content'
+          : ['system', 'cacheableContext', 'groundingContextId', 'contextRevision'].includes(k)
+            ? 'grounding-context'
+            : ['model', 'profile', 'maxTokens', 'effort'].includes(k)
+              ? 'model-profile'
+              : 'other',
+      )
   }
-  return true
+  return [...changed].sort()
 }
 
 /** A next point while the user talks: ambient lane, nudge model, its own short profile,

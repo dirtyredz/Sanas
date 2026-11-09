@@ -2,7 +2,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import type { AssistantProvider, AssistRequest } from './types'
 import { completionText } from './completion-result'
 import { usageFromAnthropic } from './claude-usage'
-import { reportUsage } from './provider-usage'
+import { reportUsage, reportTiming } from './provider-usage'
 
 // Adaptive thinking is model-specific. Opus and Sonnet 5.x accept effort; Haiku and
 // unknown custom model IDs get the portable request shape so choosing one cannot break calls.
@@ -75,10 +75,25 @@ export function userMessageContent(
 
 export const claudeProvider: AssistantProvider = {
   async complete(req: AssistRequest): Promise<string> {
+    let attempt = 0
     const client = new Anthropic({
       apiKey: req.apiKey,
+      fetch: (...args) => {
+        reportTiming(req.onTiming, { kind: 'attempt', at: performance.now(), attempt: ++attempt })
+        return globalThis.fetch(...args)
+      },
       // org-level keys 400 without this header; workspace-scoped keys don't need it
       defaultHeaders: req.workspaceId ? { 'anthropic-workspace-id': req.workspaceId } : undefined,
+    })
+    reportTiming(req.onTiming, { kind: 'request-start', at: performance.now() })
+    reportTiming(req.onTiming, {
+      kind: 'policy',
+      at: performance.now(),
+      effort: supportsEffort(req.model) ? req.effort : 'omitted',
+      thinking:
+        req.maxTokens > SHORT_BUDGET_MAX_TOKENS
+          ? 'default'
+          : (thinkingOff(req.model)?.type ?? 'default'),
     })
     const stream = client.messages.stream(
       {
@@ -98,6 +113,12 @@ export const claudeProvider: AssistantProvider = {
       },
       requestOptions(req),
     )
+    let protocolSeen = false
+    stream.on('streamEvent', () => {
+      if (protocolSeen) return
+      protocolSeen = true
+      reportTiming(req.onTiming, { kind: 'first-protocol', at: performance.now() })
+    })
     if (req.onDelta) stream.on('text', req.onDelta)
     let final: Anthropic.Message
     try {

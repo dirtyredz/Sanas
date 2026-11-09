@@ -51,6 +51,7 @@ export function setup(over: Partial<AssistSettings> = {}, opts: { speculate?: bo
   const logs: string[] = []
   let holds = 0
   let availabilityChanges = 0
+  let snapshotAvailable = true
   const runner = new SuggestionRunner({
     provider: {
       complete: (req) => {
@@ -92,15 +93,18 @@ export function setup(over: Partial<AssistSettings> = {}, opts: { speculate?: bo
           start: (r) => runner.start(r),
           speculate: () => null,
         },
-    snapshot: () => ({
-      meetingId: 7,
-      atMs: 1_000,
-      system: 'sys',
-      window,
-      names: undefined,
-      recent,
-      told,
-    }),
+    snapshot: () =>
+      snapshotAvailable
+        ? {
+            meetingId: 7,
+            atMs: 1_000,
+            system: 'sys',
+            window,
+            names: undefined,
+            recent,
+            told,
+          }
+        : null,
     log: (m) => logs.push(m),
     availabilityChanged: () => availabilityChanges++,
   })
@@ -113,6 +117,9 @@ export function setup(over: Partial<AssistSettings> = {}, opts: { speculate?: bo
   const none: ClassifierOutcome = { status: 'classified', kind: 'none' }
   return {
     assist,
+    setSnapshotAvailable: (available: boolean) => {
+      snapshotAvailable = available
+    },
     settings,
     classifications,
     generations,

@@ -1,4 +1,5 @@
 import type { MeetingState } from '@shared/types'
+import { useEffect, useRef } from 'react'
 import { suggestionArrivalLabel, suggestionLabel } from '@shared/suggestion-label'
 import { SuggestionContent } from '../../lib/suggestions/SuggestionContent'
 import { OverlayButton } from '../controls/OverlayButton'
@@ -30,6 +31,28 @@ export function OverlaySuggestions({
   onReadFull?: () => void
 }): React.JSX.Element {
   const { items, selected, selectedIndex, latest } = model
+  const acknowledged = useRef(new Set<string>())
+  useEffect(() => {
+    const frames: number[] = []
+    for (const item of items) {
+      if (item.error || !/[\p{L}\p{N}]/u.test(item.text.replace(/<none>/gi, ''))) continue
+      const state =
+        item !== selected ? 'unselected' : document.hidden ? 'hidden' : 'frame-after-commit'
+      const key = `${item.meetingId}:${item.suggestionId}:${state}`
+      if (acknowledged.current.has(key)) continue
+      const send = (): void => {
+        acknowledged.current.add(key)
+        if (acknowledged.current.size > 600)
+          acknowledged.current.delete(acknowledged.current.values().next().value!)
+        void window.sanas.assist
+          .acknowledgeVisibility({ meetingId: item.meetingId, runId: item.suggestionId, state })
+          .catch(() => undefined)
+      }
+      if (state === 'frame-after-commit') frames.push(requestAnimationFrame(send))
+      else send()
+    }
+    return () => frames.forEach(cancelAnimationFrame)
+  }, [items, selected])
   const requestBusy = model.requestedInFlight || manual.pending
   const full = mode === 'full'
   const source = selected?.sourceSuggestionId

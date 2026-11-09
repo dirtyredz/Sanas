@@ -143,14 +143,19 @@ describe('stage evidence beyond promotion', () => {
     })
   })
 
-  it('a rejected candidate is its own record; manual answers are not classified', async () => {
+  it('a rejected candidate stays linked to its discarded run; manual answers are not classified', async () => {
     const t = setup({}, { speculate: true })
     await otherTurn(t.assist, 'What a day?', 0, 800)
     await t.classify(0, t.none)
     await vi.advanceTimersByTimeAsync(0)
     expect(tracker.records()).toEqual([
-      expect.objectContaining({ kind: 'candidate', verdict: 'none' }),
-      expect.objectContaining({ kind: 'run', outcome: 'discarded', discard: 'rejected' }),
+      expect.objectContaining({
+        kind: 'run',
+        verdict: 'none',
+        candidateId: 1,
+        outcome: 'discarded',
+        discard: 'rejected',
+      }),
     ])
     t.window.push({ speaker: 1, isUser: false, text: 'Anything else?' })
     t.assist.answerNow()

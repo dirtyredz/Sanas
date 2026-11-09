@@ -1,4 +1,5 @@
-import { ipcMain } from 'electron'
+import { BrowserWindow, ipcMain } from 'electron'
+import { observeRun } from '../services/meetings/assist/run-observation'
 import { IPC } from '@shared/ipc'
 import { getMeetingContext } from '../db/repos/meeting/meeting-context'
 import {
@@ -8,9 +9,25 @@ import {
   setAnswerEveryQuestion,
 } from '../services/meetings'
 import { requireId } from './validate'
-import { requireContextUpdate, requireManualRequest } from './live-controls-validation'
+import {
+  requireContextUpdate,
+  requireManualRequest,
+  requireSuggestionVisibility,
+} from './live-controls-validation'
 
 export function registerLiveControlsIpc(): void {
+  ipcMain.handle(IPC.SuggestionVisibility, (event, raw: unknown) => {
+    const value = requireSuggestionVisibility(raw)
+    const window = BrowserWindow.fromWebContents(event.sender)
+    const state = !window || !window.isVisible() || window.isMinimized() ? 'hidden' : value.state
+    observeRun({
+      kind: 'renderer',
+      id: value.runId,
+      meetingId: value.meetingId,
+      state,
+      at: performance.now(),
+    })
+  })
   ipcMain.handle(IPC.MeetingContextGet, (_e, id: unknown) =>
     getMeetingContext(requireId(id, 'meetingId')),
   )

@@ -4,6 +4,7 @@ import {
   automaticAnswerRequest,
   coachRequest,
   samePrompt,
+  promptMismatchCategories,
   type AssistSettings,
   type AssistSnapshot,
 } from './suggestion-requests'
@@ -128,7 +129,30 @@ describe('samePrompt', () => {
   it('compares a field it has never heard of by default', () => {
     const future = { ...base(), someFutureField: 'x' } as unknown as SuggestionRequest
     expect(samePrompt(base(), future)).toBe(false)
+    expect(promptMismatchCategories(base(), future)).toEqual(['other'])
     expect(samePrompt(future, { ...future })).toBe(true)
+  })
+  it('reports bounded names for actual prompt changes without exposing values', () => {
+    const a = base()
+    const b = {
+      ...a,
+      model: 'private-model',
+      userContent: 'private conversation',
+      maxTokens: 999,
+      system: 'secret grounding',
+    }
+    expect(promptMismatchCategories(a, b)).toEqual([
+      'grounding-context',
+      'model-profile',
+      'user-content',
+    ])
+    expect(samePrompt(a, b)).toBe(false)
+    const snap = snapshot()
+    const first = automaticAnswerRequest(snap, settings, turn, [turn])
+    snap.told = [{ headline: 'An answer just completed', detail: 'New factual content' }]
+    expect(
+      promptMismatchCategories(first, automaticAnswerRequest(snap, settings, turn, [turn])),
+    ).toEqual(['user-content'])
   })
   it('never matches a request holding a screenshot, and compares turn spans by identity', () => {
     const image = { mediaType: 'image/png', base64: 'x' } as unknown as AssistImage

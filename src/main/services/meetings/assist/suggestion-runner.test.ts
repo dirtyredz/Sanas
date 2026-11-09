@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SuggestionEvent } from '@shared/types'
 import type { AssistRequest } from '../../assistant/types'
+import { observeLatency } from './latency'
+import { observeRun } from './run-observation'
 import {
   SuggestionRunner,
   type StoredSuggestion,
@@ -61,6 +63,57 @@ const coach = (over: Partial<SuggestionRequest> = {}): SuggestionRequest =>
 describe('suggestion runner', () => {
   beforeEach(() => vi.useFakeTimers())
   afterEach(() => vi.useRealTimers())
+
+  it('serializes effective policy, transport stages, attempts and stored ID; accepts late renderer receipt once', async () => {
+    const records: string[] = []
+    const evidence = observeLatency((r) => records.push(JSON.stringify(r)))
+    try {
+      const t = harness()
+      const run = t.runner.start(
+        answer({ profile: 'full', model: 'private-model-name', maxTokens: 1200, effort: 'medium' }),
+      )!
+      t.pending[0].req.onTiming?.({ kind: 'request-start', at: 100 })
+      t.pending[0].req.onTiming?.({ kind: 'attempt', at: 100, attempt: 1 })
+      t.pending[0].req.onTiming?.({ kind: 'attempt', at: 200, attempt: 2 })
+      t.pending[0].req.onTiming?.({ kind: 'first-protocol', at: 300 })
+      t.pending[0].req.onDelta?.('**Readable answer**')
+      t.pending[0].resolve('**Readable answer**')
+      await run.done
+      const record = JSON.parse(records[0])
+      expect(record).toMatchObject({
+        storedSuggestionId: 123,
+        effective: { profile: 'full', model: 'custom', maxTokens: 1200, effort: 'medium' },
+        attempts: 2,
+        retries: 1,
+        providerRequestToFirstProtocolMs: 200,
+      })
+      expect(records.join('')).not.toContain('private-model-name')
+      for (let i = 0; i < 2; i++)
+        observeRun({
+          kind: 'renderer',
+          id: run.id,
+          meetingId: 7,
+          state: 'frame-after-commit',
+          at: performance.now(),
+        })
+      expect(records).toHaveLength(2)
+      expect(JSON.parse(records[1])).toMatchObject({
+        kind: 'visibility',
+        runId: run.id,
+        visibility: 'frame-after-commit',
+      })
+      observeRun({
+        kind: 'renderer',
+        id: run.id,
+        meetingId: 99,
+        state: 'hidden',
+        at: performance.now(),
+      })
+      expect(records).toHaveLength(2)
+    } finally {
+      evidence.stop()
+    }
+  })
 
   it('keeps one request per lane and lets the hotkey lane run beside ambient', () => {
     const { runner } = harness()

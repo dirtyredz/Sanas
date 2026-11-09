@@ -25,6 +25,7 @@ import { canStartSuggestion, type SuggestionInFlight } from './suggestion-in-fli
 // answer and, like one, can no longer be withdrawn.
 
 export interface SuggestionRequest extends SuggestionMetadata {
+  profile?: 'full' | 'smart' | 'points'
   diagnosticTurns?: readonly { startMs: number; endMs: number; completedAt: number }[]
   /** Legacy deck grounding, replayed only by More detail on answers recorded with a deck. */
   cacheableContext?: string
@@ -149,6 +150,14 @@ export class SuggestionRunner {
       purpose: req.purpose,
       trigger: req.trigger,
       spans: req.diagnosticTurns ?? [],
+      effective: {
+        model: /^claude-(opus|sonnet|haiku)-[0-9]+(?:-[0-9]+)*$/.test(req.model)
+          ? req.model
+          : 'custom',
+        profile: req.profile ?? 'other',
+        maxTokens: req.maxTokens,
+        effort: req.effort,
+      },
       ...(speculative ? { speculative: true } : {}),
       at: this.now(),
     })
@@ -245,6 +254,8 @@ export class SuggestionRunner {
           // evidence only; a discarded speculation's spend is still counted
           onUsage: (usage) =>
             observeRun({ kind: 'usage', id: sid, meetingId: req.meetingId, usage }),
+          onTiming: (timing) =>
+            observeRun({ kind: 'provider', id: sid, meetingId: req.meetingId, timing }),
         })
         if (!gate.published && !(await gate.decision)) return 'discarded'
         if (cancelled) return 'cancelled'
@@ -291,7 +302,14 @@ export class SuggestionRunner {
     }
 
     const done = run().then((outcome) => {
-      observeRun({ kind: 'settled', id: sid, meetingId: req.meetingId, outcome, at: this.now() })
+      observeRun({
+        kind: 'settled',
+        id: sid,
+        meetingId: req.meetingId,
+        outcome,
+        storedSuggestionId,
+        at: this.now(),
+      })
       return outcome
     })
     return {

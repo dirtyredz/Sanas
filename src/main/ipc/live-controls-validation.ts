@@ -2,6 +2,18 @@ import type { ContextUpdate, ManualRequest } from '@shared/live-controls/types'
 import { MEETING_CONTEXT_MAX_CHARS } from '@shared/meeting-context'
 import { requireId } from './validate'
 import { requireCaptureToken } from './screen-capture-validation'
+import type { SuggestionVisibility } from '@shared/live-controls/visibility'
+
+export function requireSuggestionVisibility(raw: unknown): SuggestionVisibility {
+  const r = object(raw)
+  if (r.state !== 'frame-after-commit' && r.state !== 'hidden' && r.state !== 'unselected')
+    throw new Error('Invalid visibility state.')
+  return {
+    meetingId: requireId(r.meetingId, 'meetingId'),
+    runId: requireId(r.runId, 'runId'),
+    state: r.state,
+  }
+}
 
 function object(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value))

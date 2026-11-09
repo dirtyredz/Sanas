@@ -43,6 +43,25 @@ export interface AssistRequest {
    *  failure/cancellation when the provider saw some. Never sent anywhere; a throwing
    *  callback cannot fail generation. */
   onUsage?: (usage: ProviderUsage) => void
+  /** Local transport evidence; never prompt content. */
+  onTiming?: (event: ProviderTiming) => void
+}
+
+export type ProviderTiming =
+  | { kind: 'request-start' | 'first-protocol'; at: number }
+  | { kind: 'attempt'; at: number; attempt: number }
+  | {
+      kind: 'policy'
+      at: number
+      effort: 'low' | 'medium' | 'high' | 'omitted'
+      thinking: 'default' | 'disabled' | 'between_tools'
+    }
+
+export interface EffectiveProfile {
+  model: string
+  profile: 'full' | 'smart' | 'points' | 'other'
+  maxTokens: number
+  effort: 'low' | 'medium' | 'high'
 }
 
 /** Provider-reported counts, kept as separate fields (never summed here: cache reads and

@@ -5,6 +5,7 @@ import type {
 } from '../../assistant/classifier-verdict'
 import type { ProviderUsage } from '../../assistant/types'
 import type { CompletedTurn } from '../../turns/types'
+import type { PromptMismatchCategory } from './suggestion-requests'
 
 /** Why a speculation was discarded: the source's own reason (also the event's `reason`). */
 export type DiscardReason =
@@ -35,7 +36,8 @@ export type DiscardCategory =
 
 /** Why a candidate ended without an answer, as a bounded category (latency evidence):
  *  `policy` = the coordinator turned it down (addressee, cooldown, no key, suspended). */
-export type TurnedDownCategory = 'policy' | 'expired' | 'prefilter' | 'superseded' | 'invalidated'
+export type TurnedDownCategory =
+  'policy' | 'expired' | 'prefilter' | 'superseded' | 'invalidated' | 'unknown'
 
 /** Optional local observation only. No decisions, timers, IPC, keys or persistence. The turn
  *  carries transcript text: consumers copy allowlisted fields, never the event wholesale. */
@@ -62,6 +64,7 @@ export interface AssistDiagnostic {
   accepted?: boolean
   /** speculation-discarded only: the category of `reason`, assigned where it was discarded. */
   discard?: DiscardCategory
+  mismatchCategories?: PromptMismatchCategory[]
 }
 let observer: ((event: AssistDiagnostic) => void) | undefined
 export function observeRehearsalAssistance(next?: (event: AssistDiagnostic) => void): void {

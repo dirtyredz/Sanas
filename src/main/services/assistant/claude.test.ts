@@ -11,7 +11,12 @@ vi.mock('@anthropic-ai/sdk', () => ({
       stream: (body: Record<string, unknown>, options: Record<string, unknown>) => {
         sdk.calls.push({ body, options })
         return {
-          on: () => undefined,
+          on: (kind: string, callback: () => void) => {
+            if (kind === 'streamEvent') {
+              callback()
+              callback()
+            }
+          },
           finalMessage: async () => ({
             stop_reason: 'end_turn',
             content: [{ type: 'text', text: 'question' }],
@@ -60,6 +65,34 @@ describe('Claude provider request options', () => {
     expect(sdk.calls[0].body).toMatchObject({ model: 'claude-haiku-5-5', max_tokens: 64 })
     // Haiku keeps the portable request shape: no effort parameter
     expect(sdk.calls[0].body).not.toHaveProperty('output_config')
+  })
+
+  it('reports one protocol event and every transport attempt, without exposing payloads or throwing', async () => {
+    const timing = vi.fn()
+    await claudeProvider.complete({ ...base, onTiming: timing })
+    expect(timing.mock.calls.map(([e]) => e.kind)).toEqual([
+      'request-start',
+      'policy',
+      'first-protocol',
+    ])
+    expect(timing.mock.calls[1][0]).toMatchObject({ effort: 'omitted', thinking: 'disabled' })
+    const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(''))
+    try {
+      const transport = sdk.clients[0].fetch as typeof globalThis.fetch
+      await transport('https://example.invalid')
+      await transport('https://example.invalid')
+      expect(timing.mock.calls.slice(-2).map(([e]) => e.attempt)).toEqual([1, 2])
+      await expect(
+        claudeProvider.complete({
+          ...base,
+          onTiming: () => {
+            throw new Error('observer')
+          },
+        }),
+      ).resolves.toBe('question')
+    } finally {
+      fetch.mockRestore()
+    }
   })
 
   it.each([

@@ -151,6 +151,7 @@ const api: SanasApi = {
     onState: on(stateListeners),
   },
   assist: {
+    acknowledgeVisibility: async () => undefined,
     ...controls.assist,
     now: async () => streamSuggestion('hotkey'),
     onSuggestion: on(suggestionListeners),

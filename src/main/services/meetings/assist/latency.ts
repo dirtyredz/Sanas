@@ -1,6 +1,7 @@
 import type { SuggestionPurpose } from '@shared/types'
+import { randomUUID } from 'node:crypto'
 import type { MalformedShape } from '../../assistant/classifier-verdict'
-import type { ProviderUsage } from '../../assistant/types'
+import type { ProviderUsage, EffectiveProfile, ProviderTiming } from '../../assistant/types'
 import type { TurnAssemblyTiming, TurnCompletion } from '../../turns/types'
 import {
   subscribeAssistance,
@@ -11,6 +12,7 @@ import {
 import { summarizeLatency, type LatencySummary } from './latency-summary'
 import { subscribeRuns, type RunObservation } from './run-observation'
 import type { SuggestionOutcome } from './suggestion-runner'
+import type { PromptMismatchCategory } from './suggestion-requests'
 
 // Stage timing for automatic and requested answers, as redacted evidence.
 //
@@ -36,10 +38,27 @@ export type RunPath = 'speculative' | 'ordinary' | 'fallback' | 'manual' | 'next
 /** One finished record: an answer run (with its candidate's stages when it had one), or a
  *  candidate the classifier did not accept. */
 export interface LatencyRecord {
-  kind: 'run' | 'candidate'
+  providerPolicy?: Pick<Extract<ProviderTiming, { kind: 'policy' }>, 'effort' | 'thinking'>
+  overflow?: number
+  correlation?: 'linked' | 'missing' | 'not-applicable'
+  sessionId?: string
+  kind: 'run' | 'candidate' | 'visibility'
+  visibility?: 'frame-after-commit' | 'hidden' | 'unselected'
+  broadcastToRendererReceiptMs?: number
   candidateId?: number
+  candidateTerminal?: boolean
   attemptId?: number
   runId?: number
+  meetingId?: number
+  storedSuggestionId?: number
+  effective?: EffectiveProfile
+  closeToClassifierStartMs?: number
+  closeToClassifierEndMs?: number
+  runToProviderRequestMs?: number
+  providerRequestToFirstProtocolMs?: number
+  providerRequestToFirstTextMs?: number
+  attempts?: number
+  retries?: number
   purpose?: SuggestionPurpose
   path?: RunPath
   /** 'n/a' for Answer now and next points, which bypass the classifier. */
@@ -53,6 +72,7 @@ export interface LatencyRecord {
   fallbackOf?: number
   outcome?: SuggestionOutcome
   discard?: DiscardCategory
+  mismatchCategories?: PromptMismatchCategory[]
   /** The candidate ended without an answer: why (policy = the coordinator turned it down). */
   turnedDown?: TurnedDownCategory
   classifierMs?: number
@@ -87,12 +107,20 @@ interface Candidate {
   speculationRunId?: number
   /** Ended without an answer; recorded when its last open run settles, else at once. */
   turnedDown?: TurnedDownCategory
-  /** A run record already carries this candidate's stages (a discarded speculation). */
-  hadRun?: boolean
+  terminalRecorded?: boolean
 }
 
 interface Run {
+  providerPolicy?: LatencyRecord['providerPolicy']
+  visibilityStates?: Set<string>
+  mismatchCategories?: PromptMismatchCategory[]
   id: number
+  meetingId: number
+  effective?: EffectiveProfile
+  providerStartAt?: number
+  firstProtocolAt?: number
+  attempts?: number
+  storedSuggestionId?: number
   purpose: SuggestionPurpose
   path: RunPath
   candidateId?: number
@@ -122,9 +150,11 @@ const rounded = (a: TurnAssemblyTiming): TurnAssemblyTiming =>
   ) as unknown as TurnAssemblyTiming
 
 export class LatencyTracker {
+  private readonly sessionId = randomUUID()
   private candidates = new Map<number, Candidate>()
   private runs = new Map<number, Run>()
   private finished: LatencyRecord[] = []
+  private recentRuns = new Map<number, Run>()
   /** Records or open entries dropped to stay bounded. */
   overflow = 0
 
@@ -153,9 +183,12 @@ export class LatencyTracker {
       return
     }
     if (e.event === 'speculation-discarded') {
-      // its candidate may already be finished (a rejected verdict ends it first)
+      // Rejected candidates remain linked until their dependent run settles.
       const run = e.suggestionId === undefined ? undefined : this.runs.get(e.suggestionId)
-      if (run) run.discard = e.discard ?? 'other'
+      if (run) {
+        run.discard = e.discard ?? 'other'
+        run.mismatchCategories = e.mismatchCategories
+      }
       return
     }
     const c = turn ? this.candidates.get(turn.id) : undefined
@@ -171,15 +204,14 @@ export class LatencyTracker {
         c.accepted = e.accepted === true
         if (e.shape) c.shape = { ...e.shape, tokens: [...e.shape.tokens] }
         if (!c.accepted) {
-          c.turnedDown = e.turnedDown
-          this.finishCandidate(c)
+          this.turnDown(c, e.turnedDown ?? 'unknown')
         }
         return
       case 'not-classified':
       case 'not-generated':
       case 'superseded':
       case 'invalidated':
-        this.turnDown(c, e.turnedDown ?? 'policy')
+        this.turnDown(c, e.turnedDown ?? 'unknown')
         return
       case 'classifier-usage':
         if (e.usage) c.classifierUsage = { ...e.usage }
@@ -196,10 +228,28 @@ export class LatencyTracker {
   }
 
   run(e: RunObservation): void {
+    if (e.kind === 'renderer') {
+      const r = this.runs.get(e.id) ?? this.recentRuns.get(e.id)
+      if (!r || r.meetingId !== e.meetingId || r.firstReadableAt === undefined) return
+      r.visibilityStates ??= new Set()
+      if (r.visibilityStates.has(e.state)) return
+      r.visibilityStates.add(e.state)
+      this.push({
+        kind: 'visibility',
+        classification: r.path === 'manual' || r.path === 'next-point' ? 'n/a' : 'applies',
+        meetingId: e.meetingId,
+        runId: e.id,
+        visibility: e.state,
+        broadcastToRendererReceiptMs: diff(e.at, r.firstReadableAt),
+      })
+      return
+    }
     if (e.kind === 'visible') return // carries text; readable timing comes as 'first-readable'
     if (e.kind === 'begin') {
       this.overflow += capSet(this.runs, e.id, {
         id: e.id,
+        meetingId: e.meetingId,
+        effective: e.effective,
         purpose: e.purpose,
         path: e.speculative
           ? 'speculative'
@@ -214,12 +264,22 @@ export class LatencyTracker {
     }
     const r = this.runs.get(e.id)
     if (!r) return
+    if (e.kind === 'provider') {
+      if (e.timing.kind === 'policy')
+        r.providerPolicy = { effort: e.timing.effort, thinking: e.timing.thinking }
+      if (e.timing.kind === 'request-start') r.providerStartAt ??= e.timing.at
+      else if (e.timing.kind === 'first-protocol') r.firstProtocolAt ??= e.timing.at
+      else if (e.timing.kind === 'attempt') r.attempts = e.timing.attempt
+      return
+    }
     if (e.kind === 'first-text') r.firstTextAt ??= e.at
     else if (e.kind === 'first-readable') r.firstReadableAt ??= e.at
     else if (e.kind === 'promoted') r.promotedAt ??= e.at
     else if (e.kind === 'usage') r.usage = { ...e.usage }
     else if (e.kind === 'settled') {
+      r.storedSuggestionId = e.storedSuggestionId
       this.runs.delete(r.id)
+      capSet(this.recentRuns, r.id, r)
       this.push(this.runRecord(r, e.outcome))
     }
   }
@@ -241,33 +301,41 @@ export class LatencyTracker {
       completion: c.completion,
       assembly: c.assembly,
       classifierMs: diff(c.classifierEndAt, c.classifierStartAt),
+      closeToClassifierStartMs: diff(c.classifierStartAt, c.closedAt),
+      closeToClassifierEndMs: diff(c.classifierEndAt, c.closedAt),
       classifierUsage: c.classifierUsage,
       turnedDown: c.turnedDown,
     }
   }
 
-  /** A candidate that will get no answer. With a run still open, that run's record carries it
-   *  (see runRecord); with a discarded run already recorded, nothing more is owed; otherwise
-   *  the candidate is its own record. Already finished candidates are not in the map. */
+  /** With an open run, its settlement carries the terminal outcome. An earlier provider
+   *  failure may already have a run record; a later rejection still needs its own terminal. */
   private turnDown(c: Candidate, why: TurnedDownCategory): void {
     c.turnedDown ??= why
     const open = [...this.runs.values()].some((r) => r.candidateId === c.id)
     if (open) return
-    if (c.hadRun) this.candidates.delete(c.id)
+    if (c.terminalRecorded) this.candidates.delete(c.id)
     else this.finishCandidate(c)
   }
 
   private finishCandidate(c: Candidate): void {
     this.candidates.delete(c.id)
-    this.push({ kind: 'candidate', classification: 'applies', ...this.candidateFields(c) })
+    this.push({
+      kind: 'candidate',
+      candidateTerminal: true,
+      classification: 'applies',
+      ...this.candidateFields(c),
+    })
   }
 
   private runRecord(r: Run, outcome: SuggestionOutcome): LatencyRecord {
     const c = r.candidateId === undefined ? undefined : this.candidates.get(r.candidateId)
+    const terminal = !!c && !c.terminalRecorded && (outcome !== 'discarded' || !!c.turnedDown)
     // a published answer ends its candidate; a discarded speculation leaves it for the fallback
     if (c) {
-      if (outcome !== 'discarded' || c.turnedDown) this.candidates.delete(c.id)
-      else c.hadRun = true
+      if (terminal) c.terminalRecorded = true
+      const open = [...this.runs.values()].some((other) => other.candidateId === c.id)
+      if (c.terminalRecorded && !open) this.candidates.delete(c.id)
     }
     const closedAt = c?.closedAt
     const lastFinalAt =
@@ -277,12 +345,29 @@ export class LatencyTracker {
       kind: 'run',
       classification: automatic ? 'applies' : 'n/a',
       ...(c ? this.candidateFields(c) : {}),
+      candidateId: c?.id ?? r.candidateId,
+      candidateTerminal: c ? terminal : undefined,
       runId: r.id,
+      meetingId: r.meetingId,
+      storedSuggestionId: r.storedSuggestionId,
+      effective: r.effective,
+      providerPolicy: r.providerPolicy,
+      correlation: automatic
+        ? r.candidateId === undefined
+          ? 'missing'
+          : 'linked'
+        : 'not-applicable',
+      runToProviderRequestMs: diff(r.providerStartAt, r.startAt),
+      providerRequestToFirstProtocolMs: diff(r.firstProtocolAt, r.providerStartAt),
+      providerRequestToFirstTextMs: diff(r.firstTextAt, r.providerStartAt),
+      attempts: r.attempts,
+      retries: r.attempts === undefined ? undefined : Math.max(0, r.attempts - 1),
       purpose: r.purpose,
       path: r.path,
       fallbackOf: r.fallbackOf,
       outcome,
       discard: outcome === 'discarded' ? (r.discard ?? 'other') : undefined,
+      mismatchCategories: r.mismatchCategories,
       closeToRequestMs: diff(r.startAt, closedAt),
       requestToFirstTextMs: diff(r.firstTextAt, r.startAt),
       closeToFirstTextMs: diff(r.firstTextAt, closedAt),
@@ -296,8 +381,10 @@ export class LatencyTracker {
 
   private push(record: LatencyRecord): void {
     const clean = Object.fromEntries(
-      Object.entries(record).filter(([, v]) => v !== undefined),
-    ) as LatencyRecord
+      Object.entries({ sessionId: this.sessionId, overflow: this.overflow, ...record }).filter(
+        ([, v]) => v !== undefined,
+      ),
+    ) as unknown as LatencyRecord
     this.finished.push(clean)
     if (this.finished.length > RECORD_CAP) {
       this.finished.shift()

@@ -207,6 +207,87 @@ describe('latency tracker', () => {
 })
 
 describe('turned-down candidates', () => {
+  it('records the terminal verdict even if provider failure settled before classification', () => {
+    const t = new LatencyTracker()
+    const c = turn(1)
+    t.assist({ event: 'turn-completed', turn: c, at: 0 })
+    t.run({
+      kind: 'begin',
+      id: 9,
+      meetingId: 1,
+      purpose: 'answer',
+      trigger: 'ambient',
+      spans: [],
+      speculative: true,
+      at: 1,
+    })
+    t.assist({ event: 'speculation-started', turn: c, suggestionId: 9 })
+    t.run({ kind: 'settled', id: 9, meetingId: 1, outcome: 'discarded', at: 3 })
+    t.assist({ event: 'classified', turn: c, reason: 'none', accepted: false, at: 5 })
+    expect(t.records().filter((r) => r.candidateTerminal)).toEqual([
+      expect.objectContaining({ candidateId: 1, verdict: 'none' }),
+    ])
+    expect(t.records()).toHaveLength(2)
+  })
+
+  it('keeps both runs linked when fallback finishes before the cancelled speculation settles', () => {
+    const t = new LatencyTracker()
+    const c = turn(1)
+    t.assist({ event: 'turn-completed', turn: c, at: 0 })
+    for (const id of [9, 10]) {
+      t.run({
+        kind: 'begin',
+        id,
+        meetingId: 1,
+        purpose: 'answer',
+        trigger: 'ambient',
+        spans: [],
+        at: 1,
+      })
+      t.assist({
+        event: id === 9 ? 'speculation-started' : 'answer-started',
+        turn: c,
+        suggestionId: id,
+        reason: 'ordinary',
+      })
+    }
+    t.run({ kind: 'settled', id: 10, meetingId: 1, outcome: 'done', at: 4 })
+    t.run({ kind: 'settled', id: 9, meetingId: 1, outcome: 'discarded', at: 5 })
+    expect(t.records().map((r) => r.candidateId)).toEqual([1, 1])
+    expect(t.records().filter((r) => r.candidateTerminal)).toHaveLength(1)
+  })
+  it('retains rejection identity until the speculative run settles, without duplicate terminal records', () => {
+    const t = new LatencyTracker()
+    const c = turn(1)
+    t.assist({ event: 'turn-completed', turn: c, at: 0 })
+    t.run({
+      kind: 'begin',
+      id: 9,
+      meetingId: 1,
+      purpose: 'answer',
+      trigger: 'ambient',
+      spans: [],
+      speculative: true,
+      at: 1,
+    })
+    t.assist({ event: 'speculation-started', turn: c, suggestionId: 9 })
+    t.assist({ event: 'classified', turn: c, reason: 'none', accepted: false, at: 5 })
+    expect(t.records()).toHaveLength(0)
+    t.run({ kind: 'settled', id: 9, meetingId: 1, outcome: 'discarded', at: 6 })
+    t.assist({ event: 'invalidated', turn: c, turnedDown: 'invalidated' })
+    expect(t.records()).toEqual([
+      expect.objectContaining({ candidateId: 1, runId: 9, verdict: 'none', turnedDown: 'unknown' }),
+    ])
+    expect(t.overflow).toBe(0)
+  })
+
+  it('does not label an omitted terminal category as policy', () => {
+    const t = new LatencyTracker()
+    const c = turn(1)
+    t.assist({ event: 'turn-completed', turn: c })
+    t.assist({ event: 'not-generated', turn: c })
+    expect(t.records()[0]).toMatchObject({ turnedDown: 'unknown' })
+  })
   const turn = (id: number): CompletedTurn =>
     ({
       id,

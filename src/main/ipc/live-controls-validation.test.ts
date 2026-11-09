@@ -1,5 +1,23 @@
 import { expect, it } from 'vitest'
-import { requireContextUpdate, requireManualRequest } from './live-controls-validation'
+import {
+  requireContextUpdate,
+  requireManualRequest,
+  requireSuggestionVisibility,
+} from './live-controls-validation'
+it('accepts only correlated typed visibility states and strips extra payload', () => {
+  for (const state of ['frame-after-commit', 'hidden', 'unselected']) {
+    expect(requireSuggestionVisibility({ meetingId: 7, runId: 9, state, text: 'private' })).toEqual(
+      { meetingId: 7, runId: 9, state },
+    )
+  }
+  for (const raw of [
+    null,
+    [],
+    { meetingId: 0, runId: 9, state: 'hidden' },
+    { meetingId: 7, runId: 9, state: 'painted' },
+  ])
+    expect(() => requireSuggestionVisibility(raw)).toThrow()
+})
 it('validates text bounds, identities and revisions without truncation; refuses a deck', () => {
   expect(requireContextUpdate({ meetingId: 1, expectedRevision: 0, text: '' }).text).toBe('')
   expect(

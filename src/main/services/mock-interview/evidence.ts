@@ -53,7 +53,7 @@ export class MockEvidence {
         r.deliveredMs = this.now()
         r.proseWords = proseWords(e.text)
       }
-    } else {
+    } else if (event.kind === 'settled') {
       r.completedMs = this.now()
       r.status =
         event.outcome === 'done'

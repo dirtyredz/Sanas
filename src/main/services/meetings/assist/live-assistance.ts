@@ -64,6 +64,15 @@ const AFTER_TOLERANCE_MS = 250
 const USER_RESPONSE_MIN_WORDS = 3
 const RECENT_TURNS = 3
 
+const TURN_DOWN_CATEGORY = {
+  expired: 'expired',
+  suspended: 'policy',
+  'no-key': 'policy',
+  cooldown: 'policy',
+  'addressee-or-cooldown': 'policy',
+  'no-meeting': 'invalidated',
+} as const
+
 export interface LiveAssistanceDeps {
   /** Monotonic receipt time, ms. */
   now(): number
@@ -353,17 +362,18 @@ export class LiveAssistance {
       !s.anthropicApiKey ||
       !answerCooldownAllows(this.lastAnswerAt, now, s.nudgeCooldownSec)
     ) {
+      const reason = this.expired(c, now)
+        ? 'expired'
+        : now < this.suspendedUntil
+          ? 'suspended'
+          : !s.anthropicApiKey
+            ? 'no-key'
+            : 'cooldown'
       this.observe({
         event: 'not-classified',
         turn: c.turn,
-        turnedDown: this.expired(c, now) ? 'expired' : 'policy',
-        reason: this.expired(c, now)
-          ? 'expired'
-          : now < this.suspendedUntil
-            ? 'suspended'
-            : !s.anthropicApiKey
-              ? 'no-key'
-              : 'cooldown',
+        turnedDown: TURN_DOWN_CATEGORY[reason],
+        reason,
       })
       this.queued = null
       return
@@ -379,6 +389,12 @@ export class LiveAssistance {
     }
     const snap = this.deps.snapshot()
     if (!snap) {
+      this.observe({
+        event: 'not-classified',
+        turn: c.turn,
+        reason: 'no-meeting',
+        turnedDown: TURN_DOWN_CATEGORY['no-meeting'],
+      })
       this.queued = null
       return
     }
@@ -488,11 +504,12 @@ export class LiveAssistance {
       this.expired(c, now) ||
       !answerCooldownAllows(this.lastAnswerAt, now, s.nudgeCooldownSec)
     ) {
+      const reason = this.expired(c, now) ? 'expired' : 'addressee-or-cooldown'
       this.observe({
         event: 'not-generated',
         turn: c.turn,
-        reason: this.expired(c, now) ? 'expired' : 'addressee-or-cooldown',
-        turnedDown: this.expired(c, now) ? 'expired' : 'policy',
+        reason,
+        turnedDown: TURN_DOWN_CATEGORY[reason],
       })
       this.ready = null
       this.speculation.discard(c.turn, 'not-generated')
@@ -526,7 +543,15 @@ export class LiveAssistance {
     const promoted = handle !== null
     if (!promoted && busy()) return
     this.ready = null
-    if (!request) return
+    if (!request) {
+      this.observe({
+        event: 'not-generated',
+        turn: c.turn,
+        reason: 'no-meeting',
+        turnedDown: TURN_DOWN_CATEGORY['no-meeting'],
+      })
+      return
+    }
     handle ??= this.deps.runner.start(request)
     if (!handle) return
     this.observe({

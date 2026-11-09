@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CONTINUATION_GRACE_MS } from '../../turns/turn-assembler'
+import { ENDPOINTING_MS } from '../../stt/endpointing'
 import { CLASSIFIER_SUSPEND_MS } from './live-assistance'
 import { ANSWER_NOW_QUESTION_MS } from '../../turns/latest-question'
 import { me, otherTurn, setup, them, words } from './testing/live-assistance-harness'
@@ -14,6 +15,61 @@ describe('live assistance: answers to completed turns', () => {
     vi.setSystemTime(1_000_000)
   })
   afterEach(() => vi.useRealTimers())
+
+  it.each([200, 300, 450, 600, 800])(
+    'preserves multipart text and expected answer count at a %i ms pause',
+    async (pause) => {
+      const t = setup({ nudgeCooldownSec: 0 })
+      const answerPending = async (): Promise<void> => {
+        while (t.generations.length < t.classifications.length) {
+          await t.classify(t.generations.length, t.question)
+          t.generations.at(-1)!.d.resolve('The grounded answer.')
+          await vi.advanceTimersByTimeAsync(0)
+        }
+      }
+      t.assist.final(them('How would you implement this', 0, 1000))
+      if (pause >= ENDPOINTING_MS) {
+        await vi.advanceTimersByTimeAsync(ENDPOINTING_MS)
+        t.assist.boundary(0, 1000, 'endpoint')
+        await vi.advanceTimersByTimeAsync(pause - ENDPOINTING_MS)
+      } else await vi.advanceTimersByTimeAsync(pause)
+      await answerPending()
+      t.assist.activity(0, 1000 + pause, 'other')
+      await vi.advanceTimersByTimeAsync(1000)
+      t.assist.final(them('and what is its complexity?', 1000 + pause, 2000 + pause))
+      await vi.advanceTimersByTimeAsync(ENDPOINTING_MS)
+      t.assist.boundary(0, 2000 + pause, 'endpoint')
+      await vi.advanceTimersByTimeAsync(CONTINUATION_GRACE_MS)
+      await answerPending()
+      expect(t.classifications.map((c) => c.req.current.text).join(' ')).toBe(
+        'How would you implement this and what is its complexity?',
+      )
+      expect(t.events.filter((e) => e.kind === 'done')).toHaveLength(pause === 800 ? 2 : 1)
+      t.assist.halt()
+    },
+  )
+
+  it.each(['classify', 'generate'])(
+    'ends a candidate when the snapshot vanishes before %s',
+    async (stage) => {
+      const t = setup()
+      if (stage === 'classify') t.setSnapshotAvailable(false)
+      await otherTurn(t.assist, 'What is the result?', 0, 1000)
+      if (stage === 'generate') {
+        t.setSnapshotAvailable(false)
+        await t.classify(0, t.question)
+      }
+      expect(diagnostics).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: stage === 'classify' ? 'not-classified' : 'not-generated',
+          reason: 'no-meeting',
+          turnedDown: 'invalidated',
+        }),
+      )
+      expect(t.generations).toHaveLength(0)
+      t.assist.halt()
+    },
+  )
 
   it('context changes preserve a classifier and its answer, including an answer already streaming', async () => {
     const t = setup()

@@ -1,7 +1,7 @@
 import { isClassifierFailure } from '../../assistant/classifier-verdict'
 import { observeAssistance, type DiscardCategory, type DiscardReason } from './diagnostics'
 import type { CompletedTurn } from '../../turns/types'
-import { samePrompt } from './suggestion-requests'
+import { promptMismatchCategories, type PromptMismatchCategory } from './suggestion-requests'
 import type { SpeculativeHandle, SuggestionRequest, SuggestionRunner } from './suggestion-runner'
 
 // The one automatic answer started BEFORE the classifier has spoken, so the classifier's
@@ -83,8 +83,9 @@ export class SpeculativeAnswer {
   promote(turn: CompletedTurn, ordinary: SuggestionRequest): SpeculativeHandle | null {
     const p = this.pending
     if (!p || p.turn !== turn) return null
-    if (!samePrompt(p.request, ordinary)) {
-      this.discard(turn, 'prompt-changed')
+    const mismatch = promptMismatchCategories(p.request, ordinary)
+    if (mismatch.length) {
+      this.discard(turn, 'prompt-changed', mismatch)
       return null
     }
     this.pending = null
@@ -109,7 +110,11 @@ export class SpeculativeAnswer {
   }
 
   /** Discards the pending speculation (for `turn` only, when given). Idempotent. */
-  discard(turn: CompletedTurn | null, reason: DiscardReason): void {
+  discard(
+    turn: CompletedTurn | null,
+    reason: DiscardReason,
+    mismatchCategories?: PromptMismatchCategory[],
+  ): void {
     const p = this.pending
     if (!p || (turn && p.turn !== turn)) return
     this.pending = null
@@ -121,6 +126,7 @@ export class SpeculativeAnswer {
       suggestionId: p.handle.id,
       reason,
       discard: discardCategory(reason),
+      mismatchCategories,
     })
   }
 

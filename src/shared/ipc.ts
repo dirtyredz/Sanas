@@ -56,6 +56,7 @@ export const IPC = {
   TranscriptEvent: 'transcript:event',
   MeetingState: 'meeting:state',
   SuggestionEvent: 'suggestion:event',
+  SuggestionVisibility: 'suggestion:visibility',
   /** A meeting's stored record changed post-hoc (re-diarization) — reload views. */
   MeetingUpdated: 'meeting:updated',
   // assist (renderer → main; also fired by global hotkey in main)
