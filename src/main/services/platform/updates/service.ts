@@ -3,7 +3,12 @@ import updater from 'electron-updater'
 import type { UpdateState } from '../../../../shared/updates/types'
 import { IPC } from '../../../../shared/ipc'
 import { broadcast } from '../../../windows/broadcast'
-import { createRestart, restartBlockReason } from './restart'
+import {
+  UPDATES_DISABLED_MESSAGE,
+  createRestart,
+  onRestartGuardChange,
+  restartBlockReason,
+} from './restart'
 
 let autoUpdater: typeof updater.autoUpdater
 let state: UpdateState = {
@@ -14,18 +19,18 @@ let state: UpdateState = {
   progress: null,
   error: null,
   canRestart: false,
-  blockReason: 'Updates are available in installed builds.',
+  blockReason: UPDATES_DISABLED_MESSAGE,
 }
 let downloaded = false
 let enabled = false
 let checking: Promise<UpdateState> | null = null
 let interval: ReturnType<typeof setInterval> | undefined
-let statusInterval: ReturnType<typeof setInterval> | undefined
+let stopGuardWatch: (() => void) | undefined
 const restart = createRestart(() => autoUpdater.quitAndInstall(false, true))
 
 export function getUpdateState(): UpdateState {
   const blockReason = !enabled
-    ? 'Updates are available in installed builds.'
+    ? UPDATES_DISABLED_MESSAGE
     : state.phase === 'installing'
       ? 'Restarting to update.'
       : restartBlockReason(downloaded)
@@ -69,7 +74,7 @@ export function restartToUpdate(): UpdateState {
   return getUpdateState()
 }
 export function startUpdates(): void {
-  if (!app.isPackaged || process.argv.includes('--smoke') || enabled) return
+  if (!app.isPackaged || enabled) return
   autoUpdater = updater.autoUpdater
   enabled = true
   autoUpdater.autoDownload = true
@@ -97,15 +102,16 @@ export function startUpdates(): void {
     6 * 60 * 60 * 1000,
   )
   let previousReason = getUpdateState().blockReason
-  statusInterval = setInterval(() => {
+  stopGuardWatch = onRestartGuardChange(() => {
     const reason = getUpdateState().blockReason
     if (reason !== previousReason) {
       previousReason = reason
       emit()
     }
-  }, 1000)
+  })
 }
 export function stopUpdates(): void {
   clearInterval(interval)
-  clearInterval(statusInterval)
+  stopGuardWatch?.()
+  stopGuardWatch = undefined
 }

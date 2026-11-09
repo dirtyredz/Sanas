@@ -7,16 +7,24 @@
 // Counted rather than flagged: a meeting can be summarising on demand while its
 // re-diarization is still running, and the first to finish must not clear the second.
 
+import { createChangeSignal } from './change-signal'
+
 const working = new Map<number, number>()
+const changed = createChangeSignal()
+
+/** Fires whenever a meeting starts or finishes post-processing work. */
+export const onPostProcessingChange = changed.subscribe
 
 export function markPostProcessing(meetingId: number): void {
   working.set(meetingId, (working.get(meetingId) ?? 0) + 1)
+  changed.notify()
 }
 
 export function clearPostProcessing(meetingId: number): void {
   const n = (working.get(meetingId) ?? 0) - 1
   if (n > 0) working.set(meetingId, n)
   else working.delete(meetingId)
+  changed.notify()
 }
 
 export function isPostProcessing(meetingId: number): boolean {

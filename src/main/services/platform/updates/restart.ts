@@ -1,5 +1,13 @@
-import { liveMeetingId } from '../../meetings/status/live-meeting'
-import { postProcessingCount } from '../../meetings/status/post-processing'
+import { liveMeetingId, onLiveMeetingChange } from '../../meetings/status/live-meeting'
+import { onPostProcessingChange, postProcessingCount } from '../../meetings/status/post-processing'
+
+export const UPDATES_DISABLED_MESSAGE = 'Updates are available in installed builds.'
+
+/** Calls `listener` when either guard behind `restartBlockReason` may have changed. */
+export function onRestartGuardChange(listener: () => void): () => void {
+  const offs = [onLiveMeetingChange(listener), onPostProcessingChange(listener)]
+  return () => offs.forEach((off) => off())
+}
 
 export function restartBlockReason(downloaded: boolean): string | null {
   if (!downloaded) return 'An update must finish downloading first.'
