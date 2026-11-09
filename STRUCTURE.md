@@ -189,7 +189,7 @@ sanas/
 
 - `src/main/services/mock-interview/` — one product engine, plan validation, interviewer seam consumer,
   session lifecycle, bundled JSON plans/PNG fixtures and shared live-turn result correlation.
-- `src/main/services/mock-interview/turns/` — interviewer consumer, serialized engine, `answer-wait.ts` (candidate-answer silence/idle-prompt clock) and session lifecycle.
+- `src/main/services/mock-interview/turns/` — interviewer consumer, serialized engine, `answer-wait.ts` (candidate-answer silence/idle-prompt clock), session lifecycle, and the result evidence/report builders (`evidence.ts`, `report.ts`; nothing in `turns/` imports the parent).
 - `src/main/services/mock-interview/plans/` — bundled JSON validated by pure validatePlan in the production catalog.
 - `src/main/services/mock-interview/fixtures/` — canonical screen PNGs shared by product and rehearsal scenarios.
 - `src/main/services/mock-interview/shortcuts.ts` — mock-only shortcut registration/release.

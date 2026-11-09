@@ -1,11 +1,11 @@
 import type { MockResult } from '@shared/mock-interview/types'
-import type { RunObservation } from '../meetings/assist/run-observation'
-import type { AssistDiagnostic } from '../meetings/assist/diagnostics'
-import { LatencyTracker } from '../meetings/assist/latency'
-import type { LatencySummary } from '../meetings/assist/latency-summary'
-import { proseWords, type RequestOutcome } from '../meetings/assist/outcomes'
+import type { RunObservation } from '../../meetings/assist/run-observation'
+import type { AssistDiagnostic } from '../../meetings/assist/diagnostics'
+import { LatencyTracker } from '../../meetings/assist/latency'
+import type { LatencySummary } from '../../meetings/assist/latency-summary'
+import { proseWords, type RequestOutcome } from '../../meetings/assist/outcomes'
 import { liveTurnReport, type LiveTransition } from './report'
-import type { LiveEngine } from './turns/engine'
+import type { LiveEngine } from './engine'
 
 /** Keeps only metadata and counts; Sanas answer text never enters the interviewer. Stage
  *  timing (the same redacted records the main log gets) is kept for a diagnostic summary,

@@ -2,8 +2,8 @@
 id: dk-fc4ffc21
 type: task
 created: 2026-11-02
-status: todo
-since: 2026-11-02
+status: done
+since: 2026-11-09
 area: mock-interview
 priority: P2
 rank: zzzzzzzzzzzzzzzzt
