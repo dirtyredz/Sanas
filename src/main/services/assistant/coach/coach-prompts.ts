@@ -4,6 +4,7 @@ import { NO_SUGGESTION } from '@shared/live-controls/readable-suggestion'
 import { COMPACT_CONTRACT, recentSuggestionsBlock } from '../compact-contract'
 import { renderBackground, splitAtExchange } from '../answer-context/conversation-window'
 import { boundedExcerpt } from '../excerpt'
+import type { LatestQuestion } from '../answer-context/anchor'
 import type { CoachReason } from './coach-policy'
 
 // "Next point" coaching while the user explains something. Its own profile, independent of
@@ -21,7 +22,7 @@ export const COACH_PROFILE = {
 } as const
 
 const EXCERPT_CHARS = 2_000
-const QUESTION_CHARS = 1_000
+const COACH_QUESTION_CHARS = 1_000
 
 /** F4 (DECISIONS 2026-11-04): a next point continues what Me is saying; it never brings in a
  *  technology Me has not named, which is how unsaid job-stack items were mashed in. */
@@ -37,7 +38,7 @@ export interface CoachPromptInput {
   /** Headlines of suggestions already shown this meeting, oldest first. */
   recent: readonly string[]
   /** The question Me is answering, when one was asked recently. */
-  question?: { speaker: string; text: string; startMs: number }
+  question?: Pick<LatestQuestion, 'speaker' | 'text' | 'startMs'>
 }
 
 export function buildCoachUserContent(input: CoachPromptInput): string {
@@ -45,7 +46,7 @@ export function buildCoachUserContent(input: CoachPromptInput): string {
     ? splitAtExchange(input.window, input.question.startMs).background
     : input.window
   const question = input.question
-    ? `Question Me is answering:\n${input.question.speaker}: ${boundedExcerpt(input.question.text, QUESTION_CHARS)}\n\n`
+    ? `Question Me is answering:\n${input.question.speaker}: ${boundedExcerpt(input.question.text, COACH_QUESTION_CHARS)}\n\n`
     : ''
   const why =
     input.reason === 'long'

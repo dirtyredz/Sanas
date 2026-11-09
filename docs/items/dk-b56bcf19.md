@@ -2,8 +2,8 @@
 id: dk-b56bcf19
 type: task
 created: 2026-11-04
-status: todo
-since: 2026-11-04
+status: done
+since: 2026-11-09
 area: assistant
 priority: P3
 rank: zzzzzzzzzzzzzy
