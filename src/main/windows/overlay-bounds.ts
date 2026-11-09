@@ -80,3 +80,27 @@ export function fitOverlayBounds(
     y: clamp(saved.y, best.y, best.y + best.height - height),
   }
 }
+
+/**
+ * Applies a programmatic resize (transparent windows have no native resize border) to the current
+ * bounds, keeping the whole window inside the work area of the display it is on and no smaller than
+ * `minSize`. Unlike fitOverlayBounds this never keeps a parked-off-screen position: a resize is a
+ * user action on a window they can see, so the result always fits the work area.
+ */
+export function resizeOverlayBounds(
+  current: Rect,
+  workArea: Rect,
+  request: { width?: number; height?: number },
+  minSize: { width: number; height: number },
+): Rect {
+  const right = workArea.x + workArea.width
+  const bottom = workArea.y + workArea.height
+  const x = clamp(current.x, workArea.x, right - minSize.width)
+  const y = clamp(current.y, workArea.y, bottom - minSize.height)
+  return {
+    x,
+    y,
+    width: clamp(request.width ?? current.width, minSize.width, right - x),
+    height: clamp(request.height ?? current.height, minSize.height, bottom - y),
+  }
+}

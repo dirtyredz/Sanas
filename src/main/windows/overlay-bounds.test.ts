@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { fitOverlayBounds } from './overlay-bounds'
+import { fitOverlayBounds, resizeOverlayBounds } from './overlay-bounds'
 
 const primary = { x: 0, y: 0, width: 1536, height: 864 }
 const min = { width: 280, height: 230 }
@@ -38,4 +38,43 @@ it('leaves a partly off-screen window alone while its header is reachable', () =
 it('relocates when only a sliver is visible', () => {
   const r = fit({ x: 1500, y: 100, width: 400, height: 400 })
   expect(r.x + r.width).toBeLessThanOrEqual(1536)
+})
+
+const resize = (
+  current: { x: number; y: number; width: number; height: number },
+  request: { width?: number; height?: number },
+  workArea = primary,
+) => resizeOverlayBounds(current, workArea, request, min)
+
+it('resizes within the work area and keeps the unrequested dimension', () => {
+  expect(resize({ x: 100, y: 100, width: 400, height: 500 }, { width: 600 })).toEqual({
+    x: 100,
+    y: 100,
+    width: 600,
+    height: 500,
+  })
+})
+
+it('caps a resize at the work-area edge and floors it at the minimum size', () => {
+  expect(resize({ x: 1400, y: 800, width: 100, height: 60 }, { width: 900, height: 900 })).toEqual({
+    x: 1256,
+    y: 634,
+    width: 280,
+    height: 230,
+  })
+  expect(resize({ x: 100, y: 100, width: 400, height: 400 }, { width: 5000, height: 10 })).toEqual({
+    x: 100,
+    y: 100,
+    width: 1436,
+    height: 230,
+  })
+})
+
+it('pulls a window that straddles the edge back inside before growing it', () => {
+  expect(resize({ x: -50, y: 10, width: 400, height: 400 }, { height: 300 })).toEqual({
+    x: 0,
+    y: 10,
+    width: 400,
+    height: 300,
+  })
 })

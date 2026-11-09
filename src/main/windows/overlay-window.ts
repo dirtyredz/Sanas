@@ -3,7 +3,7 @@ import { IPC } from '@shared/ipc'
 import type { OverlayResizeRequest } from '@shared/types'
 import { loadSettings, saveSettings } from '../config/settings'
 import { createAppWindow, loadAppPage } from './app-window'
-import { fitOverlayBounds } from './overlay-bounds'
+import { fitOverlayBounds, resizeOverlayBounds } from './overlay-bounds'
 
 let overlay: BrowserWindow | null = null
 let rendererReady = false
@@ -111,14 +111,9 @@ export function resizeOverlay(request: OverlayResizeRequest): void {
 
   const bounds = overlay.getBounds()
   const workArea = screen.getDisplayMatching(bounds).workArea
-  const right = workArea.x + workArea.width
-  const bottom = workArea.y + workArea.height
-  const x = Math.min(Math.max(bounds.x, workArea.x), right - MIN_WIDTH)
-  const y = Math.min(Math.max(bounds.y, workArea.y), bottom - MIN_HEIGHT)
-  const width = Math.min(Math.max(request.width ?? bounds.width, MIN_WIDTH), right - x)
-  const height = Math.min(Math.max(request.height ?? bounds.height, MIN_HEIGHT), bottom - y)
-
-  overlay.setBounds({ x, y, width, height })
+  overlay.setBounds(
+    resizeOverlayBounds(bounds, workArea, request, { width: MIN_WIDTH, height: MIN_HEIGHT }),
+  )
 }
 
 let clickThrough = false
