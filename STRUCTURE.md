@@ -16,9 +16,9 @@ Layout below reflects what exists.
 ## Layout
 
 Resumes are owned by the job: `db/repos/job/` (`job-resume.ts` + v11 schema), `ipc/jobs/resume/` (get/set + the main-owned PDF/DOCX import picker) and the
-job page's Resume tab (`app/jobs/JobResume.tsx`, `ResumeDraftEditor.tsx`, `resume-draft.ts`).
+job page's Resume tab (`app/jobs/resume/`: `JobResume.tsx`, `ResumeDraftEditor.tsx`, `resume-draft.ts`).
 Start resolves the snapshot in `services/meetings/context/start-grounding.ts` for both Live
-and Mock; `lib/meeting/resume/useJobHasResume.ts` gives Live its Interview default. The
+and Mock; `lib/meeting/useJobHasResume.ts` gives Live its Interview default. The
 importer/validator now live in `services/jobs/resume/`; the type stays in
 `shared/meeting-resume.ts` (it is also the meeting snapshot contract; renaming it is deferred).
 
@@ -85,8 +85,8 @@ sanas/
 │   │   │   │   │   ├── profile.ts         # Interview-profile Start selection
 │   │   │   │   │   ├── candidate-data.ts  # escaping + resume/profile prompt framing
 │   │   │   │   │   ├── meeting-facts.ts   # combined candidate-facts block from a grounding
-│   │   │   │   │   ├── meeting-keyterms.ts # glossary + resume/profile STT hints
-│   │   │   │   │   └── resume/            # resume validation, file import, term extraction
+│   │   │   │   │   ├── candidate-keyterms.ts # STT term extraction/interleave for resume and profile
+│   │   │   │   │   └── meeting-keyterms.ts # glossary + resume/profile STT hints
 │   │   │   │   ├── presentation/          # historical slide-marker formatting (read-only)
 │   │   │   │   ├── status/                # live meeting and post-processing guards, historical job filing (filing.ts)
 │   │   │   │   ├── summary/               # summary generation, output parsing and email
@@ -99,15 +99,20 @@ sanas/
 │   │   │   │   ├── email/                      # EmailProvider seam and SMTP transport
 │   │   │   │   └── retention/                  # scheduled/on-demand recording and meeting cleanup
 │   │   │   ├── jobs/                       # counted job deletion and single-use preview tokens
-│   │   │   │   └── applications/           # resumes-pack import: map, merge, draft; application-import.ts is the facade
-│   │   │   │       ├── import/             # list, preview (+ typed fields/session) and apply (+ values)
-│   │   │   │       └── source/             # read-only edge to the resumes project: refresh, files, validation, config
+│   │   │   │   ├── applications/           # resumes-pack import: map, merge, draft; application-import.ts is the facade
+│   │   │   │   │   ├── import/             # list, preview (+ typed fields/session) and apply (+ values)
+│   │   │   │   │   └── source/             # read-only edge to the resumes project: refresh, files, validation, config
+│   │   │   │   ├── resume/                 # job resume validation, bounded PDF/DOCX import
+│   │   │   │   └── memory/                 # memory rewrites (generate), review workflow (review), prompts
 │   │   │   ├── history/                    # grounded ask-your-history retrieval and answers
+│   │   │   │   └── live/                   # live same-job evidence: hits, excerpts, deadline session, read-only worker
 │   │   │   ├── audio-store/                # WAV recording of accepted capture audio
 │   │   │   └── screen-capture/             # display choice, one-shot screenshot and encoding
 │   │   ├── db/                             # async open/backup/migrations and SQLite helpers
 │   │   │   ├── repos/                      # entity repositories and all SQL strings
-│   │   │   │   ├── job/                    # job-owned content: saved resume (v11), glossary, application links (v13), deletion, memory
+│   │   │   │   ├── job/                    # job-owned content: saved resume (v11), glossary, application links (v13), deletion
+│   │   │   │   │   └── memory/             # approved memory, per-meeting proposals and their schema
+│   │   │   │   ├── history/                # transcript search and bounded live-evidence reads (FTS), summary index schema
 │   │   │   │   └── meeting/                # meeting row, creation, grounding, context and historical slide readers
 │   │   │   └── testing/                    # test-only SQLite adapter (sqlite-test-database.ts)
 │   │   └── config/                         # settings, secrets and exhaustive settings schema
@@ -119,9 +124,13 @@ sanas/
 │   │       │   ├── shell/                  # app header (identity, page tabs, meeting status, overlay toggle)
 │   │       │   ├── controls/               # Switch, FieldRow, Badge, KeyBadge — the library's small control components
 │   │       │   ├── pages/                  # route/page components
-│   │       │   ├── jobs/                   # job detail tabs and the resume editor
+│   │       │   ├── meeting/                # saved-meeting record pieces: header/actions, transcript panel, speakers, suggestions
+│   │       │   ├── mock-interview/         # practice results table and mock-interview hook
+│   │       │   ├── jobs/                   # job detail tabs
 │   │       │   │   ├── applications/       # New job from / refresh from application: picker, preview, preview-format
-│   │       │   │   └── deletion/           # counted job-delete dialog and its wording
+│   │       │   │   ├── deletion/           # counted job-delete dialog and its wording
+│   │       │   │   ├── memory/             # approved-memory editor, proposal review, context-size meter
+│   │       │   │   └── resume/             # job resume editor, draft rules, Unsorted placeholder
 │   │       │   ├── settings/
 │   │       │   │   ├── sections/           # one component per Settings section + section index (+ pure hotkey/update status)
 │   │       │   │   │   └── InterviewProfileSection.tsx # the one plain-text Interview profile editor
@@ -139,11 +148,11 @@ sanas/
 │   │       │   └── capture/                # capture action, status subscription and composer attachment state
 │   │       ├── audio/                      # mic/loopback capture and worklet bridge
 │   │       ├── lib/                        # pure shared renderer helpers (incl. overlay-workspaces.ts: workspace names + local shortcut table)
-│   │       │   ├── meeting/                # meeting/context state and hooks (start-selection.ts: Start choices and options)
-│   │       │   │   └── resume/             # useJobHasResume: Live's Interview default
+│   │       │   ├── meeting/                # meeting/context state and hooks (start-selection.ts: Start choices and options; useJobHasResume: Live's Interview default)
 │   │       │   ├── navigation/             # pure orientation-aware tab arrow/Home/End rule (JobTabs, OverlayNavigation)
 │   │       │   └── suggestions/            # safe suggestion rendering and history reducer
 │   │       ├── dev/                        # typed browser-preview bridge mocks
+│   │       │   └── jobs/               # job mocks: deletion, application import, memory
 │   │       └── env.d.ts                    # Vite client types
 │   └── shared/                              # cross-process IPC and domain contracts
 │       ├── filler-marker.ts                # ⟨…⟩ improvised-answer marker: constants, split and strip
@@ -181,7 +190,7 @@ sanas/
 - `src/main/rehearsal/screens/` — fixture display, capture verification and coordinate geometry.
 - `scripts/eval/` — paid prompt evals: `topic-switch.ps1` (old vs new prompt builders on an invented fixture; `-DryRun` is free) and `.eval.ts`
 - `scripts/rehearsal/` — owner runner, credentials and offline fixture rendering.
-- `scripts/rehearsal/trials/` — matched-profile and latency-summary owner tools: `compare.ps1`/`compare.mjs` (bundle and run `src/main/rehearsal/runner/comparison.ts`), `summarize.ps1`/`summarize.mjs` (copied-log stage percentiles) and `summarize.test.ts`; each `.ps1` dot-sources `../owner-run.ps1` from `$PSScriptRoot` and runs from any cwd.
+- `scripts/rehearsal/trials/` — matched-profile and latency-summary owner tools: `compare.ps1`/`compare.mjs` (bundle and run `src/main/rehearsal/runner/comparison.ts`), `summarize.ps1`/`summarize.mjs` (copied-log stage percentiles) and `summarize.test.ts`, and `history-latency.ps1`/`history-latency.mjs` (live-history retrieval latency); each `.ps1` dot-sources `../owner-run.ps1` from `$PSScriptRoot` and runs from any cwd.
 - `scripts/rehearsal/scenarios/` — versioned scripted/audio scenarios.
 - `scripts/rehearsal/fixtures/` — the rehearsal-only standup screen.
 - `src/main/services/platform/` — email, updates, retention and global-hotkey integrations.
@@ -213,7 +222,7 @@ sanas/
 - `src/main/ipc/jobs/resume/` — `jobs.getResume`/`setResume` (validated by `validateResume`) and `resume-import.ts`, the native PDF/DOCX picker returning an unsaved draft; the renderer never supplies a filesystem path
 - `src/renderer/src/lib/meeting/job-choices.ts` — Live picker choices (`startableJobs` drops the Unsorted bucket via `isUnsortedJob`), the remembered job (`rememberedJob`/`rememberJob`) and `selectionAfterReload`
 - `src/renderer/src/lib/meeting/start-selection.ts` — the Interview default/override rule and the Start options
-- `src/renderer/src/lib/meeting/resume/` — `useJobHasResume`, whether the selected job has a saved resume (Live's Interview default), stale-reply safe
+- `src/renderer/src/lib/meeting/useJobHasResume.ts` — whether the selected job has a saved resume (Live's Interview default), stale-reply safe
 - `src/main/services/turns/` — pure turn assembly and identity-role types; no I/O or timers; `latest-question.ts` picks the question Answer now answers
 - `src/main/services/assistant/` — the swappable assistant seam and shared answer/classification logic
 - `src/main/services/assistant/answer-context/` — `automatic-turn.ts` owns the neutral automatic focus block and `TriggeringTurn`; answer prompt context: current-exchange/background window split, anchor text (`anchor.ts`: `CURRENT_QUESTION_RULE`, `ANCHOR_REMINDER`, `LatestQuestion`), told stories, `ShownLedger` (`shown-ledger.ts`: the one place a shown suggestion is routed into the recent/told/coach memories, used by `LiveSession` and the eval), and `topic-switch-fixture.ts` (invented data + window builder; scoring lives in `scripts/eval/carried-terms.ts`)
@@ -225,7 +234,16 @@ sanas/
 - `src/main/services/meetings/capture/` — AUDIO capture-side identity and capture-health policy (screen capture lives in `services/screen-capture/`)
 - `src/main/services/meetings/context/` — pure preparation followed by commit/publication of live context changes; `meeting-keyterms.ts` builds the STT hints (glossary plus resume/profile terms) for streaming and batch
 - `src/main/services/jobs/resume/` — job resume: ingress validation (`resume.ts`), bounded PDF/DOCX parsing (`import-file.ts`); (term extraction lives beside `candidate-data.ts` in `context/candidate-keyterms.ts`: `candidateKeyterms`, shared by resume and profile)
-- `src/main/services/meetings/context/candidate-data.ts` (and `candidate-keyterms.ts`: STT term extraction/interleave for resume and profile) — neutral escaping and delimited prompt framing for resume (`candidateFacts`) and Interview profile (`interviewProfileFacts`); so `resume/` and the profile never import each other
+- `src/main/services/jobs/memory/` — job memory: `generate.ts` (serialized per-job rewrites against the last approved revision, `enqueueMemory` after summaries), `review.ts` (the one review workflow: get/save/approve/dismiss/retry and source checks; IPC only validates shapes) and `prompts.ts`
+- `src/main/db/repos/job/memory/` — persistence only: `approved.ts` (owner-approved text, 3,000-char cap, revisioned), `proposals.ts` (per-meeting proposals, fingerprints, state transitions) and `schema.ts`
+- `src/main/services/history/live/` — live same-job evidence: `policy.ts` (query specificity), `hits.ts` (ranking: interleave transcript and summary indexes, dedup, neighbour expansion, prompt kind labels), `excerpts.ts` (strict 2,400-char rendering), `session.ts` (frozen, deadline-bounded evidence), `worker-client.ts`/`worker.ts` (read-only worker thread, a separate main build entry running the same `hits.ts` on its own connection); assistance consumes it only through the `EvidenceHandle` it defines in `meetings/assist/live-assistance.ts`
+- `src/main/db/repos/history/` — bounded reads only: `transcripts.ts` (ranked transcript search, `searchSegments`), `live.ts` (transcript/summary/neighbour reads that take a connection so the worker can run them), `summary-schema.ts` (summary FTS index) and `latency-fixture.ts`; no ranking, dedup or prompt labelling
+- `src/renderer/src/app/meeting/` — pieces of the saved-meeting record: `MeetingRecordHeader` (title and summarize/email/export/delete actions), `TranscriptPanel` (transcript with slide markers plus `SpeakerEditor`), `MeetingSuggestionsTab` and `usePresentationHistory`; `pages/MeetingView` loads the record and composes them with the filing, summary and context cards
+- `src/renderer/src/app/mock-interview/` — `MockResults` (practice results table) and `useMockInterview` (setup, job/plan choice, mock state, past sessions, mic capture); `pages/MockInterviewPage` is layout and wiring
+- `src/renderer/src/app/jobs/memory/` — `JobMemory` composes `ContextSizeMeter`, `ApprovedMemoryEditor` (saved text and explicit save) and `MemoryProposalReview` (oldest-first proposal approve/dismiss/regenerate); `useJobMemory` owns the state, `context-size.ts` the meter maths
+- `src/renderer/src/app/jobs/resume/` — `JobResume` (saved resume with its own Save resume), `ResumeDraftEditor` (paste/import/preview), `resume-draft.ts` (pure draft rules) and `ResumeUnavailable` (the Unsorted bucket takes no resume)
+- `src/renderer/src/dev/jobs/` — browser-preview job mocks: `mock-job-deletion.ts`, `mock-job-applications.ts` and `mock-job-memory.ts`; `dev/mock-api.ts` composes them
+- `src/main/services/meetings/context/candidate-data.ts` (and `candidate-keyterms.ts`: STT term extraction/interleave for resume and profile) — neutral escaping and delimited prompt framing for resume (`candidateFacts`) and Interview profile (`interviewProfileFacts`); so resume code and the profile never import each other
 - `src/main/services/meetings/context/meeting-facts.ts` — combines a `MeetingGrounding` into the candidate-facts block (resume first); `profile.ts` — `interviewProfileSnapshot`, Start selection of the Settings profile; `start-request.ts` — `StartRequest` (the renderer's `MeetingStartOptions` plus main-only `practice`); `start-grounding.ts` — `resolveStartGrounding`, the selected job's saved resume (none for Unsorted) plus the profile, resolved inside serialized Start for Live and Mock
 - `src/main/services/meetings/presentation/` — historical slide-marker formatting for summaries (presentation mode retired 2026-11-04)
 - `src/main/services/meetings/status/` — live-meeting identity, post-processing guards (both expose `on…Change` signals via `change-signal.ts`, so the updates service re-broadcasts without polling) and `filing.ts` (historical job filing; refuses a live meeting)
@@ -258,9 +276,7 @@ sanas/
 - `src/renderer/src/app/shell/` — the library window frame: `AppHeader` (also the window title bar — drag region, see GOTCHAS), the `Page` union + `NAV` table (`pages.ts`) and the pure meeting-status wording
 - `src/renderer/src/app/controls/` — small shared library controls (`Switch`, `FieldRow`, `Badge`, `KeyBadge`); styles live in `styles/controls.css`
 - `src/renderer/src/app/pages/` — one component per library route/page; `SettingsPage` is layout and wiring only (its state is `useSettingsDraft`)
-- `src/renderer/src/app/meeting/` — pieces of the saved-meeting record: `SpeakerEditor` (rename/merge speakers), `MeetingSuggestionsTab` (suggestions with source/detail links) and `usePresentationHistory` (slide-history load); `pages/MeetingView` composes them
-- `src/renderer/src/app/mock-interview/` — `MockResults` (practice results table) and `useMockInterview` (setup, job/plan choice, mock state, past sessions and the mic capture lifecycle); `pages/MockInterviewPage` is layout and wiring
-- `src/renderer/src/app/jobs/` — `JobOverview` (name, context, glossary), `JobResume` (saved resume with its own Save resume; `ResumeUnavailable` replaces it on the Unsorted bucket, which takes no resume; `ResumeDraftEditor` paste/import/preview, `resume-draft.ts` pure draft rules), `JobEmail` (recipient), and `JobMeetings` (history/merge). `JobTabs` owns tab/panel IDs, keyboard focus and mounted panels from a name/render table. `pages/JobDetail` owns load, the meetings list (reloaded via `JobMeetings`' `onMerged`), shared draft/save, composition and meeting drill-in; the tabs stay mounted (hidden) behind an open meeting so drafts survive. `job-draft.ts` holds the pure job-draft rules (unsaved-edit check before a refresh)
+- `src/renderer/src/app/jobs/` — `JobOverview` (name, context, glossary), `JobEmail` (recipient) and `JobMeetings` (history/merge); resume and memory live in `jobs/resume/` and `jobs/memory/`. `JobTabs` owns tab/panel IDs, keyboard focus and mounted panels from a name/render table. `pages/JobDetail` owns load, the meetings list (reloaded via `JobMeetings`' `onMerged`), shared draft/save, composition and meeting drill-in; the tabs stay mounted (hidden) behind an open meeting so drafts survive. `job-draft.ts` holds the pure job-draft rules (unsaved-edit check before a refresh)
 - `src/renderer/src/app/jobs/applications/` — New job from application / Refresh from application: `ApplicationPicker` (rows and statuses via `picker-rows.ts`), `ApplicationPreview` (create form or per-field refresh review, conflicts defaulting to Keep Sanas), `preview-format.ts` (field labels and display text for the typed preview values), `apply-request.ts` (builds the apply request) and `useApplicationListing.ts` (the listing hook)
 - `src/renderer/src/app/jobs/deletion/` — `JobDeleteDialog` (exact-count confirmation, default button Cancel) and `deletion-copy.ts` (pure count wording)
 - `src/renderer/src/app/settings/` — only the cross-section tests (`settings-pages.test.tsx`, `settings-controls.test.tsx`); everything else is in the folders below
@@ -282,7 +298,6 @@ sanas/
 - `src/renderer/src/lib/navigation/` — `next-tab-index.ts` and colocated tests: pure orientation-aware wrapping arrows/Home/End rule shared by JobTabs and OverlayNavigation. Settings keeps its distinct clamped, arrow-only page navigation.
 - `src/renderer/src/lib/suggestions/` — text-safe compact/detail renderers and live history state (`FillerText` renders the ⟨…⟩ improvised-answer marker; `src/shared/filler-marker.ts` splits/strips it)
 - `src/renderer/src/dev/` — browser-preview implementation of the typed preload bridge: `mock-api.ts` assembles it, `mock-fixtures.ts` holds the static sample data, `mock-live-meeting.ts` the scripted live meeting; `overlay-scenarios.ts` holds the deterministic overlay preview states (`overlay.html?scenario=<name>`) driven through `mockDriver`
-- `src/renderer/src/dev/jobs/` — browser-preview mocks for jobs: `mock-job-deletion.ts` (counted delete preview/confirm) and `mock-job-applications.ts` (New job from application / refresh); `mock-api.ts` composes them. Job memory mocks live in `dev/memory/`
 - `src/renderer/public/` — AudioWorklet processors and other unbundled assets
 - `src/shared/` — types shared by main, preload and renderer
 - `src/shared/presentation/` — historical slide/event/history contracts and timeline ordering (read-only since 2026-11-04)
@@ -386,7 +401,7 @@ main-process code belongs in a responsibility folder above, not beside them.
 - `main/services/jobs/resume/import-file.ts` owns bounded local reads and offline parser lifecycle.
 - `main/services/jobs/resume/` owns validation (run once, at IPC ingress), escaped candidate-fact framing and deterministic terminology extraction.
 - `db/repos/meeting/meeting-resume-schema.ts` owns append-only v9 SQL and the immutable-update guard; `createMeeting` persists the text in its one transaction. The resume is not on the `Meeting` row: `getMeetingGrounding(id).resume` is the only read (`MeetingView` via `meetings.getResume`).
-- `app/jobs/JobResume.tsx` owns the job editor (draft, import, explicit Save resume); `MeetingView` shows a meeting's saved text read-only. Live/Mock setup have no resume input.
+- `app/jobs/resume/JobResume.tsx` owns the job editor (draft, import, explicit Save resume); `MeetingView` shows a meeting's saved text read-only. Live/Mock setup have no resume input.
 - `MeetingPrompts` attaches candidate facts to the meeting's one system prompt before saving grounding. `meetingKeyterms` builds one ordered hint list for streaming and batch STT; the provider applies its own limits.
 
 ## Meeting grounding (resume + Interview profile)
@@ -404,13 +419,3 @@ main-process code belongs in a responsibility folder above, not beside them.
 - `MeetingView` receives `interviewProfileUsed` through the existing Meeting projection; large profile text
   stays off list/history IPC objects. Merge refuses meetings with a resume or profile, with
   recorded slides, or when more than one part has meeting context.
-
-## Job memory and live history
-
-Job-owned approved text and independent per-meeting proposals live in
-`db/repos/job/memory/`; `services/jobs/memory/` owns serialized rewrites and review state.
-The job Overview composes `app/jobs/memory/` for independent editing and the context meter.
-`db/repos/history/` owns transcript and summary FTS queries. Search/Ask keeps its public
-facade and compatible excerpt budget through `history/retrieval.ts` and `excerpts.ts`.
-`history/live/` owns specificity, strict excerpts, frozen deadlines and the read-only worker.
-The worker is a separate main build entry; assistance only injects and consumes frozen evidence.

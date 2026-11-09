@@ -1,6 +1,6 @@
 import { parentPort, workerData } from 'node:worker_threads'
 import Database from 'better-sqlite3'
-import { liveHits } from '../../../db/repos/history/live'
+import { liveHits } from './hits'
 import { renderLiveHits } from './excerpts'
 import type { RetrievalQuery, RetrievalReply } from './protocol'
 

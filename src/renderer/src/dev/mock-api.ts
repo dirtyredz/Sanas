@@ -1,4 +1,4 @@
-import { mockMemory } from './memory/mock-memory'
+import { mockMemory } from './jobs/mock-job-memory'
 import { MATCH_CLOSE, MATCH_OPEN } from '@shared/search-markers'
 import type { MeetingResume } from '@shared/meeting-resume'
 import type {

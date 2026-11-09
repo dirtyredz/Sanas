@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { MeetingResume } from '@shared/meeting-resume'
-import { errorText } from '../../lib/ipc-error'
+import { errorText } from '../../../lib/ipc-error'
 import { ResumeDraftEditor } from './ResumeDraftEditor'
 import { resumeDraftProblem, sameResume } from './resume-draft'
 

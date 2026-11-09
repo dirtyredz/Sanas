@@ -1,15 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Job, Meeting, Segment, Suggestion } from '@shared/types'
 import type { MeetingResume } from '@shared/meeting-resume'
-import { speakerDisplay } from '../../lib/speaker-label'
-import { formatClock, formatWhen } from '../../lib/format-time'
-import { errorText } from '../../lib/ipc-error'
-import { SpeakerEditor } from '../meeting/SpeakerEditor'
+import { formatWhen } from '../../lib/format-time'
+import { MeetingRecordHeader } from '../meeting/MeetingRecordHeader'
+import { TranscriptPanel } from '../meeting/TranscriptPanel'
 import { MeetingSuggestionsTab } from '../meeting/MeetingSuggestionsTab'
 import { usePresentationHistory } from '../meeting/usePresentationHistory'
 import { useMeetingContext } from '../../lib/meeting/useMeetingContext'
 import { SummaryMarkdown } from '../../lib/SummaryMarkdown'
-import { presentationTimeline, slideMarker } from '@shared/presentation/timeline'
 
 export function MeetingView({
   meeting,
@@ -38,12 +36,10 @@ export function MeetingView({
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [names, setNames] = useState<Map<number, string>>(new Map())
   const [tab, setTab] = useState<'transcript' | 'suggestions'>('transcript')
-  const [title, setTitle] = useState(meeting.title)
   const [jobs, setJobs] = useState<Job[]>([])
   const [jobId, setJobId] = useState(meeting.jobId)
   // summary/action items can change after open (post-stop pass, regenerate)
   const [current, setCurrent] = useState<Meeting>(meeting)
-  const [busy, setBusy] = useState<'summarize' | 'email' | null>(null)
   const [notice, setNotice] = useState<{ kind: 'ok' | 'warn'; text: string } | null>(null)
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -63,29 +59,6 @@ export function MeetingView({
     window.sanas.meetings.get(meeting.id).then((m) => m && setCurrent(m))
   }
 
-  const summarize = async (): Promise<void> => {
-    setBusy('summarize')
-    try {
-      setCurrent(await window.sanas.meetings.summarize(meeting.id))
-      flash('ok', 'Summary updated')
-    } catch (e) {
-      flash('warn', errorText(e))
-    } finally {
-      setBusy(null)
-    }
-  }
-
-  const emailSummary = async (): Promise<void> => {
-    setBusy('email')
-    try {
-      flash('ok', `Summary emailed to ${await window.sanas.meetings.emailSummary(meeting.id)}`)
-    } catch (e) {
-      flash('warn', errorText(e))
-    } finally {
-      setBusy(null)
-    }
-  }
-
   useEffect(() => {
     reload()
     window.sanas.meetings.suggestions(meeting.id).then(setSuggestions)
@@ -97,11 +70,6 @@ export function MeetingView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [meeting.id])
 
-  const speakers = [
-    ...new Set(segments.filter((s) => !s.isUser && s.speaker >= 0).map((s) => s.speaker)),
-  ].sort((a, b) => a - b)
-  const label = (s: Pick<Segment, 'speaker' | 'isUser'>): string =>
-    speakerDisplay(s.speaker, s.isUser, names)
   return (
     <div className="meeting-view">
       {meeting.interviewProfileUsed && (
@@ -116,53 +84,13 @@ export function MeetingView({
           <pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{resume.text}</pre>
         </details>
       )}
-      <div className="detail-header">
-        <button className="btn btn-ghost" onClick={onBack}>
-          ← Back
-        </button>
-        <input
-          className="title-input"
-          value={title}
-          aria-label="Meeting title"
-          onChange={(e) => setTitle(e.target.value)}
-          onBlur={() => title.trim() && window.sanas.meetings.rename(meeting.id, title.trim())}
-        />
-        <div className="actions">
-          <button className="btn" onClick={summarize} disabled={busy !== null}>
-            {busy === 'summarize' ? 'Summarizing…' : current.summary ? 'Regenerate' : 'Summarize'}
-          </button>
-          <button
-            className="btn"
-            onClick={emailSummary}
-            disabled={busy !== null || !current.summary}
-            title={current.summary ? "Email the summary to this job's address" : 'Summarize first'}
-          >
-            {busy === 'email' ? 'Sending…' : 'Email summary'}
-          </button>
-          <button
-            className="btn btn-ghost"
-            onClick={async () => {
-              const path = await window.sanas.meetings.export(meeting.id)
-              if (path) flash('ok', `Saved to ${path}`)
-            }}
-          >
-            Export
-          </button>
-          <button
-            className="btn btn-danger"
-            onClick={async () => {
-              try {
-                await window.sanas.meetings.delete(meeting.id)
-                onBack()
-              } catch (e) {
-                flash('warn', errorText(e))
-              }
-            }}
-          >
-            Delete
-          </button>
-        </div>
-      </div>
+      <MeetingRecordHeader
+        meeting={meeting}
+        current={current}
+        onBack={onBack}
+        onSummarized={setCurrent}
+        flash={flash}
+      />
       {notice && <p className={`notice ${notice.kind}`}>{notice.text}</p>}
       {meeting.practice && <p className="notice">Practice meeting</p>}
       <p className="meeting-meta">
@@ -222,34 +150,13 @@ export function MeetingView({
       </div>
 
       {tab === 'transcript' && (
-        <>
-          <SpeakerEditor
-            meetingId={meeting.id}
-            speakers={speakers}
-            names={names}
-            onChanged={reload}
-          />
-          <div className="transcript">
-            {segments.length === 0 && <p className="empty">No transcript captured.</p>}
-            {presentationTimeline(segments, presentation).map((row) => {
-              if (row.kind === 'slide')
-                return (
-                  <p className="slide-marker" key={`slide-${row.event.revision}`}>
-                    <span className="ts">{formatClock(row.tMs)}</span>{' '}
-                    {slideMarker(row.event, row.title)}
-                  </p>
-                )
-              const s = row.segment
-              return (
-                <p key={s.id} className="line">
-                  <span className="ts">{formatClock(s.tStartMs)}</span>
-                  <span className={`who ${s.isUser ? 'me' : ''}`}>{label(s)}</span>
-                  <span className="text">{s.text}</span>
-                </p>
-              )
-            })}
-          </div>
-        </>
+        <TranscriptPanel
+          meetingId={meeting.id}
+          segments={segments}
+          names={names}
+          presentation={presentation}
+          onChanged={reload}
+        />
       )}
 
       {context?.text && (

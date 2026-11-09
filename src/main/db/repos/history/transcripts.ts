@@ -1,19 +1,18 @@
-import type { Database } from 'better-sqlite3'
 import type { Meeting, SearchMatch } from '@shared/types'
 import { MATCH_CLOSE, MATCH_OPEN } from '@shared/search-markers'
 import type { FtsMatch } from '../../fts-query'
+import { getDb } from '../../index'
 import { meetingColumns } from '../meeting/meeting-columns'
 import { toMeeting, type MeetingRow } from '../meeting/meetings'
 /** Ranked full-text search over every transcript (FTS5, bm25). Only an FtsMatch built by
  *  db/fts-query.ts is accepted, so raw user text can never reach the MATCH grammar. snippet()
  *  wraps each matched term in the shared markers; the renderer turns those into <mark>. */
-export function searchTranscriptSegments(
-  db: Database,
+export function searchSegments(
   match: FtsMatch,
   opts: { jobId?: number; limit?: number } = {},
 ): SearchMatch[] {
   if (!match) return []
-  const rows = db
+  const rows = getDb()
     .prepare(
       `SELECT ${meetingColumns('m')}, j.name AS job_name, s.id AS segment_id, s.t_start_ms AS t_start,
               snippet(segments_fts, 0, ?, ?, '…', 14) AS snippet
