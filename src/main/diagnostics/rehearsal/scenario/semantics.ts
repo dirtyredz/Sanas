@@ -52,4 +52,4 @@ export function semanticMatch(rubric: Rubric, text: string): boolean {
   }
 }
 
-export { proseWords } from '../../request-outcome'
+export { proseWords } from '../../../services/mock-interview/turns/request-outcome'

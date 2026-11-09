@@ -5,7 +5,7 @@ import { ScriptedSttProvider, RehearsalAssistant } from './outcomes/providers'
 import { RehearsalScreens } from './screens/fixture-display'
 import { installSocketFaults } from './audio/socket-fault'
 import { imageDigest } from './outcomes/outcomes'
-import { publicOutcome } from '../request-outcome'
+import { publicOutcome } from '../../services/mock-interview/turns/request-outcome'
 import { flag, prepareProfile, readOptions } from './runner/options'
 import { collectEvidence } from './runner/evidence'
 

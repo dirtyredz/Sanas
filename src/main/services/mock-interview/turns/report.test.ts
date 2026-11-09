@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest'
 import { liveTurnReport } from './report'
 import type { LiveTurn } from './engine'
-import type { RequestOutcome } from '../../../diagnostics/request-outcome'
+import type { RequestOutcome } from './request-outcome'
 
 it('reports delayed suggestions by audio span, redacts answers and retains missing-answer evidence', () => {
   const turns: LiveTurn[] = [

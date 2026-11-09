@@ -1,4 +1,4 @@
-import { publicOutcome, type RequestOutcome } from '../../../diagnostics/request-outcome'
+import { publicOutcome, type RequestOutcome } from './request-outcome'
 import type { LiveTurn } from './engine'
 
 export interface LiveTransition {

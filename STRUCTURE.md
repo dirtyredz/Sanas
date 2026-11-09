@@ -33,8 +33,8 @@ and `screens/` owns fixture acquisition and real display verification;
 The former live engine now lives in `src/main/services/mock-interview/`; the live CLI tier is
 retired. The product service owns plans/fixtures, serialized turn-taking, window/TTS lifecycle
 and practice result collection. `meetings/observation/` is the one home for main-only, best-effort observers (meeting stream, run events,
-assistance decisions; each a thin typed stream on `observer-bus.ts`); `diagnostics/request-outcome.ts` owns the
-request-outcome shapes the mock-interview report and the rehearsal share (production assist code carries none).
+assistance decisions; each a thin typed stream on `observer-bus.ts`); `mock-interview/turns/request-outcome.ts` owns the
+request-outcome shapes the mock-interview report builds on and the rehearsal imports (production assist code carries none).
 `outcomes/outcomes.ts` owns request correlation/redacted outcome records, `scenario/semantics.ts` bounded content
 rubrics, and `screens/geometry.ts` DIP-to-thumbnail mapping. Rehearsal evidence subscribes to assistance
 decisions through `subscribeAssistance` like any other observer, without changing assistance policy.
@@ -48,7 +48,7 @@ sanas/
 ├── src/                                    # (container; no files of its own)
 │   ├── main/                               # Electron main process; index.ts = mode dispatch (normal / --smoke / --rehearsal), system-audio.ts = loopback handler
 │   │   ├── lifecycle/                      # userData identity, capped main log, normal startup
-│   │   ├── diagnostics/                    # packaged smoke diagnostics + request-outcome shapes
+│   │   ├── diagnostics/                    # packaged smoke diagnostics + rehearsal
 │   │   │   └── rehearsal/                  # isolated scripted/audio composition
 │   │   │       ├── scenario/               # validation, assertions, semantic rubrics
 │   │   │       ├── outcomes/               # providers and request correlation
@@ -196,7 +196,7 @@ handler (`system-audio.ts`); new main-process code belongs in a responsibility f
 
 - `src/main/` — process entry (`index.ts`, normal vs `--smoke` vs `--rehearsal` dispatch) and the display-media loopback handler (`system-audio.ts`).
 - `src/main/lifecycle/` — userData identity, capped/redacted main logging and normal startup wiring (`window-policy.ts`: quit when the main window closes, hide the overlay when a meeting goes idle); normal startup is not loaded by smoke.
-- `src/main/diagnostics/` — isolated, headless packaged diagnostics used by `--smoke`, the `rehearsal/` harness below, and `request-outcome.ts` (`RequestOutcome`/`RequestTiming`, `publicOutcome`, `proseWords`: the diagnostic request shapes shared by the mock-interview report and the rehearsal; production assist code does not carry them).
+- `src/main/diagnostics/` — isolated, headless packaged diagnostics used by `--smoke`, the `rehearsal/` harness below. It depends on product code (e.g. the request-outcome shapes in `services/mock-interview/turns/`), never the reverse.
 - `src/main/diagnostics/rehearsal/` — isolated dispatch/composition; no ordinary startup policy.
 - `src/main/diagnostics/rehearsal/scenario/` — scenario validation, assertions and bounded content rubrics.
 - `src/main/diagnostics/rehearsal/outcomes/` — scripted providers and request/span correlation.
@@ -224,12 +224,12 @@ handler (`system-audio.ts`); new main-process code belongs in a responsibility f
 - `src/main/services/assistant/coach/` — next-point eligibility policy and coach prompt construction.
 - `src/main/services/assistant/live-controls/` — typed, detail, audience and screen-capture request instructions.
 - `src/main/services/mock-interview/` — one product engine, plan validation, interviewer seam consumer, session lifecycle, bundled JSON plans/PNG fixtures and shared live-turn result correlation; `shortcuts.ts` is the mock-only shortcut registration/release.
-- `src/main/services/mock-interview/turns/` — interviewer consumer, serialized engine, `answer-wait.ts` (candidate-answer silence/idle-prompt clock), session lifecycle, and the result evidence/report builders (`evidence.ts`, `report.ts`; nothing in `turns/` imports the parent).
+- `src/main/services/mock-interview/turns/` — interviewer consumer, serialized engine, `answer-wait.ts` (candidate-answer silence/idle-prompt clock), session lifecycle, and the result evidence/report builders (`evidence.ts`, `report.ts`) and `request-outcome.ts` (`RequestOutcome`/`RequestTiming`, `publicOutcome`, `proseWords`: the request shapes the report builds on, also imported by the diagnostics rehearsal; production assist code does not carry them) (nothing in `turns/` imports the parent).
 - `src/main/services/mock-interview/plans/` — bundled JSON validated by pure validatePlan in the production catalog.
 - `src/main/services/mock-interview/fixtures/` — canonical screen PNGs shared by product and rehearsal scenarios.
 - `src/main/services/meetings/` — meeting lifecycle/STT/audio orchestration plus meeting-level facades: `index.ts` (lifecycle, STT wiring, audio and final persistence) and `live-controls.ts` (context/manual/answer-mode control facade).
 - `src/main/services/meetings/assist/` (root: `live-session.ts` assembly, `meeting-prompts.ts`; code lives in the homes below) — per-meeting prompt/grounding state wired to the provider, DB and windows.
-- `src/main/services/meetings/assist/automatic/` — the automatic candidate lifecycle (`live-assistance.ts`: turn assembly → prefilter → classifier → freshness/cooldown → runner, timers and invalidation), `question-ledger.ts` (carries uncovered stacked questions into one suggestion) and `speculative-answer.ts` (the one unpublished answer started alongside the classifier and its promote/discard rule); `live-assistance-harness.ts` is the test-only fake-clock harness shared by the live-assistance suites. `LiveAssistance` consumes same-job evidence through the `EvidenceHandle` type defined in `suggestion/suggestion-requests.ts`.
+- `src/main/services/meetings/assist/automatic/` — the automatic candidate lifecycle (`live-assistance.ts`: turn assembly → prefilter → classifier → freshness/cooldown → runner, timers and invalidation), `question-ledger.ts` (carries uncovered stacked questions into one suggestion) and `speculative-answer.ts` (the one unpublished answer started alongside the classifier and its promote/discard rule); `live-assistance.ts` is also the assist-wide coordinator: it composes `manual/` AnswerNow and `coach/` CoachCoordinator; `live-assistance-harness.ts` is the test-only fake-clock harness shared by the live-assistance suites. `LiveAssistance` consumes same-job evidence through the `EvidenceHandle` type defined in `suggestion/suggestion-requests.ts`.
 - `src/main/services/meetings/assist/automatic/breaker/` — `classifier-breaker.ts`: the consecutive-failure circuit breaker (count, suspend, recover, throttled failure log) the coordinator asks about the turn classifier (distinct from `services/assistant/classifier/`, the classifier itself).
 - `src/main/services/meetings/assist/manual/` — Answer now (`answer-now.ts`: the hotkey answer and its evidence retrieval), manual and screen-capture admission (`manual-requests.ts`, `capture-requests.ts`) and `capture-drafts.ts` (in-memory composer screen drafts).
 - `src/main/services/meetings/assist/coach/` — `coach-coordinator.ts`: next-point coaching while the user talks (feeds the coach policy, owns its timer and buffered run; yields to every answer).
@@ -403,7 +403,7 @@ a separate check, rather than ordinary Vitest loading of `better-sqlite3`.
 - `db/repos/job/job-resume.ts` (+ v11 `migrations/job-resume-schema.ts`) owns the job's saved resume; `ipc/jobs/resume/` exposes get/set and `resume-import.ts`, the native PDF/DOCX picker; the renderer never supplies a filesystem path.
 - `services/meetings/context/start-grounding.ts` is the one place Start reads the job resume; nothing else reads `job_resumes` for a meeting.
 - `main/services/jobs/resume/import-file.ts` owns bounded local reads and offline parser lifecycle.
-- `main/services/jobs/resume/` owns validation (run once, at IPC ingress), escaped candidate-fact framing and deterministic terminology extraction.
+- `main/services/jobs/resume/` owns validation (run once, at IPC ingress), only (no framing or term extraction: candidate-fact framing lives in `meetings/context/candidate-data.ts`, terminology extraction in `meetings/context/candidate-keyterms.ts`).
 - `db/migrations/meeting-resume-schema.ts` owns append-only v9 SQL and the immutable-update guard; `createMeeting` persists the text in its one transaction. The resume is not on the `Meeting` row: `getMeetingGrounding(id).resume` is the only read (`MeetingView` via `meetings.getResume`).
 - `app/jobs/resume/JobResume.tsx` owns the job editor (draft, import, explicit Save resume); `MeetingView` shows a meeting's saved text read-only. Live/Mock setup have no resume input.
 - `MeetingPrompts` attaches candidate facts to the meeting's one system prompt before saving grounding. `meetingKeyterms` builds one ordered hint list for streaming and batch STT; the provider applies its own limits.

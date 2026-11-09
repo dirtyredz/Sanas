@@ -13,7 +13,7 @@ import type {
 } from '../../../services/stt/types'
 import type { Step } from '../scenario/scenario'
 import { beginOutcome, turnSteps } from './outcomes'
-import type { RequestOutcome } from '../../request-outcome'
+import type { RequestOutcome } from '../../../services/mock-interview/turns/request-outcome'
 import { isNoSuggestion } from '@shared/live-controls/readable-suggestion'
 import { ENDPOINTING_MS } from '../../../services/stt/endpointing'
 

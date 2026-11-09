@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import type { AssistRequest } from '../../../services/assistant/types'
 import type { Step } from '../scenario/scenario'
-import type { RequestOutcome } from '../../request-outcome'
+import type { RequestOutcome } from '../../../services/mock-interview/turns/request-outcome'
 
 export const imageDigest = (base64: string): string =>
   createHash('sha256').update(Buffer.from(base64, 'base64')).digest('hex')

@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest'
 import { RehearsalAssistant } from './providers'
-import { publicOutcome } from '../../request-outcome'
+import { publicOutcome } from '../../../services/mock-interview/turns/request-outcome'
 import { evaluate } from '../scenario/assertions'
 import type { AssistRequest } from '../../../services/assistant/types'
 import type { Scenario } from '../scenario/scenario'
