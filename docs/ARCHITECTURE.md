@@ -301,7 +301,7 @@ objection` + `me | room | other`, or `none`. Parsing (`classifier-verdict.ts`) i
   after launch and every 6 h; Settings shows what is past its limit and can run it now.
   Live meetings are never touched. Deleting a meeting by hand goes through the same
   `removeMeeting` (file + row).
-- Schema (current v13: v1 base, v2 `speakers`, v3 `jobs.summary_email`, v4 `segments_fts`, v5 `suggestions.purpose`, v6 presentation, v7 live context/grounding, v8 practice/results, v9 `meetings.resume_name`/`resume_text` with an immutability trigger, v10 immutable meetings.interview_profile, v11 `job_resumes`, v12 snapshot-clear guard, v13 `job_applications` + `jobs_delete_guard`; later tables described below):
+- Schema (current v15: v1 base, v2 `speakers`, v3 `jobs.summary_email`, v4 `segments_fts`, v5 `suggestions.purpose`, v6 presentation, v7 live context/grounding, v8 practice/results, v9 `meetings.resume_name`/`resume_text` with an immutability trigger, v10 immutable meetings.interview_profile, v11 `job_resumes`, v12 snapshot-clear guard, v13 `job_applications` + `jobs_delete_guard`, v14 job memory/proposals, v15 summary FTS; later tables described below):
 
 ```
 jobs        (id, name, company_info, project_scope, notes,
@@ -561,3 +561,24 @@ re-diarization both read the snapshot through getMeetingGrounding. Both call
 meetingKeyterms; SttProvider retains budget enforcement. Meeting rows expose only a boolean
 interviewProfileUsed for history. Mock's noResume state field now means neither resume nor
 profile is present, including fetched and broadcast state.
+
+## Reviewed job memory and historical evidence
+
+Schema v14 stores approved memory with a revision and one proposal per source meeting.
+Summary persistence launches a separately held rewrite, serialized per job. Only approved
+memory and dated summary/action items enter its dedicated provider prompt. Publication
+checks source ownership/fingerprint and base revision; approval repeats those checks in
+the same transaction as replacement. Direct edits invalidate older proposals. Dismissed
+fingerprints are not automatically regenerated. Interrupted generation is retryable after restart.
+
+Start renders approved memory into the existing saved system grounding; Context Apply and
+More detail never reread job memory. Refiling/deleting sources invalidates proposals, not
+owner-approved memory. Practice and Unsorted supply neither proposals nor live search evidence.
+
+Schema v15 indexes summaries/action items with external-content FTS and maintenance triggers.
+Live retrieval uses a lazy read-only worker against the actual open database path. Startup and
+overload fail open to empty evidence; one query may run at a time, with no queued backlog.
+Automatic specific-subject queries run beside classification with a 10 ms evidence deadline;
+Answer now has 25 ms. Evidence freezes once, goes only in the user turn and is persisted in
+promptWindow for deterministic More detail. Late results cannot cause speculative fallback.
+The worker is stopped during normal and rehearsal shutdown.

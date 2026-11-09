@@ -400,3 +400,13 @@ main-process code belongs in a responsibility folder above, not beside them.
 - `MeetingView` receives `interviewProfileUsed` through the existing Meeting projection; large profile text
   stays off list/history IPC objects. Merge refuses meetings with a resume or profile, with
   recorded slides, or when more than one part has meeting context.
+
+## Job memory and live history
+
+Job-owned approved text and independent per-meeting proposals live in
+`db/repos/job/memory/`; `services/jobs/memory/` owns serialized rewrites and review state.
+The job Overview composes `app/jobs/memory/` for independent editing and the context meter.
+`db/repos/history/` owns transcript and summary FTS queries. Search/Ask keeps its public
+facade and compatible excerpt budget through `history/retrieval.ts` and `excerpts.ts`.
+`history/live/` owns specificity, strict excerpts, frozen deadlines and the read-only worker.
+The worker is a separate main build entry; assistance only injects and consumes frozen evidence.

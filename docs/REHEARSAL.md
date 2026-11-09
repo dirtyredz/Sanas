@@ -317,3 +317,19 @@ Run that ONE free scripted rehearsal, serially. Add another canned scenario only
 change touches what it exercises (e.g. `coding-interview` for screen-capture prompts,
 `meeting-context` for Start/context plumbing). Each canned wrapper includes a local build. Do not add full tiers, packaged smokes or
 paid provider runs to this gate. Unit tests mock Electron and cover real-capture/audio seams.
+
+## Fixture-only history latency
+
+After `npm run build`, run `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/rehearsal/trials/history-latency.ps1`.
+It uses the installed Electron Node ABI, the built read-only worker, synthetic databases with
+10,000 / 100,000 / 1,000,000 segments, summary facts and common-term worst cases. Artifacts
+and reusable fixture databases stay under .tmp/history-latency. No credentials or network calls.
+
+Matched retrieval-off/on trials use the production automatic request builder and runner with
+Full/Opus configuration and the canned provider. Report p50/p95/p99 query/wait/first-readable
+proxy distributions, misses, main bookkeeping and event-loop delay. Canned output is emitted
+in one chunk; completion is the readable proxy. Cache usage is unknown, never invented.
+Targets: bookkeeping p95 <=2 ms, automatic added dispatch p95 <=10 / p99 <=20 ms, manual
+retrieval budget <=25 ms excluding reported scheduling excess, readable p95 regression <=50 ms,
+and reliable warm specific hits. These establish local overhead and wiring, not real provider
+latency, answer quality, microphone timing or packaged-install compatibility.

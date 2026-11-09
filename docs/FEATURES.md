@@ -201,3 +201,16 @@ The meeting's resume facts win over general profile stories, and marked plausibl
 remaining gaps. Employer and technology terms also feed transcription hints. Practice shows
 “No resume or profile” only when both are empty. Deterministic wiring is tested; model-backed
 quality is NOT VERIFIED.
+
+## Job memory
+
+The job Overview has a separate saved-memory editor, character counter and Save memory action.
+Successful ordinary-meeting summaries propose complete replacements capped at 3,000 characters.
+Review the oldest proposal, edit it, then approve or dismiss; remaining proposals stay visible.
+Failures and outdated revisions can be regenerated. Approval affects future meetings only.
+Unsorted and practice do not create memory. Meetings skipped by summarization have no proposal.
+
+The context meter counts saved Notes, approved memory and glossary, with a separate unsaved
+Notes preview. Other prompt fields and unapproved proposals are excluded. Answer now and
+specific automatic turns can use up to three same-job past transcript/summary snippets.
+Retrieval deadlines favor answer responsiveness over historical context.

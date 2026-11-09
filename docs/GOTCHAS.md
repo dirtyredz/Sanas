@@ -691,3 +691,19 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   - A pack's `contentHash` can be missing or reused; refresh change detection also compares Sanas's own pack fingerprint (sha256 of normalized content excluding `contentHash`/`updatedAt`).
   - Draft-at-import sends notes, project scope and company/role/companyInfo to the provider but never the resume. Keep it that way; refresh must never draft.
   - `listPackFiles` tests use the injectable `maxFiles` bound; creating 500 real files is slow on Windows.
+
+## Job memory and retrieval
+
+- A dirty editor must keep its original revision and proposal identity across polls. Updating
+  the revision alone would turn a stale draft into an authorized overwrite.
+- Validate source fingerprints both before displaying approval and transactionally on approval.
+  Pending proposals are never input to another rewrite. Approved text is never auto-erased.
+- JavaScript timeouts cannot interrupt synchronous SQLite. Live SQL runs only in the worker;
+  a deadline drops evidence, while the worker watchdog recycles stalled queries.
+- Worker readiness is explicit: querying during native-module startup can otherwise cause
+  repeated watchdog recycling and zero useful hits. The bundle lives at out/main/history-worker.js;
+  the client lives in a generated chunks file and resolves one directory up.
+- Windows timer scheduling can exceed a nominal deadline. Retrieval reports budget wait and
+  scheduling excess separately and rejects replies received after the budget.
+- New migrations require disposable older-schema tests to drop memory tables and summary FTS
+  triggers/table before resetting user_version.

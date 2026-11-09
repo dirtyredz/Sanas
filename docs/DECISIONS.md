@@ -761,3 +761,16 @@ Use deterministic name/technology heuristics, not an LLM extraction call. [Deepg
 With owner download approval on November 3, pin `unpdf` 2.1.0 and `mammoth` 1.13.0 (latest stable at installation). The selected parsers are [unpdf](https://github.com/unjs/unpdf) (bundled serverless PDF.js, no native canvas needed for text) and [Mammoth](https://github.com/mwilliamson/mammoth.js) (raw DOCX text rather than HTML). Avoid custom PDF/ZIP/XML parsing and renderer-side document processing.
 
 The native picker returns only validated text/name over typed IPC. Both runtime dependencies remain externalized by electron-vite; unpdf loads through native dynamic import to preserve its ESM package and bundled PDF.js assets. Release documents via `loadingTask.destroy()`. No OCR, HTML conversion, remote CMaps or native canvas is needed. unpdf declares Node >=24; synthetic extraction passes on this checkout's Node 22.20.0, but packaged Electron compatibility remains an async-pipeline acceptance check.
+
+## 2026-11-09 ? Reviewed replacement memory and bounded history
+
+Implement the October 29 memory + search decision with a 3,000-character approved-memory
+limit. Separate source proposals prevent one unreviewed meeting from replacing another.
+Approval is a complete replacement, optionally owner-edited; stale bases require regeneration.
+Approved memory activates at the next Start and survives later source deletion. It is
+historical job context, not automatically candidate biography or current-meeting evidence.
+
+Keep local history SQL off the main event loop. Automatic evidence gets 10 ms, Answer now
+25 ms; missing, overloaded or cold retrieval proceeds without evidence. Never weaken
+speculative equality to accommodate late hits. The context meter warns above 12,000 characters
+for Notes + approved memory + rendered glossary, with approximate tokens at four characters each.
