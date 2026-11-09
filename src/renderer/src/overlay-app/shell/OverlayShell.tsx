@@ -93,7 +93,20 @@ export function OverlayShell({ session }: { session: OverlaySessionModel }): Rea
             />
           </OverlayTip>
           <div className="workspace-region" aria-hidden={fullAnswer} inert={fullAnswer}>
-            <OverlayWorkspaces session={session} workspace={navigation.workspace} />
+            <OverlayWorkspaces
+              workspace={navigation.workspace}
+              meetingId={session.meetingId}
+              meetingStatus={meeting.status}
+              active={session.active}
+              answering={suggestions.requestedInFlight}
+              requestBusy={suggestions.requestedInFlight || session.manual.pending}
+              lines={session.lines}
+              composer={session.composer}
+              manual={session.manual}
+              capture={session.capture}
+              captureShortcut={session.windowState.shortcuts.capture}
+              onOpenAsk={() => select('ask')}
+            />
           </div>
         </div>
       </div>

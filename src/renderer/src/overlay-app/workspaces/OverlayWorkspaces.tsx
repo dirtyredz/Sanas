@@ -1,67 +1,53 @@
-import type { ReactNode } from 'react'
-import { OverlayContext } from './OverlayContext'
-import { OverlayCapturePanel } from './OverlayCapturePanel'
-import { WORKSPACE_LABELS } from '../../lib/overlay-workspaces'
-import {
-  panelId,
-  tabId,
-  type SecondaryWorkspace,
-  type Workspace,
-} from '../shell/navigation/overlay-navigation'
-import type { OverlaySessionModel } from '../shell/OverlaySession'
+import type { MeetingState } from '@shared/types'
+import type { TranscriptLine } from '../../lib/meeting/useTranscript'
+import type { CaptureStatusModel } from '../capture/useCaptureStatus'
+import type { Workspace } from '../shell/navigation/overlay-navigation'
+import type { ManualRequestsModel } from '../suggestions/useManualRequests'
 import { AskWorkspace } from './composer/AskWorkspace'
+import type { OverlayComposerModel } from './composer/useOverlayComposer'
+import { OverlayCapturePanel } from './OverlayCapturePanel'
+import { OverlayContext } from './OverlayContext'
 import { OverlayTranscript } from './OverlayTranscript'
+import { Empty, WorkspacePanel } from './WorkspacePanel'
 
-/** One secondary workspace's frame. Every workspace stays mounted so drafts and scroll
- *  positions survive switching; inactive ones are hidden and inert (out of the tab order). */
-function WorkspacePanel({
-  id,
-  current,
-  children,
-}: {
-  id: SecondaryWorkspace
-  current: Workspace
-  children: ReactNode
-}): React.JSX.Element {
-  const active = id === current
-  return (
-    <section
-      role="tabpanel"
-      id={panelId(id)}
-      aria-labelledby={tabId(id)}
-      className={`workspace ${active ? 'is-active' : ''}`}
-      inert={!active}
-      aria-hidden={!active}
-    >
-      <h2 className="workspace-title">{WORKSPACE_LABELS[id]}</h2>
-      {children}
-    </section>
-  )
-}
-
-function Empty({ children }: { children: ReactNode }): React.JSX.Element {
-  return (
-    <div className="workspace-body">
-      <p className="ov-empty">{children}</p>
-    </div>
-  )
-}
-
-/** Ask, Screen, Transcript and Context below the answer preview. */
+/** Ask, Screen, Transcript and Context below the answer preview. Each view gets only the
+ *  slices of the session it uses. */
 export function OverlayWorkspaces({
-  session,
   workspace,
+  meetingId,
+  meetingStatus,
+  active,
+  answering,
+  requestBusy,
+  lines,
+  composer,
+  manual,
+  capture,
+  captureShortcut,
+  onOpenAsk,
 }: {
-  session: OverlaySessionModel
   workspace: Workspace
+  meetingId: number | null
+  meetingStatus: MeetingState['status']
+  /** A meeting is running (live or paused). */
+  active: boolean
+  /** A requested answer is in flight. */
+  answering: boolean
+  /** Any answer request (requested or manual) is pending. */
+  requestBusy: boolean
+  lines: TranscriptLine[]
+  composer: OverlayComposerModel
+  manual: ManualRequestsModel
+  capture: CaptureStatusModel
+  /** The global capture shortcut's label, or ''. */
+  captureShortcut: string
+  onOpenAsk: () => void
 }): React.JSX.Element {
-  const { meetingId, active, suggestions, manual } = session
-  const requestBusy = suggestions.requestedInFlight || manual.pending
   return (
     <div className="workspaces">
       <WorkspacePanel id="ask" current={workspace}>
         <AskWorkspace
-          composer={session.composer}
+          composer={composer}
           manual={manual}
           active={active}
           requestBusy={requestBusy}
@@ -71,14 +57,14 @@ export function OverlayWorkspaces({
         <OverlayCapturePanel
           meetingId={meetingId}
           active={active}
-          answering={suggestions.requestedInFlight}
-          capture={session.capture}
-          shortcut={session.windowState.shortcuts.capture}
-          onOpenAsk={() => session.navigation.select('ask')}
+          answering={answering}
+          capture={capture}
+          shortcut={captureShortcut}
+          onOpenAsk={onOpenAsk}
         />
       </WorkspacePanel>
       <WorkspacePanel id="transcript" current={workspace}>
-        <OverlayTranscript lines={session.lines} status={session.meeting.status} />
+        <OverlayTranscript lines={lines} status={meetingStatus} />
       </WorkspacePanel>
       <WorkspacePanel id="context" current={workspace}>
         {meetingId === null ? (

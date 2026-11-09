@@ -331,8 +331,8 @@ handler (`system-audio.ts`); new main-process code belongs in a responsibility f
 - `src/renderer/src/overlay-app/` — deliberately small, separate overlay bundle; `no-native-popups.test.ts` scans every file under it for native tooltip/select/dialog UI that would leak into screen shares.
 - `src/renderer/src/overlay-app/shell/` — `OverlaySession` (composes every controller once), `OverlayShell` layout, header, persistent status, preferences popover, window state, Answer every question.
 - `src/renderer/src/overlay-app/shell/navigation/` — pure workspace reducer, local shortcut table/dispatch, the rail, and the compose readiness/focus handshake.
-- `src/renderer/src/overlay-app/suggestions/` — the answer surface (full and preview), history/reading coordination and manual-request (detail/audience) policy.
-- `src/renderer/src/overlay-app/workspaces/` — the frame that keeps secondary views mounted plus one file per view (`OverlayCapturePanel`, `OverlayTranscript`, `OverlayContext`).
+- `src/renderer/src/overlay-app/suggestions/` — the answer surface (full and preview) with its action row (`AnswerActions`: history, More detail, Back to source), history/reading coordination and manual-request (detail/audience) policy.
+- `src/renderer/src/overlay-app/workspaces/` — the frame that keeps secondary views mounted (`WorkspacePanel` + `Empty`; `OverlayWorkspaces` takes explicit slices, not the whole session) plus one file per view (`OverlayCapturePanel`, `OverlayTranscript`, `OverlayContext`).
 - `src/renderer/src/overlay-app/workspaces/composer/` — Ask: draft state, submission and view; kept as a folder because it has several files.
 - `src/renderer/src/overlay-app/controls/` — the overlay's small control wrappers (button variants, in-DOM `OverlayTip` tooltip, labelled textarea, Open Sanas) and local icons; not a general component framework.
 - `src/renderer/src/overlay-app/layout/` — overlay opacity and divider-ratio persistence, divider drag/measurement, and the three resize grips.

@@ -4,7 +4,7 @@ import { SuggestionContent } from '../../lib/suggestions/SuggestionContent'
 import { OverlayButton } from '../controls/OverlayButton'
 import { IconExpand } from '../controls/overlay-icons'
 import { OpenSanasButton } from '../controls/OpenSanasButton'
-import { canRequestDetail, findStored } from './manual-requests'
+import { AnswerActions } from './AnswerActions'
 import type { ManualRequestsModel } from './useManualRequests'
 import type { OverlaySuggestionsModel } from './useOverlaySuggestions'
 import { OverlayTip } from '../controls/OverlayTip'
@@ -29,12 +29,8 @@ export function OverlaySuggestions({
   mode?: 'full' | 'preview'
   onReadFull?: () => void
 }): React.JSX.Element {
-  const { items, selected, selectedIndex, latest } = model
-  const requestBusy = model.requestedInFlight || manual.pending
+  const { selected, latest } = model
   const full = mode === 'full'
-  const source = selected?.sourceSuggestionId
-    ? findStored(items, selected.sourceSuggestionId)
-    : undefined
   return (
     <section className={`overlay-suggestion ${full ? '' : 'is-preview'}`} aria-label="Answer">
       <div className="suggestion-bar">
@@ -106,56 +102,7 @@ export function OverlaySuggestions({
           </div>
         )}
       </div>
-      {full && (items.length > 1 || canRequestDetail(selected) || source) && (
-        <div className="suggestion-actions">
-          {items.length > 1 && (
-            <span className="suggestion-nav" role="group" aria-label="Answer history">
-              <OverlayButton
-                variant="icon"
-                aria-label="Previous answer"
-                disabled={selectedIndex <= 0}
-                onClick={() => model.select(items[selectedIndex - 1].suggestionId)}
-              >
-                ‹
-              </OverlayButton>
-              <span className="suggestion-index">
-                {selectedIndex + 1}/{items.length}
-              </span>
-              <OverlayButton
-                variant="icon"
-                aria-label="Next answer"
-                disabled={selectedIndex < 0 || selectedIndex >= items.length - 1}
-                onClick={() => model.select(items[selectedIndex + 1].suggestionId)}
-              >
-                ›
-              </OverlayButton>
-              <OverlayButton
-                variant="quiet"
-                size="sm"
-                disabled={!model.hasNewAnswer}
-                onClick={() => latest && model.select(latest.suggestionId)}
-              >
-                Latest
-              </OverlayButton>
-            </span>
-          )}
-          {canRequestDetail(selected) && (
-            <OverlayButton
-              size="sm"
-              disabled={!live || requestBusy}
-              busy={manual.pending}
-              onClick={() => void manual.request('detail')}
-            >
-              More detail
-            </OverlayButton>
-          )}
-          {source && (
-            <OverlayButton size="sm" onClick={() => model.select(source.suggestionId)}>
-              Back to source
-            </OverlayButton>
-          )}
-        </div>
-      )}
+      {full && <AnswerActions model={model} manual={manual} live={live} />}
       {manual.notice && (
         <p className="ov-message" role="status">
           {manual.notice}
