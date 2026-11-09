@@ -362,6 +362,9 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   Pre-activation chunks cannot establish recording zero; stale generations are rejected.
   Replay keeps original sample positions and cannot refresh timing from STT receipt.
   Suspend/loss requires fresh capture. `audioCursorGapMs` remains a separate proxy.
+  Identity changes (`pinSpeaker`) do NOT expire anchors: a pin relabels speech, it does not
+  change which sample sits at which main-clock time. Only STT reset, pause/resume, loss and
+  discontinuity do (large-p2-round plan, section 5).
   Device/browser input latency and STT endpoint accuracy are outside this measurement.
 - **Endpoint is 600 ms.** 300 and 450 fragment the 600 ms multipart continuation fixture.
   Synthetic boundaries prove assembly behavior only; real STT may differ. The

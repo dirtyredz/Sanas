@@ -1,5 +1,3 @@
-import { DeepgramSession } from '../stt/deepgram/deepgram-session'
-import { FakeSocket } from '../stt/deepgram/recovery/fake-socket.test-support'
 import { writeAudio } from '../audio-store'
 import { insertSegment, setSpeakerIsUser } from '../../db/repos/transcript/segments'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -136,13 +134,33 @@ import {
   currentState,
   pinSpeaker,
   meetingAudioMs,
-  sendAudioChunk,
   startMeeting,
   pauseMeeting,
   resumeMeeting,
   stopMeeting,
   togglePause,
 } from './index'
+
+/** One captured frame of 16 kHz PCM at the given position (no resampling in these fixtures). */
+function pcmFrame(
+  generation: string,
+  sequence: number,
+  startFrame: number,
+  frames: number,
+  channels: 1 | 2 = 1,
+  pcm: ArrayBuffer = new ArrayBuffer(frames * channels * 2),
+) {
+  return {
+    generation,
+    sequence,
+    startFrame,
+    endFrame: startFrame + frames,
+    sourceEndFrame: startFrame + frames,
+    sourceRate: 16000,
+    channels,
+    pcm,
+  }
+}
 
 function silentLoopbackWithMicSpeech(ms: number): Buffer {
   const frames = Math.round((ms / 1_000) * 16_000)
@@ -154,7 +172,8 @@ function silentLoopbackWithMicSpeech(ms: number): Buffer {
 describe('meeting capture health', () => {
   it('retains sub-millisecond capture positions when opening a resumed session', async () => {
     await startMeeting(5, 1)
-    sendAudioChunk(Buffer.alloc(2))
+    expect(bindAudioCapture(7, 'tiny', () => {})).toBe(true)
+    sendCapturedAudio(pcmFrame('tiny', 0, 0, 1))
     await pauseMeeting()
     await resumeMeeting(1)
     expect(sttProvider.start).toHaveBeenLastCalledWith(
@@ -162,10 +181,8 @@ describe('meeting capture health', () => {
     )
     await stopMeeting()
   })
-  it('pin → outage → buffered audio → reconnect → re-pin preserves history and records once', async () => {
+  it('pin → reset → buffered audio → re-pin preserves history and records once', async () => {
     vi.useFakeTimers()
-    FakeSocket.instances = []
-    vi.stubGlobal('WebSocket', FakeSocket)
     const rows: Parameters<typeof insertSegment>[0][] = []
     vi.mocked(insertSegment).mockImplementation((row) => {
       rows.push({ ...row })
@@ -175,75 +192,35 @@ describe('meeting capture health', () => {
       for (const row of rows) if (row.speaker === speaker) row.isUser = isUser
     })
     vi.mocked(writeAudio).mockClear()
+    const sendAudio = vi.fn()
     vi.mocked(sttProvider.start).mockImplementationOnce(async (options) => {
-      const provider = new DeepgramSession(options)
-      const ready = provider.connect()
-      FakeSocket.instances[0].open()
-      await ready
-      return provider
+      fakes.onTranscript = options.onTranscript as never
+      return { sendAudio, stop: vi.fn() } as never
     })
-    const result = (text: string) => ({
-      type: 'Results',
-      is_final: true,
-      channel_index: [0, 1],
-      channel: {
-        alternatives: [
-          { transcript: text, words: [{ word: text, speaker: 0, start: 0, end: 0.5 }] },
-        ],
-      },
-    })
+    const said = (text: string, tStartMs: number) =>
+      fakes.onTranscript!({
+        channel: 0,
+        speaker: 0,
+        isFinal: true,
+        text,
+        tStartMs,
+        tEndMs: tStartMs + 500,
+      })
     try {
       await startMeeting(5, 1)
-      const first = FakeSocket.instances[0]
-      const probes: import('@shared/meeting/audio-capture').CaptureProbe[] = []
-      expect(bindAudioCapture(7, 'replay-capture', (p) => probes.push(p))).toBe(true)
-      const captured = (sequence: number, startFrame: number, frames: number, value: number) => ({
-        generation: 'replay-capture',
-        sequence,
-        startFrame,
-        endFrame: startFrame + frames,
-        sourceEndFrame: startFrame + frames,
-        sourceRate: 16000,
-        channels: 1 as const,
-        pcm: Uint8Array.from(Buffer.alloc(frames * 2, value)).buffer,
-      })
-      sendCapturedAudio(captured(0, 0, 8000, 1))
-      await vi.advanceTimersByTimeAsync(250)
-      receiveCaptureReply({
-        ...probes.at(-1)!,
-        outputFrame: 8000,
-        sourceFrame: 8000,
-        sourceRate: 16000,
-        quantumFrames: 128,
-      })
-      sendCapturedAudio(captured(1, 8000, 8000, 1))
-      await vi.advanceTimersByTimeAsync(250)
-      receiveCaptureReply({
-        ...probes.at(-1)!,
-        outputFrame: 16000,
-        sourceFrame: 16000,
-        sourceRate: 16000,
-        quantumFrames: 128,
-      })
-      first.message(result('Before'))
-      expect(fakes.liveFinal.mock.calls.at(-1)![1].captureEndpoint.status).toBe('valid')
+      expect(bindAudioCapture(7, 'replay-capture', () => {})).toBe(true)
+      sendCapturedAudio(pcmFrame('replay-capture', 0, 0, 8000))
+      sendCapturedAudio(pcmFrame('replay-capture', 1, 8000, 8000))
+      said('Before', 0)
       pinSpeaker(0, true)
       const history = { ...rows[0] }
-      first.emit('close', { code: 1006 })
+      // the provider reconnects: it signals a reset, and audio captured meanwhile is
+      // handed over exactly once (replay itself is covered in stt/deepgram/recovery)
+      vi.mocked(sttProvider.start).mock.calls.at(-1)![0].onSignal?.({ kind: 'reset' })
       expect(currentState().speakerIdentity?.identityNeedsConfirmation).toBe(true)
-      sendCapturedAudio(captured(2, 16000, 16000, 2))
+      sendCapturedAudio(pcmFrame('replay-capture', 2, 16000, 16000))
       expect(meetingAudioMs()).toBe(2000)
-      await vi.advanceTimersByTimeAsync(1000)
-      const second = FakeSocket.instances[1]
-      second.open()
-      await vi.advanceTimersByTimeAsync(0)
-      expect(second.sent.filter(Buffer.isBuffer)).toEqual([Buffer.alloc(32000, 2)])
-      first.message(result('Retired'))
-      second.message(result('Buffered'))
-      expect(fakes.liveFinal.mock.calls.at(-1)![1].captureEndpoint).toEqual({
-        status: 'unavailable',
-        reason: 'reset',
-      })
+      said('Buffered', 1000)
       expect(rows).toHaveLength(2)
       expect(rows[1]).toMatchObject({ speaker: 1, isUser: false, tStartMs: 1000 })
       expect(fakes.liveFinal.mock.calls.at(-1)![1].role).toBe('unknown')
@@ -261,27 +238,18 @@ describe('meeting capture health', () => {
       expect(rows[1].isUser).toBe(true)
       expect(meetingAudioMs()).toBe(2000)
       expect(writeAudio).toHaveBeenCalledTimes(3)
+      expect(sendAudio).toHaveBeenCalledTimes(3)
       await pauseMeeting()
       await resumeMeeting(1)
       expect(currentState().speakerIdentity?.identityNeedsConfirmation).toBe(true)
-      fakes.onTranscript!({
-        channel: 0,
-        speaker: 0,
-        isFinal: true,
-        text: 'Resumed',
-        tStartMs: 2000,
-        tEndMs: 2500,
-      })
+      said('Resumed', 2000)
       expect(rows[2]).toMatchObject({ speaker: 2, isUser: false })
-      second.message(result('Stale session'))
-      expect(rows).toHaveLength(3)
       expect(() => pinSpeaker(999, true)).toThrow('current meeting')
     } finally {
       await stopMeeting()
       vi.mocked(insertSegment).mockReset()
       vi.mocked(setSpeakerIsUser).mockReset()
       vi.useRealTimers()
-      vi.unstubAllGlobals()
     }
   })
   beforeEach(() => {
@@ -374,7 +342,9 @@ describe('meeting capture health', () => {
 
   it('keeps coaching fed while the capture warning is active', async () => {
     await startMeeting(undefined, 2)
-    sendAudioChunk(silentLoopbackWithMicSpeech(5_000))
+    expect(bindAudioCapture(7, 'loopback', () => {})).toBe(true)
+    const speech = silentLoopbackWithMicSpeech(5_000)
+    sendCapturedAudio(pcmFrame('loopback', 0, 0, 80_000, 2, Uint8Array.from(speech).buffer))
     expect(currentState()).toMatchObject({ captureWarning: CAPTURE_WARNING })
 
     fakes.onTranscript?.({
@@ -444,7 +414,7 @@ it.each([
   },
 )
 
-it('calibrates accepted capture, invalidates reset/pin/loss, and rejects retired generations after resume', async () => {
+it('calibrates accepted capture, invalidates on reset (not pin), and rejects retired generations after resume', async () => {
   vi.useFakeTimers({
     toFake: ['setInterval', 'clearInterval', 'setTimeout', 'clearTimeout', 'performance'],
   })
@@ -492,16 +462,16 @@ it('calibrates accepted capture, invalidates reset/pin/loss, and rejects retired
     }
     fakes.onTranscript!(transcript)
     expect(fakes.liveFinal.mock.calls.at(-1)![1].captureEndpoint.status).toBe('valid')
-    pinSpeaker(0, true)
+    pinSpeaker(0, true) // identity is not part of the capture graph: anchors stay valid
+    fakes.onTranscript!(transcript)
+    expect(fakes.liveFinal.mock.calls.at(-1)![1].captureEndpoint.status).toBe('valid')
+    const options = vi.mocked(sttProvider.start).mock.calls.at(-1)![0]
+    options.onSignal?.({ kind: 'reset' })
     fakes.onTranscript!(transcript)
     expect(fakes.liveFinal.mock.calls.at(-1)![1].captureEndpoint).toEqual({
       status: 'unavailable',
       reason: 'reset',
     })
-    const options = vi.mocked(sttProvider.start).mock.calls.at(-1)![0]
-    options.onSignal?.({ kind: 'reset' })
-    fakes.onTranscript!(transcript)
-    expect(fakes.liveFinal.mock.calls.at(-1)![1].captureEndpoint.status).toBe('unavailable')
     await pauseMeeting()
     await resumeMeeting(1)
     expect(bindAudioCapture(7, 'resumed', () => {})).toBe(true)
