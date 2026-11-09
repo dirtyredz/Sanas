@@ -35,7 +35,15 @@ it('installs into the hooks directory resolved by Git for a linked worktree', ()
 it('the shipped pre-commit hook runs lint-staged, then the full typecheck when TypeScript is staged', () => {
   const hook = readFileSync(join(__dirname, 'pre-commit.sh'), 'utf8')
   expect(hook).toContain('npx --no-install lint-staged')
-  expect(hook).toContain('npm run --silent typecheck')
   expect(hook).toContain('git diff --cached --name-only')
   expect(hook).toContain('SANAS_SKIP_TYPECHECK')
+})
+
+it('the pre-commit typecheck runs against the staged tree, never the working tree (915bd31)', () => {
+  const hook = readFileSync(join(__dirname, 'pre-commit.sh'), 'utf8')
+  expect(hook).toContain('typecheck-staged.mjs')
+  expect(hook).not.toContain('npm run --silent typecheck')
+  const script = readFileSync(join(__dirname, 'typecheck-staged.mjs'), 'utf8')
+  expect(script).toContain('checkout-index')
+  expect(script).toContain("'typecheck'")
 })
