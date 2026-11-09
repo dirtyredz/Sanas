@@ -3,7 +3,9 @@ import type { Meeting } from '@shared/types'
 /** The one projection for reading a meeting row. The saved resume and interview profile
  *  (up to tens of KB each) are deliberately absent: they are reachable only through
  *  `getMeetingGrounding`. `interview_profile_used` is computed in SQL so the text never
- *  crosses into the row. `alias` is the meetings table alias in a join, e.g. `m`. */
+ *  crosses into the row; it is a plain non-empty test because the write path already trims
+ *  (see `interviewProfileSnapshot`), matching `getMeetingGrounding`.
+ *  `alias` is the meetings table alias in a join, e.g. `m`. */
 export function meetingColumns(alias = ''): string {
   const p = alias ? `${alias}.` : ''
   return (
@@ -19,8 +21,7 @@ export function meetingColumns(alias = ''): string {
       'action_items',
     ]
       .map((c) => `${p}${c}`)
-      .join(', ') +
-    `, trim(${p}interview_profile, ' ' || char(9, 10, 13)) != '' AS interview_profile_used`
+      .join(', ') + `, ${p}interview_profile != '' AS interview_profile_used`
   )
 }
 
