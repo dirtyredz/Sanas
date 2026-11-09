@@ -2,8 +2,8 @@
 id: dk-2fa8a5b6
 type: task
 created: 2026-11-03
-status: todo
-since: 2026-11-03
+status: done
+since: 2026-11-09
 area: docs
 priority: P3
 rank: zzzzzzzzzzz

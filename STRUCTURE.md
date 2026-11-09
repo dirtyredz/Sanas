@@ -368,7 +368,7 @@ handler (`system-audio.ts`); new main-process code belongs in a responsibility f
 - `scripts/` — repository tooling plus release and owner-operation entry points.
 - `scripts/release/publish/` — versioning, asset inventory, GitHub client, publication, package check and the owner-run `start.ps1` dispatch.
 - `scripts/release/install/` — owner-run `install-latest.ps1`/`install-version.ps1` and `validate-download.mjs` (imports `../publish/assets.mjs`).
-- `scripts/release/smoke/` — owner/CI-run packaged `smoke.ps1`.
+- `scripts/release/smoke/` — owner/CI-run packaged `smoke.ps1` and `smoke.test.ts` (guards against hardcoded schema versions). Contract: `diagnostics/smoke.ts` reports `expectedSchemaVersion` from `db/migrations`, and `smoke.ps1` compares `schemaVersion` against it, so the two change together.
 - `scripts/eval/` — paid prompt evals: `topic-switch.ps1` (old vs new prompt builders on an invented fixture; `-DryRun` is free) and `.eval.ts`.
 - `scripts/rehearsal/` — owner runner, credentials and offline fixture rendering.
 - `scripts/rehearsal/scenarios/` — versioned scripted/audio scenarios.
