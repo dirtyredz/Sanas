@@ -24,7 +24,7 @@ vi.mock('../meetings/observation/diagnostics', () => ({ subscribeAssistance: vi.
 // Same grounding resolution and creation as ordinary Start, without STT or audio.
 vi.mock('../meetings', async () => {
   const { createMeeting } = await import('../../db/repos/meeting/meeting-create')
-  const { resolveStartGrounding } = await import('../meetings/context/start-grounding')
+  const { resolveStartGrounding } = await import('../meetings/context/grounding/start-grounding')
   return {
     currentState: () => ({ meetingId: null }),
     meetingAudioMs: () => 0,

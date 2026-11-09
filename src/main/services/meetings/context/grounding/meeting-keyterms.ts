@@ -1,5 +1,5 @@
-import type { MeetingGrounding } from '../../../db/repos/meeting/meeting-grounding'
-import { getGlossaryTerms } from '../../../db/repos/job/glossary'
+import type { MeetingGrounding } from '../../../../db/repos/meeting/meeting-grounding'
+import { getGlossaryTerms } from '../../../../db/repos/job/glossary'
 import { interleaveKeyterms, candidateKeyterms } from './candidate-keyterms'
 
 /** The recognition hints for one meeting, streaming or batch: the job glossary plus names

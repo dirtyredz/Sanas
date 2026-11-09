@@ -4,9 +4,9 @@ import {
   type CaptureReply,
 } from '@shared/meeting/audio-capture'
 import { CaptureBinding } from './capture/timing/capture-binding'
-import { resolveStartGrounding } from './context/start-grounding'
-import type { StartRequest } from './context/start-request'
-import { meetingKeyterms } from './context/meeting-keyterms'
+import { resolveStartGrounding } from './context/grounding/start-grounding'
+import type { StartRequest } from './context/grounding/start-request'
+import { meetingKeyterms } from './context/grounding/meeting-keyterms'
 import { observeMeeting } from './observation/meeting-observation'
 import { IPC } from '@shared/ipc'
 import type { Admission } from '@shared/live-controls/types'

@@ -39,7 +39,7 @@ its identity regression test sits beside it.
 
 Resumes are owned by the job: `db/repos/job/` (`job-resume.ts` + v11 schema), `ipc/jobs/resume/` (get/set + the main-owned PDF/DOCX import picker) and the
 job page's Resume tab (`app/jobs/resume/`: `JobResume.tsx`, `ResumeDraftEditor.tsx`, `resume-draft.ts`).
-Start resolves the snapshot in `services/meetings/context/start-grounding.ts` for both Live
+Start resolves the snapshot in `services/meetings/context/grounding/start-grounding.ts` for both Live
 and Mock; `lib/meeting/useJobHasResume.ts` gives Live its Interview default. The
 importer/validator now live in `services/jobs/resume/`; the type stays in
 `shared/meeting/meeting-resume.ts` (it is also the meeting snapshot contract; renaming it is deferred).
@@ -118,7 +118,8 @@ sanas/
 │   │   │   │   ├── observation/            # best-effort observers: meeting stream, run events, assistance decisions
 │   │   │   │   ├── capture/                # channel identity and capture health
 │   │   │   │   │   └── timing/             # ordered main-clock brackets and accepted-sample rebasing
-│   │   │   │   ├── context/                # prepare/commit/publish meeting-context changes + meeting grounding
+│   │   │   │   ├── context/                # prepare/commit/publish live meeting-context changes (session.ts)
+│   │   │   │   │   └── grounding/          # Start-time candidate grounding: request, profile, resume/profile facts, STT key terms
 │   │   │   │   ├── status/                 # live meeting and post-processing guards, historical job filing
 │   │   │   │   ├── summary/                # summary generation, output parsing, email, historical slide markers
 │   │   │   │   ├── records/                # saved-meeting export and removal
@@ -277,7 +278,7 @@ handler (`system-audio.ts`); new main-process code belongs in a responsibility f
 - `src/main/services/meetings/observation/` — the one home for observation: `observer-bus.ts` (shared typed pub/sub; a throwing listener is dropped, never policy), `meeting-observation.ts` (transcript/signal/state; window policy and mock-interview consume it), `run-observation.ts` (runner events plus `EffectiveProfile`, the full/smart/points policy a run used), `diagnostics.ts` (coordinator decisions; rehearsal subscribes like any consumer). They stay separate streams with their own payloads and consumers and share only the bus and the rule that observation never changes behaviour; payload types come from `assist/`, which emits into them.
 - `src/main/services/meetings/capture/` — AUDIO capture-side identity and capture-health policy (screen capture lives in `services/screen-capture/`); `speaker-session.ts` (`SpeakerSession`: mono connection mapping, private pins and `resolve()` identity).
 - `src/main/services/meetings/capture/timing/` — `capture-clock.ts` and `capture-session.ts`: ordered main-clock brackets and accepted-sample rebasing; `capture-binding.ts` (`CaptureBinding`: the meeting's binding to one renderer capture generation — owns the `CaptureTimingSession` and probe interval, routes replies, gates which frames are ingested, calls back `onLoss`/`onDiscontinuity`; `meetings/index.ts` only delegates).
-- `src/main/services/meetings/context/` — pure preparation followed by commit/publication of live context changes and meeting grounding: `start-request.ts` (`StartRequest`: the renderer's `MeetingStartOptions` plus main-only `practice`), `start-grounding.ts` (`resolveStartGrounding`, the selected job's saved resume (none for Unsorted) plus the profile, resolved inside serialized Start for Live and Mock), `profile.ts` (`interviewProfileSnapshot`, Start selection of the Settings profile), `candidate-data.ts` (neutral escaping and delimited prompt framing for resume (`candidateFacts`) and Interview profile (`interviewProfileFacts`), so resume code and the profile never import each other), `meeting-facts.ts` (combines a `MeetingGrounding` into the candidate-facts block, resume first), `candidate-keyterms.ts` (STT term extraction/interleave for resume and profile, `candidateKeyterms`) and `meeting-keyterms.ts` (the STT hints, glossary plus resume/profile terms, for streaming and batch).
+- `src/main/services/meetings/context/` — pure preparation followed by commit/publication of live context changes (`session.ts`); Start-time meeting grounding lives in `grounding/`: `start-request.ts` (`StartRequest`: the renderer's `MeetingStartOptions` plus main-only `practice`), `start-grounding.ts` (`resolveStartGrounding`, the selected job's saved resume (none for Unsorted) plus the profile, resolved inside serialized Start for Live and Mock), `profile.ts` (`interviewProfileSnapshot`, Start selection of the Settings profile), `candidate-data.ts` (neutral escaping and delimited prompt framing for resume (`candidateFacts`) and Interview profile (`interviewProfileFacts`), so resume code and the profile never import each other), `meeting-facts.ts` (combines a `MeetingGrounding` into the candidate-facts block, resume first), `candidate-keyterms.ts` (STT term extraction/interleave for resume and profile, `candidateKeyterms`) and `meeting-keyterms.ts` (the STT hints, glossary plus resume/profile terms, for streaming and batch).
 - `src/main/services/meetings/status/` — live-meeting identity, post-processing guards (both expose `on…Change` signals via `change-signal.ts`, so the updates service re-broadcasts without polling) and `filing.ts` (historical job filing; refuses a live meeting).
 - `src/main/services/meetings/summary/` — meeting summaries, structured output handling and summary email; `presentation-history.ts` is the historical slide-marker formatting for summaries (presentation mode retired 2026-11-04).
 - `src/main/services/meetings/records/` — saved-meeting `export.ts` (Markdown export) and `remove.ts` (`removeMeeting`: row and recording).
@@ -294,7 +295,7 @@ handler (`system-audio.ts`); new main-process code belongs in a responsibility f
 - `src/main/services/jobs/applications/` — importing a job from a resumes interview pack: `application-import.ts` is the thin facade over `import/`; `map-pack.ts` maps a validated pack to job values (name, glossary normalization); `merge-preview.ts` is the pure three-way refresh comparison; `draft-fields.ts` is draft-at-import (create only) through `AssistantProvider`.
 - `src/main/services/jobs/applications/import/` — `listing.ts` row projection, `row-status.ts` linked-row status, `preview.ts` create/refresh preview, `preview-fields.ts` typed field values, `preview-session.ts` token payload + pack reload, `apply.ts` confirmed apply, `apply-values.ts` create-value and name resolution.
 - `src/main/services/jobs/applications/source/` — the read-only edge to the resumes project: `refresh-runner.ts` (runs its pack CLI), `pack-files.ts` (bounded, contained listing/reading of `.json` packs), `validate-pack.ts` (schema v1 + limits + `packFingerprint`) and `source-config.ts` (re-validated `resumesRoot`/node settings).
-- `src/main/services/jobs/resume/` — job resume: ingress validation (`resume.ts`), bounded PDF/DOCX parsing (`import-file.ts`, owner of bounded local reads and the offline parser lifecycle); term extraction lives beside `candidate-data.ts` in `meetings/context/candidate-keyterms.ts`, shared by resume and profile.
+- `src/main/services/jobs/resume/` — job resume: ingress validation (`resume.ts`), bounded PDF/DOCX parsing (`import-file.ts`, owner of bounded local reads and the offline parser lifecycle); term extraction lives beside `candidate-data.ts` in `meetings/context/grounding/candidate-keyterms.ts`, shared by resume and profile.
 - `src/main/services/jobs/resume/fixtures/` — the synthetic DOCX the import tests read.
 - `src/main/services/jobs/memory/` — job memory, and the one owner of its review rules: `source.ts` (eligible source, fingerprint, `proposalIsCurrent`), `generate.ts` (serialized per-job rewrites against the last approved revision; skip-if-unchanged and the stale/failed/pending settling; `enqueueMemory` after summaries), `review.ts` (get/save/approve/dismiss/retry and the view status rules such as stale and failed; IPC only validates shapes) and `prompts.ts`.
 - `src/main/services/history/` — FTS retrieval and grounded ask-your-history answers.
@@ -448,9 +449,9 @@ a separate check, rather than ordinary Vitest loading of `better-sqlite3`.
 
 - `shared/meeting/meeting-resume.ts` owns the text/name contract and limits (used for both the job's saved resume and the meeting snapshot).
 - `db/repos/job/job-resume.ts` (+ v11 `migrations/job-resume-schema.ts`) owns the job's saved resume; `ipc/jobs/resume/` exposes get/set and `resume-import.ts`, the native PDF/DOCX picker; the renderer never supplies a filesystem path.
-- `services/meetings/context/start-grounding.ts` is the one place Start reads the job resume; nothing else reads `job_resumes` for a meeting.
+- `services/meetings/context/grounding/start-grounding.ts` is the one place Start reads the job resume; nothing else reads `job_resumes` for a meeting.
 - `main/services/jobs/resume/import-file.ts` owns bounded local reads and offline parser lifecycle.
-- `main/services/jobs/resume/` owns validation (run once, at IPC ingress), only (no framing or term extraction: candidate-fact framing lives in `meetings/context/candidate-data.ts`, terminology extraction in `meetings/context/candidate-keyterms.ts`).
+- `main/services/jobs/resume/` owns validation (run once, at IPC ingress), only (no framing or term extraction: candidate-fact framing lives in `meetings/context/grounding/candidate-data.ts`, terminology extraction in `meetings/context/grounding/candidate-keyterms.ts`).
 - `db/migrations/meeting-resume-schema.ts` owns append-only v9 SQL and the immutable-update guard; `createMeeting` persists the text in its one transaction. The resume is not on the `Meeting` row: `getMeetingGrounding(id).resume` is the only read (`MeetingView` via `meetings.getResume`).
 - `app/jobs/resume/JobResume.tsx` owns the job editor (draft, import, explicit Save resume); `MeetingView` shows a meeting's saved text read-only. Live/Mock setup have no resume input.
 - `MeetingPrompts` attaches candidate facts to the meeting's one system prompt before saving grounding. `meetingKeyterms` builds one ordered hint list for streaming and batch STT; the provider applies its own limits.
@@ -462,7 +463,7 @@ a separate check, rather than ordinary Vitest loading of `better-sqlite3`.
   merge refusal guard, the practice `noResume` cue and the no-biography prompt fallback all read that
   snapshot; `meetings/index.ts` keeps no resume/profile cache.
 - `config/settings.ts` + `settings-schema.ts` own the mutable profile and its validation; main resolves it at
-  Start (`context/profile.ts`: applies for Mock, an explicit Interview toggle, or a saved job resume) and
+  Start (`context/grounding/profile.ts`: applies for Mock, an explicit Interview toggle, or a saved job resume) and
   hands `createMeeting` a `MeetingCreateInput`. A `StartRequest` from the renderer carries neither a
   profile nor a resume.
 - `lib/meeting/start/start-selection.ts` (`interviewChecked`) shows the job-resume default unless the user chose;

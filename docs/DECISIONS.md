@@ -231,7 +231,7 @@ attached at every Start, including Unsorted). Plan: `docs/plans/job-resume.md`.
   text, never the binary or path). Edited on the job's own **Resume** tab with an explicit
   **Save resume**, like Presentation; the header Save does not cover it. No row = no resume.
 - **Snapshotted at Start.** Main reads the selected job's saved resume inside serialized Start
-  (`context/start-grounding.ts`) and copies it onto the meeting through the unchanged v9 columns
+  (`context/grounding/start-grounding.ts`) and copies it onto the meeting through the unchanged v9 columns
   and immutability trigger. Editing or removing the job's resume affects only later meetings;
   live, paused and past meetings keep theirs. Live and Mock share this path; neither Start
   accepts an attachment any more.
@@ -296,7 +296,7 @@ Resume and Interview profile are two snapshots of the same idea: what the user c
 themselves in this meeting. They are read together by `getMeetingGrounding(id)` (`{ resume, interviewProfile,
 hasBiography }`) and every consumer (STT hints, candidate facts, re-diarize, merge guard, status cue, prompt
 fallback) uses it, so "no biography" has one definition and the service holds no resume/profile caches.
-Escaping/framing live in neutral `context/candidate-data.ts` so the two artifacts do not import each other.
+Escaping/framing live in neutral `context/grounding/candidate-data.ts` so the two artifacts do not import each other.
 Rejected: keeping per-artifact getters plus caches in `meetings/index.ts` (two sources of truth, drift risk).
 A renderer-facing `StartRequest` is separate from the main-resolved `MeetingCreateInput`, so a renderer-supplied
 profile is unrepresentable.

@@ -513,7 +513,7 @@ meeting/status broadcast; Live only asks `getResume` for availability (Interview
 Start carries no resume. `meeting.start(jobId, channels, { interview?, meetingContext? })` and
 `mockInterview.start(plan, jobId, channels)` both reach `startMeeting`, which, inside the
 serialized Start and with no await before `createMeeting`, calls
-`resolveStartGrounding` (`services/meetings/context/start-grounding.ts`): the selected job's
+`resolveStartGrounding` (`services/meetings/context/grounding/start-grounding.ts`): the selected job's
 saved resume (none when no job was chosen) and the Interview profile (`practice || (interview ?? hasSavedResume)`);
 `startMeeting` then files the meeting under `jobId ?? ensureDefaultJob()` (the Unsorted bucket).
 Live state exposes a small `noResume` cue for practice sessions with neither resume nor profile.

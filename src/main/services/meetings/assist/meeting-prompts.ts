@@ -1,7 +1,7 @@
 import { buildCoverageCatalog } from '../../assistant/coach/coverage/catalog'
 import { getApprovedMemory, ordinaryJob } from '../../../db/repos/job/memory/approved'
 import { getMeetingGrounding } from '../../../db/repos/meeting/meeting-grounding'
-import { meetingCandidateFacts } from '../context/meeting-facts'
+import { meetingCandidateFacts } from '../context/grounding/meeting-facts'
 import type { MeetingContext } from '@shared/live-controls/types'
 import { getJob } from '../../../db/repos/job/jobs'
 import { listGlossary } from '../../../db/repos/job/glossary'

@@ -1,7 +1,10 @@
 import { expect, it } from 'vitest'
 import { validateResume } from './resume'
-import { candidateFacts } from '../../meetings/context/candidate-data'
-import { candidateKeyterms, interleaveKeyterms } from '../../meetings/context/candidate-keyterms'
+import { candidateFacts } from '../../meetings/context/grounding/candidate-data'
+import {
+  candidateKeyterms,
+  interleaveKeyterms,
+} from '../../meetings/context/grounding/candidate-keyterms'
 
 it('validates text without silently truncating candidate facts', () => {
   expect(validateResume({ name: 'Pasted text', text: '  Camunda engineer  ' })).toEqual({

@@ -1,4 +1,4 @@
-import { meetingKeyterms } from '../../context/meeting-keyterms'
+import { meetingKeyterms } from '../../context/grounding/meeting-keyterms'
 import { getMeetingGrounding } from '../../../../db/repos/meeting/meeting-grounding'
 import { existsSync } from 'fs'
 import { loadSettings } from '../../../../config/settings'

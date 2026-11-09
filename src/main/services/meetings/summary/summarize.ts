@@ -1,6 +1,6 @@
 import { enqueueMemory } from '../../jobs/memory/generate'
 import { getMeetingGrounding } from '../../../db/repos/meeting/meeting-grounding'
-import { meetingCandidateFacts } from '../context/meeting-facts'
+import { meetingCandidateFacts } from '../context/grounding/meeting-facts'
 import { getMeetingContext } from '../../../db/repos/meeting/meeting-context'
 import { meetingContextBlock } from '../../assistant/live-controls/prompts'
 import type { Meeting } from '@shared/types'
