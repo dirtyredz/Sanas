@@ -148,6 +148,16 @@ function silentLoopbackWithMicSpeech(ms: number): Buffer {
 }
 
 describe('meeting capture health', () => {
+  it('retains sub-millisecond capture positions when opening a resumed session', async () => {
+    await startMeeting(5, 1)
+    sendAudioChunk(Buffer.alloc(2))
+    await pauseMeeting()
+    await resumeMeeting(1)
+    expect(sttProvider.start).toHaveBeenLastCalledWith(
+      expect.objectContaining({ startOffsetMs: 0.0625 }),
+    )
+    await stopMeeting()
+  })
   it('pin → outage → buffered audio → reconnect → re-pin preserves history and records once', async () => {
     vi.useFakeTimers()
     FakeSocket.instances = []
@@ -225,7 +235,7 @@ describe('meeting capture health', () => {
         tEndMs: 2500,
       })
       expect(rows[2]).toMatchObject({ speaker: 2, isUser: false })
-      first.message(result('Stale session'))
+      second.message(result('Stale session'))
       expect(rows).toHaveLength(3)
       expect(() => pinSpeaker(999, true)).toThrow('current meeting')
     } finally {

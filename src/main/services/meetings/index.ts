@@ -459,7 +459,7 @@ export function resumeMeeting(channels: ChannelCount): Promise<MeetingState> {
     }
     try {
       resetSpeakerConnection()
-      session = await openSession(meetingId, deepgramApiKey, Math.round(audioMsReceived))
+      session = await openSession(meetingId, deepgramApiKey, audioMsReceived)
     } catch (e) {
       session = null
       return setState({
