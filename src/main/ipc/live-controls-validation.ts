@@ -1,5 +1,5 @@
 import type { ContextUpdate, ManualRequest } from '@shared/live-controls/types'
-import { MEETING_CONTEXT_MAX_CHARS } from '@shared/meeting-context'
+import { requireMeetingContextText } from '@shared/meeting-context'
 import { requireId } from './validate'
 import { requireCaptureToken } from './screen-capture-validation'
 import type { SuggestionVisibility } from '@shared/live-controls/visibility'
@@ -37,7 +37,7 @@ export function requireContextUpdate(raw: unknown): ContextUpdate {
   return {
     meetingId: requireId(r.meetingId, 'meetingId'),
     expectedRevision: revision(r.expectedRevision),
-    text: text(r.text, MEETING_CONTEXT_MAX_CHARS),
+    text: requireMeetingContextText(r.text),
   }
 }
 export function requireManualRequest(raw: unknown): ManualRequest {

@@ -36,6 +36,5 @@ export function getPresentationHistory(id: number): PresentationHistory {
       'SELECT revision, deck_version AS deckVersion, ordinal, t_ms AS tMs FROM meeting_slide_events WHERE meeting_id = ? ORDER BY t_ms, revision',
     )
     .all(id) as SlideEvent[]
-  const latest = rows.at(-1)?.version
-  return { slides: latest === undefined ? [] : versions[latest], events, versions }
+  return { events, versions }
 }

@@ -8,7 +8,7 @@ it('keeps active excerpt marker and trailing moves, using only titles rather tha
     keyFacts: '',
   }))
   const history = {
-    slides,
+    versions: { 0: slides },
     events: [
       { ordinal: 0, revision: 1, tMs: 0 },
       { ordinal: 1, revision: 2, tMs: 100 },

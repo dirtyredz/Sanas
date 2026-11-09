@@ -3,14 +3,16 @@ import type { AssistRequest } from '../../assistant/types'
 const f = vi.hoisted(() => ({
   request: null as AssistRequest | null,
   history: {
-    slides: [
-      {
-        title: 'Recorded title',
-        talkingPoint: 'prepared',
-        script: 'UNSPOKEN_SCRIPT',
-        keyFacts: '',
-      },
-    ],
+    versions: {
+      0: [
+        {
+          title: 'Recorded title',
+          talkingPoint: 'prepared',
+          script: 'UNSPOKEN_SCRIPT',
+          keyFacts: '',
+        },
+      ],
+    },
     events: [{ ordinal: 0, revision: 1, tMs: 0 }],
   },
 }))
@@ -42,6 +44,7 @@ vi.mock('../../../db/repos/meeting/meeting-context', () => ({
 }))
 vi.mock('../../../db/repos/meeting/meeting-presentation', () => ({
   getPresentationHistory: () => f.history,
+  hasLegacySlides: () => true,
 }))
 vi.mock('../status/post-processing', () => ({
   whilePostProcessing: (_id: number, run: () => Promise<unknown>) => run(),

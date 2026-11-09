@@ -18,8 +18,6 @@ export interface SlideEvent {
 
 export interface PresentationHistory {
   /** Every recorded deck version, keyed by version number. */
-  versions?: Record<number, Slide[]>
-  /** The latest recorded deck version (fallback for events without a version). */
-  slides: Slide[]
+  versions: Record<number, Slide[]>
   events: SlideEvent[]
 }

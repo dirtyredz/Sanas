@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { PresentationHistory } from '@shared/presentation/types'
 
-const EMPTY: PresentationHistory = { slides: [], events: [] }
+const EMPTY: PresentationHistory = { events: [], versions: {} }
 
 /** Loads a saved meeting's slide history; `onError` reports a failed load as text. */
 export function usePresentationHistory(

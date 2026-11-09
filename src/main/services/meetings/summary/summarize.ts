@@ -19,7 +19,10 @@ import {
   type TranscriptLine,
 } from '../../assistant/prompts'
 import { splitSummaryOutput } from './summary-output'
-import { getPresentationHistory } from '../../../db/repos/meeting/meeting-presentation'
+import {
+  getPresentationHistory,
+  hasLegacySlides,
+} from '../../../db/repos/meeting/meeting-presentation'
 import { presentationTranscript, SLIDE_SUMMARY_INSTRUCTION } from '../presentation/history'
 import { SUMMARY_CHARS } from '../../assistant/prompts'
 
@@ -89,7 +92,7 @@ export async function summarizeStoredMeeting(meetingId: number): Promise<Meeting
   if (!loadSettings().anthropicApiKey) throw new Error('Anthropic API key is not set.')
   // same job context the live meeting would have had, rebuilt from the DB
   const job = getJob(meeting.jobId)
-  const presentation = getPresentationHistory(meetingId).slides.length > 0
+  const presentation = hasLegacySlides(meetingId)
   const systemPrompt =
     buildSystemPrompt(
       presentation && job ? { ...job, talkingPoints: '' } : job,

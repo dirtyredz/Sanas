@@ -285,7 +285,7 @@ sanas/
 - `src/renderer/public/` — AudioWorklet processors and other unbundled assets
 - `src/shared/` — types shared by main, preload and renderer
 - `src/shared/presentation/` — historical slide/event/history contracts and timeline ordering (read-only since 2026-11-04)
-- `src/shared/meeting-start.ts` — `MeetingStartOptions` (`interview?`, `meetingContext?`); `src/shared/meeting-context.ts` — the 20,000-character context limit
+- `src/shared/meeting-start.ts` — `MeetingStartOptions` (`interview?`, `meetingContext?`); `src/shared/meeting-context.ts` — the 20,000-character context limit and `requireMeetingContextText`, the one validator Start, Apply and rehearsal scenarios share
 - `src/shared/hotkeys/` — global shortcut action and registration-status contracts
 - `src/shared/live-controls/` — meeting-context, manual-admission, suggestion metadata and screen-capture contracts; `visibility.ts` is the renderer-to-main `SuggestionVisibility` acknowledgement (a commit/frame proxy, not paint), and `readable-suggestion.ts` (`NO_SUGGESTION`, `isNoSuggestion`, `hasReadableText`) is the one definition of a readable suggestion, used by main's first-readable stamp and the overlay's `useSuggestionVisibilityAck`
 - `src/shared/updates/` — renderer-safe update state and operation contracts

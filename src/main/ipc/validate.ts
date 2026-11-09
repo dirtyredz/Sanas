@@ -1,6 +1,6 @@
 import type { Job, OverlayResizeRequest, Settings } from '@shared/types'
 import { SETTINGS_SCHEMA } from '../config/settings-schema'
-import { MEETING_CONTEXT_MAX_CHARS } from '@shared/meeting-context'
+import { requireMeetingContextText } from '@shared/meeting-context'
 import type { MeetingStartOptions } from '@shared/meeting-start'
 import {
   JOB_CONTEXT_MAX_CHARS,
@@ -127,13 +127,7 @@ export function requireMeetingStart(raw: unknown): MeetingStartOptions {
     if (typeof r.interview !== 'boolean') throw new Error('Invalid interview choice.')
     out.interview = r.interview
   }
-  if (r.meetingContext !== undefined) {
-    if (typeof r.meetingContext !== 'string') throw new Error('Meeting context must be text.')
-    if (r.meetingContext.length > MEETING_CONTEXT_MAX_CHARS)
-      throw new Error(
-        `Meeting context must be at most ${MEETING_CONTEXT_MAX_CHARS.toLocaleString('en-US')} characters.`,
-      )
-    out.meetingContext = r.meetingContext
-  }
+  if (r.meetingContext !== undefined)
+    out.meetingContext = requireMeetingContextText(r.meetingContext)
   return out
 }

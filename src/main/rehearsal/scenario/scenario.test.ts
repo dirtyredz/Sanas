@@ -51,9 +51,9 @@ describe('versioned scenarios', () => {
       'Maya owns rollout',
     )
     expect(() => parseScenario({ ...s, meetingContext: 'x'.repeat(20001) })).toThrow(
-      'meetingContext',
+      'Meeting context must be text',
     )
-    expect(() => parseScenario({ ...s, meetingContext: 5 })).toThrow('meetingContext')
+    expect(() => parseScenario({ ...s, meetingContext: 5 })).toThrow('Meeting context must be text')
   })
   it('checks that meeting context reached answer and next-point requests', () => {
     const s = parseScenario(valid())

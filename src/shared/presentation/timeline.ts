@@ -20,8 +20,7 @@ export function presentationTimeline<T extends { tStartMs?: number }>(
       title:
         event.ordinal === null
           ? 'Slides cleared'
-          : ((history.versions?.[event.deckVersion ?? 0] ?? history.slides)[event.ordinal]?.title ??
-            ''),
+          : (history.versions[event.deckVersion ?? 0]?.[event.ordinal]?.title ?? ''),
       tMs: event.tMs,
     })),
   )

@@ -14,18 +14,17 @@ it('orders ties before speech without splitting spanning segments and keeps trai
     { ordinal: 1, revision: 4, tMs: 100 },
   ]
   const rows = presentationTimeline([{ tStartMs: 0, tEndMs: 10, text: 'whole' }], {
-    slides,
+    versions: { 0: slides },
     events,
   })
   expect(rows.map((r) => r.kind)).toEqual(['slide', 'segment', 'slide', 'slide', 'slide'])
   expect(rows.filter((r) => r.kind === 'slide').map((r) => r.event.revision)).toEqual([1, 2, 3, 4])
-  expect(presentationTimeline([], { slides: [], events: [] })).toEqual([])
+  expect(presentationTimeline([], { events: [], versions: {} })).toEqual([])
 })
 
 it('resolves old titles by deck version and keeps equal-time clear events ordered', () => {
   const slide = (title: string) => ({ title, talkingPoint: title, script: '', keyFacts: '' })
   const rows = presentationTimeline([{ tStartMs: 5 }], {
-    slides: [],
     versions: { 0: [slide('old')], 1: [slide('edited')], 2: [] },
     events: [
       { deckVersion: 0, ordinal: 0, revision: 1, tMs: 0 },

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
-import { MEETING_CONTEXT_MAX_CHARS } from '../../../shared/meeting-context'
+import { requireMeetingContextText } from '../../../shared/meeting-context'
 import { rubrics, type Rubric } from './semantics'
 
 export type Fault =
@@ -188,12 +188,7 @@ export function parseScenario(value: unknown): Scenario {
     if (e.assistant !== undefined && !['canned', 'claude'].includes(String(e.assistant)))
       throw new Error('Invalid expectation assistant')
   }
-  if (s.meetingContext !== undefined) {
-    if (typeof s.meetingContext !== 'string' || s.meetingContext.length > MEETING_CONTEXT_MAX_CHARS)
-      throw new Error(
-        `meetingContext must be text of at most ${MEETING_CONTEXT_MAX_CHARS} characters`,
-      )
-  }
+  if (s.meetingContext !== undefined) requireMeetingContextText(s.meetingContext)
   return s as unknown as Scenario
 }
 

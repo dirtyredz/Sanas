@@ -4,5 +4,5 @@ import type { PresentationHistory } from '@shared/presentation/types'
 const histories = new Map<number, PresentationHistory>()
 
 export const mockPresentation: Window['sanas']['presentation'] = {
-  getHistory: async (id) => structuredClone(histories.get(id) ?? { slides: [], events: [] }),
+  getHistory: async (id) => structuredClone(histories.get(id) ?? { events: [], versions: {} }),
 }

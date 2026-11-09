@@ -46,7 +46,6 @@ it('reads every recorded deck version and orders events by time, then revision',
     1: [expect.objectContaining({ title: 'Revised intro' })],
     2: [],
   })
-  expect(history.slides).toEqual([]) // the latest version was a clear
   expect(history.events.map((e) => e.revision)).toEqual([1, 2, 3, 4])
   const markers = presentationTimeline([{ tStartMs: 5000, text: 'spoken' }], history).map((row) =>
     row.kind === 'slide' ? slideMarker(row.event, row.title) : row.segment.text,
@@ -63,6 +62,6 @@ it('reads every recorded deck version and orders events by time, then revision',
 
 it('treats the version-0 bookkeeping row alone as no history', () => {
   const id = createMeeting(createJob('A').id, 'Plain', { meetingContext: 'notes' })
-  expect(getPresentationHistory(id)).toEqual({ slides: [], events: [], versions: { 0: [] } })
+  expect(getPresentationHistory(id)).toEqual({ events: [], versions: { 0: [] } })
   expect(hasLegacySlides(id)).toBe(false)
 })
