@@ -1,5 +1,4 @@
-import { mockMemoryCounts, removeMockMemory } from './memory/mock-memory'
-// Browser-preview mocks for job deletion and New job from application.
+// Browser-preview mock for New job from application / Refresh from application.
 import type { MeetingResume } from '@shared/meeting-resume'
 import {
   STALE_PREVIEW_MESSAGE,
@@ -14,16 +13,10 @@ import {
   type PreviewField,
   type PreviewValue,
 } from '@shared/jobs/applications'
-import type {
-  JobDeletionCounts,
-  JobDeletionPreview,
-  JobDeletionResult,
-} from '@shared/jobs/deletion'
-import { glossary, jobs, meetings, samplePacks, segments, suggestions } from './mock-fixtures'
+import { glossary, jobs, samplePacks } from '../mock-fixtures'
 
 type SanasApi = Window['sanas']
 
-const deletionTokens = new Map<string, { jobId: number; counts: JobDeletionCounts }>()
 const previewTokens = new Map<string, ApplicationPreview>()
 
 /** A typed preview value built from the mock's plain strings. */
@@ -48,31 +41,6 @@ function plainValue(value: PreviewValue): string {
   return value.text
 }
 
-function removeFrom<T>(items: T[], match: (item: T) => boolean): void {
-  for (let i = items.length - 1; i >= 0; i--) if (match(items[i])) items.splice(i, 1)
-}
-
-function countJobDeletion(
-  jobId: number,
-  jobResumes: Map<number, MeetingResume>,
-): JobDeletionCounts {
-  const own = meetings.filter((m) => m.jobId === jobId)
-  const ids = new Set(own.map((m) => m.id))
-  return {
-    meetings: own.filter((m) => !m.practice).length,
-    practiceSessions: own.filter((m) => m.practice).length,
-    transcriptSegments: segments.filter((s) => ids.has(s.meetingId)).length,
-    summaries: own.filter((m) => !!m.summary).length,
-    suggestions: suggestions.filter((s) => ids.has(s.meetingId)).length,
-    recordings: own.filter((m) => !!m.audioPath).length,
-    glossaryTerms: glossary.filter((g) => g.jobId === jobId).length,
-    resumes: jobResumes.has(jobId) ? 1 : 0,
-    applicationLinks: jobs.find((j) => j.id === jobId)?.applicationId ? 1 : 0,
-    ...mockMemoryCounts(jobId),
-    legacySlides: 0,
-  }
-}
-
 /** One listing row for a sample pack, linked to whichever job carries its application ID. */
 function applicationRow(applicationId: string, status: ApplicationRowStatus): ApplicationSummary {
   const pack = samplePacks[applicationId]
@@ -89,63 +57,6 @@ function applicationRow(applicationId: string, status: ApplicationRowStatus): Ap
     archived: job?.archived ?? false,
     error: null,
     retryable: false,
-  }
-}
-
-export function mockJobDeletion(
-  jobResumes: Map<number, MeetingResume>,
-): Pick<SanasApi['jobs'], 'deletePreview' | 'delete'> {
-  return {
-    deletePreview: async (jobId): Promise<JobDeletionPreview> => {
-      const job = jobs.find((j) => j.id === jobId)
-      const counts = countJobDeletion(jobId, jobResumes)
-      if (!job) {
-        return {
-          jobId,
-          jobName: '',
-          counts,
-          blocked: { reason: 'missing', message: 'That job no longer exists.' },
-          token: null,
-        }
-      }
-      if (job.id === 1 || job.name === 'Unsorted') {
-        return {
-          jobId,
-          jobName: job.name,
-          counts,
-          blocked: {
-            reason: 'protected',
-            message: 'Unsorted holds meetings started without a job, so it cannot be deleted.',
-          },
-          token: null,
-        }
-      }
-      const token = crypto.randomUUID()
-      deletionTokens.set(token, { jobId, counts })
-      return { jobId, jobName: job.name, counts, blocked: null, token }
-    },
-    delete: async (token): Promise<JobDeletionResult> => {
-      const pending = deletionTokens.get(token)
-      deletionTokens.delete(token)
-      if (!pending) {
-        return {
-          status: 'stale',
-          message: 'This job changed since you confirmed — review the counts again.',
-        }
-      }
-      const { jobId, counts } = pending
-      removeFrom(jobs, (j) => j.id === jobId)
-      removeFrom(meetings, (m) => m.jobId === jobId)
-      removeFrom(glossary, (g) => g.jobId === jobId)
-      jobResumes.delete(jobId)
-      removeMockMemory(jobId)
-      return {
-        status: 'deleted',
-        backupPath:
-          'C:\\Users\\you\\AppData\\Roaming\\sanas\\backups\\before-job-delete-preview.db',
-        removed: counts,
-      }
-    },
   }
 }
 

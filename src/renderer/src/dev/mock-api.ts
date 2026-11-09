@@ -22,7 +22,8 @@ import {
   speakerNames,
   suggestions,
 } from './mock-fixtures'
-import { mockJobApplications, mockJobDeletion } from './mock-jobs'
+import { mockJobApplications } from './jobs/mock-job-applications'
+import { mockJobDeletion } from './jobs/mock-job-deletion'
 import { mockLiveControls } from './mock-live-controls'
 import {
   emit,
