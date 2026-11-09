@@ -21,6 +21,7 @@ import { CoachPolicy } from '../../assistant/coach/coach-policy'
 import { speakerLabel } from '../../turns/transcript-format'
 import type { SuggestionHandle, SuggestionRunner } from './suggestion-runner'
 import { SpeculativeAnswer } from './speculative-answer'
+import { ClassifierBreaker } from './classifier/classifier-breaker'
 import {
   answerNowRequest,
   automaticAnswerRequest,
@@ -55,9 +56,6 @@ import {
 
 export const CANDIDATE_LIFETIME_MS = 6_000
 export const CLASSIFIER_SPACING_MS = 1_000
-export const CLASSIFIER_SUSPEND_MS = 30_000
-/** One slow or failed check fails closed for its own turn; this many in a row suspend. */
-export const CLASSIFIER_SUSPEND_AFTER = 3
 /** New speech must pass the candidate's end by this much to count as "after" it. */
 const AFTER_TOLERANCE_MS = 250
 /** A user final this short ("yeah", "good question") is not the user answering yet. */
@@ -145,30 +143,20 @@ export class LiveAssistance {
   private queued: Candidate | null = null
   private ready: Candidate | null = null
   private lastClassifierStartAt: number | null = null
-  private suspensionTimer: unknown
+  private breaker: ClassifierBreaker
   automaticUnavailable(): boolean {
-    return this.active && this.deps.now() < this.suspendedUntil
+    return this.active && this.breaker.suspended()
   }
-  private clearSuspension(): void {
-    if (this.suspensionTimer !== undefined) this.deps.clearTimer(this.suspensionTimer)
-    this.suspensionTimer = undefined
-    this.suspendedUntil = 0
-    this.classifierFailures = 0
-    this.deps.availabilityChanged?.()
-  }
-  private suspendedUntil = 0
-  /** Consecutive provider/timeout classifier failures; a success resets it. */
-  private classifierFailures = 0
   private lastAnswerAt: number | null = null
   private coachRun: SuggestionHandle | null = null
   private timers = new Map<TimerName, unknown>()
-  private lastFailureLogAt = Number.NEGATIVE_INFINITY
   private classifierAttempts = 0
 
   private speculation: SpeculativeAnswer
 
   constructor(private deps: LiveAssistanceDeps) {
     this.speculation = new SpeculativeAnswer(deps.runner)
+    this.breaker = new ClassifierBreaker(deps)
   }
 
   // ── lifecycle ──────────────────────────────────────────────────────────────────────
@@ -183,7 +171,7 @@ export class LiveAssistance {
       this.lastQuestion = null
       this.lastAnswerAt = null
       this.lastClassifierStartAt = null
-      this.clearSuspension()
+      this.breaker.reset()
     })
   }
 
@@ -192,7 +180,7 @@ export class LiveAssistance {
   halt(): void {
     this.guard(() => {
       this.active = false
-      this.clearSuspension()
+      this.breaker.reset()
       this.invalidate('stop-or-pause')
       const c = this.speculation.takeCounts()
       if (c) {
@@ -403,13 +391,13 @@ export class LiveAssistance {
     const s = this.deps.settings()
     if (
       this.expired(c, now) ||
-      now < this.suspendedUntil ||
+      this.breaker.suspended() ||
       !s.anthropicApiKey ||
       !answerCooldownAllows(this.lastAnswerAt, now, s.nudgeCooldownSec)
     ) {
       const reason = this.expired(c, now)
         ? 'expired'
-        : now < this.suspendedUntil
+        : this.breaker.suspended()
           ? 'suspended'
           : !s.anthropicApiKey
             ? 'no-key'
@@ -517,29 +505,9 @@ export class LiveAssistance {
     if (this.classifying === c) this.classifying = null
     let accepted = false
     if (live) {
-      if (outcome.status === 'classified') this.classifierFailures = 0
+      if (outcome.status === 'classified') this.breaker.recordSuccess()
       if (outcome.status === 'failed') {
-        let suspended = false
-        if (outcome.reason === 'provider' || outcome.reason === 'timeout') {
-          this.classifierFailures++
-          if (this.classifierFailures >= CLASSIFIER_SUSPEND_AFTER) {
-            suspended = true
-            this.suspendedUntil = this.deps.now() + CLASSIFIER_SUSPEND_MS
-            this.deps.availabilityChanged?.()
-            if (this.suspensionTimer !== undefined) this.deps.clearTimer(this.suspensionTimer)
-            this.suspensionTimer = this.deps.setTimer(
-              () => this.clearSuspension(),
-              CLASSIFIER_SUSPEND_MS,
-            )
-            this.deps.log(
-              `turn classifier ${this.classifierFailures} consecutive failures; automatic answers suspended ${CLASSIFIER_SUSPEND_MS / 1000}s`,
-            )
-          }
-        }
-        if (!suspended)
-          this.logFailure(
-            `turn classifier ${outcome.reason}; failing closed (${this.classifierFailures} consecutive) ${JSON.stringify(outcome.diagnostic ?? {})}`,
-          )
+        this.breaker.recordFailure(outcome.reason, outcome.diagnostic)
       } else if (willAnswer) {
         // put to someone else: not Me's to answer. Me or the room: the prompt says which.
         c.kind = outcome.kind
@@ -774,13 +742,6 @@ export class LiveAssistance {
     this.cancelCoach()
     this.assembler.reset()
     this.coach.resetEpisode()
-  }
-
-  private logFailure(message: string): void {
-    const now = this.deps.now()
-    if (now - this.lastFailureLogAt < CLASSIFIER_SUSPEND_MS) return
-    this.lastFailureLogAt = now
-    this.deps.log(message) // never transcript text
   }
 
   /** Observation with a source stamp; never a decision. */
