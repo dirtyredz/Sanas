@@ -5,7 +5,7 @@
 
 import type { SuggestionPurpose } from '@shared/types'
 import type { ManualKind } from '@shared/live-controls/types'
-import { rememberHeadline } from '../compact-contract'
+import { rememberHeadline } from '../contracts/compact-contract'
 import { rememberStory, tellsStory, type ToldStory } from './told-stories'
 
 export interface ShownSuggestion {

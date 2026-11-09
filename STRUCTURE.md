@@ -93,9 +93,11 @@ sanas/
 │   │   │   │   └── deepgram/               # Deepgram provider, session, event normalization, watchdog, stream URL
 │   │   │   │       └── recovery/               # bounded PCM backlog and fake-socket test support
 │   │   │   ├── turns/                      # pure completed-turn assembly, transcript formatting/windowing
-│   │   │   ├── assistant/                  # prompts, triggers, shared types and answer logic
+│   │   │   ├── assistant/                  # the assistant seam: shared types (`types.ts`, the neutral vocabulary) and answer logic
+│   │   │   │   ├── prompts/                # system/answer prompt builders (`prompts.ts`) and `boundedExcerpt`
+│   │   │   │   ├── contracts/              # output contracts: compact overlay contract, completion result, grounding-contract test
 │   │   │   │   ├── answer-context/         # answer prompt context and the per-meeting shown memories: window split, anchor text, told stories, ShownLedger
-│   │   │   │   ├── classifier/             # turn classifier, verdict parsing, failure diagnostics
+│   │   │   │   ├── classifier/             # turn classifier, local trigger prefilter, verdict parsing, failure diagnostics
 │   │   │   │   ├── provider/               # AssistantProvider seam, Claude implementation (the only Anthropic SDK importer)
 │   │   │   │   ├── coach/                  # next-point policy and prompts
 │   │   │   │   │   └── coverage/           # frozen job-point catalog and quoted-speech ledger
@@ -250,9 +252,11 @@ handler (`system-audio.ts`); new main-process code belongs in a responsibility f
 - `src/main/services/stt/deepgram/` — the Deepgram implementation behind the seam: provider and batch (`deepgram.ts`), socket lifecycle and PCM-anchored clock (`deepgram-session.ts`, `DeepgramSession`), stall watchdog (`deepgram-watchdog.ts`), stream URL (`deepgram-stream-url.ts`) and message normalization (`deepgram-events.ts`); only `stt/index.ts` (and the rehearsal runner's dynamic import) reach it.
 - `src/main/services/stt/deepgram/recovery/` — reconnect continuity: the bounded PCM FIFO (`pcm-backlog.ts`) and the fake socket recovery tests use.
 - `src/main/services/turns/` — pure turn assembly and identity-role types; no I/O or timers; `latest-question.ts` picks the question Answer now answers; `transcript-format.ts` is the canonical main-side transcript labels/windowing.
-- `src/main/services/assistant/` — the swappable assistant seam and shared answer/classification logic.
+- `src/main/services/assistant/` — the swappable assistant seam and shared answer/classification logic. `types.ts` (`AssistantProvider`, `AssistRequest`, usage/timing types) stays at this root as the neutral vocabulary every sub-home imports.
+- `src/main/services/assistant/prompts/` — `prompts.ts` (system prompt, answer profiles, `buildUserContent`, history and stored-meeting summary prompts) and `excerpt.ts` (`boundedExcerpt`, keeps a long text's opening and ending). Request-specific instruction text lives in `live-controls/` and `coach/`.
+- `src/main/services/assistant/contracts/` — what an answer must look like and how a result is judged: `compact-contract.ts` (the overlay contract, no-op prefix test, recent-headline memory), `completion-result.ts` (stop-reason handling, `TokenBudgetError`) and `grounding-contract.test.ts` (cross-prompt grounding wording).
 - `src/main/services/assistant/answer-context/` — `automatic-turn.ts` owns the neutral automatic focus block and `TriggeringTurn`; answer prompt context and the per-meeting memories of what was already shown (so it also feeds the coach's recent headlines): current-exchange/background window split, anchor text (`anchor.ts`: `CURRENT_QUESTION_RULE`, `ANCHOR_REMINDER`, `LatestQuestion`), told stories, `ShownLedger` (`shown-ledger.ts`: the one place a shown suggestion is routed into the recent/told/coach memories, used by `LiveSession` and the eval), and `topic-switch-fixture.ts` (invented data + window builder; scoring lives in `scripts/eval/carried-terms.ts`).
-- `src/main/services/assistant/classifier/` — the turn classifier (`classifier.ts`), pure tolerant-but-conservative verdict parsing (`classifier-verdict.ts`: canonical `formatVerdict`, `isAcceptedVerdict` and the one `CLASSIFIER_FAILURE_REASONS` list and content-free malformed shapes) and `failure-diagnostics.ts` (allowlists provider failure metadata for classifier diagnostics: category incl. `connection`, error class `errorName`, status, request ID, model, elapsed; the assistance coordinator owns the suspension timer and publishes availability through MeetingState).
+- `src/main/services/assistant/classifier/` — the turn classifier (`classifier.ts`), pure tolerant-but-conservative verdict parsing (`classifier-verdict.ts`: canonical `formatVerdict`, `isAcceptedVerdict` and the one `CLASSIFIER_FAILURE_REASONS` list and content-free malformed shapes) `triggers.ts` (the deliberately loose local prefilter that decides whether a finished turn is worth a classifier call, plus the answer-cooldown decision) and `failure-diagnostics.ts` (allowlists provider failure metadata for classifier diagnostics: category incl. `connection`, error class `errorName`, status, request ID, model, elapsed; the assistance coordinator owns the suspension timer and publishes availability through MeetingState).
 - `src/main/services/assistant/provider/` — the `AssistantProvider` seam (`provider.ts`), the Claude implementation (`claude.ts`), `claude-usage.ts` (extracts Anthropic usage into `ProviderUsage`; missing = unknown), provider-neutral `provider-evidence.ts` (`reportUsage`/`reportTiming`) and `provider-error.ts` (the neutral failure category a provider tags on its transport errors; failure-diagnostics reads it, never vendor class names); the only home that imports `@anthropic-ai/sdk`.
 - `src/main/services/assistant/coach/` — next-point eligibility policy and coach prompt construction.
 - `src/main/services/assistant/coach/coverage/` — the frozen job-point catalog (`catalog.ts`) and the bounded quoted user-speech ledger (`ledger.ts`) behind coach evidence.
@@ -418,7 +422,7 @@ a separate check, rather than ordinary Vitest loading of `better-sqlite3`.
   Anthropic settings fields. Callers ask `assistReady(s)` and spread `providerCredentials(s)` rather
   than reading `anthropicApiKey`/`anthropicWorkspaceId`, but model names (`nudgeModel`, `answerModel`,
   `classifierModel`) are still Anthropic ids; a second provider widens `AssistSettings`, not the coordinators.
-- `services/assistant/` is broad (six loose files plus five subfolders): prompts/ and contracts/ groupings are tracked by dk-00f3ff65. `meetings/` is grouped (records/, postprocess/) and `meetings/assist/` is split into automatic/, manual/, coach/, suggestion/ and latency/ (dk-c0cd0363).
+- `services/assistant/` has seven subfolders and one root file (`types.ts`); `live-controls/` could nest under `prompts/` if the root grows again. `meetings/` is grouped (records/, postprocess/) and `meetings/assist/` is split into automatic/, manual/, coach/, suggestion/ and latency/ (dk-c0cd0363).
 - `shell/` and `workspaces/` still reference each other: `WorkspacePanel` reads `panelId`/`tabId`
   from `shell/navigation/`, and `OverlaySession` imports the composer hook. Workspaces take explicit
   slices, not the session model (dk-ac7c7c73).

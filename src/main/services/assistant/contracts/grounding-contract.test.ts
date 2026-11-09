@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest'
-import { buildSystemPrompt } from './prompts'
+import { buildSystemPrompt } from '../prompts/prompts'
 import { COMPACT_CONTRACT } from './compact-contract'
-import { CAPTURE_INSTRUCTION, TYPED_CAPTURE_INSTRUCTION } from './live-controls/capture-prompts'
+import { CAPTURE_INSTRUCTION, TYPED_CAPTURE_INSTRUCTION } from '../live-controls/capture-prompts'
 
 it('always gives a speakable answer, builds on facts and marks improvised filler', () => {
   const system = buildSystemPrompt(null, []).replace(/\s+/g, ' ')

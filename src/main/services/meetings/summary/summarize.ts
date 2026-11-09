@@ -17,14 +17,14 @@ import {
   buildSystemPrompt,
   summaryMaxTokens,
   type TranscriptLine,
-} from '../../assistant/prompts'
+} from '../../assistant/prompts/prompts'
 import { splitSummaryOutput } from './summary-output'
 import {
   getPresentationHistory,
   hasLegacySlides,
 } from '../../../db/repos/meeting/meeting-presentation'
 import { presentationTranscript, SLIDE_SUMMARY_INSTRUCTION } from './presentation-history'
-import { SUMMARY_CHARS } from '../../assistant/prompts'
+import { SUMMARY_CHARS } from '../../assistant/prompts/prompts'
 
 // Post-meeting summary + action items. Two entry points share one Claude call:
 // the fire-and-forget pass on stop (live transcript window, no DB round-trip)

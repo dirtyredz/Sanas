@@ -5,7 +5,7 @@ import { ftsAllOf } from '../../db/fts-query'
 import { searchSegments } from '../../db/repos/history/transcripts'
 import { broadcast } from '../../windows/broadcast'
 import { claudeProvider } from '../assistant/provider/claude'
-import { HISTORY_SYSTEM, buildHistoryPrompt } from '../assistant/prompts'
+import { HISTORY_SYSTEM, buildHistoryPrompt } from '../assistant/prompts/prompts'
 import { retrieveHistory } from './retrieval'
 import { renderExcerpts } from './excerpts'
 export { retrieveHistory, renderExcerpts }

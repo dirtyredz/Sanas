@@ -8,17 +8,17 @@ import {
   summaryMaxTokens,
   type TranscriptLine,
 } from './prompts'
-import { CURRENT_QUESTION_RULE } from './answer-context/anchor'
+import { CURRENT_QUESTION_RULE } from '../answer-context/anchor'
 import {
   BACKGROUND_CHARS,
   BACKGROUND_LABEL,
   CURRENT_EXCHANGE_LABEL,
-} from './answer-context/conversation-window'
+} from '../answer-context/conversation-window'
 import {
   TOPIC_SWITCH_EXCHANGES,
   TOPIC_SWITCH_JOB,
   topicSwitchWindow,
-} from './answer-context/topic-switch-fixture'
+} from '../answer-context/topic-switch-fixture'
 
 const window: TranscriptLine[] = [
   { speaker: 1, isUser: false, text: 'Can you make me a linked list in JavaScript?' },

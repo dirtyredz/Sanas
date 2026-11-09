@@ -1,9 +1,9 @@
 import { renderCoverage, type CoverageSnapshot } from './coverage/ledger'
 import type { FormattableLine, SpeakerNames } from '../../turns/transcript-format'
 import { NO_SUGGESTION } from '@shared/live-controls/readable-suggestion'
-import { COMPACT_CONTRACT, recentSuggestionsBlock } from '../compact-contract'
+import { COMPACT_CONTRACT, recentSuggestionsBlock } from '../contracts/compact-contract'
 import { renderBackground, splitAtExchange } from '../answer-context/conversation-window'
-import { boundedExcerpt } from '../excerpt'
+import { boundedExcerpt } from '../prompts/excerpt'
 import type { LatestQuestion } from '../answer-context/anchor'
 import type { CoachReason } from './coach-policy'
 

@@ -3,7 +3,7 @@
 // Which resume role to pick when a technology appears in several lives with the told
 // stories (toldStoriesBlock), where the model sees the list it applies to.
 
-import { boundedExcerpt } from '../excerpt'
+import { boundedExcerpt } from '../prompts/excerpt'
 
 /** The system-prompt anchor rule: the current question decides the topic; earlier
  *  conversation and earlier suggestions are background. */

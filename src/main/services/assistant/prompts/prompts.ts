@@ -1,16 +1,16 @@
-import { jobMemoryBlock } from './answer-context/job-memory'
+import { jobMemoryBlock } from '../answer-context/job-memory'
 import { FILLER_CLOSE, FILLER_OPEN } from '@shared/suggestion/filler-marker'
 import type { GlossaryTerm, Job, WhisperMode } from '@shared/types'
 import {
   renderTranscriptWindow,
   type FormattableLine,
   type SpeakerNames,
-} from '../turns/transcript-format'
-import { COMPACT_CONTRACT, INITIAL_ANSWER_DEPTH } from './compact-contract'
-import { renderConversation } from './answer-context/conversation-window'
-import { toldStoriesBlock, type ToldStory } from './answer-context/told-stories'
-import { CURRENT_QUESTION_RULE, latestBlock, type LatestQuestion } from './answer-context/anchor'
-import { automaticTurnBlock, type TriggeringTurn } from './answer-context/automatic-turn'
+} from '../../turns/transcript-format'
+import { COMPACT_CONTRACT, INITIAL_ANSWER_DEPTH } from '../contracts/compact-contract'
+import { renderConversation } from '../answer-context/conversation-window'
+import { toldStoriesBlock, type ToldStory } from '../answer-context/told-stories'
+import { CURRENT_QUESTION_RULE, latestBlock, type LatestQuestion } from '../answer-context/anchor'
+import { automaticTurnBlock, type TriggeringTurn } from '../answer-context/automatic-turn'
 
 // Prompt assembly: stable system prompt (cacheable, per meeting) + volatile
 // transcript in the user turn: the current exchange plus a capped, labelled background

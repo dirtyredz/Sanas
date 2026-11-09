@@ -13,7 +13,7 @@
 // never published and the ordinary path answers it.
 
 import { NO_SUGGESTION } from '@shared/live-controls/readable-suggestion'
-import { boundedExcerpt } from '../excerpt'
+import { boundedExcerpt } from '../prompts/excerpt'
 import { ANCHOR_REMINDER, QUESTION_CHARS } from './anchor'
 
 const EARLIER_QUESTION_CHARS = 600 // each carried-forward question

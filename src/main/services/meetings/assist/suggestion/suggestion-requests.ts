@@ -8,7 +8,7 @@ import {
   buildUserContent,
   type AnswerFocus,
   type TranscriptLine,
-} from '../../../assistant/prompts'
+} from '../../../assistant/prompts/prompts'
 import type { LatestQuestion } from '../../../assistant/answer-context/anchor'
 import type { ToldStory } from '../../../assistant/answer-context/told-stories'
 import type { QuestionTurn } from '../../../turns/latest-question'

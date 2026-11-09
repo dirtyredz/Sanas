@@ -5,7 +5,7 @@ import { it } from 'vitest'
 import { claudeProvider } from '../../src/main/services/assistant/provider/claude'
 import { candidateFacts } from '../../src/main/services/meetings/context/candidate-data'
 import * as current from '../../src/main/services/meetings/assist/suggestion/suggestion-requests'
-import { buildSystemPrompt } from '../../src/main/services/assistant/prompts'
+import { buildSystemPrompt } from '../../src/main/services/assistant/prompts/prompts'
 import { ShownLedger } from '../../src/main/services/assistant/answer-context/shown-ledger'
 import {
   TOPIC_SWITCH_EXCHANGES,

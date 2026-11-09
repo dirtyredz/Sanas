@@ -11,7 +11,10 @@ import {
   latestQuestion,
 } from '../../../turns/latest-question'
 import type { CompletedTurn, IdentityRole, TurnFinal } from '../../../turns/types'
-import { answerCooldownAllows, looksLikeResponseCandidate } from '../../../assistant/triggers'
+import {
+  answerCooldownAllows,
+  looksLikeResponseCandidate,
+} from '../../../assistant/classifier/triggers'
 import type {
   ClassifierOutcome,
   ClassifierTurn,

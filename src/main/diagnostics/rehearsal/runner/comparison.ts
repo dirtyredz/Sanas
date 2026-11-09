@@ -3,7 +3,7 @@ import {
   automaticAnswerRequest,
   type AssistSettings,
 } from '../../../services/meetings/assist/suggestion/suggestion-requests'
-import { buildSystemPrompt } from '../../../services/assistant/prompts'
+import { buildSystemPrompt } from '../../../services/assistant/prompts/prompts'
 import { SuggestionRunner } from '../../../services/meetings/assist/suggestion/suggestion-runner'
 import { observeLatency } from '../../../services/meetings/assist/latency/latency'
 import type { CompletedTurn } from '../../../services/turns/types'

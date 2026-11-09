@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import type { AssistantProvider, AssistRequest } from '../types'
-import { completionText } from '../completion-result'
+import { completionText } from '../contracts/completion-result'
 import { usageFromAnthropic } from './claude-usage'
 import { reportUsage, reportTiming } from './provider-evidence'
 import { tagProviderError, type ProviderFailureCategory } from './provider-error'

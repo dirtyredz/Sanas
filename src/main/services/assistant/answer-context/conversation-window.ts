@@ -3,7 +3,7 @@ import {
   type FormattableLine,
   type SpeakerNames,
 } from '../../turns/transcript-format'
-import { boundedExcerpt } from '../excerpt'
+import { boundedExcerpt } from '../prompts/excerpt'
 
 // The transcript an answer prompt sees, split in two (DECISIONS 2026-11-04): the CURRENT
 // EXCHANGE (the question being answered and Me's reply so far) and a short, clearly

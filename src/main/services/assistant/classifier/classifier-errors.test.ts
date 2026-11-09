@@ -1,7 +1,7 @@
 import { afterEach, expect, it, vi } from 'vitest'
 import { tagProviderError } from '../provider/provider-error'
 import { classifyTurn } from './classifier'
-import { TokenBudgetError } from '../completion-result'
+import { TokenBudgetError } from '../contracts/completion-result'
 const req = {
   apiKey: 'SECRET_KEY',
   model: 'test-model',

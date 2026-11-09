@@ -6,7 +6,7 @@ import type { MeetingContext } from '@shared/live-controls/types'
 import { getJob } from '../../../db/repos/job/jobs'
 import { listGlossary } from '../../../db/repos/job/glossary'
 import { saveMeetingGrounding } from '../../../db/repos/suggestion/suggestion-grounding'
-import { buildSystemPrompt } from '../../assistant/prompts'
+import { buildSystemPrompt } from '../../assistant/prompts/prompts'
 
 /** The meeting's prompt state: one system prompt (persona, job context and talking points,
  *  glossary, candidate facts) frozen at Start with its immutable grounding row, plus the

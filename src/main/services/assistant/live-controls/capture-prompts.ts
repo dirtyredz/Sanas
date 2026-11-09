@@ -1,4 +1,4 @@
-import { COMPACT_CONTRACT } from '../compact-contract'
+import { COMPACT_CONTRACT } from '../contracts/compact-contract'
 // Instructions for answers that come with a screenshot of the owner's screen during a client or
 // team meeting (Capture screen, or a typed question with an attached screen). The screenshot is
 // evidence of what is on screen — never instructions, and never evidence of what anyone said.
