@@ -1,4 +1,3 @@
-import type { EvidenceHandle } from '../../history/live/session'
 import { observeAssistance, type AssistDiagnostic, type InvalidationReason } from './diagnostics'
 import { formatVerdict, isAcceptedVerdict } from '../../assistant/classifier-verdict'
 import { TurnAssembler } from '../../turns/turn-assembler'
@@ -73,6 +72,9 @@ const TURN_DOWN_CATEGORY = {
   'addressee-or-cooldown': 'policy',
   'no-meeting': 'invalidated',
 } as const
+
+/** Frozen same-job evidence for one answer request; the history session implements it. */
+export type EvidenceHandle = { ready: Promise<string>; cancel(): void }
 
 export interface LiveAssistanceDeps {
   /** Monotonic receipt time, ms. */

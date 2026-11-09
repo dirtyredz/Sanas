@@ -1,7 +1,7 @@
 import { afterEach, expect, it, vi } from 'vitest'
 import { sqliteTestDatabase } from '../../../db/testing/sqlite-test-database'
 import { runMigrations } from '../../../db/migrations'
-import { liveHits } from '../../../db/repos/history/live'
+import { liveHits } from './hits'
 import { renderLiveHits } from './excerpts'
 import { liveQuery } from './policy'
 import { freezeEvidence } from './session'

@@ -1,7 +1,8 @@
 import type { HistoryHit, Segment } from '@shared/types'
 import { stripMatchMarkers } from '@shared/search-markers'
 import { ftsAnyOf } from '../../db/fts-query'
-import { listSegmentsAround, searchSegments } from '../../db/repos/segments'
+import { searchSegments } from '../../db/repos/history/transcripts'
+import { listSegmentsAround } from '../../db/repos/segments'
 const HITS = 24,
   RADIUS = 2,
   MAX_SOURCES = 8

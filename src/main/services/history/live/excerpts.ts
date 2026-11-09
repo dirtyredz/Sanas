@@ -1,4 +1,4 @@
-import type { LiveHit } from '../../../db/repos/history/live'
+import type { LiveHit } from './hits'
 export function renderLiveHits(hits: LiveHit[]): string {
   if (!hits.length) return ''
   const header =

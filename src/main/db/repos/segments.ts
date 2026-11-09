@@ -1,7 +1,5 @@
 import { getDb } from '../index'
-import type { Segment, SearchMatch } from '@shared/types'
-import type { FtsMatch } from '../fts-query'
-import { searchTranscriptSegments } from './history/transcripts'
+import type { Segment } from '@shared/types'
 
 export function listSegments(meetingId: number): Segment[] {
   return getDb()
@@ -35,13 +33,6 @@ export function listSegmentsAround(
       const row = r as Omit<Segment, 'isUser'> & { isUser: number }
       return { ...row, isUser: row.isUser === 1 }
     })
-}
-
-export function searchSegments(
-  match: FtsMatch,
-  opts: { jobId?: number; limit?: number } = {},
-): SearchMatch[] {
-  return searchTranscriptSegments(getDb(), match, opts)
 }
 
 export function insertSegment(seg: {

@@ -1,6 +1,7 @@
 import type { FrozenEvidence, RetrievalReply } from './protocol'
 
-export interface EvidenceHandle {
+/** Structurally satisfies the consumer-owned EvidenceHandle in meetings/assist/live-assistance. */
+export interface FrozenEvidenceHandle {
   ready: Promise<string>
   cancel(): void
 }
@@ -11,7 +12,7 @@ export function freezeEvidence(
   signal?: AbortSignal,
   report: (e: FrozenEvidence) => void = () => {},
   clock: () => number = () => performance.now(),
-): EvidenceHandle {
+): FrozenEvidenceHandle {
   const start = clock()
   let finish: (status: FrozenEvidence['status'], reply?: RetrievalReply | null) => void = () => {}
   const ready = new Promise<string>((resolve) => {
