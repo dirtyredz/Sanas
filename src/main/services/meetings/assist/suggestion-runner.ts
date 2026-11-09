@@ -1,4 +1,4 @@
-import { observeRun } from '../observation/run-observation'
+import { effectiveProfile, observeRun } from '../observation/run-observation'
 import type { SuggestionMetadata } from '@shared/live-controls/types'
 import type { SuggestionEvent, SuggestionPurpose, SuggestionTrigger } from '@shared/types'
 import type { AssistantProvider, AssistImage } from '../../assistant/types'
@@ -150,14 +150,7 @@ export class SuggestionRunner {
       purpose: req.purpose,
       trigger: req.trigger,
       spans: req.diagnosticTurns ?? [],
-      effective: {
-        model: /^claude-(opus|sonnet|haiku)-[0-9]+(?:-[0-9]+)*$/.test(req.model)
-          ? req.model
-          : 'custom',
-        profile: req.profile ?? 'other',
-        maxTokens: req.maxTokens,
-        effort: req.effort,
-      },
+      effective: effectiveProfile(req),
       ...(speculative ? { speculative: true } : {}),
       at: this.now(),
     })

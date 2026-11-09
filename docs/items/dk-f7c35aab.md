@@ -2,7 +2,7 @@
 id: dk-f7c35aab
 type: task
 created: 2026-11-09
-status: todo
+status: done
 since: 2026-11-09
 area: assist
 priority: P2

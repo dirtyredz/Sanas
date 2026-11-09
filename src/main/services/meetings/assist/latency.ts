@@ -1,4 +1,5 @@
 import type { SuggestionPurpose } from '@shared/types'
+import type { SuggestionVisibilityState } from '@shared/live-controls/visibility'
 import { randomUUID } from 'node:crypto'
 import type { MalformedShape } from '../../assistant/classifier-verdict'
 import type { ProviderUsage, ProviderTiming } from '../../assistant/types'
@@ -44,7 +45,7 @@ export interface LatencyRecord {
   correlation?: 'linked' | 'missing' | 'not-applicable'
   sessionId?: string
   kind: 'run' | 'candidate' | 'visibility'
-  visibility?: 'frame-after-commit' | 'hidden' | 'unselected'
+  visibility?: SuggestionVisibilityState
   broadcastToRendererReceiptMs?: number
   candidateId?: number
   candidateTerminal?: boolean

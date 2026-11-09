@@ -1,4 +1,8 @@
 import type { SuggestionEvent, SuggestionPurpose, SuggestionTrigger } from '@shared/types'
+import type {
+  SuggestionVisibility,
+  SuggestionVisibilityState,
+} from '@shared/live-controls/visibility'
 import type { ProviderUsage, ProviderTiming } from '../../assistant/types'
 import type { SuggestionOutcome, SuggestionRequest } from '../assist/suggestion-runner'
 import { createObserverBus } from './observer-bus'
@@ -40,7 +44,7 @@ export type RunObservation =
       kind: 'renderer'
       id: number
       meetingId: number
-      state: 'frame-after-commit' | 'hidden' | 'unselected'
+      state: SuggestionVisibilityState
       at: number
     }
   | {
@@ -54,3 +58,30 @@ export type RunObservation =
 const bus = createObserverBus<RunObservation>()
 export const subscribeRuns = bus.subscribe
 export const observeRun = bus.publish
+
+/** The renderer's visibility report for a run, published as run evidence. `windowVisible` is
+ *  the only fact the caller adds: a hidden or minimized window overrides whatever the
+ *  renderer claims. */
+export function acknowledgeVisibility(value: SuggestionVisibility, windowVisible: boolean): void {
+  observeRun({
+    kind: 'renderer',
+    id: value.runId,
+    meetingId: value.meetingId,
+    state: windowVisible ? value.state : 'hidden',
+    at: performance.now(),
+  })
+}
+
+const KNOWN_MODEL = /^claude-(opus|sonnet|haiku)-[0-9]+(?:-[0-9]+)*$/
+
+/** The model policy a request will use, with any non-Claude-alias model name redacted. */
+export function effectiveProfile(
+  req: Pick<SuggestionRequest, 'model' | 'profile' | 'maxTokens' | 'effort'>,
+): EffectiveProfile {
+  return {
+    model: KNOWN_MODEL.test(req.model) ? req.model : 'custom',
+    profile: req.profile ?? 'other',
+    maxTokens: req.maxTokens,
+    effort: req.effort,
+  }
+}

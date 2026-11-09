@@ -2,16 +2,19 @@ import type { ContextUpdate, ManualRequest } from '@shared/live-controls/types'
 import { requireMeetingContextText } from '@shared/meeting-context'
 import { requireId } from './validate'
 import { requireCaptureToken } from './screen-capture-validation'
-import type { SuggestionVisibility } from '@shared/live-controls/visibility'
+import {
+  SUGGESTION_VISIBILITY_STATES,
+  type SuggestionVisibility,
+} from '@shared/live-controls/visibility'
 
 export function requireSuggestionVisibility(raw: unknown): SuggestionVisibility {
   const r = object(raw)
-  if (r.state !== 'frame-after-commit' && r.state !== 'hidden' && r.state !== 'unselected')
-    throw new Error('Invalid visibility state.')
+  const state = SUGGESTION_VISIBILITY_STATES.find((s) => s === r.state)
+  if (!state) throw new Error('Invalid visibility state.')
   return {
     meetingId: requireId(r.meetingId, 'meetingId'),
     runId: requireId(r.runId, 'runId'),
-    state: r.state,
+    state,
   }
 }
 
