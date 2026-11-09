@@ -5,7 +5,10 @@ import { sqliteTestDatabase } from '../../testing/sqlite-test-database'
 const mock = vi.hoisted(() => ({ db: null as unknown as Database }))
 vi.mock('../../index', () => ({ getDb: () => mock.db }))
 import { runMigrations } from '../../migrations'
+import { ftsAllOf } from '../../fts-query'
 import { ensureDefaultJob } from '../job/jobs'
+import { searchSegments } from '../history/transcripts'
+import { insertSegment } from '../transcript/segments'
 import { listPracticeSessions } from '../practice'
 import { createMeeting } from './meeting-create'
 import { getMeeting, listMeetings, listMeetingsEndedBefore } from './meetings'
@@ -31,6 +34,15 @@ it('meeting rows never carry resume or profile text, yet report interviewProfile
     practice: true,
     interviewProfile: secrets.profile,
   })
+  for (const meetingId of [withProfile, without])
+    insertSegment({
+      meetingId,
+      tStartMs: 0,
+      tEndMs: 100,
+      speaker: 0,
+      isUser: false,
+      text: 'indexed leakprobe',
+    })
   sqlite.exec(`UPDATE meetings SET ended_at = '2000-01-01 00:00:00'`)
 
   const rows = [
@@ -39,6 +51,7 @@ it('meeting rows never carry resume or profile text, yet report interviewProfile
     ...listMeetings(job),
     ...listMeetingsEndedBefore('2001-01-01 00:00:00'),
     ...listPracticeSessions().map((p) => p.meeting),
+    ...searchSegments(ftsAllOf('leakprobe')).map((s) => s.meeting),
   ]
   for (const meeting of rows) {
     const text = JSON.stringify(meeting)
@@ -49,6 +62,10 @@ it('meeting rows never carry resume or profile text, yet report interviewProfile
   }
   expect(getMeeting(withProfile)?.interviewProfileUsed).toBe(true)
   expect(getMeeting(without)?.interviewProfileUsed).toBe(false)
+  const hits = searchSegments(ftsAllOf('leakprobe'))
+  expect(hits).toHaveLength(2)
+  expect(hits.find((h) => h.meeting.id === withProfile)?.meeting.interviewProfileUsed).toBe(true)
+  expect(hits.find((h) => h.meeting.id === without)?.meeting.interviewProfileUsed).toBe(false)
   expect(listMeetings(job).find((m) => m.id === withProfile)?.interviewProfileUsed).toBe(true)
   expect(
     listPracticeSessions().find((p) => p.meeting.id === practice)?.meeting.interviewProfileUsed,
