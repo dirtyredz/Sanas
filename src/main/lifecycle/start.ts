@@ -7,7 +7,7 @@ import { activateComposer, showOverlay, toggleOverlay } from '../windows/overlay
 import { openDb, closeDb } from '../db'
 import { loadSettings } from '../config/settings'
 import { registerIpcHandlers } from '../ipc'
-import { answerNow, captureScreen } from '../services/meetings'
+import { answerNow, captureScreen, togglePause } from '../services/meetings'
 import { registerSystemAudioLoopback } from '../system-audio'
 import { scheduleRetention } from '../services/platform/retention'
 import { closeDanglingMeetingsAtStartup } from '../services/meetings/recovery/startup-recovery'
@@ -50,6 +50,7 @@ function registerHotkeys(): void {
         showOverlay()
         answerNow()
       },
+      pauseHotkey: togglePause,
       captureHotkey: () => {
         // the display is picked inside captureScreen before the overlay is revealed (passively)
         const done = captureScreen()

@@ -1,5 +1,7 @@
 import type { HotkeyAction, HotkeyStatus } from '@shared/hotkeys/types'
 
+const REPEAT_GUARDED = new Set<HotkeyAction>(['captureHotkey', 'pauseHotkey'])
+
 let statuses: HotkeyStatus[] = []
 export function hotkeyStatus(): HotkeyStatus[] {
   return statuses.map((s) => ({ ...s }))
@@ -13,7 +15,7 @@ export function registerShortcuts(
   now: () => number = () => performance.now(),
 ): HotkeyStatus[] {
   const seen = new Set<string>()
-  let lastCapture = -Infinity
+  const lastPress = new Map<HotkeyAction, number>()
   statuses = (Object.keys(callbacks) as HotkeyAction[]).map((action) => {
     const accelerator = settings[action] ?? ''
     try {
@@ -26,11 +28,11 @@ export function registerShortcuts(
       if (seen.has(key)) throw new Error('Duplicate shortcut.')
       seen.add(key)
       const registered = register(accelerator, () => {
-        // a held capture shortcut auto-repeats: one capture per deliberate press
-        if (action === 'captureHotkey') {
+        // a held toggle-like shortcut auto-repeats: one action per deliberate press
+        if (REPEAT_GUARDED.has(action)) {
           const time = now()
-          if (time - lastCapture < 1000) return
-          lastCapture = time
+          if (time - (lastPress.get(action) ?? -Infinity) < 1000) return
+          lastPress.set(action, time)
         }
         try {
           Promise.resolve(callbacks[action]?.()).catch(report)

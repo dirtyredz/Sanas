@@ -177,6 +177,8 @@ export interface Settings {
   assistHotkey: string
   /** Capture the screen under the overlay and explain it (Capture screen). */
   captureHotkey: string
+  /** Pause or resume the live meeting (an interruption, without opening the window). */
+  pauseHotkey: string
   audioDeviceId: string
   /** Save raw meeting audio to a local WAV file. */
   recordAudio: boolean

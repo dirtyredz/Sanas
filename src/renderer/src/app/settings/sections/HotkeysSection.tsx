@@ -25,6 +25,11 @@ const GLOBAL_HOTKEYS: { action: HotkeyAction; label: string; help: string }[] = 
     help: 'Captures the screen under the overlay and explains it — for code, the error, likely cause and a minimal fix. The image is sent once and not saved.',
   },
   {
+    action: 'pauseHotkey',
+    label: 'Pause / resume the meeting',
+    help: 'Handles an interruption without opening the window. Resume reopens the microphone from the app, so the Sanas window must still be open (it can be minimised).',
+  },
+  {
     action: 'composeHotkey',
     label: 'Ask composer',
     help: 'Opens the overlay ready to type a question.',

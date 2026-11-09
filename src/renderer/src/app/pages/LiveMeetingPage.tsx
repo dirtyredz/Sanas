@@ -204,6 +204,18 @@ export function LiveMeetingPage({ visible = true }: { visible?: boolean }): Reac
     }
   }
 
+  // The pause hotkey fired while paused. Main cannot reopen the mic, so the window runs the
+  // same Resume as the button; `latest` keeps the handler on this render's state.
+  const latest = useRef({ paused, busy, resume })
+  latest.current = { paused, busy, resume }
+  useEffect(
+    () =>
+      window.sanas.meeting.onResumeRequest(() => {
+        if (latest.current.paused && !latest.current.busy) void latest.current.resume()
+      }),
+    [],
+  )
+
   const stop = async (): Promise<void> => {
     setBusy(true)
     await micRef.current?.stop()

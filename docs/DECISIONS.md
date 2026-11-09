@@ -2,6 +2,15 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-11-09 — Pause/resume hotkey: pause in main, resume through the window
+
+Global `pauseHotkey` (Ctrl+Shift+P). Pause is main's own call (`togglePause`); the window's mic already
+stops whenever the meeting leaves `live`. Resume cannot be main-only: capture (getUserMedia and the
+loopback) is opened by the renderer, and main refuses a topology the meeting did not start with, so a
+paused meeting broadcasts `MeetingResumeRequest` and `LiveMeetingPage` runs the same Resume as its button.
+Rejected: main reopening the mic (capture ownership is renderer-side), and a hotkey that only pauses (the
+interruption ends and the user would be back at the mouse). Repeat-guarded for 1 s like capture.
+
 ## 2026-11-09 — Closing the main window quits Sanas
 
 The main window is the app. The overlay and mock windows are BrowserWindows too, so

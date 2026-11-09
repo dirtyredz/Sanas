@@ -25,6 +25,7 @@ const DEFAULTS: Settings = {
   overlayHotkey: 'CommandOrControl+Shift+Space',
   assistHotkey: 'CommandOrControl+Shift+Enter',
   captureHotkey: 'Control+Shift+S',
+  pauseHotkey: 'Control+Shift+P',
   audioDeviceId: '',
   recordAudio: true, // needed for post-meeting re-diarization
   // 'elsewhere' is the safe default: mono + diarization works anywhere, whereas

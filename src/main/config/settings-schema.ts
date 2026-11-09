@@ -83,6 +83,7 @@ export const SETTINGS_SCHEMA: { [K in keyof Settings]: Check<Settings[K]> } = {
   overlayHotkey: text(60),
   assistHotkey: text(60),
   captureHotkey: text(60),
+  pauseHotkey: text(60),
   audioDeviceId: text(300),
   recordAudio: bool,
   meetingSource: source,

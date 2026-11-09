@@ -149,6 +149,7 @@ const api: SanasApi = {
     sendAudio: () => {},
     onTranscript: on(transcriptListeners),
     onState: on(stateListeners),
+    onResumeRequest: () => () => {},
   },
   assist: {
     acknowledgeVisibility: async () => undefined,

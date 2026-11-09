@@ -20,12 +20,14 @@ const fakes = vi.hoisted(() => ({
   onTranscript: null as null | ((transcript: Record<string, unknown>) => void),
   liveFinal: vi.fn(),
   begin: vi.fn(),
+  broadcast: vi.fn(),
   jobResumes: new Map<number, { name: string; text: string }>(),
 }))
 
 vi.mock('@shared/ipc', () => ({
   IPC: {
     MeetingState: 'meeting:state',
+    MeetingResumeRequest: 'meeting:resume-request',
     MeetingUpdated: 'meeting:updated',
     TranscriptEvent: 'meeting:transcript',
   },
@@ -113,7 +115,7 @@ vi.mock('../../db/repos/segments', () => ({
   insertSegment: vi.fn(),
   setSpeakerIsUser: vi.fn(),
 }))
-vi.mock('../../windows/broadcast', () => ({ broadcast: vi.fn() }))
+vi.mock('../../windows/broadcast', () => ({ broadcast: fakes.broadcast }))
 vi.mock('../screen-capture', () => ({
   createScreenCapture: () => ({ target: vi.fn(), acquire: vi.fn() }),
 }))
@@ -128,6 +130,7 @@ import {
   pauseMeeting,
   resumeMeeting,
   stopMeeting,
+  togglePause,
 } from './index'
 
 function silentLoopbackWithMicSpeech(ms: number): Buffer {
@@ -189,6 +192,19 @@ describe('meeting capture health', () => {
     } finally {
       fakes.jobResumes.clear()
     }
+  })
+
+  it('the pause hotkey pauses a live meeting itself and asks the window to resume a paused one', async () => {
+    fakes.broadcast.mockClear()
+    await togglePause() // idle: nothing to do
+    await startMeeting()
+    await togglePause()
+    expect(currentState().status).toBe('paused')
+    expect(fakes.broadcast).not.toHaveBeenCalledWith('meeting:resume-request', null)
+    await togglePause() // resuming needs the renderer's capture
+    expect(fakes.broadcast).toHaveBeenCalledWith('meeting:resume-request', null)
+    expect(currentState().status).toBe('paused')
+    await stopMeeting()
   })
 
   it('saves the Start context with the meeting before assistance or STT begins', async () => {

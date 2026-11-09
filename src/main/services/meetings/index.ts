@@ -397,6 +397,15 @@ export function pauseMeeting(reason?: string): Promise<MeetingState> {
   })
 }
 
+/** The global pause hotkey. Pausing is main's own business (the window's mic stops itself
+ *  when the meeting leaves `live`). Resuming needs a freshly opened capture, which only the
+ *  renderer can make, so a paused meeting asks the window to run its Resume instead. */
+export async function togglePause(): Promise<void> {
+  const { status } = currentState()
+  if (status === 'live') await pauseMeeting()
+  else if (status === 'paused') broadcast(IPC.MeetingResumeRequest, null)
+}
+
 /** Reopens the connection on the same meeting, continuing its clock. The capture
  *  topology must match the one the meeting started with: the WAV header and the
  *  provider's channel mapping were both fixed when it began. */

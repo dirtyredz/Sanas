@@ -20,6 +20,7 @@ export const PAGE_OWNED = [
   'overlayHotkey',
   'assistHotkey',
   'captureHotkey',
+  'pauseHotkey',
   'composeHotkey',
   'anthropicWorkspaceId',
   'nudgeModel',
