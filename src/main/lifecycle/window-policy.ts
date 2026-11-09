@@ -1,5 +1,5 @@
 import { app } from 'electron'
-import { subscribeMeeting } from '../services/meetings/observation'
+import { subscribeMeeting } from '../services/meetings/observation/meeting-observation'
 import { hideOverlay } from '../windows/overlay-window'
 import { onMainWindowClosed } from '../windows/main-window'
 

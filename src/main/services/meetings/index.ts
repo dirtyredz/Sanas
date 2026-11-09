@@ -1,7 +1,7 @@
 import { resolveStartGrounding } from './context/start-grounding'
 import type { StartRequest } from './context/start-request'
 import { meetingKeyterms } from './context/meeting-keyterms'
-import { observeMeeting } from './observation'
+import { observeMeeting } from './observation/meeting-observation'
 import { IPC } from '@shared/ipc'
 import type { Admission } from '@shared/live-controls/types'
 import type { CaptureAttachResult, CaptureStatus } from '@shared/live-controls/capture'

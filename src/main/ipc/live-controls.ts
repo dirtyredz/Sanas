@@ -1,5 +1,5 @@
 import { BrowserWindow, ipcMain } from 'electron'
-import { observeRun } from '../services/meetings/assist/run-observation'
+import { observeRun } from '../services/meetings/observation/run-observation'
 import { IPC } from '@shared/ipc'
 import { getMeetingContext } from '../db/repos/meeting/meeting-context'
 import {

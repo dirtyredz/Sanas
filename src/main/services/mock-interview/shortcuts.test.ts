@@ -1,5 +1,5 @@
 import { beforeEach, expect, it, vi } from 'vitest'
-import type { MeetingObservation } from '../meetings/observation'
+import type { MeetingObservation } from '../meetings/observation/meeting-observation'
 
 const mock = vi.hoisted(() => ({
   register: vi.fn(),
@@ -10,7 +10,7 @@ const mock = vi.hoisted(() => ({
 vi.mock('electron', () => ({
   globalShortcut: { register: mock.register, unregister: mock.unregister },
 }))
-vi.mock('../meetings/observation', () => ({
+vi.mock('../meetings/observation/meeting-observation', () => ({
   subscribeMeeting: (listener: (event: MeetingObservation) => void) => {
     mock.listener = listener
     return mock.unsubscribe

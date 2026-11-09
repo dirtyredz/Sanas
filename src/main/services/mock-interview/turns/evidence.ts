@@ -1,6 +1,6 @@
 import type { MockResult } from '@shared/mock-interview/types'
-import type { RunObservation } from '../../meetings/assist/run-observation'
-import type { AssistDiagnostic } from '../../meetings/assist/diagnostics'
+import type { RunObservation } from '../../meetings/observation/run-observation'
+import type { AssistDiagnostic } from '../../meetings/observation/diagnostics'
 import { LatencyTracker } from '../../meetings/assist/latency'
 import type { LatencySummary } from '../../meetings/assist/latency-summary'
 import { proseWords, type RequestOutcome } from '../../meetings/assist/outcomes'

@@ -1,4 +1,8 @@
-import { observeAssistance, type AssistDiagnostic, type InvalidationReason } from './diagnostics'
+import {
+  observeAssistance,
+  type AssistDiagnostic,
+  type InvalidationReason,
+} from '../observation/diagnostics'
 import { formatVerdict, isAcceptedVerdict } from '../../assistant/classifier-verdict'
 import { TurnAssembler } from '../../turns/turn-assembler'
 import {

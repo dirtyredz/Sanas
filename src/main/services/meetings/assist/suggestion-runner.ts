@@ -1,4 +1,4 @@
-import { observeRun } from './run-observation'
+import { observeRun } from '../observation/run-observation'
 import type { SuggestionMetadata } from '@shared/live-controls/types'
 import type { SuggestionEvent, SuggestionPurpose, SuggestionTrigger } from '@shared/types'
 import type { AssistantProvider, AssistImage } from '../../assistant/types'

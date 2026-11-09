@@ -6,7 +6,7 @@ import { ANSWER_NOW_QUESTION_MS } from '../../turns/latest-question'
 import { me, otherTurn, setup, them, words } from './testing/live-assistance-harness'
 
 const diagnostics = vi.hoisted(() => vi.fn())
-vi.mock('./diagnostics', () => ({ observeAssistance: diagnostics }))
+vi.mock('../observation/diagnostics', () => ({ observeAssistance: diagnostics }))
 beforeEach(() => diagnostics.mockClear())
 
 describe('live assistance: answers to completed turns', () => {

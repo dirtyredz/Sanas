@@ -210,7 +210,7 @@ Mic (getUserMedia, renderer)
   promotion. "Answer now" uses the hotkey lane and never touches it. Every speculation is a paid
   call, discarded or not: `speculation-started/promoted/discarded` diagnostics and a
   `speculative answers: started=… promoted=… discarded=…` log line at Stop count it.
-- **Stage timing evidence** (`assist/diagnostics.ts`, `run-observation.ts`, `assist/latency.ts`, `assist/latency-summary.ts`):
+- **Stage timing evidence** (`observation/diagnostics.ts`, `observation/run-observation.ts`, `assist/latency.ts`, `assist/latency-summary.ts`):
   assistance events `turn-completed`, `classifier-started`, `classified`, `answer-started` (with the
   `suggestionId`, correlating candidate turn and run) and the speculation events; run events
   `begin`, `first-text`, `first-readable`, `promoted`, `visible`, `usage`, `settled`, each stamped

@@ -32,11 +32,11 @@ Its `runner/` owns flags, evidence, steps, clock/audio pumping and final checks/
 and `screens/` owns fixture acquisition and real display verification;
 The former live engine now lives in `src/main/services/mock-interview/`; the live CLI tier is
 retired. The product service owns plans/fixtures, serialized turn-taking, window/TTS lifecycle
-and practice result collection. `meetings/observation.ts` and `assist/run-observation.ts` expose
-main-only, best-effort subscriptions; `assist/outcomes.ts` owns shared pure result types/counts.
+and practice result collection. `meetings/observation/` is the one home for main-only, best-effort observers (meeting stream, run events,
+assistance decisions; each a thin typed stream on `observer-bus.ts`); `assist/outcomes.ts` owns shared pure result types/counts.
 `outcomes/outcomes.ts` owns request correlation/redacted outcome records, `scenario/semantics.ts` bounded content
 rubrics, and `screens/geometry.ts` DIP-to-thumbnail mapping. The optional main-only observer in
-`services/meetings/assist/diagnostics.ts` reports decisions without changing assistance policy.
+`services/meetings/observation/diagnostics.ts` reports decisions without changing assistance policy.
 `scripts/rehearsal/credentials.ps1` owns selective 1Password reads and environment cleanup;
 `scripts/rehearsal/` owns owner entry points and the verbatim owner-run 1.0.0 template
 from `~/.claude/templates/scripts/`; its `scenarios/` holds JSON and `fixtures/` only the standup PNG.
@@ -78,6 +78,7 @@ sanas/
 │   │   │   │   ├── index.ts               # lifecycle, STT wiring, audio and final persistence
 │   │   │   │   ├── live-controls.ts       # context/manual/answer-mode control facade
 │   │   │   │   ├── assist/                # assembly, prompt state, admission, coordinator and runner
+│   │   │   │   ├── observation/           # best-effort observers: meeting stream, run events, assistance decisions
 │   │   │   │   ├── capture/               # channel identity and capture health
 │   │   │   │   ├── context/               # prepare/commit/publish meeting-context changes + meeting grounding
 │   │   │   │   │   ├── start-request.ts   # StartRequest: the renderer-facing Start choices
@@ -229,7 +230,8 @@ sanas/
 - `src/main/services/assistant/coach/` — next-point eligibility policy and coach prompt construction
 - `src/main/services/assistant/live-controls/` — typed, detail, audience and screen-capture request instructions
 - `src/main/services/meetings/` — meeting lifecycle/STT/audio orchestration plus meeting-level facades
-- `src/main/services/meetings/assist/` — per-meeting prompt/grounding state, manual and screen-capture admission, in-memory composer screen drafts (`capture-drafts.ts`), automatic coordination (`question-ledger.ts` carries uncovered stacked questions into one suggestion; `speculative-answer.ts` owns the one unpublished answer started alongside the classifier and its promote/discard rule; `promptMismatchCategories` in `suggestion-requests.ts` decides when two requests are the same prompt (empty result), comparing every field except an explicit short list; `run-observation.ts` also owns `EffectiveProfile`, the full/smart/points policy a run used) and suggestion execution (`latency.ts` `LatencyTracker` + `observeLatency()` (owns both subscriptions) correlate diagnostics and run observations into bounded, allowlisted stage-timing records, `latency-summary.ts` `summarizeLatency` reports them; `suggestion-runner.ts` owns lanes, deadline and persistence; `run-publication.ts` the per-run held-text and publish gate)
+- `src/main/services/meetings/assist/` — per-meeting prompt/grounding state, manual and screen-capture admission, in-memory composer screen drafts (`capture-drafts.ts`), automatic coordination (`question-ledger.ts` carries uncovered stacked questions into one suggestion; `speculative-answer.ts` owns the one unpublished answer started alongside the classifier and its promote/discard rule; `promptMismatchCategories` in `suggestion-requests.ts` decides when two requests are the same prompt (empty result), comparing every field except an explicit short list; `observation/run-observation.ts` also owns `EffectiveProfile`, the full/smart/points policy a run used) and suggestion execution (`latency.ts` `LatencyTracker` + `observeLatency()` (owns both subscriptions) correlate diagnostics and run observations into bounded, allowlisted stage-timing records, `latency-summary.ts` `summarizeLatency` reports them; `suggestion-runner.ts` owns lanes, deadline and persistence; `run-publication.ts` the per-run held-text and publish gate)
+- `src/main/services/meetings/observation/` — the one home for observation: `observer-bus.ts` (shared typed pub/sub; a throwing listener is dropped, never policy), `meeting-observation.ts` (transcript/signal/state; window policy and mock-interview consume it), `run-observation.ts` (runner events plus `EffectiveProfile`), `diagnostics.ts` (coordinator decisions plus the rehearsal-only observer). They stay separate streams with their own payloads and consumers and share only the bus and the rule that observation never changes behaviour; payload types come from `assist/`, which emits into them
 - `src/main/services/meetings/assist/classifier/` — `classifier-breaker.ts`: the consecutive-failure circuit breaker (count, suspend, recover, throttled failure log) the coordinator asks about the turn classifier
 - `src/main/services/meetings/assist/testing/` — test-only fake-clock harness shared by the live-assistance suites
 - `src/main/services/meetings/capture/` — AUDIO capture-side identity and capture-health policy (screen capture lives in `services/screen-capture/`)

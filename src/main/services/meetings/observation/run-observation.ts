@@ -1,6 +1,7 @@
 import type { SuggestionEvent, SuggestionPurpose, SuggestionTrigger } from '@shared/types'
 import type { ProviderUsage, ProviderTiming } from '../../assistant/types'
-import type { SuggestionOutcome, SuggestionRequest } from './suggestion-runner'
+import type { SuggestionOutcome, SuggestionRequest } from '../assist/suggestion-runner'
+import { createObserverBus } from './observer-bus'
 
 /** The model policy a run actually used (product profile, not provider vocabulary). */
 export interface EffectiveProfile {
@@ -50,19 +51,6 @@ export type RunObservation =
       storedSuggestionId?: number
       at: number
     }
-const listeners = new Set<(event: RunObservation) => void>()
-export function subscribeRuns(listener: (event: RunObservation) => void): () => void {
-  listeners.add(listener)
-  return () => {
-    listeners.delete(listener)
-  }
-}
-export function observeRun(event: RunObservation): void {
-  for (const listener of listeners) {
-    try {
-      listener(event)
-    } catch {
-      /* evidence is never admission policy */
-    }
-  }
-}
+const bus = createObserverBus<RunObservation>()
+export const subscribeRuns = bus.subscribe
+export const observeRun = bus.publish

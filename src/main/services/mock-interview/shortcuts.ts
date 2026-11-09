@@ -1,5 +1,5 @@
 import { globalShortcut } from 'electron'
-import { subscribeMeeting } from '../meetings/observation'
+import { subscribeMeeting } from '../meetings/observation/meeting-observation'
 import type { MockSessionDeps } from './turns/session'
 
 export const registerMockShortcuts: MockSessionDeps['controls'] = (actions) => {

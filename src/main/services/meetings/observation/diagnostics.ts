@@ -5,7 +5,8 @@ import type {
 } from '../../assistant/classifier-verdict'
 import type { ProviderUsage } from '../../assistant/types'
 import type { CompletedTurn } from '../../turns/types'
-import type { PromptMismatchCategory } from './suggestion-requests'
+import type { PromptMismatchCategory } from '../assist/suggestion-requests'
+import { createObserverBus } from './observer-bus'
 
 /** Why a speculation was discarded: the source's own reason (also the event's `reason`). */
 export type DiscardReason =
@@ -72,19 +73,14 @@ export function observeRehearsalAssistance(next?: (event: AssistDiagnostic) => v
     throw new Error('Rehearsal observer requires explicit mode')
   observer = next
 }
-const listeners = new Set<(event: AssistDiagnostic) => void>()
-export function subscribeAssistance(listener: (event: AssistDiagnostic) => void): () => void {
-  listeners.add(listener)
-  return () => {
-    listeners.delete(listener)
-  }
-}
+const bus = createObserverBus<AssistDiagnostic>()
+export const subscribeAssistance = bus.subscribe
 export function observeAssistance(event: AssistDiagnostic): void {
   // Diagnostics must never alter admission or fail-closed behavior.
   try {
     observer?.(event)
-    for (const listener of listeners) listener(event)
   } catch {
     /* observer is best effort */
   }
+  bus.publish(event)
 }

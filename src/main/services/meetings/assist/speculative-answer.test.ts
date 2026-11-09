@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { DiscardReason } from './diagnostics'
+import type { DiscardReason } from '../observation/diagnostics'
 import type { CompletedTurn } from '../../turns/types'
 import type { SuggestionRequest } from './suggestion-runner'
 import { discardCategory, SpeculativeAnswer } from './speculative-answer'

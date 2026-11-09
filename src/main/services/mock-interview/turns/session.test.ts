@@ -3,8 +3,8 @@ import { MockSession, type MockSessionDeps } from './session'
 import { cannedInterviewer } from './interviewer'
 import type { LivePlan } from '../plan'
 import type { MockState } from '@shared/mock-interview/types'
-import type { MeetingObservation } from '../../meetings/observation'
-import type { RunObservation } from '../../meetings/assist/run-observation'
+import type { MeetingObservation } from '../../meetings/observation/meeting-observation'
+import type { RunObservation } from '../../meetings/observation/run-observation'
 
 const plan: LivePlan = {
   version: 1,

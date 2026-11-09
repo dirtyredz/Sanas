@@ -2,16 +2,16 @@ import type { SuggestionPurpose } from '@shared/types'
 import { randomUUID } from 'node:crypto'
 import type { MalformedShape } from '../../assistant/classifier-verdict'
 import type { ProviderUsage, ProviderTiming } from '../../assistant/types'
-import type { EffectiveProfile } from './run-observation'
+import type { EffectiveProfile } from '../observation/run-observation'
 import type { TurnAssemblyTiming, TurnCompletion } from '../../turns/types'
 import {
   subscribeAssistance,
   type AssistDiagnostic,
   type DiscardCategory,
   type TurnedDownCategory,
-} from './diagnostics'
+} from '../observation/diagnostics'
 import { summarizeLatency, type LatencySummary } from './latency-summary'
-import { subscribeRuns, type RunObservation } from './run-observation'
+import { subscribeRuns, type RunObservation } from '../observation/run-observation'
 import type { SuggestionOutcome } from './suggestion-runner'
 import type { PromptMismatchCategory } from './suggestion-requests'
 

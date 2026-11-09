@@ -18,9 +18,9 @@ vi.mock('../../windows/overlay-window', () => ({ showOverlay: vi.fn() }))
 vi.mock('../assistant/provider', () => ({ assistantProvider: {} }))
 vi.mock('./shortcuts', () => ({ registerMockShortcuts: vi.fn() }))
 vi.mock('./turns/interviewer', () => ({ createInterviewer: vi.fn() }))
-vi.mock('../meetings/observation', () => ({ subscribeMeeting: vi.fn() }))
-vi.mock('../meetings/assist/run-observation', () => ({ subscribeRuns: vi.fn() }))
-vi.mock('../meetings/assist/diagnostics', () => ({ subscribeAssistance: vi.fn() }))
+vi.mock('../meetings/observation/meeting-observation', () => ({ subscribeMeeting: vi.fn() }))
+vi.mock('../meetings/observation/run-observation', () => ({ subscribeRuns: vi.fn() }))
+vi.mock('../meetings/observation/diagnostics', () => ({ subscribeAssistance: vi.fn() }))
 // Same grounding resolution and creation as ordinary Start, without STT or audio.
 vi.mock('../meetings', async () => {
   const { createMeeting } = await import('../../db/repos/meeting/meeting-create')

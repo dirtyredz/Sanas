@@ -1,5 +1,5 @@
 import { beforeEach, expect, it, vi } from 'vitest'
-import type { MeetingObservation } from '../services/meetings/observation'
+import type { MeetingObservation } from '../services/meetings/observation/meeting-observation'
 
 const f = vi.hoisted(() => ({
   quit: vi.fn(),
@@ -14,7 +14,7 @@ vi.mock('../windows/main-window', () => ({
     f.closed = handler
   },
 }))
-vi.mock('../services/meetings/observation', () => ({
+vi.mock('../services/meetings/observation/meeting-observation', () => ({
   subscribeMeeting: (listener: (e: MeetingObservation) => void) => {
     f.observe = listener
     return () => undefined
