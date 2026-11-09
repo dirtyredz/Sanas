@@ -3,7 +3,7 @@ import type { ProviderUsage } from './types'
 // The Anthropic half of provider usage evidence (claude.ts): counts only, extracted
 // defensively from whatever the SDK hands back. Field names avoid the word "token" on
 // purpose: the main log redacts any key containing it (lifecycle/main-log.ts), which would
-// hide the numbers. The provider-neutral reporting lives in provider-usage.ts.
+// hide the numbers. The provider-neutral reporting lives in provider-evidence.ts.
 
 const count = (v: unknown): number | undefined =>
   typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.round(v) : undefined

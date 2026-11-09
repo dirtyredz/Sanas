@@ -234,7 +234,7 @@ Mic (getUserMedia, renderer)
   audio clock). Measurement only; no timing policy changed.
 - **Provider usage:** `AssistRequest.onUsage` (optional, best effort, once per call) reports
   `ProviderUsage` {inputCount, outputCount, cacheReadCount, cacheWriteCount, partial}
-  (`assistant/claude-usage.ts` extracts, `provider-usage.ts` reports best effort; `claude.ts` reports final usage, or partial from the stream
+  (`assistant/claude-usage.ts` extracts, `provider-evidence.ts` reports best effort; `claude.ts` reports final usage, or partial from the stream
   snapshot on failure/cancel). Missing fields are unknown, never zero; total input =
   input + cacheRead + cacheWrite. No token-count API calls.
 - **Clocks:** durations use the monotonic receipt clock; audio-clock values (STT/WAV time,

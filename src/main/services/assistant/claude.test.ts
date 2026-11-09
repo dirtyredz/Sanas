@@ -211,10 +211,31 @@ describe('image input', () => {
     expect(sdk.calls[0].body.messages).toEqual([{ role: 'user', content: 'turn' }])
   })
 
+  it('the reported policy event always equals what the request body put on the wire', async () => {
+    const cases = [
+      { model: 'claude-haiku-5-5', maxTokens: 64 },
+      { model: 'claude-sonnet-5-5', maxTokens: 64 },
+      { model: 'claude-opus-5-5', maxTokens: 1200 },
+      { model: 'custom-model', maxTokens: 64 },
+    ]
+    for (const c of cases) {
+      sdk.calls = []
+      const timing = vi.fn()
+      await claudeProvider.complete({ ...base, ...c, effort: 'medium', onTiming: timing })
+      const policy = timing.mock.calls.map(([e]) => e).find((e) => e.kind === 'policy')
+      const body = sdk.calls[0].body as {
+        output_config?: { effort: string }
+        thinking?: { type: string }
+      }
+      expect(policy.effort).toBe(body.output_config?.effort ?? 'omitted')
+      expect(policy.thinking).toBe(body.thinking?.type ?? 'default')
+    }
+  })
+
   it('tags SDK transport errors with a neutral category at the seam, timeout before connection', async () => {
     const failures: [Error, string | undefined][] = [
       [new Anthropic.APIConnectionTimeoutError(), 'timeout'],
-      [new Anthropic.APIConnectionError(), 'connection'],
+      [new Anthropic.APIConnectionError({}), 'connection'],
       [new Error('other'), undefined],
     ]
     for (const [error, category] of failures) {

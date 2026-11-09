@@ -2,7 +2,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import type { AssistantProvider, AssistRequest } from './types'
 import { completionText } from './completion-result'
 import { usageFromAnthropic } from './claude-usage'
-import { reportUsage, reportTiming } from './provider-usage'
+import { reportUsage, reportTiming } from './provider-evidence'
 import { tagProviderError, type ProviderFailureCategory } from './provider-error'
 
 // Adaptive thinking is model-specific. Opus and Sonnet 5.x accept effort; Haiku and
@@ -28,13 +28,17 @@ function thinkingOff(model: string): ThinkingOff | undefined {
   return undefined
 }
 
-function thinkingParam(req: Pick<AssistRequest, 'model' | 'maxTokens'>): {
-  thinking?: Anthropic.ThinkingConfigParam
+/** The effort and thinking a request actually puts on the wire: one value, used for both the
+ *  request body and the 'policy' timing event, so the evidence cannot drift from the call.
+ *  `undefined` means the parameter is omitted (the model's default applies). */
+function wirePolicy(req: Pick<AssistRequest, 'model' | 'maxTokens' | 'effort'>): {
+  effort: AssistRequest['effort'] | undefined
+  thinking: ThinkingOff | undefined
 } {
-  if (req.maxTokens > SHORT_BUDGET_MAX_TOKENS) return {}
-  const off = thinkingOff(req.model)
-  // the SDK types lag the API: 'between_tools' is valid on the wire but not in ThinkingConfigParam
-  return off ? { thinking: off as Anthropic.ThinkingConfigParam } : {}
+  return {
+    effort: supportsEffort(req.model) ? req.effort : undefined,
+    thinking: req.maxTokens > SHORT_BUDGET_MAX_TOKENS ? undefined : thinkingOff(req.model),
+  }
 }
 
 /** Maps the SDK's transport errors to the neutral category failure-diagnostics reads. The
@@ -99,21 +103,20 @@ export const claudeProvider: AssistantProvider = {
       defaultHeaders: req.workspaceId ? { 'anthropic-workspace-id': req.workspaceId } : undefined,
     })
     reportTiming(req.onTiming, { kind: 'request-start', at: performance.now() })
+    const policy = wirePolicy(req)
     reportTiming(req.onTiming, {
       kind: 'policy',
       at: performance.now(),
-      effort: supportsEffort(req.model) ? req.effort : 'omitted',
-      thinking:
-        req.maxTokens > SHORT_BUDGET_MAX_TOKENS
-          ? 'default'
-          : (thinkingOff(req.model)?.type ?? 'default'),
+      effort: policy.effort ?? 'omitted',
+      thinking: policy.thinking?.type ?? 'default',
     })
     const stream = client.messages.stream(
       {
         model: req.model,
         max_tokens: req.maxTokens,
-        ...(supportsEffort(req.model) ? { output_config: { effort: req.effort } } : {}),
-        ...thinkingParam(req),
+        ...(policy.effort ? { output_config: { effort: policy.effort } } : {}),
+        // the SDK types lag the API: 'between_tools' is valid on the wire but not in ThinkingConfigParam
+        ...(policy.thinking ? { thinking: policy.thinking as Anthropic.ThinkingConfigParam } : {}),
         // job context pack is stable for the whole meeting — cache it
         system: [req.system, ...(req.cacheableContext ? [req.cacheableContext] : [])].map(
           (text) => ({
