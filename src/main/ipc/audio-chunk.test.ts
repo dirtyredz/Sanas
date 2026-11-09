@@ -11,7 +11,7 @@ it('forwards ArrayBuffer chunks and drops anything else', () => {
 })
 
 it('contains a throwing sink and logs once per failing run', () => {
-  const sink = vi.fn(() => {
+  const sink = vi.fn((): void => {
     throw new Error('write after end')
   })
   const warn = vi.fn()
