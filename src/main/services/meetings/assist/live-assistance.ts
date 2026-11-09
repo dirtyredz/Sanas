@@ -549,13 +549,6 @@ export class LiveAssistance {
       this.speculation.discard(c.turn, 'not-generated')
       return
     }
-    const busy = (): boolean => {
-      if (this.deps.runner.canStart('ambient')) return false
-      this.observe({ event: 'waiting', turn: c.turn, reason: 'busy-lane' })
-      return true // retried when the lane frees
-    }
-    // the lane a speculation holds is this candidate's own
-    if (!this.speculation.pendingFor(c.turn) && busy()) return
     const snap = this.deps.snapshot()
     const asked = this.unanswered.select(now)
     // the same neutral prompt the speculation used, except a reference answer for a turn put
@@ -571,12 +564,12 @@ export class LiveAssistance {
         c.evidence,
       )
     // a speculation is published only when it is exactly this request; otherwise it is
-    // discarded here (freeing the lane) and this request starts in its place
-    let handle: SuggestionHandle | null = null
-    if (request) handle = this.speculation.promote(c.turn, request)
-    else this.speculation.discard(c.turn, 'no-snapshot')
-    const promoted = handle !== null
-    if (!promoted && busy()) return
+    // discarded (freeing the lane) and this request starts in its place
+    const admission = this.speculation.admit(c.turn, request || null)
+    if (admission.lane === 'busy') {
+      this.observe({ event: 'waiting', turn: c.turn, reason: 'busy-lane' })
+      return // retried when the lane frees
+    }
     this.ready = null
     if (!request) {
       this.observe({
@@ -587,7 +580,9 @@ export class LiveAssistance {
       })
       return
     }
-    handle ??= this.deps.runner.start(request)
+    const promoted = admission.lane === 'promoted'
+    const handle =
+      admission.lane === 'promoted' ? admission.handle : this.deps.runner.start(request)
     if (!handle) return
     this.observe({
       event: 'answer-started',

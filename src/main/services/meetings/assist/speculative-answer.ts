@@ -43,6 +43,11 @@ export function discardCategory(reason: DiscardReason): DiscardCategory {
   }
 }
 
+/** Where an accepted turn's answer comes from: the published speculation, a fresh ordinary
+ *  start, or nowhere yet. */
+export type Admission =
+  { lane: 'promoted'; handle: SpeculativeHandle } | { lane: 'ordinary' } | { lane: 'busy' }
+
 interface Pending {
   turn: CompletedTurn
   request: SuggestionRequest
@@ -55,7 +60,7 @@ export class SpeculativeAnswer {
   private promoted = 0
   private discarded = 0
 
-  constructor(private runner: Pick<SuggestionRunner, 'speculate'>) {}
+  constructor(private runner: Pick<SuggestionRunner, 'canStart' | 'speculate'>) {}
 
   /** Starts the speculation for `turn`, or returns null when speculation is unavailable, one
    *  is already pending, or the ambient lane is taken. */
@@ -73,14 +78,24 @@ export class SpeculativeAnswer {
     return handle
   }
 
-  pendingFor(turn: CompletedTurn): boolean {
-    return this.pending?.turn === turn
+  /** Which lane an accepted `turn` takes. `ordinary` means start `ordinary` (null when there
+   *  is no meeting, so nothing starts) fresh: the speculation is gone and the ambient lane is
+   *  free. `busy` leaves the candidate waiting (retried when the lane frees). The lane a
+   *  speculation holds is its own candidate's, so only a turn without one needs a free lane
+   *  before its request is judged. */
+  admit(turn: CompletedTurn, ordinary: SuggestionRequest | null): Admission {
+    if (this.pending?.turn !== turn && !this.runner.canStart('ambient')) return { lane: 'busy' }
+    let handle: SpeculativeHandle | null = null
+    if (ordinary) handle = this.promote(turn, ordinary)
+    else this.discard(turn, 'no-snapshot')
+    if (handle) return { lane: 'promoted', handle }
+    return this.runner.canStart('ambient') ? { lane: 'ordinary' } : { lane: 'busy' }
   }
 
   /** The classifier accepted `turn` and the ordinary path would now send `ordinary`.
    *  Returns the published speculation when it is that same request and still running or
    *  held; otherwise discards it (freeing the lane at once) and returns null. */
-  promote(turn: CompletedTurn, ordinary: SuggestionRequest): SpeculativeHandle | null {
+  private promote(turn: CompletedTurn, ordinary: SuggestionRequest): SpeculativeHandle | null {
     const p = this.pending
     if (!p || p.turn !== turn) return null
     const mismatch = promptMismatchCategories(p.request, ordinary)
