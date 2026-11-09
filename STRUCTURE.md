@@ -68,7 +68,7 @@ Shared interview screens live in `services/mock-interview/fixtures/`.
 ```
 sanas/
 ├── src/                                    # (container; no files of its own)
-│   ├── main/                               # Electron main process; index.ts = mode dispatch (normal / --smoke / --rehearsal), system-audio.ts = loopback handler
+│   ├── main/                               # Electron main process; index.ts = mode dispatch (normal / --smoke / --rehearsal), services/platform/system-audio.ts = loopback handler
 │   │   ├── lifecycle/                      # userData identity, capped main log, normal startup
 │   │   ├── diagnostics/                    # packaged smoke diagnostics + rehearsal
 │   │   │   └── rehearsal/                  # isolated scripted/audio composition
@@ -228,12 +228,11 @@ sanas/
 ```
 
 Container-only directories (`src/`, `src/renderer/`, `src/renderer/src/`, `.github/`, `.github/actions/`) hold no code of their own and
-are deliberately not homes. `src/main/` is a home only for the process entry (`index.ts`) and the display-media
-handler (`system-audio.ts`); new main-process code belongs in a responsibility folder, not beside them.
+are deliberately not homes. `src/main/` is a home only for the process entry (`index.ts`); new main-process code belongs in a responsibility folder, not beside it.
 
 **Enforced homes** (one bullet per directory in the tree above, in tree order):
 
-- `src/main/` — process entry (`index.ts`, normal vs `--smoke` vs `--rehearsal` dispatch) and the display-media loopback handler (`system-audio.ts`).
+- `src/main/` — process entry only (`index.ts`, normal vs `--smoke` vs `--rehearsal` dispatch).
 - `src/main/lifecycle/` — userData identity, capped/redacted main logging and normal startup wiring (`window-policy.ts`: quit when the main window closes, hide the overlay when a meeting goes idle); normal startup is not loaded by smoke.
 - `src/main/diagnostics/` — isolated, headless packaged diagnostics: the `--smoke` checks and the `rehearsal/` harness below. It depends on product code (e.g. the request-outcome shapes in `services/mock-interview/turns/`), never the reverse.
 - `src/main/diagnostics/rehearsal/` — isolated dispatch/composition; no ordinary startup policy.
@@ -275,7 +274,7 @@ handler (`system-audio.ts`); new main-process code belongs in a responsibility f
 - `src/main/services/meetings/assist/` (root: `live-session.ts` assembly, `meeting-prompts.ts`; code lives in the homes below) — per-meeting prompt/grounding state wired to the provider, DB and windows.
 - `src/main/services/meetings/assist/automatic/` — the automatic candidate lifecycle (`live-assistance.ts`: turn assembly → prefilter → classifier → freshness/cooldown → runner, timers and invalidation), `question-ledger.ts` (carries uncovered stacked questions into one suggestion) and `speculative-answer.ts` (the one unpublished answer started alongside the classifier and its promote/discard rule); `live-assistance.ts` is also the assist-wide coordinator: it composes `manual/` AnswerNow and `coach/` CoachCoordinator; `live-assistance-harness.ts` is the test-only fake-clock harness shared by the live-assistance suites. `LiveAssistance` consumes same-job evidence through the `EvidenceHandle` type defined in `suggestion/suggestion-requests.ts`.
 - `src/main/services/meetings/assist/automatic/breaker/` — `classifier-breaker.ts`: the consecutive-failure circuit breaker (count, suspend, recover, throttled failure log) the coordinator asks about the turn classifier (distinct from `services/assistant/classifier/`, the classifier itself).
-- `src/main/services/meetings/assist/manual/` — Answer now (`answer-now.ts`: the hotkey answer and its evidence retrieval), manual and screen-capture admission (`manual-requests.ts`, `capture-requests.ts`; `capture-feature.ts`, `createCaptureFeature`, wires the display capture, draft store and requests so `meetings/index.ts` knows none of them) and `capture-drafts.ts` (in-memory composer screen drafts).
+- `src/main/services/meetings/assist/manual/` — Answer now (`answer-now.ts`: the hotkey answer and its evidence retrieval), manual and screen-capture admission (`manual-requests.ts`, `capture-requests.ts` coordinates admission only, `capture-status.ts` is its status broadcaster (latest status + seq); `capture-feature.ts`, `createCaptureFeature`, wires the display capture, draft store and requests so `meetings/index.ts` knows none of them) and `capture-drafts.ts` (in-memory composer screen drafts).
 - `src/main/services/meetings/assist/coach/` — `coach-coordinator.ts`: next-point coaching while the user talks (feeds the coach policy, owns its timer and buffered run; yields to every answer).
 - `src/main/services/meetings/assist/suggestion/` — `suggestion-requests.ts` (request building; `promptMismatchCategories` decides when two requests are the same prompt, comparing every field except an explicit short list; `EvidenceHandle`), `suggestion-in-flight.ts`, `suggestion-runner.ts` (lanes, deadline and persistence) and `run-publication.ts` (the per-run held-text and publish gate).
 - `src/main/services/meetings/assist/suggestion/answers/` — `answer-coverage.ts`: meeting-local answer ownership; callers hold an opaque `AnswerReservation` and use `AnswerCoverage` operations (reserve, release, releaseUnpublished, attachRunCancel, lifecycle).
@@ -291,7 +290,7 @@ handler (`system-audio.ts`); new main-process code belongs in a responsibility f
 - `src/main/services/meetings/postprocess/rediarize/` — batch re-diarization and speaker identity/name carry-over.
 - `src/main/services/meetings/postprocess/merge/` — split-recording merge planning and application.
 - `src/main/services/meetings/postprocess/recovery/` — startup repair of meetings left open by an earlier process.
-- `src/main/services/platform/` — email, updates, retention and global-hotkey integrations (grouping parent).
+- `src/main/services/platform/` — email, updates, retention and global-hotkey integrations (grouping parent); `system-audio.ts` is the display-media loopback handler (`registerSystemAudioLoopback`).
 - `src/main/services/platform/hotkeys/` — global shortcut registration/status, repeat suppression and callback containment.
 - `src/main/services/platform/updates/` — electron-updater integration and restart eligibility checks.
 - `src/main/services/platform/email/` — the email provider seam and SMTP implementation.

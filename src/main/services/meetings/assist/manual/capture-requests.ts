@@ -4,6 +4,7 @@ import type {
   CaptureDraftView,
   CaptureStatus,
 } from '@shared/live-controls/capture'
+import { CaptureStatusBroadcaster } from './capture-status'
 import type { AcquiredCapture } from '../../../screen-capture'
 import type { CaptureDrafts } from './capture-drafts'
 import type { AssistInput } from './manual-requests'
@@ -46,18 +47,15 @@ function message(e: unknown): string {
 
 export class CaptureRequests<Target> {
   private preparing = false
-  private current: CaptureStatus = { meetingId: null, phase: 'idle', message: '', seq: 0 }
+  private readonly feedback: CaptureStatusBroadcaster
 
-  constructor(private readonly deps: CaptureRequestDeps<Target>) {}
+  constructor(private readonly deps: CaptureRequestDeps<Target>) {
+    this.feedback = new CaptureStatusBroadcaster((status) => deps.status(status))
+  }
 
   /** The latest status, for an overlay that mounts after it was broadcast. */
   status(): CaptureStatus {
-    return this.current
-  }
-
-  private setStatus(meetingId: number | null, phase: CaptureStatus['phase'], text = ''): void {
-    this.current = { meetingId, phase, message: text, seq: this.current.seq + 1 }
-    this.deps.status(this.current)
+    return this.feedback.get()
   }
 
   private refuse(
@@ -65,7 +63,7 @@ export class CaptureRequests<Target> {
     reason: 'busy' | 'unavailable',
     text: string,
   ): Admission {
-    this.setStatus(meetingId, 'failed', text)
+    this.feedback.set(meetingId, 'failed', text)
     return { accepted: false, reason, message: text }
   }
 
@@ -80,7 +78,7 @@ export class CaptureRequests<Target> {
     this.preparing = true
     try {
       const target = this.deps.target()
-      this.setStatus(meetingId, 'capturing', 'Capturing…')
+      this.feedback.set(meetingId, 'capturing', 'Capturing…')
       const captured = await this.deps.acquire(target)
       const result = await this.deps.serialize(async (): Promise<Admission> => {
         if (this.deps.liveMeetingId() !== meetingId)
@@ -88,10 +86,14 @@ export class CaptureRequests<Target> {
         return this.deps.request({ meetingId, kind: 'capture', image: captured.image })
       })
       if (result.accepted)
-        this.setStatus(meetingId, 'analyzing', `Screen captured: ${captured.display} — analyzing…`)
+        this.feedback.set(
+          meetingId,
+          'analyzing',
+          `Screen captured: ${captured.display} — analyzing…`,
+        )
       else if (this.deps.liveMeetingId() !== meetingId)
-        this.setStatus(null, 'idle') // Stopped
-      else this.setStatus(meetingId, 'failed', result.message)
+        this.feedback.set(null, 'idle') // Stopped
+      else this.feedback.set(meetingId, 'failed', result.message)
       return result
     } catch (e) {
       return this.refuse(meetingId, 'unavailable', message(e))
@@ -149,7 +151,7 @@ export class CaptureRequests<Target> {
    *  being prepared is discarded when it re-enters the queue. */
   meetingChanged(): void {
     this.deps.drafts.clear()
-    if (this.current.phase !== 'idle') this.setStatus(null, 'idle')
+    this.feedback.clear()
   }
 
   /** The overlay renderer went away: nothing can send its drafts any more. */

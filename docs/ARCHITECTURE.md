@@ -97,7 +97,7 @@ Mic (getUserMedia, renderer)
   `settings.meetingSource`):
   - **This PC** — the call plays through this machine, where driver echo-cancellation
     erases the other side from the mic, so Sanas also taps the signal headed to the
-    output device via Electron's display-media loopback (`src/main/system-audio.ts`).
+    output device via Electron's display-media loopback (`src/main/services/platform/system-audio.ts`).
     Channels: **0 = mic (user), 1 = loopback (others)** — identity is structural,
     resolved in one place (`services/meetings/capture/channel-identity.ts`, returning `user | other | unknown`).
   - **Elsewhere** (another device, or in the room; the default) — mic-only mono: everyone
