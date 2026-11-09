@@ -1,7 +1,8 @@
 import type { SuggestionPurpose } from '@shared/types'
 import { randomUUID } from 'node:crypto'
 import type { MalformedShape } from '../../assistant/classifier-verdict'
-import type { ProviderUsage, EffectiveProfile, ProviderTiming } from '../../assistant/types'
+import type { ProviderUsage, ProviderTiming } from '../../assistant/types'
+import type { EffectiveProfile } from './run-observation'
 import type { TurnAssemblyTiming, TurnCompletion } from '../../turns/types'
 import {
   subscribeAssistance,

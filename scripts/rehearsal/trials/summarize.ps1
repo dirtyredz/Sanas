@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param([Parameter(Mandatory=$true)][string]$LogCopy)
 $ErrorActionPreference = 'Stop'
-. (Join-Path $PSScriptRoot 'owner-run.ps1')
+. (Join-Path (Split-Path -Parent $PSScriptRoot) 'owner-run.ps1')
 Initialize-OwnerRun 'latency-summary'
 try {
   $source = (Resolve-Path -LiteralPath $LogCopy).Path

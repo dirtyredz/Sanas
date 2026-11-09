@@ -3,7 +3,6 @@ import {
   answerRequest,
   automaticAnswerRequest,
   coachRequest,
-  samePrompt,
   promptMismatchCategories,
   type AssistSettings,
   type AssistSnapshot,
@@ -82,12 +81,14 @@ it.each(['points', 'smart', 'full'] as const)(
   },
 )
 
-describe('samePrompt', () => {
+describe('prompt matching', () => {
+  const promptsMatch = (a: SuggestionRequest, b: SuggestionRequest): boolean =>
+    promptMismatchCategories(a, b).length === 0
   const turn = { text: 'Why?', speaker: 1 } as unknown as CompletedTurn
   const base = (): SuggestionRequest => automaticAnswerRequest(snapshot(), settings, turn, [turn])
 
   it('ignores only audio time and the accept closure', () => {
-    expect(samePrompt(base(), { ...base(), atMs: 999, accept: () => true })).toBe(true)
+    expect(promptsMatch(base(), { ...base(), atMs: 999, accept: () => true })).toBe(true)
   })
   it('differs on any prompt field, including contextRevision and delivery', () => {
     for (const change of [
@@ -97,7 +98,7 @@ describe('samePrompt', () => {
       { contextRevision: 4 },
       { delivery: 'buffered' as const },
     ])
-      expect(samePrompt(base(), { ...base(), ...change })).toBe(false)
+      expect(promptsMatch(base(), { ...base(), ...change })).toBe(false)
   })
   it('matches a rebuilt request with the same told stories and split window, and only then', () => {
     const { window, question } = topicSwitchWindow(2)
@@ -115,22 +116,22 @@ describe('samePrompt', () => {
       )
     const story = { headline: 'At Acme I ran the federation.', detail: 'Invoicing was mine.' }
     expect(live([story]).userContent).toContain('Current exchange')
-    expect(samePrompt(live([story]), live([story]))).toBe(true)
-    expect(samePrompt(live([story]), live([story, { headline: 'New', detail: '' }]))).toBe(false)
+    expect(promptsMatch(live([story]), live([story]))).toBe(true)
+    expect(promptsMatch(live([story]), live([story, { headline: 'New', detail: '' }]))).toBe(false)
   })
   it('is one prompt for every accepted verdict except a reference answer', () => {
     // built before the classifier speaks and rebuilt after: the verdict is not in it
-    expect(samePrompt(base(), base())).toBe(true)
+    expect(promptsMatch(base(), base())).toBe(true)
     expect(base().userContent).not.toMatch(/\(a (?:question|request|objection)\)|put to Me\./)
     const reference = automaticAnswerRequest(snapshot(), settings, turn, [turn], 'reference')
     expect(reference.userContent).toContain('put to another participant')
-    expect(samePrompt(base(), reference)).toBe(false)
+    expect(promptsMatch(base(), reference)).toBe(false)
   })
   it('compares a field it has never heard of by default', () => {
     const future = { ...base(), someFutureField: 'x' } as unknown as SuggestionRequest
-    expect(samePrompt(base(), future)).toBe(false)
+    expect(promptsMatch(base(), future)).toBe(false)
     expect(promptMismatchCategories(base(), future)).toEqual(['other'])
-    expect(samePrompt(future, { ...future })).toBe(true)
+    expect(promptsMatch(future, { ...future })).toBe(true)
   })
   it('reports bounded names for actual prompt changes without exposing values', () => {
     const a = base()
@@ -146,7 +147,7 @@ describe('samePrompt', () => {
       'model-profile',
       'user-content',
     ])
-    expect(samePrompt(a, b)).toBe(false)
+    expect(promptsMatch(a, b)).toBe(false)
     const snap = snapshot()
     const first = automaticAnswerRequest(snap, settings, turn, [turn])
     snap.told = [{ headline: 'An answer just completed', detail: 'New factual content' }]
@@ -156,10 +157,10 @@ describe('samePrompt', () => {
   })
   it('never matches a request holding a screenshot, and compares turn spans by identity', () => {
     const image = { mediaType: 'image/png', base64: 'x' } as unknown as AssistImage
-    expect(samePrompt({ ...base(), image }, { ...base(), image })).toBe(false)
+    expect(promptsMatch({ ...base(), image }, { ...base(), image })).toBe(false)
     const span = { startMs: 1, endMs: 2, completedAt: 3 }
     expect(
-      samePrompt(
+      promptsMatch(
         { ...base(), diagnosticTurns: [span] },
         { ...base(), diagnosticTurns: [{ ...span }] },
       ),

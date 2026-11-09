@@ -7,6 +7,7 @@
 // already shown this meeting, which the model must not repeat or re-assert.
 
 import { FILLER_CLOSE, FILLER_OPEN, stripFillerMarkers } from '@shared/filler-marker'
+import { NO_SUGGESTION } from '@shared/live-controls/readable-suggestion'
 
 export const INITIAL_ANSWER_DEPTH = `Initial answer depth (ambient and Answer now): infer the current ask's purpose from the transcript and explicit meeting context. For screening, factual experience verification, rate or availability checks, lead with one speakable sentence built on supplied facts, plausible and hedged where facts are missing, and at most one necessary qualifier; target 15-40 words, and never more than 40 words in total (aim for about 30) for factual or inventory checks ("level of experience with X", "what services have you used", "have you used X", "do you ever X", "which version"): one speakable sentence that answers it and names the things asked, plus at most one short supporting line, no project narrative or tour of employers. Behavioural stories are not screening checks: open experience asks may use the 80-word compact target with a concrete speakable lead and up to two supporting lines. Technical nouns alone do not call for a design explanation. Include code only when implementation/code is requested or an exact artifact is essential to answer the ask. Only an ask whose subject is missing or garbled needs a short clarification; a question that names its subject but trails off is answered from its words, never completed with invented ones. Token budgets are ceilings, not length targets; reserve expansion for More detail.`
 
@@ -21,22 +22,6 @@ export const COMPACT_CONTRACT = `Format for a small live-meeting overlay (follow
   supporting points. Reserve longer explanation for More detail.
 - Improvised filler stays wrapped in ${FILLER_OPEN} ${FILLER_CLOSE} inside the headline and lines; it counts toward the limits.
 - No headings, bullet walls, preamble, or praise such as "Great question".`
-
-/** What an automatic suggestion outputs when it has nothing new and useful to say. */
-export const NO_SUGGESTION = '<none>'
-
-/** True for the no-op output (and the older bare NONE, tolerated from the model). */
-export function isNoSuggestion(text: string): boolean {
-  const t = text.trim().toLowerCase()
-  return t === '' || t === NO_SUGGESTION || /^\**none\**\.?$/.test(t)
-}
-
-/** True when broadcast text shows something a person can read: not the no-op, not only
- *  Markdown delimiters, filler markers or whitespace. */
-export function hasReadableText(text: string): boolean {
-  if (isNoSuggestion(text)) return false
-  return /[\p{L}\p{N}]/u.test(text.replace(/<none>/gi, ''))
-}
 
 /** While streaming: could this prefix still turn out to be the no-op? If so, nothing is
  *  shown yet, so a declined suggestion never flashes on screen. */

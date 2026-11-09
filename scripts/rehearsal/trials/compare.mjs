@@ -3,7 +3,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { resolve } from 'node:path'
 
-const root = fileURLToPath(new URL('../../', import.meta.url))
+const root = fileURLToPath(new URL('../../../', import.meta.url))
 const folder = resolve(root, '.tmp/owner-runs')
 await mkdir(folder, { recursive: true })
 const bundle = resolve(folder, `comparison-${process.pid}.mjs`)

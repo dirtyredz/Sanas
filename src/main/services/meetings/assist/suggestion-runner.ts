@@ -2,7 +2,7 @@ import { observeRun } from './run-observation'
 import type { SuggestionMetadata } from '@shared/live-controls/types'
 import type { SuggestionEvent, SuggestionPurpose, SuggestionTrigger } from '@shared/types'
 import type { AssistantProvider, AssistImage } from '../../assistant/types'
-import { hasReadableText, isNoSuggestion } from '../../assistant/compact-contract'
+import { hasReadableText, isNoSuggestion } from '@shared/live-controls/readable-suggestion'
 import { RunPublication } from './run-publication'
 import { canStartSuggestion, type SuggestionInFlight } from './suggestion-in-flight'
 

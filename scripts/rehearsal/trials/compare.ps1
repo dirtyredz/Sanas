@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param([switch]$RealProvider)
 $ErrorActionPreference = 'Stop'
-. (Join-Path $PSScriptRoot 'owner-run.ps1')
+. (Join-Path (Split-Path -Parent $PSScriptRoot) 'owner-run.ps1')
 Initialize-OwnerRun 'profile-comparison'
 Add-LogSecret $env:ANTHROPIC_API_KEY
 Add-LogSecret $env:ANTHROPIC_WORKSPACE_ID

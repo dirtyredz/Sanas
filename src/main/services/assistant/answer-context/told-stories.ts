@@ -6,7 +6,8 @@
 import type { SuggestionPurpose } from '@shared/types'
 import type { ManualKind } from '@shared/live-controls/types'
 import { stripFillerMarkers } from '@shared/filler-marker'
-import { NO_SUGGESTION, headlineOf } from '../compact-contract'
+import { NO_SUGGESTION } from '@shared/live-controls/readable-suggestion'
+import { headlineOf } from '../compact-contract'
 
 export interface ToldStory {
   headline: string

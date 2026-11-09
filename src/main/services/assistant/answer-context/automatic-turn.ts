@@ -12,7 +12,7 @@
 // gets an explicit reference-answer instruction. That prompt differs, so such a speculation is
 // never published and the ordinary path answers it.
 
-import { NO_SUGGESTION } from '../compact-contract'
+import { NO_SUGGESTION } from '@shared/live-controls/readable-suggestion'
 import { boundedExcerpt } from '../excerpt'
 import { ANCHOR_REMINDER, QUESTION_CHARS } from './anchor'
 

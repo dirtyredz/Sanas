@@ -10,7 +10,7 @@ import type {
 } from '../../services/stt/types'
 import type { Step } from '../scenario/scenario'
 import { beginOutcome, turnSteps, type RequestOutcome } from './outcomes'
-import { isNoSuggestion } from '../../services/assistant/compact-contract'
+import { isNoSuggestion } from '@shared/live-controls/readable-suggestion'
 import { ENDPOINTING_MS } from '../../services/stt/endpointing'
 
 type Utterance = Extract<Step, { kind: 'utterance' }>

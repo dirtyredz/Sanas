@@ -3,6 +3,7 @@ import { useCaptureStatus } from '../capture/useCaptureStatus'
 import { useOverlaySettings } from '../layout/useOverlaySettings'
 import { useManualRequests } from '../suggestions/useManualRequests'
 import { useOverlaySuggestions } from '../suggestions/useOverlaySuggestions'
+import { useSuggestionVisibilityAck } from '../suggestions/useSuggestionVisibilityAck'
 import { useOverlayComposer } from '../workspaces/composer/useOverlayComposer'
 import { useAnswerEveryQuestion } from './AnswerEveryQuestion'
 import { useComposerActivation } from './navigation/useComposerActivation'
@@ -22,6 +23,7 @@ function useOverlaySessionModel() {
   const windowState = useOverlayWindowState()
   const navigation = useOverlayNavigation(meetingId)
   const suggestions = useOverlaySuggestions(meetingId)
+  useSuggestionVisibilityAck(suggestions.items, suggestions.selected)
   const manual = useManualRequests(
     meetingId,
     suggestions.items,

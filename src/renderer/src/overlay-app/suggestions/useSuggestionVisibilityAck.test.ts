@@ -1,6 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest'
-import type { OverlaySuggestionsModel } from './useOverlaySuggestions'
-import type { ManualRequestsModel } from './useManualRequests'
+import type { SuggestionView } from '../../lib/suggestions/whisper-history'
 
 const hooks = vi.hoisted(() => ({ effects: [] as (() => (() => void) | void)[] }))
 vi.mock('react', async (importOriginal) => ({
@@ -8,7 +7,7 @@ vi.mock('react', async (importOriginal) => ({
   useEffect: (effect: () => (() => void) | void) => hooks.effects.push(effect),
   useRef: (current: unknown) => ({ current }),
 }))
-import { OverlaySuggestions } from './OverlaySuggestions'
+import { useSuggestionVisibilityAck } from './useSuggestionVisibilityAck'
 
 afterEach(() => {
   hooks.effects = []
@@ -23,14 +22,15 @@ it('acknowledges selected readable content only in the post-commit frame, taggin
   vi.stubGlobal('document', { hidden: false })
   vi.stubGlobal('requestAnimationFrame', (callback: () => void) => frames.push(callback))
   vi.stubGlobal('cancelAnimationFrame', cancel)
-  const selected = { meetingId: 7, suggestionId: 1, text: '**Readable answer**', error: null }
+  const selected = {
+    meetingId: 7,
+    suggestionId: 1,
+    text: '**Readable answer**',
+    error: null,
+  } as unknown as SuggestionView
   const other = { ...selected, suggestionId: 2 }
-  const model = {
-    items: [selected, other, { ...selected, suggestionId: 3, text: '**' }],
-    selected,
-    selectedIndex: 0,
-  } as unknown as OverlaySuggestionsModel
-  OverlaySuggestions({ model, manual: {} as ManualRequestsModel, live: true })
+  const items = [selected, other, { ...selected, suggestionId: 3, text: '**' }]
+  useSuggestionVisibilityAck(items, selected)
   expect(acknowledgeVisibility).not.toHaveBeenCalled()
   const cleanup = hooks.effects[0]()
   expect(acknowledgeVisibility).toHaveBeenCalledExactlyOnceWith({
@@ -48,7 +48,7 @@ it('acknowledges selected readable content only in the post-commit frame, taggin
   cleanup?.()
   expect(cancel.mock.calls.map(([id]) => id)).toEqual([1])
   vi.stubGlobal('document', { hidden: true })
-  OverlaySuggestions({ model, manual: {} as ManualRequestsModel, live: true })
+  useSuggestionVisibilityAck(items, selected)
   hooks.effects[1]()
   expect(acknowledgeVisibility).toHaveBeenCalledWith({ meetingId: 7, runId: 1, state: 'hidden' })
 })

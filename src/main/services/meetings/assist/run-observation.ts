@@ -1,6 +1,14 @@
 import type { SuggestionEvent, SuggestionPurpose, SuggestionTrigger } from '@shared/types'
-import type { ProviderUsage, ProviderTiming, EffectiveProfile } from '../../assistant/types'
+import type { ProviderUsage, ProviderTiming } from '../../assistant/types'
 import type { SuggestionOutcome, SuggestionRequest } from './suggestion-runner'
+
+/** The model policy a run actually used (product profile, not provider vocabulary). */
+export interface EffectiveProfile {
+  model: string
+  profile: 'full' | 'smart' | 'points' | 'other'
+  maxTokens: number
+  effort: 'low' | 'medium' | 'high'
+}
 
 // `at` is the runner's monotonic clock where the event happened (latency evidence). The
 // 'visible' event carries broadcast text: consumers must not serialize it wholesale.

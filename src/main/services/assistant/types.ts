@@ -57,13 +57,6 @@ export type ProviderTiming =
       thinking: 'default' | 'disabled' | 'between_tools'
     }
 
-export interface EffectiveProfile {
-  model: string
-  profile: 'full' | 'smart' | 'points' | 'other'
-  maxTokens: number
-  effort: 'low' | 'medium' | 'high'
-}
-
 /** Provider-reported counts, kept as separate fields (never summed here: cache reads and
  *  writes are reported apart from uncached input). A missing field is UNKNOWN, not zero. */
 export interface ProviderUsage {

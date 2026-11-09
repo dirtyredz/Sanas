@@ -5,10 +5,10 @@
 From any cwd, invoke these scripts by absolute path (relative paths below assume repo root):
 
 ```powershell
-./scripts/rehearsal/compare.ps1
-./scripts/rehearsal/summarize.ps1 -LogCopy C:/private/copied-sanas-logs
+./scripts/rehearsal/trials/compare.ps1
+./scripts/rehearsal/trials/summarize.ps1 -LogCopy C:/private/copied-sanas-logs
 # Explicit paid opt-in, using environment credentials only; never reads owner settings:
-./scripts/rehearsal/compare.ps1 -RealProvider
+./scripts/rehearsal/trials/compare.ps1 -RealProvider
 ```
 
 Comparison runs four fixed factual/behavioural/code/room questions through the production

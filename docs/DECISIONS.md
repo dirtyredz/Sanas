@@ -649,7 +649,7 @@ current value for every candidate so a saved change applies without restarting a
 (Superseded in part by “Answer completed turns, not segments”: the heuristic is now a loose
 prefilter ahead of a classifier, and the cooldown gates automatic answers to completed turns.)
 
-Earlier platform, capture and storage decisions: [August/September archive](DECISIONS-2026-08-09.md).
+Earlier platform, capture and storage decisions: [August/September archive](archive/DECISIONS-2026-08-09.md).
 
 ## 2026-10-30 ? Presentation teleprompter and independent assistance lanes
 

@@ -160,18 +160,15 @@ export function answerNowRequest(
  *  in something nobody remembered to list. */
 const NOT_PROMPT = new Set<keyof SuggestionRequest>(['atMs', 'accept'])
 
-/** True when `a` and `b` would send the same prompt with the same provenance, so a
- *  speculation started for `a` may be published as the answer to `b`. Screenshots never
- *  match (a held image is single-use), and the diagnostic turn spans match by identity. */
-export function samePrompt(a: SuggestionRequest, b: SuggestionRequest): boolean {
-  return promptMismatchCategories(a, b).length === 0
-}
-
 export type PromptMismatchCategory =
   'image' | 'carried-turns' | 'user-content' | 'grounding-context' | 'model-profile' | 'other'
 
-/** Names only. User content combines transcript, ledger and meeting context; do not infer
- *  which sub-block changed from a flattened prompt. New fields still compare by default. */
+/** What differs between `a` and `b` as prompts; empty means they would send the same prompt
+ *  with the same provenance, so a speculation started for `a` may be published as the answer
+ *  to `b`. Screenshots never match (a held image is single-use), and the diagnostic turn
+ *  spans match by identity. Names only: user content combines transcript, ledger and meeting
+ *  context; do not infer which sub-block changed from a flattened prompt. New fields still
+ *  compare by default. */
 export function promptMismatchCategories(
   a: SuggestionRequest,
   b: SuggestionRequest,

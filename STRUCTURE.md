@@ -4,7 +4,7 @@ _Code-shape map: components, responsibilities, dependencies, structural debt._
 _System design lives in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)._
 
 Current rulings live in `docs/DECISIONS.md`; its August/September history is preserved
-in `docs/DECISIONS-2026-08-09.md` to keep the current decision map below 800 lines.
+in `docs/archive/DECISIONS-2026-08-09.md` to keep the current decision map below 800 lines.
 
 Last full review: 2026-08-27
 
@@ -25,7 +25,7 @@ importer/validator stay under `services/meetings/context/resume/` and the type i
 Rehearsal homes: `src/main/rehearsal/` owns explicit isolated rehearsal dispatch, scenario
 validation/assertions (`scenario/`) and scripted providers/correlation (`outcomes/`).
 `runner/comparison.ts` reuses the request builder, runner and rehearsal assistant for matched
-Full/Smart trials. `scripts/rehearsal/compare.ps1` and `summarize.ps1` wrap local Node tools
+Full/Smart trials. `scripts/rehearsal/trials/compare.ps1` and `summarize.ps1` wrap local Node tools
 for those trials and copied-log stage percentiles; both log under `.tmp/owner-runs/`.
 Its `runner/` owns flags, evidence, steps, clock/audio pumping and final checks/report;
 `audio/` owns WAV replay/socket faults,
@@ -150,7 +150,7 @@ sanas/
 │       ├── jobs/                           # renderer-safe job contracts: applications, import baseline, deletion, limits
 │       ├── mock-interview/                 # typed setup/state/result IPC contracts
 │       ├── presentation/                   # historical slide and timeline contracts (read-only)
-│       ├── live-controls/                  # context, admission, suggestion metadata and capture contracts
+│       ├── live-controls/                  # context, admission, suggestion metadata, capture, visibility ack and readable-suggestion contracts
 │       ├── hotkeys/                        # global shortcut actions and registration status
 │       └── updates/                        # sanitized updater snapshots
 ├── scripts/                                # repository, release and owner-operation tooling
@@ -158,6 +158,7 @@ sanas/
 │   ├── eval/                               # paid prompt evals (owner-run .ps1 + vitest-run .eval.ts)
 │   ├── rehearsal/                        # runner, credentials and fixture rendering
 │   │   ├── scenarios/                    # scripted/audio JSON
+│   │   ├── trials/                       # matched-profile compare and copied-log latency summary
 │   │   └── fixtures/                     # standup.png only
 │   └── owner/                              # redacted owner operation dispatch/logging
 ├── .github/
@@ -174,22 +175,23 @@ sanas/
 - `src/main/rehearsal/` — isolated dispatch/composition; no ordinary startup policy.
 - `src/main/rehearsal/scenario/` — scenario validation, assertions and bounded content rubrics.
 - `src/main/rehearsal/outcomes/` — scripted providers and request/span correlation.
-- `src/main/rehearsal/runner/` — options, observer evidence, step execution, clock/audio pump and final checks/report.
+- `src/main/rehearsal/runner/` — options, observer evidence, step execution, clock/audio pump and final checks/report; `comparison.ts` is the matched Full/Smart trial driver (production request builder + runner + `RehearsalAssistant`), launched only by `scripts/rehearsal/trials/compare.*`.
 - `src/main/rehearsal/audio/` — PCM replay and socket fault injection.
 - `src/main/rehearsal/screens/` — fixture display, capture verification and coordinate geometry.
 - `scripts/eval/` — paid prompt evals: `topic-switch.ps1` (old vs new prompt builders on an invented fixture; `-DryRun` is free) and `.eval.ts`
 - `scripts/rehearsal/` — owner runner, credentials and offline fixture rendering.
+- `scripts/rehearsal/trials/` — matched-profile and latency-summary owner tools: `compare.ps1`/`compare.mjs` (bundle and run `src/main/rehearsal/runner/comparison.ts`), `summarize.ps1`/`summarize.mjs` (copied-log stage percentiles) and `summarize.test.ts`; each `.ps1` dot-sources `../owner-run.ps1` from `$PSScriptRoot` and runs from any cwd.
 - `scripts/rehearsal/scenarios/` — versioned scripted/audio scenarios.
 - `scripts/rehearsal/fixtures/` — the rehearsal-only standup screen.
 - `src/main/services/platform/` — email, updates, retention and global-hotkey integrations.
 - `src/main/services/turns/transcript-format.ts` — canonical main-side transcript labels/windowing.
+
+- `src/main/services/mock-interview/` — one product engine, plan validation, interviewer seam consumer,
+  session lifecycle, bundled JSON plans/PNG fixtures and shared live-turn result correlation.
 - `src/main/services/mock-interview/turns/` — interviewer consumer, serialized engine, `answer-wait.ts` (candidate-answer silence/idle-prompt clock) and session lifecycle.
 - `src/main/services/mock-interview/plans/` — bundled JSON validated by pure validatePlan in the production catalog.
 - `src/main/services/mock-interview/fixtures/` — canonical screen PNGs shared by product and rehearsal scenarios.
 - `src/main/services/mock-interview/shortcuts.ts` — mock-only shortcut registration/release.
-
-- `src/main/services/mock-interview/` — one product engine, plan validation, interviewer seam consumer,
-  session lifecycle, bundled JSON plans/PNG fixtures and shared live-turn result correlation.
 - `src/main/windows/interviewer-window.ts` — separate window; restricts broadcasts to mock state.
 - `src/main/db/repos/practice.ts` — v8 migration SQL, result persistence and practice listing.
 - `src/main/ipc/mock-interview*.ts` — validated mock commands; speech ACKs require the output sender.
@@ -216,7 +218,7 @@ sanas/
 - `src/main/services/assistant/coach/` — next-point eligibility policy and coach prompt construction
 - `src/main/services/assistant/live-controls/` — typed, detail, audience and screen-capture request instructions
 - `src/main/services/meetings/` — meeting lifecycle/STT/audio orchestration plus meeting-level facades
-- `src/main/services/meetings/assist/` — per-meeting prompt/grounding state, manual and screen-capture admission, in-memory composer screen drafts (`capture-drafts.ts`), automatic coordination (`question-ledger.ts` carries uncovered stacked questions into one suggestion; `speculative-answer.ts` owns the one unpublished answer started alongside the classifier and its promote/discard rule; `samePrompt` in `suggestion-requests.ts` decides when two requests are the same prompt, comparing every field except an explicit short list) and suggestion execution (`latency.ts` `LatencyTracker` + `observeLatency()` (owns both subscriptions) correlate diagnostics and run observations into bounded, allowlisted stage-timing records, `latency-summary.ts` `summarizeLatency` reports them; `suggestion-runner.ts` owns lanes, deadline and persistence; `run-publication.ts` the per-run held-text and publish gate)
+- `src/main/services/meetings/assist/` — per-meeting prompt/grounding state, manual and screen-capture admission, in-memory composer screen drafts (`capture-drafts.ts`), automatic coordination (`question-ledger.ts` carries uncovered stacked questions into one suggestion; `speculative-answer.ts` owns the one unpublished answer started alongside the classifier and its promote/discard rule; `promptMismatchCategories` in `suggestion-requests.ts` decides when two requests are the same prompt (empty result), comparing every field except an explicit short list; `run-observation.ts` also owns `EffectiveProfile`, the full/smart/points policy a run used) and suggestion execution (`latency.ts` `LatencyTracker` + `observeLatency()` (owns both subscriptions) correlate diagnostics and run observations into bounded, allowlisted stage-timing records, `latency-summary.ts` `summarizeLatency` reports them; `suggestion-runner.ts` owns lanes, deadline and persistence; `run-publication.ts` the per-run held-text and publish gate)
 - `src/main/services/meetings/assist/testing/` — test-only fake-clock harness shared by the live-assistance suites
 - `src/main/services/meetings/capture/` — AUDIO capture-side identity and capture-health policy (screen capture lives in `services/screen-capture/`)
 - `src/main/services/meetings/context/` — pure preparation followed by commit/publication of live context changes; `meeting-keyterms.ts` builds the STT hints (glossary plus resume/profile terms) for streaming and batch
@@ -281,7 +283,7 @@ sanas/
 - `src/shared/presentation/` — historical slide/event/history contracts and timeline ordering (read-only since 2026-11-04)
 - `src/shared/meeting-start.ts` — `MeetingStartOptions` (`interview?`, `meetingContext?`); `src/shared/meeting-context.ts` — the 20,000-character context limit
 - `src/shared/hotkeys/` — global shortcut action and registration-status contracts
-- `src/shared/live-controls/` — meeting-context, manual-admission, suggestion metadata and screen-capture contracts
+- `src/shared/live-controls/` — meeting-context, manual-admission, suggestion metadata and screen-capture contracts; `visibility.ts` is the renderer-to-main `SuggestionVisibility` acknowledgement (a commit/frame proxy, not paint), and `readable-suggestion.ts` (`NO_SUGGESTION`, `isNoSuggestion`, `hasReadableText`) is the one definition of a readable suggestion, used by main's first-readable stamp and the overlay's `useSuggestionVisibilityAck`
 - `src/shared/updates/` — renderer-safe update state and operation contracts
 - `scripts/` — repository tooling plus release and owner-operation entry points
 - `scripts/release/` — versioning, asset/package checks, publication, installation and packaged smoke

@@ -1,5 +1,6 @@
 import type { FormattableLine, SpeakerNames } from '../../turns/transcript-format'
-import { COMPACT_CONTRACT, NO_SUGGESTION, recentSuggestionsBlock } from '../compact-contract'
+import { NO_SUGGESTION } from '@shared/live-controls/readable-suggestion'
+import { COMPACT_CONTRACT, recentSuggestionsBlock } from '../compact-contract'
 import { renderBackground, splitAtExchange } from '../answer-context/conversation-window'
 import { boundedExcerpt } from '../excerpt'
 import type { CoachReason } from './coach-policy'
