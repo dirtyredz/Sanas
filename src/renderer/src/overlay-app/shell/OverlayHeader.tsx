@@ -1,16 +1,10 @@
 import type { ReactNode } from 'react'
 import type { MeetingState } from '@shared/types'
+import { describeMeetingStatus } from '../../lib/meeting/meeting-status'
 import { OverlayButton } from '../controls/OverlayButton'
 import { IconGhost } from '../controls/overlay-icons'
 import type { OverlayWindowState } from './useOverlayWindowState'
 import { OverlayTip } from '../controls/OverlayTip'
-
-const STATUS_LABEL: Record<MeetingState['status'], string> = {
-  idle: 'Idle',
-  live: 'Listening',
-  paused: 'Paused',
-  error: 'Error',
-}
 
 /** The drag strip: status, ghost control and any trailing controls. Interactive children are
  *  outside the drag region. */
@@ -29,7 +23,9 @@ export function OverlayHeader({
       <span className={`dot ${status}`} aria-hidden="true" />
       <span className="title">SANAS</span>
       <span className="overlay-status-text" role="status">
-        {windowState.ghost ? `Ghost — ${restore} restores` : STATUS_LABEL[status]}
+        {windowState.ghost
+          ? `Ghost — ${restore} restores`
+          : describeMeetingStatus({ status }).label}
       </span>
       <span className="overlay-header-actions">
         {children}

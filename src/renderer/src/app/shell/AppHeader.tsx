@@ -1,6 +1,6 @@
 import type { MeetingState } from '@shared/types'
 import { IconOverlay } from '../../lib/icons'
-import { describeMeetingStatus } from './meeting-status'
+import { describeMeetingStatus } from '../../lib/meeting/meeting-status'
 import { NAV, type Page } from './pages'
 
 /** Three teal bars: a quiet voice level, the app's mark. */

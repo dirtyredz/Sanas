@@ -9,7 +9,7 @@ export interface MeetingStatusView {
   detail: string
 }
 
-/** What the app header says about the meeting: one short label, a tone for the dot, and the
+/** What the app and overlay headers say about the meeting: one short label, a tone for the dot, and the
  *  detail behind it. Pure so the wording is tested once and reused. */
 export function describeMeetingStatus(
   state: Pick<MeetingState, 'status' | 'error' | 'captureWarning'>,
