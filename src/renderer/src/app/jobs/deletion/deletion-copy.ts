@@ -1,4 +1,4 @@
-import type { JobDeletionCounts, JobDeletionResult } from '@shared/jobs/deletion'
+import type { JobDeletionBackup, JobDeletionCounts, JobDeletionResult } from '@shared/jobs/deletion'
 
 // Wording for the counted job-deletion confirmation. Pure, so the exact sentences the owner
 // confirms are tested.
@@ -28,13 +28,16 @@ export function deletionLines(counts: JobDeletionCounts): string[] {
   return lines
 }
 
+const backupSentence = (backup: JobDeletionBackup): string =>
+  `Database backup: ${backup.fileName} (in Sanas's backups folder).`
+
 /** What to tell the user after a delete attempt; `done` closes the dialog. */
 export function deletionOutcome(result: JobDeletionResult): { done: boolean; text: string } {
   switch (result.status) {
     case 'deleted':
-      return { done: true, text: `Deleted. Database backup: ${result.backupPath}` }
+      return { done: true, text: `Deleted. ${backupSentence(result.backup)}` }
     case 'partial':
-      return { done: false, text: `${result.message} Database backup: ${result.backupPath}` }
+      return { done: false, text: `${result.message} ${backupSentence(result.backup)}` }
     default:
       return { done: false, text: result.message }
   }

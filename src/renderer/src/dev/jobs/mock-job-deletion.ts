@@ -86,8 +86,7 @@ export function mockJobDeletion(
       removeMockMemory(jobId)
       return {
         status: 'deleted',
-        backupPath:
-          'C:\\Users\\you\\AppData\\Roaming\\sanas\\backups\\before-job-delete-preview.db',
+        backup: { fileName: 'before-job-delete-preview.db' },
         removed: counts,
       }
     },

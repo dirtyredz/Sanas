@@ -1,5 +1,7 @@
 import { app } from 'electron'
+import { basename } from 'node:path'
 import type {
+  JobDeletionBackup,
   JobDeletionBlock,
   JobDeletionCounts,
   JobDeletionPreview,
@@ -82,9 +84,10 @@ export async function deleteJob(senderId: number, token: string): Promise<JobDel
   const refusal = blocked(before)
   if (refusal) return { status: 'blocked', message: refusal.message }
 
-  let backupPath: string
+  let backup: JobDeletionBackup
   try {
-    backupPath = await backupDatabase(getDb(), app.getPath('userData'), 'before-job-delete')
+    const path = await backupDatabase(getDb(), app.getPath('userData'), 'before-job-delete')
+    backup = { fileName: basename(path) }
   } catch (e) {
     return {
       status: 'backup-failed',
@@ -101,15 +104,15 @@ export async function deleteJob(senderId: number, token: string): Promise<JobDel
   if (fingerprint(now) !== pending.fingerprint) return { status: 'stale', message: STALE }
   const lateRefusal = blocked(now)
   if (lateRefusal) return { status: 'blocked', message: lateRefusal.message }
-  return removeAll(now, backupPath)
+  return removeAll(now, backup)
 }
 
-function removeAll(snapshot: JobDeletionSnapshot, backupPath: string): JobDeletionResult {
+function removeAll(snapshot: JobDeletionSnapshot, backup: JobDeletionBackup): JobDeletionResult {
   const removed = { meetings: 0, practiceSessions: 0, recordings: 0 }
   for (const meeting of snapshot.meetings) {
     const outcome = removeMeeting(meeting.id)
     if (outcome !== 'removed' && outcome !== 'missing')
-      return partial(removed, backupPath, MEETING_FAILURE[outcome])
+      return partial(removed, backup, MEETING_FAILURE[outcome])
     if (outcome === 'missing') continue
     if (meeting.practice) removed.practiceSessions++
     else removed.meetings++
@@ -118,9 +121,9 @@ function removeAll(snapshot: JobDeletionSnapshot, backupPath: string): JobDeleti
   try {
     deleteJobRow(snapshot.job!.id)
   } catch (e) {
-    return partial(removed, backupPath, e instanceof Error ? e.message : String(e))
+    return partial(removed, backup, e instanceof Error ? e.message : String(e))
   }
-  return { status: 'deleted', backupPath, removed: snapshot.counts satisfies JobDeletionCounts }
+  return { status: 'deleted', backup, removed: snapshot.counts satisfies JobDeletionCounts }
 }
 
 const MEETING_FAILURE = {
@@ -131,12 +134,12 @@ const MEETING_FAILURE = {
 
 function partial(
   removed: { meetings: number; practiceSessions: number; recordings: number },
-  backupPath: string,
+  backup: JobDeletionBackup,
   why: string,
 ): JobDeletionResult {
   return {
     status: 'partial',
-    backupPath,
+    backup,
     removed,
     message: `${why} The job was kept. Already deleted: ${removed.meetings} meeting(s), ${removed.practiceSessions} practice session(s), ${removed.recordings} recording(s). Try again to delete the rest.`,
   }

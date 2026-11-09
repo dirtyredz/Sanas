@@ -539,7 +539,7 @@ Deleting a job deletes its history (docs/DECISIONS.md). `jobs:delete-preview` (l
 only) counts every table directly (`db/repos/job/job-deletion.ts`; `listMeetings` excludes
 practice) and returns a token; it is blocked for Unsorted and while any child meeting is live,
 paused or post-processing. `jobs:delete` consumes the token, re-checks the snapshot, takes a
-SQLite backup (`backups/before-job-delete-*.db`, abort on failure), removes each meeting through
+SQLite backup (`backups/before-job-delete-*.db`, abort on failure; the renderer gets only the file name, never the absolute path), removes each meeting through
 `services/meetings/remove.ts` (row and WAV), then deletes the job row; glossary, resume, link and
 legacy `job_slides` cascade. A failed meeting removal keeps the job and reports what is already
 gone. The v13 `jobs_delete_guard` trigger refuses the protected jobs and any job that still has

@@ -78,7 +78,7 @@ it('previews exact counts, then backs up and deletes the job, its meetings and r
   const result = await deleteJob(7, preview.token!)
   expect(result).toEqual({
     status: 'deleted',
-    backupPath: '/user-data/backups/b.db',
+    backup: { fileName: 'b.db' },
     removed: preview.counts,
   })
   expect(existsSync(wav)).toBe(false)

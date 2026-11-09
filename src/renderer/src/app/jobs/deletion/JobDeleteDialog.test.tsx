@@ -192,7 +192,7 @@ it('deletes once with the token and ignores a second click while pending', async
   during.del.props.onClick()
   expect(api.delete).toHaveBeenCalledTimes(1)
   expect(api.delete).toHaveBeenCalledWith('tok-1')
-  pendingDelete.resolve({ status: 'deleted', backupPath: 'C:\\b.db', removed: counts })
+  pendingDelete.resolve({ status: 'deleted', backup: { fileName: 'b.db' }, removed: counts })
   await flush()
   expect(onDeleted).toHaveBeenCalledOnce()
   expect(api.delete).toHaveBeenCalledTimes(1)
@@ -202,7 +202,7 @@ for (const result of [
   {
     status: 'partial',
     message: 'One meeting stayed.',
-    backupPath: 'C:\\b.db',
+    backup: { fileName: 'b.db' },
     removed: { meetings: 1, practiceSessions: 0, recordings: 0 },
   },
   { status: 'backup-failed', message: 'Backup failed.' },

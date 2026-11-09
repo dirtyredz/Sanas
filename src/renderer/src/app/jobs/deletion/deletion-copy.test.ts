@@ -57,14 +57,16 @@ it('states exact counts and adds history lines only when present', () => {
 })
 
 it('closes only on success and reports partial progress with the backup', () => {
-  expect(deletionOutcome({ status: 'deleted', backupPath: 'b.db', removed: zero })).toEqual({
+  expect(
+    deletionOutcome({ status: 'deleted', backup: { fileName: 'b.db' }, removed: zero }),
+  ).toEqual({
     done: true,
-    text: 'Deleted. Database backup: b.db',
+    text: "Deleted. Database backup: b.db (in Sanas's backups folder).",
   })
   const partial = deletionOutcome({
     status: 'partial',
     message: 'A recording is in use. The job was kept.',
-    backupPath: 'b.db',
+    backup: { fileName: 'b.db' },
     removed: { meetings: 1, practiceSessions: 0, recordings: 1 },
   })
   expect(partial.done).toBe(false)

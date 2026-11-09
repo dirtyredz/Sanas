@@ -36,8 +36,14 @@ export interface JobDeletionPreview {
   token: string | null
 }
 
+/** Receipt for the pre-delete database backup. Only the file name crosses to the renderer; the
+ *  folder is main's storage detail (`<userData>/backups`). */
+export interface JobDeletionBackup {
+  fileName: string
+}
+
 export type JobDeletionResult =
-  | { status: 'deleted'; backupPath: string; removed: JobDeletionCounts }
+  | { status: 'deleted'; backup: JobDeletionBackup; removed: JobDeletionCounts }
   /** The job or its history changed since the preview: count again and reconfirm. */
   | { status: 'stale'; message: string }
   | { status: 'blocked'; message: string }
@@ -47,6 +53,6 @@ export type JobDeletionResult =
   | {
       status: 'partial'
       message: string
-      backupPath: string
+      backup: JobDeletionBackup
       removed: Pick<JobDeletionCounts, 'meetings' | 'practiceSessions' | 'recordings'>
     }
