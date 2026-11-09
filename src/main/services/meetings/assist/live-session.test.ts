@@ -8,7 +8,7 @@ import type { AssistRequest } from '../../assistant/types'
 const f = vi.hoisted(() => ({
   requests: [] as AssistRequest[],
   answers: [] as string[],
-  saveGrounding: vi.fn(() => 1),
+  saveMeetingGrounding: vi.fn(() => 1),
   initialContext: '',
 }))
 vi.mock('../../../config/settings', () => ({
@@ -23,7 +23,7 @@ vi.mock('../../../db/repos/meeting/meeting-context', () => ({
   getMeetingContext: () => ({ meetingId: 1, revision: 0, text: f.initialContext }),
 }))
 vi.mock('../../../db/repos/suggestion-grounding', () => ({
-  saveGrounding: f.saveGrounding,
+  saveMeetingGrounding: f.saveMeetingGrounding,
   detailSource: vi.fn(),
   existingDetail: () => undefined,
 }))
@@ -49,7 +49,7 @@ import { LiveSession } from './live-session'
 afterEach(() => {
   f.requests.length = 0
   f.answers.length = 0
-  f.saveGrounding.mockClear()
+  f.saveMeetingGrounding.mockClear()
   f.initialContext = ''
 })
 it('remembers told stories across Answer now and typed lanes and shows them to the next answer', async () => {
@@ -134,23 +134,23 @@ it('admits typed requests while paused, rejects busy/wrong-meeting and avoids au
 it('saves grounding once at Start; context changes and snapshots only read the cached id', async () => {
   const session = new LiveSession(() => 100)
   session.begin(1)
-  expect(f.saveGrounding).toHaveBeenCalledTimes(1)
+  expect(f.saveMeetingGrounding).toHaveBeenCalledTimes(1)
 
   session.assistance.answerNow()
   await new Promise((resolve) => setTimeout(resolve, 0))
-  expect(f.saveGrounding).toHaveBeenCalledTimes(1)
+  expect(f.saveMeetingGrounding).toHaveBeenCalledTimes(1)
   expect(session.request({ meetingId: 1, kind: 'audience' })).toMatchObject({
     accepted: false,
     reason: 'no-evidence',
   })
-  expect(f.saveGrounding).toHaveBeenCalledTimes(1)
+  expect(f.saveMeetingGrounding).toHaveBeenCalledTimes(1)
 
-  expect(f.saveGrounding).toHaveBeenLastCalledWith(1, 0, expect.any(String), '')
+  expect(f.saveMeetingGrounding).toHaveBeenLastCalledWith(1, expect.any(String))
   session.applyContext({ meetingId: 1, revision: 1, text: 'new context' })
-  expect(f.saveGrounding).toHaveBeenCalledTimes(1)
+  expect(f.saveMeetingGrounding).toHaveBeenCalledTimes(1)
 
   expect(session.request({ meetingId: 1, kind: 'typed', text: 'cached' })).toEqual({
     accepted: true,
   })
-  expect(f.saveGrounding).toHaveBeenCalledTimes(1)
+  expect(f.saveMeetingGrounding).toHaveBeenCalledTimes(1)
 })

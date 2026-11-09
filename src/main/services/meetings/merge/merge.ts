@@ -2,7 +2,11 @@ import type { Meeting, MergeResult } from '@shared/types'
 import { getDb } from '../../../db'
 import { applyMerge, deleteMeeting, getMeeting } from '../../../db/repos/meeting/meetings'
 import { maxSpeaker, reassignSegments } from '../../../db/repos/segments'
-import { reassignSuggestions, shiftSuggestionContextRevisions } from '../../../db/repos/suggestions'
+import {
+  clearSuggestionContextRevisions,
+  reassignSuggestions,
+  shiftSuggestionContextRevisions,
+} from '../../../db/repos/suggestions'
 import { reassignSpeakerNames } from '../../../db/repos/speakers'
 import { isPostProcessing } from '../status/post-processing'
 import { removeAudioFile } from '../remove'
@@ -57,7 +61,7 @@ export function mergeMeetings(ids: number[]): MergeResult {
       if (step.context === 'move') {
         moveContextHistory(step.from, plan.keepId, CONTEXT_REVISION_OFFSET, step.timeOffsetMs)
         shiftSuggestionContextRevisions(step.from, CONTEXT_REVISION_OFFSET)
-      } else if (step.context === 'unlink') shiftSuggestionContextRevisions(step.from, null)
+      } else if (step.context === 'unlink') clearSuggestionContextRevisions(step.from)
       reassignSegments(step.from, plan.keepId, step.timeOffsetMs, step.speakerOffset)
       reassignSuggestions(step.from, plan.keepId, step.timeOffsetMs)
       reassignSpeakerNames(step.from, plan.keepId, step.speakerOffset)

@@ -1,6 +1,6 @@
 import type { SuggestionMetadata } from '@shared/live-controls/types'
 import { readManualKind, storedManualKind } from './manual-kind'
-import { saveGrounding } from './suggestion-grounding'
+import { saveLegacyGrounding } from './suggestion-grounding'
 import { getDb } from '../index'
 import type { Suggestion, SuggestionPurpose, SuggestionTrigger } from '@shared/types'
 
@@ -27,7 +27,7 @@ export function reassignSuggestions(
     )
     .all(fromMeetingId) as { id: number; version: number; system: string; deck: string }[]
   for (const row of rows) {
-    const target = saveGrounding(toMeetingId, row.version, row.system, row.deck)
+    const target = saveLegacyGrounding(toMeetingId, row.version, row.system, row.deck)
     db.prepare(
       'UPDATE suggestions SET grounding_context_id = ? WHERE grounding_context_id = ?',
     ).run(target, row.id)
@@ -39,16 +39,21 @@ export function reassignSuggestions(
 }
 
 /** Merge: shifts the meeting-context revision each of a meeting's suggestions names by
- *  `offset` (its context history moved with it), or clears it when `offset` is null (the
- *  context it is moving next to is not one it was made with). */
-export function shiftSuggestionContextRevisions(meetingId: number, offset: number | null): void {
+ *  `offset` (its context history moved with it). */
+export function shiftSuggestionContextRevisions(meetingId: number, offset: number): void {
   getDb()
     .prepare(
-      offset === null
-        ? 'UPDATE suggestions SET context_revision = NULL WHERE meeting_id = ?'
-        : 'UPDATE suggestions SET context_revision = context_revision + ? WHERE meeting_id = ? AND context_revision IS NOT NULL',
+      'UPDATE suggestions SET context_revision = context_revision + ? WHERE meeting_id = ? AND context_revision IS NOT NULL',
     )
-    .run(...(offset === null ? [meetingId] : [offset, meetingId]))
+    .run(offset, meetingId)
+}
+
+/** Merge: clears the meeting-context revision a meeting's suggestions name (the context they
+ *  are moving next to is not one they were made with). */
+export function clearSuggestionContextRevisions(meetingId: number): void {
+  getDb()
+    .prepare('UPDATE suggestions SET context_revision = NULL WHERE meeting_id = ?')
+    .run(meetingId)
 }
 
 export function insertSuggestion(

@@ -20,6 +20,7 @@ vi.mock('../../../db/repos/segments', () => ({ maxSpeaker: vi.fn(), reassignSegm
 vi.mock('../../../db/repos/suggestions', () => ({
   reassignSuggestions: vi.fn(),
   shiftSuggestionContextRevisions: vi.fn(),
+  clearSuggestionContextRevisions: vi.fn(),
 }))
 vi.mock('../../../db/repos/speakers', () => ({ reassignSpeakerNames: vi.fn() }))
 vi.mock('../../../db/repos/meeting/meeting-context', () => ({

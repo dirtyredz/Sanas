@@ -4,11 +4,20 @@ import type { Suggestion } from '@shared/types'
 
 export interface SuggestionGroundingRow extends Suggestion {
   system: string
+  /** Legacy-only: the retired deck context; empty for meetings made since decks were removed. */
   cacheableContext: string
   promptWindow: string
 }
 
-export function saveGrounding(
+/** A meeting's grounding row: the system prompt its answers were made with. */
+export function saveMeetingGrounding(meetingId: number, system: string): number {
+  return saveLegacyGrounding(meetingId, 0, system, '')
+}
+
+/** Legacy form that still carries the retired deck dimension (version + deck context). Only
+ *  merge (copying a part's existing rows) and legacy replay need it; new meetings use
+ *  saveMeetingGrounding. */
+export function saveLegacyGrounding(
   meetingId: number,
   deckVersion: number,
   system: string,

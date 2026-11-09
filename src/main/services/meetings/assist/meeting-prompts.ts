@@ -4,7 +4,7 @@ import { meetingCandidateFacts } from '../context/meeting-facts'
 import type { MeetingContext } from '@shared/live-controls/types'
 import { getJob } from '../../../db/repos/jobs'
 import { listGlossary } from '../../../db/repos/job/glossary'
-import { saveGrounding } from '../../../db/repos/suggestion-grounding'
+import { saveMeetingGrounding } from '../../../db/repos/suggestion-grounding'
 import { buildSystemPrompt } from '../../assistant/prompts'
 
 /** The meeting's prompt state: one system prompt (persona, job context and talking points,
@@ -25,8 +25,7 @@ export class MeetingPrompts {
     this.system =
       buildSystemPrompt(job, glossary, ordinaryJob(jobId) ? getApprovedMemory(jobId).text : '') +
       facts
-    // version 0 is the meeting's bookkeeping row; there is no deck context any more
-    this.groundingContextId = saveGrounding(context.meetingId, 0, this.system, '')
+    this.groundingContextId = saveMeetingGrounding(context.meetingId, this.system)
     this.context = context
   }
 
