@@ -68,7 +68,7 @@ import { createJob } from '../../db/repos/jobs'
 import { setJobResume } from '../../db/repos/job/job-resume'
 import { getMeetingGrounding } from '../../db/repos/meeting/meeting-grounding'
 import { getMeeting } from '../../db/repos/meeting/meetings'
-import { mockStartInput } from '../../ipc/mock-interview-validation'
+import { mockStartInput } from '../../ipc/mock-interview/mock-interview-validation'
 import { startMock } from './index'
 
 let close: (() => void) | undefined

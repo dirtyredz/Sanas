@@ -1,14 +1,14 @@
 import { BrowserWindow, ipcMain } from 'electron'
-import { acknowledgeVisibility } from '../services/meetings/observation/run-observation'
+import { acknowledgeVisibility } from '../../services/meetings/observation/run-observation'
 import { IPC } from '@shared/ipc'
-import { getMeetingContext } from '../db/repos/meeting/meeting-context'
+import { getMeetingContext } from '../../db/repos/meeting/meeting-context'
 import {
   updateMeetingContext,
   requestAssist,
   answerEveryQuestionState,
   setAnswerEveryQuestion,
-} from '../services/meetings'
-import { requireId } from './validate'
+} from '../../services/meetings'
+import { requireId } from '../validate'
 import {
   requireContextUpdate,
   requireManualRequest,

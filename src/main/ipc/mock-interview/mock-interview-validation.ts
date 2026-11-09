@@ -1,5 +1,5 @@
 import type { MockPlanId } from '@shared/mock-interview/types'
-import { requireId } from './validate'
+import { requireId } from '../validate'
 export function mockStartInput(
   plan: unknown,
   job: unknown,

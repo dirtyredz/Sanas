@@ -2,7 +2,7 @@
 id: dk-cb03df74
 type: task
 created: 2026-11-09
-status: todo
+status: done
 since: 2026-11-09
 area: structure
 priority: P2

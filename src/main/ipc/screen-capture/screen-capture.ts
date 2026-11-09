@@ -6,8 +6,8 @@ import {
   captureStatus,
   discardScreen,
   screenRendererGone,
-} from '../services/meetings'
-import { requireId } from './validate'
+} from '../../services/meetings'
+import { requireId } from '../validate'
 import { requireCaptureToken } from './screen-capture-validation'
 
 // Capture screen / Attach screen. Handlers validate and delegate; desktop capture, image bytes

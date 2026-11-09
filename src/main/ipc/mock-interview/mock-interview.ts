@@ -8,10 +8,10 @@ import {
   skipMock,
   dismissMockShare,
   mockSpeechDone,
-} from '../services/mock-interview'
-import { listPracticeSessions } from '../db/repos/practice'
-import { isInterviewerSender } from '../windows/interviewer-window'
-import { requireBool, requireId } from './validate'
+} from '../../services/mock-interview'
+import { listPracticeSessions } from '../../db/repos/practice'
+import { isInterviewerSender } from '../../windows/interviewer-window'
+import { requireBool, requireId } from '../validate'
 import { mockStartInput } from './mock-interview-validation'
 
 export function registerMockInterviewIpc(): void {

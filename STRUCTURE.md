@@ -58,7 +58,7 @@ sanas/
 │   │   ├── windows/                       # BrowserWindow builders and main → all-windows broadcast
 │   │   │   ├── app-window.ts              # shared window factory: security webPreferences + dev/prod page load
 │   │   │   └── interviewer-window.ts      # restricted mock output window
-│   │   ├── ipc/                           # validated typed IPC handlers; delegate only (jobs/: jobs, glossary, deletion, application and memory IPC; jobs/resume/: job resume get/set + native resume picker)
+│   │   ├── ipc/                           # validated typed IPC handlers; delegate only (jobs/: jobs, glossary, deletion, application and memory IPC; jobs/resume/: job resume get/set + native resume picker; mock-interview/, live-controls/, screen-capture/: each feature's handlers + validation)
 │   │   ├── system-audio.ts                # display-media loopback handler
 │   │   ├── services/
 │   │   │   ├── stt/                       # SttProvider seam, endpointing and keyterm budget
@@ -209,7 +209,9 @@ sanas/
 - `src/main/services/mock-interview/shortcuts.ts` — mock-only shortcut registration/release.
 - `src/main/windows/interviewer-window.ts` — separate window; restricts broadcasts to mock state.
 - `src/main/db/repos/practice.ts` — v8 migration SQL, result persistence and practice listing.
-- `src/main/ipc/mock-interview*.ts` — validated mock commands; speech ACKs require the output sender.
+- `src/main/ipc/mock-interview/` — validated mock commands (`mock-interview.ts` + `-validation`); speech ACKs require the output sender.
+- `src/main/ipc/live-controls/` — context, admission, capture and visibility-ack IPC (`live-controls.ts` + `-validation`).
+- `src/main/ipc/screen-capture/` — screen-capture IPC (`screen-capture.ts` + `-validation`).
 - `src/renderer/src/interviewer-app/` — local OS speech, captions and shares; no provider/network calls.
 - `src/renderer/src/lib/meeting/start-captured-meeting.ts` — shared capture acquisition/adoption/cleanup.
 - `src/shared/mock-interview/` — cross-process mock contracts.
@@ -385,7 +387,7 @@ main-process code belongs in a responsibility folder above, not beside them.
   and moving transcript formatting into `turns/`); `meetings/` breadth remains tracked by dk-bd2e1ebf.
 - `src/shared/` (21 entries) and `src/main/ipc/` exceed the 10-entry breadth guideline; the loose
   `shared/*.ts` contracts group by domain the way `shared/jobs/` now does (`ipc/job-resume/` moved
-  under `ipc/jobs/resume/`).
+  under `ipc/jobs/resume/`; the mock-interview, live-controls and screen-capture IPC pairs now sit in `ipc/<feature>/`, dk-cb03df74).
 - `app/settings/sections/` now holds 13 code files (Applications joined); group related sections
   before adding more.
 - Screen answers are stored as `typed` plus a `[Screen capture]` request-text marker because the

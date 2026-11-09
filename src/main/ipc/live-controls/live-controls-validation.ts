@@ -1,7 +1,7 @@
 import type { ContextUpdate, ManualRequest } from '@shared/live-controls/types'
 import { requireMeetingContextText } from '@shared/meeting-context'
-import { requireId } from './validate'
-import { requireCaptureToken } from './screen-capture-validation'
+import { requireId } from '../validate'
+import { requireCaptureToken } from '../screen-capture/screen-capture-validation'
 import {
   SUGGESTION_VISIBILITY_STATES,
   type SuggestionVisibility,
