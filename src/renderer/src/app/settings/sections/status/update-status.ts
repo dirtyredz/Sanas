@@ -1,5 +1,5 @@
 import type { UpdateState } from '@shared/updates/types'
-import type { BadgeTone } from '../../controls/Badge'
+import type { BadgeTone } from '../../../controls/Badge'
 
 export interface UpdateStatusView {
   /** One line for the status row. */

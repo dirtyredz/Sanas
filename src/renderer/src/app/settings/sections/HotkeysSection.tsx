@@ -6,7 +6,7 @@ import { LOCAL_SHORTCUTS } from '../../../lib/overlay-workspaces'
 import { Badge } from '../../controls/Badge'
 import { FieldRow } from '../../controls/FieldRow'
 import { SettingsSection } from '../frame/SettingsSection'
-import { describeHotkey } from './hotkey-status'
+import { describeHotkey } from './status/hotkey-status'
 
 const GLOBAL_HOTKEYS: { action: HotkeyAction; label: string; help: string }[] = [
   {

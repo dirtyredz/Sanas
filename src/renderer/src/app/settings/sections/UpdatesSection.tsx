@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { UpdateState } from '@shared/updates/types'
 import { Badge } from '../../controls/Badge'
 import { SettingsSection } from '../frame/SettingsSection'
-import { describeUpdate } from './update-status'
+import { describeUpdate } from './status/update-status'
 
 export function UpdatesSection(): React.JSX.Element {
   const [state, setState] = useState<UpdateState | null>(null)

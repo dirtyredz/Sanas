@@ -169,6 +169,7 @@ sanas/
 │   │       │   │   └── resume/             # job resume editor, draft rules, Unsorted placeholder
 │   │       │   ├── settings/               # cross-section tests only
 │   │       │   │   ├── sections/           # one component per Settings section + section index
+│   │       │   │   │   └── status/         # hotkey and update status wording (pure)
 │   │       │   │   └── frame/              # section list, index, pane, card, draft state, save bar
 │   │       │   │       └── paging/         # pure page order + useSettingsPager
 │   │       │   └── styles/                 # layered shared stylesheet
@@ -322,7 +323,7 @@ handler (`system-audio.ts`); new main-process code belongs in a responsibility f
 - `src/renderer/src/app/jobs/memory/` — `JobMemory` composes `ContextSizeMeter`, `ApprovedMemoryEditor` (saved text and explicit save) and `MemoryProposalReview` (oldest-first proposal approve/dismiss/regenerate); `useJobMemory` owns the state, `context-size.ts` the meter maths.
 - `src/renderer/src/app/jobs/resume/` — `JobResume` (saved resume with its own Save resume), `ResumeDraftEditor` (paste/import/preview), `resume-draft.ts` (pure draft rules) and `ResumeUnavailable` (the Unsorted bucket takes no resume).
 - `src/renderer/src/app/settings/` — only the cross-section tests (`settings-pages.test.tsx`, `settings-controls.test.tsx`); everything else is in the folders below.
-- `src/renderer/src/app/settings/sections/` — one component per Settings section, including independent update state and `InterviewProfileSection.tsx` (the one plain-text Interview profile editor), plus pure status wording (`hotkey-status.ts`, `update-status.ts`); `SettingsSectionPage.tsx` is the section index that renders the selected section.
+- `src/renderer/src/app/settings/sections/` — one component per Settings section, including independent update state and `InterviewProfileSection.tsx` (the one plain-text Interview profile editor), plus pure status wording in `status/` (`hotkey-status.ts`, `update-status.ts`); `SettingsSectionPage.tsx` is the section index that renders the selected section.
 - `src/renderer/src/app/settings/frame/` — what every section shares: the section list (`settings-sections.ts`), card (`SettingsSection`), the index (`SettingsNav`, Up/Down), the animated scrolling pane (`SettingsPane`, owner of `SETTINGS_PANE_ID`), the draft state (`useSettingsDraft`: load, externally changed keys, save state machine), the pure patch/dirty/validation logic and page-ownership lists (`settings-draft.ts`) and the save bar.
 - `src/renderer/src/app/settings/frame/paging/` — the pager: pure page order (`page-order.ts`: `ORDER`, `selectPage`, `stepPage`, `pageDirection`) and the thin React state wrapper `useSettingsPager`.
 - `src/renderer/src/app/styles/` — layered shared stylesheet; no per-page stylesheets. `tokens.css` is shared by both windows; the library imports `index.css` (base → controls → shell → transcript → pages → settings), the overlay imports `overlay-app/overlay.css` (shared tokens → controls, then its own `overlay-app/styles/` layers).

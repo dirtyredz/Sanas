@@ -1,6 +1,6 @@
 import type { HotkeyAction, HotkeyStatus } from '@shared/hotkeys/types'
-import { hotkeyLabel } from '../../../lib/format/hotkey-label'
-import type { BadgeTone } from '../../controls/Badge'
+import { hotkeyLabel } from '../../../../lib/format/hotkey-label'
+import type { BadgeTone } from '../../../controls/Badge'
 
 export interface HotkeyRowState {
   badge: { tone: BadgeTone; text: string } | null
