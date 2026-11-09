@@ -36,7 +36,7 @@ vi.mock('../../../db/repos/segments', () => ({
       tEndMs: i * 1000 + 500,
     })),
 }))
-vi.mock('../../../db/repos/jobs', () => ({ getJob: () => null }))
+vi.mock('../../../db/repos/job/jobs', () => ({ getJob: () => null }))
 vi.mock('../../../db/repos/job/glossary', () => ({ listGlossary: () => [] }))
 vi.mock('../../../db/repos/speakers', () => ({ speakerNameMap: () => new Map() }))
 vi.mock('../../../db/repos/meeting/meeting-context', () => ({

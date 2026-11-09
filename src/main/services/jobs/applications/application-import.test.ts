@@ -18,7 +18,7 @@ vi.mock('../../assistant/provider/provider', () => ({
 }))
 vi.mock('./source/refresh-runner', () => ({ refreshPacks: () => mock.refresh() }))
 import { runMigrations } from '../../../db/migrations'
-import { createJob, getJob, listJobs, setJobArchived, updateJob } from '../../../db/repos/jobs'
+import { createJob, getJob, listJobs, setJobArchived, updateJob } from '../../../db/repos/job/jobs'
 import { getLocalJobState } from '../../../db/repos/job/applications'
 import { setJobResume } from '../../../db/repos/job/job-resume'
 import { createMeeting } from '../../../db/repos/meeting/meeting-create'

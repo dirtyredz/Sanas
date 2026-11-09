@@ -13,7 +13,7 @@ vi.mock('electron', () => ({ app: { getPath: () => '/user-data' } }))
 vi.mock('../../db/index', () => ({ getDb: () => mock.db }))
 vi.mock('../../db/backup', () => ({ backupDatabase: () => mock.backup() }))
 import { runMigrations } from '../../db/migrations'
-import { createJob, ensureDefaultJob } from '../../db/repos/jobs'
+import { createJob, ensureDefaultJob } from '../../db/repos/job/jobs'
 import { createMeeting } from '../../db/repos/meeting/meeting-create'
 import { addGlossaryTerm } from '../../db/repos/job/glossary'
 import { setLiveMeeting } from '../meetings/status/live-meeting'

@@ -5,7 +5,7 @@ import {
   GLOSSARY_TERM_MAX_CHARS,
   JOB_NAME_MAX_CHARS,
 } from '@shared/jobs/limits'
-import { createJob, listJobs, setJobArchived, updateJob } from '../../db/repos/jobs'
+import { createJob, listJobs, setJobArchived, updateJob } from '../../db/repos/job/jobs'
 import { addGlossaryTerm, listGlossary, removeGlossaryTerm } from '../../db/repos/job/glossary'
 import { optionalText, requireBool, requireId, requireJob, requireText } from '../validate'
 import { requireListOptions } from './validate'

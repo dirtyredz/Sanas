@@ -10,7 +10,7 @@ vi.mock('../../../db/repos/meeting/meetings', () => ({
     startedAt: '2026-11-02',
   }),
 }))
-vi.mock('../../../db/repos/jobs', () => ({
+vi.mock('../../../db/repos/job/jobs', () => ({
   getJob: () => ({ name: 'Client', summaryEmail: 'client@example.invalid' }),
 }))
 vi.mock('../../platform/email', () => ({ emailProvider: { send: mock.send } }))

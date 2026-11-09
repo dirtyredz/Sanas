@@ -47,7 +47,7 @@ vi.mock('../stt', () => ({
     }),
   },
 }))
-vi.mock('../../db/repos/jobs', () => ({
+vi.mock('../../db/repos/job/jobs', () => ({
   ensureDefaultJob: () => 3,
 }))
 vi.mock('../../db/repos/job/glossary', () => ({ getGlossaryTerms: () => [] }))

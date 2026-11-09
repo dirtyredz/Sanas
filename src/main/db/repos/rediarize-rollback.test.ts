@@ -8,7 +8,7 @@ vi.mock('../../config/settings', () => ({ loadSettings: () => ({ deepgramApiKey:
 vi.mock('../../services/stt', () => ({ sttProvider: { transcribeFile: mock.transcribe } }))
 vi.mock('fs', () => ({ existsSync: () => true }))
 import { runMigrations } from '../migrations'
-import { createJob } from './jobs'
+import { createJob } from './job/jobs'
 import { createMeeting } from './meeting/meeting-create'
 import { updateMeetingAudioPath } from './meeting/meetings'
 import { insertSegment, listSegments } from './segments'

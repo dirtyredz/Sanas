@@ -2,7 +2,7 @@ import { getApprovedMemory, ordinaryJob } from '../../../db/repos/job/memory/app
 import { getMeetingGrounding } from '../../../db/repos/meeting/meeting-grounding'
 import { meetingCandidateFacts } from '../context/meeting-facts'
 import type { MeetingContext } from '@shared/live-controls/types'
-import { getJob } from '../../../db/repos/jobs'
+import { getJob } from '../../../db/repos/job/jobs'
 import { listGlossary } from '../../../db/repos/job/glossary'
 import { saveMeetingGrounding } from '../../../db/repos/suggestion-grounding'
 import { buildSystemPrompt } from '../../assistant/prompts'

@@ -17,7 +17,7 @@ vi.mock('../../../config/settings', () => ({
 vi.mock('../../../db/repos/meeting/meeting-grounding', () => ({
   getMeetingGrounding: () => ({ resume: null, interviewProfile: '', hasBiography: false }),
 }))
-vi.mock('../../../db/repos/jobs', () => ({ getJob: () => null }))
+vi.mock('../../../db/repos/job/jobs', () => ({ getJob: () => null }))
 vi.mock('../../../db/repos/job/glossary', () => ({ listGlossary: () => [] }))
 vi.mock('../../../db/repos/meeting/meeting-context', () => ({
   getMeetingContext: () => ({ meetingId: 1, revision: 0, text: f.initialContext }),

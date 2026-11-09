@@ -98,7 +98,7 @@ export async function runRehearsal(): Promise<void> {
       showOverlay()
       await sleep(800)
     }
-    const { createJob } = await import('../db/repos/jobs')
+    const { createJob } = await import('../db/repos/job/jobs')
     const job = createJob(scenario.name)
     const state = await meetings.startMeeting(
       job.id,

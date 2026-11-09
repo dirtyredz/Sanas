@@ -64,7 +64,7 @@ vi.mock('./turns/session', () => ({
   },
 }))
 import { runMigrations } from '../../db/migrations'
-import { createJob } from '../../db/repos/jobs'
+import { createJob } from '../../db/repos/job/jobs'
 import { setJobResume } from '../../db/repos/job/job-resume'
 import { getMeetingGrounding } from '../../db/repos/meeting/meeting-grounding'
 import { getMeeting } from '../../db/repos/meeting/meetings'

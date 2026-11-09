@@ -4,7 +4,7 @@ vi.mock('../../../db/repos/job/memory/approved', () => ({
 }))
 import { expect, it, vi } from 'vitest'
 const data = vi.hoisted(() => ({ notes: '', memory: 'Approved historical fact' }))
-vi.mock('../../../db/repos/jobs', () => ({
+vi.mock('../../../db/repos/job/jobs', () => ({
   getJob: () => ({
     name: 'Interview',
     companyInfo: '',

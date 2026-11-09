@@ -5,7 +5,7 @@ import { sqliteTestDatabase } from '../testing/sqlite-test-database'
 const mock = vi.hoisted(() => ({ db: null as unknown as Database }))
 vi.mock('../index', () => ({ getDb: () => mock.db }))
 import { runMigrations, schemaVersion } from './'
-import { createJob, ensureDefaultJob } from '../repos/jobs'
+import { createJob, ensureDefaultJob } from '../repos/job/jobs'
 import { createMeeting } from '../repos/meeting/meeting-create'
 
 let sqlite: DatabaseSync

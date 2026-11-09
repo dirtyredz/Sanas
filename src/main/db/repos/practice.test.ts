@@ -5,7 +5,7 @@ import type { Database } from 'better-sqlite3'
 const mock = vi.hoisted(() => ({ db: null as unknown as Database }))
 vi.mock('../index', () => ({ getDb: () => mock.db }))
 import { runMigrations, schemaVersion } from '../migrations'
-import { createJob } from './jobs'
+import { createJob } from './job/jobs'
 import { createMeeting } from './meeting/meeting-create'
 import { getMeeting, listMeetings, deleteMeeting } from './meeting/meetings'
 import { searchSegments } from './history/transcripts'

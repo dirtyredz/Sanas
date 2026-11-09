@@ -5,7 +5,7 @@ import { sqliteTestDatabase } from '../../testing/sqlite-test-database'
 const mock = vi.hoisted(() => ({ db: null as unknown as Database }))
 vi.mock('../../index', () => ({ getDb: () => mock.db }))
 import { runMigrations } from '../../migrations'
-import { createJob, ensureDefaultJob } from '../jobs'
+import { createJob, ensureDefaultJob } from '../job/jobs'
 import { createMeeting } from './meeting-create'
 import { getMeetingGrounding } from './meeting-grounding'
 import { getMeeting, moveMeetingToJob } from './meetings'

@@ -1,7 +1,7 @@
 import { parseSummaryInline, parseSummaryMarkdown } from '@shared/meeting/summary-markdown'
 import { loadSettings } from '../../../config/settings'
 import { getMeeting } from '../../../db/repos/meeting/meetings'
-import { getJob } from '../../../db/repos/jobs'
+import { getJob } from '../../../db/repos/job/jobs'
 import { emailProvider, type OutgoingEmail } from '../../platform/email'
 
 // Composes the summary email for one meeting and hands it to the mail seam.

@@ -20,7 +20,7 @@ vi.mock('../../services/jobs/deletion', () => ({
   previewJobDeletion: mocks.deletePreview,
   deleteJob: mocks.deleteJob,
 }))
-vi.mock('../../db/repos/jobs', () => ({
+vi.mock('../../db/repos/job/jobs', () => ({
   listJobs: mocks.listJobs,
   createJob: vi.fn(),
   updateJob: vi.fn(),

@@ -6,7 +6,7 @@ const mock = vi.hoisted(() => ({ db: null as unknown as Database }))
 vi.mock('../../index', () => ({ getDb: () => mock.db }))
 vi.mock('fs', () => ({ existsSync: () => false, unlinkSync: vi.fn() }))
 import { runMigrations } from '../../migrations'
-import { createJob, ensureDefaultJob } from '../jobs'
+import { createJob, ensureDefaultJob } from '../job/jobs'
 import { createMeeting } from './meeting-create'
 import { getMeetingContext, hasMeetingContext, saveMeetingContext } from './meeting-context'
 import { insertSegment, listSegments } from '../segments'

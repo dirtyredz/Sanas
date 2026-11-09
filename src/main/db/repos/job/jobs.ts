@@ -1,4 +1,4 @@
-import { getDb } from '../index'
+import { getDb } from '../../index'
 import { reservedNameError, UNSORTED_JOB_NAME } from '@shared/jobs/unsorted'
 import type { Job } from '@shared/types'
 
