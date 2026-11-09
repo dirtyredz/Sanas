@@ -15,14 +15,15 @@ import { canStartSuggestion, type SuggestionInFlight } from './suggestion-in-fli
 // ("Answer now"). Each run owns its lane through a token: cancelling a next point frees the
 // lane at once so an answer can take it, and the cancelled run's late `finally` cannot
 // release the newer owner. An answer that started before Stop still finishes and persists
-// (that is why the hold exists); only buffered next points are cancellable.
+// (that is why the hold exists); buffered next points and answers with no visible card
+// are cancellable.
 //
 // A speculative answer (`speculate`) is an automatic answer started before the classifier
 // has agreed it is wanted. It owns the ambient lane and the meeting hold like any run, but it
 // is UNPUBLISHED: no visible event and no persistence until `promote()`. Until then
 // `cancel()` discards it silently, whatever the provider already returned, and a provider
 // failure or timeout ends it with nothing shown. Once promoted it is an ordinary streamed
-// answer and, like one, can no longer be withdrawn.
+// answer and, once visible, can no longer be withdrawn.
 
 export interface SuggestionRequest extends SuggestionMetadata {
   profile?: 'full' | 'smart' | 'points'
@@ -80,7 +81,7 @@ export interface SpeculativeHandle extends SuggestionHandle {
    *  no-op, a held complete result is stored and shown. False when the run already ended
    *  unpublished (failed, timed out, discarded): the caller takes the ordinary path. */
   promote(): boolean
-  /** Discards it while unpublished (nothing shown or stored); a no-op once promoted. */
+  /** Discards it until a card is visible (nothing stored); a no-op once visible. */
   cancel(): void
 }
 
@@ -333,7 +334,7 @@ export class SuggestionRunner {
         return true
       },
       cancel: () => {
-        // answers are never withdrawn once published; next points and speculations are
+        // Visible answers are never withdrawn; buffered or still-hidden work can be.
         if ((streamed && gate.shown) || cancelled) return
         cancelled = true
         releaseLane()

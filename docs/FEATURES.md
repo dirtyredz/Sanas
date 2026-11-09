@@ -27,7 +27,7 @@ and pauses of at least two seconds; streaming behavior is unchanged.
 | System-audio capture warning                     | ✅     | This PC mode: banner when ch1 is silent but the mic hears speech; advisory only                                                                                                                                           |
 | Live whisper history                             | ✅     | Per-meeting history with previous/next/Latest; follows new answers unless reading an older/scrolled item                                                                                                                  |
 | Stacked questions answered together              | ✅     | Back-to-back questions yield one combined suggestion (max 3, within 30 s); covered ones are not re-asked                                                                                                                  |
-| On-demand full answer (global hotkey)            | ✅     | Ctrl+Shift+Enter or "Answer now"; answers the latest question (<= 90 s old), earlier talk as background; runs beside an ambient nudge, opens its answer, 60 s timeout                                                     |
+| On-demand full answer (global hotkey)            | ✅     | Ctrl+Shift+Enter or "Answer now"; answers the latest question (<= 90 s old), earlier talk as background; reuses matching answers or supersedes unpublished automatic work; 60 s timeout                                   |
 | Speculative automatic answers (all verdicts)     | ✅     | one neutral prompt built beside the classifier; promoted for all six accepted verdicts when nothing moved (2026-11-05)                                                                                                    |
 | Stage-timing evidence                            | ✅     | allowlisted per-candidate latency records and summary in the main log, rehearsal report and Mock; no text                                                                                                                 |
 | Always-on-top overlay window                     | ✅     | frameless, position/size memory, resize grips; requests current meeting state when opened                                                                                                                                 |
@@ -219,3 +219,13 @@ Mono voice identity survives in historical rows across reconnect/resume. New spe
 fresh IDs and, after a prior pin, Live and overlay ask “Identify your voice again”. Automatic
 answers and Next point pause until confirmation; Answer now remains available. Stereo channel
 identity is unchanged.
+
+Assistance memory keeps one reusable automatic/Answer-now answer per question occurrence and
+final evidence revision. Pressing Answer now (button or global shortcut) selects the existing
+card, including during streaming. Expanded partial questions and later repetitions remain
+eligible; failed or empty attempts can be retried. Different questions still use independent lanes.
+
+Next point can consider earlier confirmed-user discussion after it leaves the transcript window,
+even if coaching was off then. It receives bounded quotes associated with job talking points and
+notes, not an asserted completion checklist. Coverage can miss paraphrases and never overrides
+the current-topic rule. Speaker corrections remove the affected evidence.

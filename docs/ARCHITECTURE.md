@@ -198,8 +198,9 @@ Mic (getUserMedia, renderer)
   window, told stories, grounding, carried questions, model). Otherwise it is
   **discarded** silently and the ordinary request starts: `none`, failures, `other` under Answer
   every question (explicit reference-answer prompt), a moved-on window, a changed ledger, expiry, a dropped candidate, Stop/reconnect/pin
-  change, its own provider failure or timeout. Cooldown and ledger coverage are consumed only on
-  promotion. "Answer now" uses the hotkey lane and never touches it. Every speculation is a paid
+  change, its own provider failure or timeout. Cooldown is consumed on admission; stacked
+  questions leave the ledger only when their answer is published. Answer now supersedes
+  matching unpublished automatic work, or selects its already published answer. Every speculation is a paid
   call, discarded or not: `speculation-started/promoted/discarded` diagnostics and a
   `speculative answers: started=… promoted=… discarded=…` log line at Stop count it.
 - **Stage timing evidence** (`observation/diagnostics.ts`, `observation/run-observation.ts`, `assist/latency/latency.ts`, `assist/latency/latency-summary.ts`):
@@ -598,3 +599,28 @@ Automatic specific-subject queries run beside classification with a 10 ms eviden
 Answer now has 25 ms. Evidence freezes once, goes only in the user turn and is persisted in
 promptWindow for deterministic More detail. Late results cannot cause speculative fallback.
 The worker is stopped during normal and rehearsal shutdown.
+
+## Assistance memory
+
+Answer coverage is separate from both stacked questions and shown stories. A synchronous
+reservation identifies meeting, assembler occurrence/channel, and exact whitespace-normalized
+final evidence. It precedes retrieval; runner callbacks own publication and settlement.
+Answer now takes over matching unpublished automatic work and uses Full. Published answers
+are reselected through typed main-to-renderer IPC, with text and stored ID for restoration,
+without a provider call or another insert. Different occurrences and explicit typed/detail/
+audience/capture requests keep their lanes. Expanded partial questions are new revisions.
+Failures, no-op, empty output, cancellation and timeout release ownership; stale attempts
+cannot release newer owners. Completed entries expire after 90 seconds; active entries live
+until settlement. Pause/reset/identity changes discard unfinished candidates and retrieval;
+started published answers still finish. Context Apply preserves answer ownership and grounding,
+so reselected older-context cards retain their context badge. A new meeting resets reuse.
+
+The coach separately receives up to 3,000 characters of quoted historical user evidence.
+Start freezes at most 128 points from actual job talking points and notes. Conservative local
+matching associates complete excerpts (two per point, at most 480 characters each) with speaker,
+channel and audio spans. Long excerpts are omitted rather than clipped across a negation.
+Evidence survives the rolling window, coaching-off, pause/resume, reconnect and context Apply;
+only a new meeting resets it. Unpinning retracts that speaker; pinning can reconsider the current
+200 finals, without claiming historical reconstruction. Unknown/other speech never contributes.
+Relevant points rank first; incompleteness is explicit. Suggestions shown are not spoken evidence.
+Coverage is coach-only and adds no inference call or answer-request field.

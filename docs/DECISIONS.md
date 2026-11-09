@@ -788,3 +788,17 @@ Keep local history SQL off the main event loop. Automatic evidence gets 10 ms, A
 25 ms; missing, overloaded or cold retrieval proceeds without evidence. Never weaken
 speculative equality to accommodate late hits. The context meter warns above 12,000 characters
 for Notes + approved memory + rendered glossary, with approximate tokens at four characters each.
+
+## 2026-11-09 - Occurrence-scoped answers and quoted coaching evidence
+
+Use exact normalized finalized evidence within a stable assembler occurrence for cross-lane
+answer ownership. Prefer reuse of published answers; Answer now supersedes only matching
+unpublished automatic work and keeps Full. This avoids guessing semantic equivalence and
+lets expanded questions and explicit retries recover. Lifecycle authority stays in the runner;
+request equality and answer prompts are unchanged. Context Apply does not regenerate an
+already answered question; More detail and typed requests remain explicit independent actions.
+
+For meeting-wide Next point memory, retain bounded quotes associated locally with frozen job
+points. No additional inference calls and no asserted semantic completion. Preserve historical
+confirmed speech across reconnect/reconfirmation; retract actual corrections. Existing coach
+calls interpret negation/conflicts and remain constrained to the current topic. No DB migration.

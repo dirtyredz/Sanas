@@ -15,6 +15,12 @@ Layout below reflects what exists.
 
 ## Layout
 
+Assistance memory: `meetings/assist/suggestion/answers/` owns occurrence/revision reservations
+and runner lifecycle coverage; `LiveSession` owns its meeting lifetime and main-originated
+answer reselection. `assistant/coach/coverage/` owns the frozen job-point catalog and bounded
+quoted user-speech ledger. `MeetingPrompts` builds the catalog at Start; `LiveSession` retains
+evidence and retracts speaker corrections. Only coach requests render this evidence.
+
 Reconnect continuity: `stt/deepgram/recovery/` owns the bounded PCM FIFO and fake-socket
 recovery tests. `meetings/capture/speaker-session.ts` owns mono connection mapping and
 historical pins; `shared/meeting/speaker-identity.ts` carries main-owned confirmation/current/

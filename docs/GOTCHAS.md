@@ -341,7 +341,7 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
 - **Promotion compares the whole prompt, not the verdict.** `speculative-answer.ts` rebuilds the
   ordinary request at verdict time and publishes only an identical one (userContent, system,
   context, grounding id/revision, carried turns, model, budget). A new final, a hotkey answer
-  adding a told story, or "Answer now" clearing the ledger all make it a mismatch and the
+  adding a told story, or changed carried questions make it a mismatch and the
   ordinary request replaces it. Do not loosen this to "the verdict is a question".
 - **Candidate evidence has to terminate.** Null meeting snapshots must terminate queued/ready candidates. Classified rejections
   retain candidate identity until dependent runs settle; `candidateTerminal` distinguishes
@@ -412,7 +412,8 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   the uncovered ones (cap 3, 30 s). Carried questions skip the classifier (only the newest is
   classified), so the prompt tells Claude to answer each listed one. If an answer is in flight
   the uncovered ones wait in the ledger and ride the next request. Don't "fix" this back to
-  newest-only or cover questions on classification: coverage is marked when a request starts.
+  newest-only or cover questions on classification: only the published request
+  removes its actual members. Answer now never clears unrelated pending questions.
 - **Suggestion concurrency has two lanes, not one global lock.** One ambient nudge and one
   requested answer may stream together; each lane still caps itself at one. A requested
   answer must never be dropped just because an ambient nudge owns the provider. Each request
@@ -709,3 +710,18 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   scheduling excess separately and rejects replies received after the budget.
 - New migrations require disposable older-schema tests to drop memory tables and summary FTS
   triggers/table before resetting user_version.
+
+## Assistance memory
+
+- Answer identity is an occurrence plus exact normalized final evidence, not semantic similarity.
+  Same words in a later occurrence and expanded partial questions remain eligible. Unanchored
+  Answer now keeps its rolling-window behavior. No fuzzy duplicate detection is promised.
+- Reservations precede history awaits; lifecycle callbacks belong to the runner, never diagnostic
+  observers. Keep them outside request equality: every prompt/provenance field still compares.
+  Reselection carries an existing card snapshot and never inserts another saved suggestion.
+- Coach coverage is incomplete evidence, not a boolean assertion of delivery. Local matching
+  misses paraphrases. Quotes may negate or contradict a point; keep them whole. Long passages
+  are omitted, not truncated into claims. Current-topic restrictions still win over job priorities.
+- Reconfirmation alone retains historical confirmed speech. Actual unpinning retracts only that
+  speaker's evidence. Re-pinning reconstructs only available current-window finals. Shown cards,
+  approved memory and notes are never themselves proof the user said anything.
