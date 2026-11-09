@@ -19,8 +19,6 @@ import type { AssistInput } from './manual-requests'
 // another capture is still being prepared. A requested answer that starts while a capture is
 // being prepared wins, and the capture then reports busy.
 
-export type { AcquiredCapture }
-
 export interface CaptureRequestDeps<Target> {
   serialize<T>(fn: () => Promise<T>): Promise<T>
   liveMeetingId(): number | null

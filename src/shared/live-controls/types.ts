@@ -11,7 +11,7 @@ export interface ContextUpdate {
   text: string
 }
 /** 'capture' is an answer that was sent a screenshot: a direct Capture screen, or a typed
- *  question with an attached screen. It is stored as 'typed' (see ./capture.ts). */
+ *  question with an attached screen. It is stored as 'typed' (see main/db/repos/manual-kind.ts). */
 export type ManualKind = 'typed' | 'detail' | 'audience' | 'capture'
 /** A typed request's `captureToken` names a main-owned composer draft (Attach screen); the
  *  renderer never sends image data. */

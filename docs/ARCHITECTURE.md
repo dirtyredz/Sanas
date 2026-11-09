@@ -460,7 +460,7 @@ interleave markers with segments by audio time, markers first at ties, never as 
 
 ### Screen capture (no persistence)
 
-Capture screen (IPC or the global shortcut) and Attach screen enter `meetings/assist/manual/capture-requests.ts`.
+Capture screen (IPC or the global shortcut) and Attach screen enter `meetings/assist/manual/capture-requests.ts` (wired by `capture-feature.ts`).
 It checks the live meeting, the requested lane, the API key and a single "preparing" flag, then
 captures OUTSIDE the lifecycle queue (`services/screen-capture/`: display under the overlay →
 `desktopCapturer` source by `display_id` → bounded PNG/JPEG + thumbnail, 5 s deadline) so Pause and

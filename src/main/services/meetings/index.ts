@@ -9,12 +9,9 @@ import type { StartRequest } from './context/grounding/start-request'
 import { meetingKeyterms } from './context/grounding/meeting-keyterms'
 import { observeMeeting } from './observation/meeting-observation'
 import { IPC } from '@shared/ipc'
-import type { Admission } from '@shared/live-controls/types'
-import type { CaptureAttachResult, CaptureStatus } from '@shared/live-controls/capture'
 import type { ChannelCount, MeetingState, Settings, TranscriptEvent } from '@shared/types'
 import { loadSettings } from '../../config/settings'
 import { sttProvider } from '../stt'
-import { assistReady } from './assist/suggestion/suggestion-requests'
 import type { SttSession, SttSignal, SttTranscript } from '../stt/types'
 import {
   clearMeetingAudioPath,
@@ -39,10 +36,7 @@ import { broadcast } from '../../windows/broadcast'
 import { createMeeting } from '../../db/repos/meeting/meeting-create'
 import { ensureDefaultJob } from '../../db/repos/job/jobs'
 import { createLiveControls } from './live-controls'
-import { CaptureRequests } from './assist/manual/capture-requests'
-import { createScreenCapture } from '../screen-capture'
-import { CaptureDrafts } from './assist/manual/capture-drafts'
-import { overlayBounds } from '../../windows/overlay-window'
+import { createCaptureFeature } from './assist/manual/capture-feature'
 
 // Orchestrates one live meeting at a time: STT session, persistence, event fan-out, and
 // lifecycle. Live assistance — the prompt window, shown headlines, system prompt and the
@@ -120,24 +114,13 @@ function serialized<T>(fn: () => Promise<T>): Promise<T> {
   return run
 }
 
-const screenCapture = createScreenCapture(overlayBounds)
-const captures = new CaptureRequests({
-  serialize: serialized,
-  liveMeetingId,
-  canRequest: () => live.canRequest(),
-  apiKeySet: () => assistReady(loadSettings()),
-  target: screenCapture.target,
-  acquire: screenCapture.acquire,
-  request: (input) => live.request(input),
-  status: (status) => broadcast(IPC.ScreenCaptureStatus, status),
-  drafts: new CaptureDrafts(),
-})
+const capture = createCaptureFeature({ serialize: serialized, liveMeetingId, live })
 
 const liveControls = createLiveControls({
   serialize: serialized,
   clockMs: () => audioMsReceived,
   live,
-  captures,
+  captures: capture.requests,
 })
 
 export function currentState(): MeetingState {
@@ -379,7 +362,7 @@ export function startMeeting(
         interviewProfile,
       },
     )
-    captures.meetingChanged() // drafts and feedback belong to one meeting
+    capture.meetingChanged() // drafts and feedback belong to one meeting
     setLiveMeeting(id)
     meetingJobId = job
     meetingChannels = channels
@@ -518,7 +501,7 @@ export function stopMeeting(): Promise<MeetingState> {
     const endedId = liveMeetingId()
     if (endedId !== null) {
       setLiveMeeting(null) // released first: a failure below must not strand the lifecycle
-      captures.meetingChanged() // composer drafts go with the meeting; a capture in flight is dropped
+      capture.meetingChanged() // composer drafts go with the meeting; a capture in flight is dropped
       try {
         endMeeting(endedId)
       } catch (e) {
@@ -558,16 +541,11 @@ export function answerNow(): void {
   assistance.answerNow()
 }
 
-/** Capture screen (overlay button or shortcut). The display is chosen synchronously inside
- *  this call, so the shortcut calls it BEFORE revealing the overlay. */
-export const captureScreen = (meetingId: number | null = null): Promise<Admission> =>
-  captures.capture(meetingId)
-export const attachScreen = (meetingId: number): Promise<CaptureAttachResult> =>
-  captures.attach(meetingId)
-export const discardScreen = (meetingId: number, token: string): void =>
-  captures.discard(meetingId, token)
-export const captureStatus = (): CaptureStatus => captures.status()
-export const screenRendererGone = (): void => captures.rendererGone()
+export const captureScreen = capture.captureScreen
+export const attachScreen = capture.attachScreen
+export const discardScreen = capture.discardScreen
+export const captureStatus = capture.captureStatus
+export const screenRendererGone = capture.screenRendererGone
 
 export const updateMeetingContext = liveControls.updateMeetingContext
 export const requestAssist = liveControls.requestAssist

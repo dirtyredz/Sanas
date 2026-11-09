@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from 'vitest'
 import type { Admission } from '@shared/live-controls/types'
 import type { CaptureStatus } from '@shared/live-controls/capture'
 import { CaptureDrafts } from './capture-drafts'
-import { CaptureRequests, type AcquiredCapture, type CaptureRequestDeps } from './capture-requests'
+import type { AcquiredCapture } from '../../../screen-capture'
+import { CaptureRequests, type CaptureRequestDeps } from './capture-requests'
 import type { AssistInput } from './manual-requests'
 
 const shot = (n = 1): AcquiredCapture => ({
