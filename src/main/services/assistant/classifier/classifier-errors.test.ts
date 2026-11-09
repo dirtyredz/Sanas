@@ -97,6 +97,19 @@ it('does not recognise vendor class names itself: only the provider-tagged categ
   )
   expect(result).toMatchObject({ diagnostic: { category: 'provider' } })
 })
+it('never echoes a key-shaped model id into the diagnostic', async () => {
+  const key = 'sk-ant-api03-PRIVATEKEY'
+  const result = await classifyTurn(
+    {
+      complete: async () => {
+        throw new Error('down')
+      },
+    },
+    { ...req, apiKey: key, model: key },
+  )
+  expect(result).toMatchObject({ diagnostic: { model: 'custom' } })
+  expect(JSON.stringify(result)).not.toContain('PRIVATEKEY')
+})
 it('rejects arbitrary request-id text and error bodies', async () => {
   const result = await classifyTurn(
     {

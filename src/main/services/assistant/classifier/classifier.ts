@@ -148,7 +148,7 @@ export async function classifyTurn(
           ...result,
           diagnostic: failureDiagnostic(
             result.reason,
-            req.model === req.apiKey ? 'custom' : req.model,
+            req.model, // failureDiagnostic allowlists the id shape, so a pasted key never survives
             performance.now() - started,
             providerError,
           ),
