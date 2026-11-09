@@ -1,3 +1,4 @@
+import { interviewApplies } from '@shared/meeting/meeting-start'
 import { type StartRequest } from './start-request'
 
 /** Only Start reads Settings (already validated by SETTINGS_SCHEMA). A saved job resume turns
@@ -7,6 +8,6 @@ export function interviewProfileSnapshot(
   hasResume: boolean,
   profile: string,
 ): string {
-  if (!(request.practice || (request.interview ?? hasResume))) return ''
+  if (!interviewApplies(request.interview, hasResume, request.practice)) return ''
   return profile.replaceAll('\0', '').trim()
 }

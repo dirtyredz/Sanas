@@ -6,3 +6,14 @@ export interface MeetingStartOptions {
   interview?: boolean
   meetingContext?: string
 }
+
+/** The one rule for whether the Interview profile applies to a meeting: Mock (`practice`)
+ *  always; otherwise the explicit choice, defaulting to on when the job has a saved resume.
+ *  Main (profile snapshot at Start) and the Live checkbox both use it so they cannot drift. */
+export function interviewApplies(
+  interview: boolean | undefined,
+  hasResume: boolean,
+  practice = false,
+): boolean {
+  return practice || (interview ?? hasResume)
+}

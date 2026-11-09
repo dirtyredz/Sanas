@@ -1,10 +1,10 @@
-import type { MeetingStartOptions } from '@shared/meeting/meeting-start'
+import { interviewApplies, type MeetingStartOptions } from '@shared/meeting/meeting-start'
 
 /** The Interview checkbox: the user's explicit choice when there is one, else on when the
  *  selected job has a saved resume (Unsorted never has one). Start sends only the override,
  *  so an untouched box lets main decide from what is saved at that moment. */
 export function interviewChecked(override: boolean | undefined, jobHasResume: boolean): boolean {
-  return override ?? jobHasResume
+  return interviewApplies(override, jobHasResume)
 }
 
 /** What Live's Start sends: the Interview override (undefined lets main decide) and the
