@@ -200,9 +200,9 @@ sanas/
 - `src/renderer/src/lib/meeting/start-captured-meeting.ts` — shared capture acquisition/adoption/cleanup.
 - `src/shared/mock-interview/` — cross-process mock contracts.
 
-- `src/main/lifecycle/` — userData identity, capped/redacted main logging and normal startup wiring; normal startup is not loaded by smoke
+- `src/main/lifecycle/` — userData identity, capped/redacted main logging and normal startup wiring (`window-policy.ts`: quit when the main window closes, hide the overlay when a meeting goes idle); normal startup is not loaded by smoke
 - `src/main/diagnostics/` — isolated, headless packaged diagnostics used by `--smoke`
-- `src/main/windows/` — BrowserWindow builders and the main → all-windows broadcast (`app-window.ts`: `createAppWindow`/`loadAppPage`, the only definition of window webPreferences and dev-URL vs file loading; `overlay-bounds.ts`: pure on-screen fitting of saved overlay bounds; `main-window.ts`: create or reveal — restore/show/focus, never reload; `window-chrome.ts`: the hidden title bar + caption-button colours mirrored from tokens.css)
+- `src/main/windows/` — BrowserWindow builders and the main → all-windows broadcast (`app-window.ts`: `createAppWindow`/`loadAppPage`, the only definition of window webPreferences and dev-URL vs file loading; `overlay-bounds.ts`: pure on-screen fitting of saved overlay bounds; `main-window.ts`: create or reveal — restore/show/focus, never reload, reports close through `onMainWindowClosed`; `overlay-window.ts`: show/hide/toggle; `window-chrome.ts`: the hidden title bar + caption-button colours mirrored from tokens.css)
 - `src/main/ipc/` — typed IPC handlers; validate ingress and delegate, with no business logic (`windows.ts`: overlay toggle/resize/ghost, compose handshake and the parameterless Open Sanas; `validate.ts` also owns `requireMeetingStart`, the Start options check; `presentation-history.ts`: read-only historical slide markers; `hotkeys.ts`: global-shortcut status)
 - `src/main/` — process entry (`index.ts`, normal vs `--smoke` dispatch) and the display-media loopback handler (`system-audio.ts`)
 - `src/main/services/` — main-process services and provider seams
@@ -227,7 +227,7 @@ sanas/
 - `src/main/services/meetings/context/candidate-data.ts` (and `candidate-keyterms.ts`: STT term extraction/interleave for resume and profile) — neutral escaping and delimited prompt framing for resume (`candidateFacts`) and Interview profile (`interviewProfileFacts`); so `resume/` and the profile never import each other
 - `src/main/services/meetings/context/meeting-facts.ts` — combines a `MeetingGrounding` into the candidate-facts block (resume first); `profile.ts` — `interviewProfileSnapshot`, Start selection of the Settings profile; `start-request.ts` — `StartRequest` (the renderer's `MeetingStartOptions` plus main-only `practice`); `start-grounding.ts` — `resolveStartGrounding`, the selected job's saved resume (none for Unsorted) plus the profile, resolved inside serialized Start for Live and Mock
 - `src/main/services/meetings/presentation/` — historical slide-marker formatting for summaries (presentation mode retired 2026-11-04)
-- `src/main/services/meetings/status/` — live-meeting identity, post-processing guards and `filing.ts` (historical job filing; refuses a live meeting)
+- `src/main/services/meetings/status/` — live-meeting identity, post-processing guards (both expose `on…Change` signals via `change-signal.ts`, so the updates service re-broadcasts without polling) and `filing.ts` (historical job filing; refuses a live meeting)
 - `src/main/services/meetings/summary/` — meeting summaries, structured output handling and summary email
 - `src/main/services/meetings/rediarize/` — batch re-diarization and speaker identity/name carry-over
 - `src/main/services/meetings/merge/` — split-recording merge planning and application

@@ -2,6 +2,16 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-11-09 — Closing the main window quits Sanas
+
+The main window is the app. The overlay and mock windows are BrowserWindows too, so
+`window-all-closed` never fires while one is open; `lifecycle/window-policy.ts` quits when the
+main window closes (`before-quit` still ends a running mock first). Rejected: a tray/background
+mode, and hiding the main window instead of quitting. A live non-mock meeting at quit is left
+for `closeDanglingMeetingsAtStartup`. The same module hides the overlay when a meeting goes
+idle (Stop, overlay Stop, end of a mock) by subscribing to meeting state, so
+`services/meetings` no longer imports the overlay window.
+
 ## 2026-11-09 — Keep Full; retain 600 ms endpoint after continuation fixtures
 
 Owner ruling: Full stays. Do not change saved settings, defaults, Full's Opus model,

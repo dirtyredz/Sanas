@@ -20,7 +20,6 @@ const fakes = vi.hoisted(() => ({
   onTranscript: null as null | ((transcript: Record<string, unknown>) => void),
   liveFinal: vi.fn(),
   begin: vi.fn(),
-  hideOverlay: vi.fn(),
   jobResumes: new Map<number, { name: string; text: string }>(),
 }))
 
@@ -120,7 +119,6 @@ vi.mock('../screen-capture', () => ({
 }))
 vi.mock('../../windows/overlay-window', () => ({
   overlayBounds: vi.fn(() => null),
-  hideOverlay: fakes.hideOverlay,
 }))
 
 import {
@@ -191,16 +189,6 @@ describe('meeting capture health', () => {
     } finally {
       fakes.jobResumes.clear()
     }
-  })
-
-  it('hides the overlay when the meeting stops, never on pause or resume', async () => {
-    fakes.hideOverlay.mockClear()
-    await startMeeting()
-    await pauseMeeting()
-    await resumeMeeting(1)
-    expect(fakes.hideOverlay).not.toHaveBeenCalled()
-    await stopMeeting()
-    expect(fakes.hideOverlay).toHaveBeenCalledOnce()
   })
 
   it('saves the Start context with the meeting before assistance or STT begins', async () => {

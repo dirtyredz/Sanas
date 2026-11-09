@@ -11,8 +11,10 @@ import { answerNow, captureScreen } from '../services/meetings'
 import { registerSystemAudioLoopback } from '../system-audio'
 import { scheduleRetention } from '../services/platform/retention'
 import { closeDanglingMeetingsAtStartup } from '../services/meetings/recovery/startup-recovery'
+import { registerWindowPolicy } from './window-policy'
 
 let initialized = false
+registerWindowPolicy()
 
 // Single-instance lock: a second launch focuses the existing window instead.
 if (!app.requestSingleInstanceLock()) {

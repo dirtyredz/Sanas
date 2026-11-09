@@ -31,7 +31,7 @@ vi.mock('electron', () => ({
     }
   },
 }))
-import { createMainWindow } from './main-window'
+import { createMainWindow, onMainWindowClosed } from './main-window'
 
 beforeEach(() => {
   f.closed?.()
@@ -70,11 +70,14 @@ it('only focuses a window that is already visible', () => {
   expect(f.focus).toHaveBeenCalledOnce()
 })
 
-it('quits the app when the main window closes, so no overlay or mock window outlives it', () => {
+it('reports the close to the registered handler, and owns no quit policy itself', () => {
+  const handler = vi.fn()
+  onMainWindowClosed(handler)
   createMainWindow()
-  expect(f.quit).not.toHaveBeenCalled()
+  expect(handler).not.toHaveBeenCalled()
   f.closed?.()
-  expect(f.quit).toHaveBeenCalledOnce()
+  expect(handler).toHaveBeenCalledOnce()
+  expect(f.quit).not.toHaveBeenCalled()
 })
 
 it('recreates the window after it was closed', () => {
