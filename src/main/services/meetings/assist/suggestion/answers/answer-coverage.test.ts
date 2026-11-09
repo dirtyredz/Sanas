@@ -63,3 +63,14 @@ it('reselects a full streaming snapshot and preserves the persisted id after com
   coverage.reuse(entry)
   expect(selected[1]).toMatchObject({ text: 'An answer', storedSuggestionId: 42, streaming: false })
 })
+
+it('an error event is not publication of an answer or coverage of stacked questions', () => {
+  let published = 0
+  const coverage = new AnswerCoverage(() => 0)
+  const entry = coverage.reserve(1, [q], 'automatic', () => {})!
+  const lifecycle = coverage.lifecycle(entry, () => published++)
+  lifecycle.event({ ...event, kind: 'error', text: 'Provider failed' })
+  expect(published).toBe(0)
+  lifecycle.settled('error')
+  expect(coverage.find(1, q)).toBeUndefined()
+})

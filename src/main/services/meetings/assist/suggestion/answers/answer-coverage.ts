@@ -82,7 +82,7 @@ export class AnswerCoverage {
     return {
       valid,
       event: (event: SuggestionEvent) => {
-        if (!valid()) return
+        if (!valid() || event.kind === 'error') return
         const first = !entry.card
         entry.card = {
           ...event,
