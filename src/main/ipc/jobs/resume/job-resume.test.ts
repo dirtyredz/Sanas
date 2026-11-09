@@ -10,7 +10,7 @@ vi.mock('electron', () => ({
   BrowserWindow: { fromWebContents: vi.fn() },
   dialog: { showOpenDialog: vi.fn() },
 }))
-vi.mock('../../db/repos/job/job-resume', () => ({
+vi.mock('../../../db/repos/job/job-resume', () => ({
   getJobResume: mocks.getJobResume,
   setJobResume: mocks.setJobResume,
 }))

@@ -15,7 +15,7 @@ Layout below reflects what exists.
 
 ## Layout
 
-Resumes are owned by the job: `db/repos/job/` (`job-resume.ts` + v11 schema), `ipc/job-resume/` (get/set + the main-owned PDF/DOCX import picker) and the
+Resumes are owned by the job: `db/repos/job/` (`job-resume.ts` + v11 schema), `ipc/jobs/resume/` (get/set + the main-owned PDF/DOCX import picker) and the
 job page's Resume tab (`app/jobs/JobResume.tsx`, `ResumeDraftEditor.tsx`, `resume-draft.ts`).
 Start resolves the snapshot in `services/meetings/context/start-grounding.ts` for both Live
 and Mock; `lib/meeting/resume/useJobHasResume.ts` gives Live its Interview default. The
@@ -58,7 +58,7 @@ sanas/
 │   │   ├── windows/                       # BrowserWindow builders and main → all-windows broadcast
 │   │   │   ├── app-window.ts              # shared window factory: security webPreferences + dev/prod page load
 │   │   │   └── interviewer-window.ts      # restricted mock output window
-│   │   ├── ipc/                           # validated typed IPC handlers; delegate only (job-resume/: job resume get/set + native resume picker; jobs/: jobs, glossary, deletion and application IPC)
+│   │   ├── ipc/                           # validated typed IPC handlers; delegate only (jobs/: jobs, glossary, deletion, application and memory IPC; jobs/resume/: job resume get/set + native resume picker)
 │   │   ├── system-audio.ts                # display-media loopback handler
 │   │   ├── services/
 │   │   │   ├── stt/                       # SttProvider seam, endpointing and keyterm budget
@@ -210,7 +210,7 @@ sanas/
 - `src/main/services/stt/deepgram/` — the Deepgram implementation behind the seam: provider and batch (`deepgram.ts`), socket lifecycle and PCM-anchored clock (`deepgram-session.ts`, `DeepgramSession`), stall watchdog (`deepgram-watchdog.ts`), stream URL (`deepgram-stream-url.ts`) and message normalization (`deepgram-events.ts`); only `stt/index.ts` (and the rehearsal runner's dynamic import) reach it
 - `src/main/services/assistant/classifier-verdict.ts` — pure tolerant-but-conservative verdict parsing, canonical `formatVerdict`, `isAcceptedVerdict` and the one `CLASSIFIER_FAILURE_REASONS` list and content-free malformed shapes; `claude-usage.ts` extracts Anthropic usage into `ProviderUsage` (missing = unknown); `provider-evidence.ts` holds the provider-neutral `reportUsage`/`reportTiming`, and `provider-error.ts` the neutral failure category a provider tags on its transport errors (failure-diagnostics reads it, never vendor class names)
 - `src/main/services/assistant/failure-diagnostics.ts` — allowlists provider failure metadata for classifier diagnostics (category incl. `connection`, error class `errorName`, status, request ID, model, elapsed); the assistance coordinator owns the suspension timer and publishes availability through MeetingState
-- `src/main/ipc/job-resume/` — `jobs.getResume`/`setResume` (validated by `validateResume`) and `resume-import.ts`, the native PDF/DOCX picker returning an unsaved draft; the renderer never supplies a filesystem path
+- `src/main/ipc/jobs/resume/` — `jobs.getResume`/`setResume` (validated by `validateResume`) and `resume-import.ts`, the native PDF/DOCX picker returning an unsaved draft; the renderer never supplies a filesystem path
 - `src/renderer/src/lib/meeting/start-selection.ts` — remembered Start selection persistence and the Interview default/override rule
 - `src/renderer/src/lib/meeting/resume/` — `useJobHasResume`, whether the selected job has a saved resume (Live's Interview default), stale-reply safe
 - `src/main/services/turns/` — pure turn assembly and identity-role types; no I/O or timers; `latest-question.ts` picks the question Answer now answers
@@ -246,7 +246,7 @@ sanas/
 - `src/main/services/jobs/` — job deletion (`deletion.ts`: counted preview, SQLite backup, per-meeting removal through `meetings/remove.ts`, then the job row) and `preview-tokens.ts`, the main-owned single-use confirmation tokens shared by deletion and application import
 - `src/main/services/jobs/applications/` — importing a job from a resumes interview pack: `application-import.ts` is the thin facade over `import/` (`listing.ts` row projection, `row-status.ts` linked-row status, `preview.ts` create/refresh preview, `preview-fields.ts` typed field values, `preview-session.ts` token payload + pack reload, `apply.ts` confirmed apply, `apply-values.ts` create-value and name resolution); `map-pack.ts` maps a validated pack to job values (name, glossary normalization); `merge-preview.ts` is the pure three-way refresh comparison; `draft-fields.ts` is draft-at-import (create only) through `AssistantProvider`
 - `src/main/services/jobs/applications/source/` — the read-only edge to the resumes project: `refresh-runner.ts` (runs its pack CLI), `pack-files.ts` (bounded, contained listing/reading of `.json` packs), `validate-pack.ts` (schema v1 + limits + `packFingerprint`) and `source-config.ts` (re-validated `resumesRoot`/node settings)
-- `src/main/ipc/jobs/` — jobs, glossary, deletion and application IPC (`jobs.ts`, `deletion.ts`, `applications.ts`, `validate.ts`); the privileged channels answer only the library window (`requireLibrarySender`)
+- `src/main/ipc/jobs/` — jobs, glossary, deletion and application IPC (`jobs.ts`, `deletion.ts`, `applications.ts`, `validate.ts`, and `resume/` for the job resume); the privileged channels answer only the library window (`requireLibrarySender`)
 - `src/shared/jobs/` — renderer-safe job contracts and limits: `applications.ts` (pack/preview/apply types; preview values are typed, never display text), `application-stage.ts` (`stageCapabilities`: the one closed-stage policy — visible, create, refresh, archive — used by listing, preview, apply, row-status and the dev mock), `import-baseline.ts` (storage-independent `ImportBaseline`/`LocalValues`), `deletion.ts`, `limits.ts` (job, glossary and `JOB_PERSONA_MAX_CHARS` limits) and `source-settings.ts` (resumes settings defaults/validation)
 - `src/shared/filler-marker.ts` — `FILLER_OPEN`/`FILLER_CLOSE` for prompts, `splitFiller`/`stripFillerMarkers` for rendering; `src/shared/interview-profile.ts` — the profile text limit
 - `src/renderer/src/app/settings/sections/InterviewProfileSection.tsx` — the one plain-text Interview profile editor; the Settings draft/pager/save flow owns editing state
@@ -358,9 +358,9 @@ main-process code belongs in a responsibility folder above, not beside them.
   session grows.
 - `services/` has 10 children (the new `jobs/` took it from 9 after grouping platform integrations
   and moving transcript formatting into `turns/`); `meetings/` breadth remains tracked by dk-bd2e1ebf.
-- `src/shared/` (21 entries) and `src/main/ipc/` (18) exceed the 10-entry breadth guideline;
-  `ipc/job-resume/` could move under `ipc/jobs/`, and the loose `shared/*.ts` contracts group by
-  domain the way `shared/jobs/` now does.
+- `src/shared/` (21 entries) and `src/main/ipc/` exceed the 10-entry breadth guideline; the loose
+  `shared/*.ts` contracts group by domain the way `shared/jobs/` now does (`ipc/job-resume/` moved
+  under `ipc/jobs/resume/`).
 - `app/settings/sections/` now holds 13 code files (Applications joined); group related sections
   before adding more.
 - Screen answers are stored as `typed` plus a `[Screen capture]` request-text marker because the
@@ -380,7 +380,7 @@ main-process code belongs in a responsibility folder above, not beside them.
 ## Resume (saved on the job, snapshotted on the meeting)
 
 - `shared/meeting-resume.ts` owns the text/name contract and limits (used for both the job's saved resume and the meeting snapshot).
-- `db/repos/job/job-resume.ts` (+ v11 `job-resume-schema.ts`) owns the job's saved resume; `ipc/job-resume/` exposes get/set and `resume-import.ts`, the native PDF/DOCX picker; the renderer never supplies a filesystem path.
+- `db/repos/job/job-resume.ts` (+ v11 `job-resume-schema.ts`) owns the job's saved resume; `ipc/jobs/resume/` exposes get/set and `resume-import.ts`, the native PDF/DOCX picker; the renderer never supplies a filesystem path.
 - `services/meetings/context/start-grounding.ts` is the one place Start reads the job resume; nothing else reads `job_resumes` for a meeting.
 - `main/services/meetings/context/resume/import-file.ts` owns bounded local reads and offline parser lifecycle.
 - `main/services/meetings/context/resume/` owns validation (run once, at IPC ingress), escaped candidate-fact framing and deterministic terminology extraction.

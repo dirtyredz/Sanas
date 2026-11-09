@@ -1,8 +1,8 @@
 import { ipcMain } from 'electron'
 import { IPC } from '@shared/ipc'
-import { getJobResume, setJobResume } from '../../db/repos/job/job-resume'
-import { validateResume } from '../../services/meetings/context/resume/resume'
-import { requireId } from '../validate'
+import { getJobResume, setJobResume } from '../../../db/repos/job/job-resume'
+import { validateResume } from '../../../services/meetings/context/resume/resume'
+import { requireId } from '../../validate'
 import { registerResumeImportIpc } from './resume-import'
 
 /** A job's saved resume: read, replace or (null) remove, plus the draft-only file import.

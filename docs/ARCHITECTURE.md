@@ -477,7 +477,7 @@ History filing goes through meetings/status/filing.ts, which rejects the current
 The job owns the editable resume: `job_resumes` (v11, one optional row per job, cascades with
 the job) via `db/repos/job/job-resume.ts`. The Jobs page's Resume tab (`app/jobs/JobResume.tsx`)
 reads and writes it through `jobs.getResume(jobId)` / `jobs.setResume(jobId, resume | null)`
-(`ipc/job-resume/`, validated by `validateResume`, returns the normalized stored value) and
+(`ipc/jobs/resume/`, validated by `validateResume`, returns the normalized stored value) and
 imports drafts through `jobs.importResume()`. The full text never rides on `jobs.list()` or any
 meeting/status broadcast; Live only asks `getResume` for availability (Interview default).
 

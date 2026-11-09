@@ -1,5 +1,5 @@
 import { registerMemoryIpc } from './jobs/memory'
-import { registerJobResumeIpc } from './job-resume/job-resume'
+import { registerJobResumeIpc } from './jobs/resume/job-resume'
 import { registerJobsIpc } from './jobs/jobs'
 import { registerJobApplicationsIpc } from './jobs/applications'
 import { registerJobDeletionIpc } from './jobs/deletion'

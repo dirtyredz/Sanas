@@ -11,7 +11,7 @@ vi.mock('electron', () => ({
   BrowserWindow: { fromWebContents: mocks.fromWebContents },
   dialog: { showOpenDialog: mocks.showOpenDialog },
 }))
-vi.mock('../../services/meetings/context/resume/import-file', () => ({
+vi.mock('../../../services/meetings/context/resume/import-file', () => ({
   importResumeFile: mocks.importResumeFile,
 }))
 import { registerResumeImportIpc } from './resume-import'
