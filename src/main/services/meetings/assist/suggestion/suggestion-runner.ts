@@ -281,7 +281,7 @@ export class SuggestionRunner {
           text,
         })
         storedSuggestionId = typeof stored === 'number' ? stored : undefined
-        if (!gate.shown) emit('start', '') // buffered, or a short answer still being held
+        gate.complete() // buffered, or a short answer still being held: start now, then done
         emit('done', text)
         return 'done'
       } catch (e) {

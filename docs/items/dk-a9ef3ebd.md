@@ -2,8 +2,8 @@
 id: dk-a9ef3ebd
 type: task
 created: 2026-11-04
-status: todo
-since: 2026-11-04
+status: done
+since: 2026-11-09
 area: assist
 priority: P3
 rank: zzzzzzzzzzzzy

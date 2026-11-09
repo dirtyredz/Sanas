@@ -45,6 +45,15 @@ export class RunPublication {
     if (this.held) this.show.delta(this.held)
   }
 
+  /** The run has its final answer: emits the start event if nothing was shown yet (a buffered
+   *  run, or a short answer still being held) without replaying held deltas, because `done`
+   *  carries the whole text. The one other way `shown` becomes true besides `reveal()`. */
+  complete(): void {
+    if (this._shown) return
+    this._shown = true
+    this.show.start()
+  }
+
   /** Streamed provider text: passed straight through once shown, otherwise held. */
   push(delta: string): void {
     if (this._shown) return this.show.delta(delta)

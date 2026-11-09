@@ -391,7 +391,7 @@ a separate check, rather than ordinary Vitest loading of `better-sqlite3`.
 - **Assistance policy stays split.** `turns/turn-assembler` closes turns; assistant triggers,
   classifier and coach policy decide; `meetings/assist/manual/manual-requests` admits explicit requests;
   `live-assistance` coordinates automatic work (Answer now is `manual/answer-now`, next points `coach/coach-coordinator`); `speculative-answer` decides whether an early
-  answer may be published; `suggestion-runner` owns generation, the unpublished state and persistence.
+  answer may be published; `suggestion-runner` owns generation, lane, deadline and persistence, and `run-publication` owns what a run has made visible (held text, the unpublished state).
 - **Prompt snapshots are synchronous and read-only.** `meetings/assist/meeting-prompts.ts` resolves and
   caches immutable grounding when context changes; request snapshots perform no database writes.
 - **Context publication follows persistence.** Meeting context is published only after its

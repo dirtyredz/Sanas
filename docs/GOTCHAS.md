@@ -335,9 +335,9 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   persistence until `promote()`. The older `cancel()` deliberately ignored streamed answers
   ("never withdrawn once started"), so reusing `start` would have leaked rejected answers to the
   screen; `cancel()` now discards an unpublished run and stays a no-op once published. A discarded
-  run settles `discarded` (Mock drops it from per-question requests). Lane and hold are released
-  exactly once, in the run's `finally`; the lane token stops a late callback from freeing a newer
-  owner, and an unpromoted held result is discarded at the request deadline.
+  run settles `discarded` (Mock drops it from per-question requests). The lane is freed by `cancel()` or the run's `finally`, whichever comes first (the lane token
+  makes the second a no-op and stops a late callback from freeing a newer owner); only the meeting
+  hold is released exactly once, in `finally`, and an unpromoted held result is discarded at the request deadline.
 - **Promotion compares the whole prompt, not the verdict.** `speculative-answer.ts` rebuilds the
   ordinary request at verdict time and publishes only an identical one (userContent, system,
   context, grounding id/revision, carried turns, model, budget). A new final, a hotkey answer
