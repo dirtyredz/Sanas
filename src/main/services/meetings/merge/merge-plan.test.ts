@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { planMerge, type MergePart } from './merge-plan'
 
 const part = (o: Partial<MergePart> & Pick<MergePart, 'id' | 'startedAt'>): MergePart => ({
+  hasLegacySlides: false,
+  hasMeetingContext: false,
   jobId: 1,
   endedAt: '2026-09-09 21:00:00',
   summary: null,

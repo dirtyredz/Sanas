@@ -19,9 +19,9 @@ import { parseSqliteDateTime } from '../../../db/sqlite-time'
 
 export interface MergePart {
   /** Recorded slides or slide events from before presentation mode was retired. */
-  hasLegacySlides?: boolean
+  hasLegacySlides: boolean
   /** Nonempty initial meeting context, or any applied revision (clears included). */
-  hasMeetingContext?: boolean
+  hasMeetingContext: boolean
   id: number
   jobId: number
   startedAt: string
