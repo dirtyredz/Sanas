@@ -1,7 +1,6 @@
 import { JobMemory } from './memory/JobMemory'
-import { useEffect, useState } from 'react'
-import type { GlossaryTerm, Job } from '@shared/types'
-import { parseGlossaryInput } from '../../lib/glossary-input'
+import type { Job } from '@shared/types'
+import { JobGlossary, useJobGlossary } from './JobGlossary'
 import {
   JOB_CONTEXT_MAX_CHARS,
   JOB_NAME_MAX_CHARS,
@@ -31,35 +30,7 @@ export function JobOverview({
   setJob: (job: Job) => void
 }): React.JSX.Element {
   const jobId = job.id
-  const [terms, setTerms] = useState<GlossaryTerm[]>([])
-  const [newTerm, setNewTerm] = useState('')
-  const [glossaryNotice, setGlossaryNotice] = useState('')
-
-  useEffect(() => {
-    window.sanas.glossary.list(jobId).then(setTerms)
-  }, [jobId])
-  useEffect(() => {
-    if (!glossaryNotice) return
-    const timeout = window.setTimeout(() => setGlossaryNotice(''), 3000)
-    return () => window.clearTimeout(timeout)
-  }, [glossaryNotice])
-
-  const addTerm = async (): Promise<void> => {
-    const parsed = parseGlossaryInput(
-      newTerm,
-      terms.map((term) => term.term),
-    )
-    if (parsed.terms.length === 0 && parsed.alreadyThere === 0) return
-
-    const added: GlossaryTerm[] = []
-    for (const term of parsed.terms) {
-      added.push(await window.sanas.glossary.add(jobId, term, ''))
-    }
-
-    setTerms((prev) => [...prev, ...added].sort((a, b) => a.term.localeCompare(b.term)))
-    setNewTerm('')
-    setGlossaryNotice(`Added ${added.length} · ${parsed.alreadyThere} already there`)
-  }
+  const glossary = useJobGlossary(jobId)
 
   return (
     <div className="detail-columns">
@@ -121,52 +92,10 @@ export function JobOverview({
           jobId={jobId}
           notes={savedNotes}
           draftNotes={job.notes}
-          terms={terms}
+          terms={glossary.terms}
           onDirtyChange={onMemoryDirty}
         />
-        <section>
-          <span className="eyebrow">Glossary</span>
-          <p className="hint">Jargon, product names, acronyms — these also boost transcription.</p>
-          <div className="row glossary-add">
-            <textarea
-              rows={2}
-              placeholder="Add term…"
-              value={newTerm}
-              onChange={(e) => setNewTerm(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault()
-                  void addTerm()
-                }
-              }}
-            />
-            <button
-              className="btn btn-sm"
-              onClick={() => void addTerm()}
-              disabled={!newTerm.trim()}
-            >
-              Add
-            </button>
-          </div>
-          {glossaryNotice && <p className="hint glossary-notice">{glossaryNotice}</p>}
-          <div className="term-list">
-            {terms.map((t) => (
-              <span key={t.id} className="chip">
-                {t.term}
-                <button
-                  className="x"
-                  aria-label={`Remove ${t.term}`}
-                  onClick={() => {
-                    window.sanas.glossary.remove(t.id)
-                    setTerms((prev) => prev.filter((p) => p.id !== t.id))
-                  }}
-                >
-                  ×
-                </button>
-              </span>
-            ))}
-          </div>
-        </section>
+        <JobGlossary glossary={glossary} />
       </aside>
     </div>
   )
