@@ -22,3 +22,21 @@ it('does not send Sanas suggestions or transcripts to the output-only interviewe
   interviewer.on.mock.calls[0][1]()
   mock.windows = []
 })
+
+it('contains a send that throws during renderer teardown and still reaches other windows', () => {
+  const make = (id: number, send: () => void): any => ({
+    webContents: { id, send },
+    isDestroyed: () => false,
+    on: vi.fn(),
+  })
+  const healthy = vi.fn()
+  mock.windows = [
+    make(10, () => {
+      throw new Error('Render frame was disposed')
+    }),
+    make(11, healthy),
+  ]
+  expect(() => broadcast(IPC.MeetingState, {})).not.toThrow()
+  expect(healthy).toHaveBeenCalledOnce()
+  mock.windows = []
+})
