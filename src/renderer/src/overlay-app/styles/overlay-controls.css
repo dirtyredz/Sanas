@@ -238,9 +238,8 @@
   white-space: nowrap;
 }
 
-/* ----- switch (a checkbox styled as a toggle) ----- */
-.ov-switch {
-  position: relative;
+/* ----- switch label (the track is the library's compact Switch) ----- */
+.ov-switch-label {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
@@ -248,51 +247,6 @@
   font-size: 12.5px;
   cursor: pointer;
   -webkit-app-region: no-drag;
-}
-
-.ov-switch input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-}
-
-.ov-switch-track {
-  position: relative;
-  flex: 0 0 auto;
-  width: 28px;
-  height: 16px;
-  border: 1px solid var(--line-strong);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
-  transition: background 0.12s;
-}
-
-.ov-switch-track::after {
-  content: '';
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--muted);
-  transition: transform 0.12s;
-}
-
-.ov-switch input:checked + .ov-switch-track {
-  border-color: var(--accent);
-  background: var(--accent);
-}
-
-.ov-switch input:checked + .ov-switch-track::after {
-  transform: translateX(12px);
-  background: var(--accent-ink);
-}
-
-.ov-switch input:focus-visible + .ov-switch-track {
-  outline: var(--focus-ring);
-  outline-offset: 2px;
 }
 
 /* ----- range ----- */

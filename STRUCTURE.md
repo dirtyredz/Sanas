@@ -311,7 +311,7 @@ handler (`system-audio.ts`); new main-process code belongs in a responsibility f
 - `src/renderer/public/` — AudioWorklet processors and other unbundled assets.
 - `src/renderer/src/app/` — library UI root and entry point.
 - `src/renderer/src/app/shell/` — the library window frame: `AppHeader` (also the window title bar — drag region, see GOTCHAS), the `Page` union + `NAV` table (`pages.ts`) and the pure meeting-status wording.
-- `src/renderer/src/app/controls/` — small shared library controls (`Switch`, `FieldRow`, `Badge`, `KeyBadge`); styles live in `styles/controls.css`.
+- `src/renderer/src/app/controls/` — small shared library controls (`Switch` — also used compact by the overlay's Answer every question, `FieldRow`, `Badge`, `KeyBadge`); styles live in `styles/controls.css`.
 - `src/renderer/src/app/pages/` — one component per library route/page; `SettingsPage` is layout and wiring only (its state is `useSettingsDraft`).
 - `src/renderer/src/app/meeting/` — pieces of the saved-meeting record: `MeetingRecordHeader` (title and summarize/email/export/delete actions), `TranscriptPanel` (transcript with slide markers plus `SpeakerEditor`), `MeetingSuggestionsTab` and `usePresentationHistory`; `pages/MeetingView` loads the record and composes them with the filing, summary and context cards.
 - `src/renderer/src/app/meeting/speakers/` — `LiveSpeakerControls.tsx`: the live voice picker and awaited pin feedback.

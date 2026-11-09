@@ -1,3 +1,4 @@
+import { Switch } from '../../app/controls/Switch'
 import { useCallback, useEffect, useState } from 'react'
 
 export interface AnswerEveryQuestionModel {
@@ -55,14 +56,8 @@ export function AnswerEveryQuestion({
   if (model.meetingId === null) return null
   return (
     <div className="answer-every-question">
-      <label className="ov-switch">
-        <input
-          type="checkbox"
-          role="switch"
-          checked={model.enabled}
-          onChange={(e) => model.set(e.target.checked)}
-        />
-        <span className="ov-switch-track" aria-hidden="true" />
+      <label className="ov-switch-label">
+        <Switch size="compact" checked={model.enabled} onChange={model.set} />
         <span>Answer every question</span>
       </label>
       {model.error && (
