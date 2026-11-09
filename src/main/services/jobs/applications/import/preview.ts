@@ -41,14 +41,11 @@ export async function previewApplication(
     const payload: PreviewPayload = {
       mode: 'create',
       applicationId,
-      jobId: null,
       configKey: config.key,
       fingerprint,
-      localAggregate: null,
       incoming,
       name,
       drafts,
-      plan: [],
     }
     return {
       ...common,
@@ -80,8 +77,6 @@ export async function previewApplication(
     fingerprint,
     localAggregate: localAggregate(local),
     incoming,
-    name: null,
-    drafts: null,
     plan,
   }
   return {

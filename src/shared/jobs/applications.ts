@@ -23,6 +23,10 @@ export type JobTextField = (typeof JOB_TEXT_FIELDS)[number]
 export const JUDGEMENT_FIELDS = ['companyInfo', 'talkingPoints', 'persona', 'glossary'] as const
 export type JudgementField = (typeof JUDGEMENT_FIELDS)[number]
 
+/** Narrows any field key to a judgement field. */
+export const isJudgementField = (key: string): key is JudgementField =>
+  (JUDGEMENT_FIELDS as readonly string[]).includes(key)
+
 /** Every reviewable unit of an import: text fields, the glossary collection and the resume. */
 export type ImportFieldKey = JobTextField | 'glossary' | 'resume'
 

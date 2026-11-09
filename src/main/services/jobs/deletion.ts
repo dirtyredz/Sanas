@@ -61,7 +61,7 @@ function blocked(
 }
 
 /** Authoritative counts and, when deletion is allowed, a confirmation token for them. */
-export function previewJobDeletion(jobId: number, senderId: number): JobDeletionPreview {
+export function previewJobDeletion(senderId: number, jobId: number): JobDeletionPreview {
   const snapshot = jobDeletionSnapshot(jobId)
   const block = blocked(snapshot)
   return {
@@ -74,7 +74,7 @@ export function previewJobDeletion(jobId: number, senderId: number): JobDeletion
 }
 
 /** Deletes exactly what the confirmed preview counted, after a database backup. */
-export async function deleteJob(token: string, senderId: number): Promise<JobDeletionResult> {
+export async function deleteJob(senderId: number, token: string): Promise<JobDeletionResult> {
   const pending = tokens.take(token, senderId)
   if (!pending) return { status: 'stale', message: STALE }
   const before = jobDeletionSnapshot(pending.jobId)

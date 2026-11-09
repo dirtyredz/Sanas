@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { REFRESH_FAILED_TITLE } from '@shared/jobs/applications'
 import { ApplicationPreview } from './ApplicationPreview'
 import { formatUpdated, rowView } from './picker-rows'
-import { useApplicationListing } from './useApplicationImport'
+import { useApplicationListing } from './useApplicationListing'
 
 /**
  * New job from application: refreshes the resumes interview packs, lists them, and opens a

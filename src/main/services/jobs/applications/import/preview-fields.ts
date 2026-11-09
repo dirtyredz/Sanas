@@ -1,6 +1,6 @@
 import {
   JOB_TEXT_FIELDS,
-  JUDGEMENT_FIELDS,
+  isJudgementField,
   type ImportFieldKey,
   type JudgementField,
   type PreviewField,
@@ -15,9 +15,6 @@ import type { PlanItem } from '../merge-preview'
 // Projects pack values, drafts and the saved job state to typed preview fields. Labels and
 // display text are the renderer's job (app/jobs/applications/preview-format.ts).
 
-const isJudgement = (key: string): key is JudgementField =>
-  (JUDGEMENT_FIELDS as readonly string[]).includes(key)
-
 const text = (value: string): PreviewValue => ({ kind: 'text', text: value })
 const terms = (list: readonly string[]): PreviewValue => ({
   kind: 'glossary',
@@ -29,7 +26,7 @@ function sourceOf(
   incoming: SourceValues,
   drafts: DraftResult | null,
 ): ValueSource | null {
-  if (isJudgement(key)) {
+  if (isJudgementField(key)) {
     if (incoming.sources[key]) return 'resumes'
     const drafted = key === 'glossary' ? !!drafts?.glossary?.length : !!drafts?.text[key]
     return drafted ? 'drafted' : null
@@ -41,13 +38,13 @@ function sourceOf(
 export function createFields(incoming: SourceValues, drafts: DraftResult): PreviewField[] {
   const keys: ImportFieldKey[] = [...JOB_TEXT_FIELDS, 'glossary', 'resume']
   return keys.map((key) => {
-    const missing = isJudgement(key) && incoming.missing.includes(key)
+    const missing = isJudgementField(key) && incoming.missing.includes(key)
     let value: PreviewValue
     if (key === 'glossary') value = terms(missing ? (drafts.glossary ?? []) : incoming.glossary)
     else if (key === 'resume') value = { kind: 'resume', resume: incoming.resume }
     else
       value = text(
-        missing && isJudgement(key)
+        missing && isJudgementField(key)
           ? (drafts.text[key as Exclude<JudgementField, 'glossary'>] ?? '')
           : incoming.fields[key],
       )
@@ -58,7 +55,7 @@ export function createFields(incoming: SourceValues, drafts: DraftResult): Previ
       incoming: value,
       source: sourceOf(key, incoming, drafts),
       editable: missing,
-      draftError: (missing && isJudgement(key) && drafts.errors[key]) || null,
+      draftError: (missing && isJudgementField(key) && drafts.errors[key]) || null,
     }
   })
 }

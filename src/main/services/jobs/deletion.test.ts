@@ -61,7 +61,7 @@ function jobWithHistory(): { job: number; normal: number; practice: number; wav:
 
 it('previews exact counts, then backs up and deletes the job, its meetings and recordings', async () => {
   const { job, wav } = jobWithHistory()
-  const preview = previewJobDeletion(job, 7)
+  const preview = previewJobDeletion(7, job)
   expect(preview.blocked).toBeNull()
   expect(preview.counts).toMatchObject({
     meetings: 1,
@@ -75,7 +75,7 @@ it('previews exact counts, then backs up and deletes the job, its meetings and r
     expect(rows('meetings WHERE job_id = ?', job)).toBe(2) // backup happens before deletion
     return '/user-data/backups/b.db'
   })
-  const result = await deleteJob(preview.token!, 7)
+  const result = await deleteJob(7, preview.token!)
   expect(result).toEqual({
     status: 'deleted',
     backupPath: '/user-data/backups/b.db',
@@ -92,23 +92,23 @@ it('previews exact counts, then backs up and deletes the job, its meetings and r
 it('refuses while a child meeting is live, paused or busy, and protects Unsorted', () => {
   const { job, normal, practice } = jobWithHistory()
   setLiveMeeting(practice)
-  expect(previewJobDeletion(job, 1)).toMatchObject({
+  expect(previewJobDeletion(1, job)).toMatchObject({
     blocked: { reason: 'live-meeting' },
     token: null,
   })
   setLiveMeeting(null)
   markPostProcessing(normal)
-  expect(previewJobDeletion(job, 1).blocked?.reason).toBe('busy-meeting')
+  expect(previewJobDeletion(1, job).blocked?.reason).toBe('busy-meeting')
   clearPostProcessing(normal)
   expect(previewJobDeletion(1, 1).blocked?.reason).toBe('protected')
-  expect(previewJobDeletion(ensureDefaultJob(), 1).blocked?.reason).toBe('protected')
-  expect(previewJobDeletion(999, 1).blocked?.reason).toBe('missing')
+  expect(previewJobDeletion(1, ensureDefaultJob()).blocked?.reason).toBe('protected')
+  expect(previewJobDeletion(1, 999).blocked?.reason).toBe('missing')
 })
 
 it('aborts without deleting anything when the backup fails', async () => {
   const { job, wav } = jobWithHistory()
   mock.backup.mockRejectedValue(new Error('disk full'))
-  const result = await deleteJob(previewJobDeletion(job, 1).token!, 1)
+  const result = await deleteJob(1, previewJobDeletion(1, job).token!)
   expect(result.status).toBe('backup-failed')
   expect(result.status === 'backup-failed' && result.message).toContain('disk full')
   expect(rows('meetings WHERE job_id = ?', job)).toBe(2)
@@ -117,21 +117,21 @@ it('aborts without deleting anything when the backup fails', async () => {
 
 it('rejects a preview that changed, including a meeting created during the backup', async () => {
   const { job } = jobWithHistory()
-  const first = previewJobDeletion(job, 1)
+  const first = previewJobDeletion(1, job)
   createMeeting(job, 'Later', {})
-  expect((await deleteJob(first.token!, 1)).status).toBe('stale')
+  expect((await deleteJob(1, first.token!)).status).toBe('stale')
 
-  const second = previewJobDeletion(job, 1)
+  const second = previewJobDeletion(1, job)
   mock.backup.mockImplementation(async () => {
     createMeeting(job, 'During backup', {})
     return '/b.db'
   })
-  expect((await deleteJob(second.token!, 1)).status).toBe('stale')
+  expect((await deleteJob(1, second.token!)).status).toBe('stale')
   expect(rows('meetings WHERE job_id = ?', job)).toBe(4)
 
-  const third = previewJobDeletion(job, 1)
-  expect((await deleteJob(third.token!, 2)).status).toBe('stale') // another window
-  expect((await deleteJob(third.token!, 1)).status).toBe('stale') // token consumed by the attempt
+  const third = previewJobDeletion(1, job)
+  expect((await deleteJob(2, third.token!)).status).toBe('stale') // another window
+  expect((await deleteJob(1, third.token!)).status).toBe('stale') // token consumed by the attempt
 })
 
 it('keeps the job and reports what was already removed when a recording cannot be deleted', async () => {
@@ -139,7 +139,7 @@ it('keeps the job and reports what was already removed when a recording cannot b
   const locked = join(folder, 'locked.wav')
   mkdirSync(locked) // unlink fails on a directory, like a file held open by another program
   sqlite.prepare('UPDATE meetings SET audio_path = ? WHERE id = ?').run(locked, practice)
-  const result = await deleteJob(previewJobDeletion(job, 1).token!, 1)
+  const result = await deleteJob(1, previewJobDeletion(1, job).token!)
   expect(result).toMatchObject({
     status: 'partial',
     removed: { meetings: 1, practiceSessions: 0, recordings: 1 },
@@ -154,9 +154,9 @@ it('keeps the job and reports what was already removed when a recording cannot b
 it('deletes a job with no history and leaves other jobs untouched', async () => {
   const other = jobWithHistory()
   const empty = createJob('Empty').id
-  const preview = previewJobDeletion(empty, 1)
+  const preview = previewJobDeletion(1, empty)
   expect(preview.counts.meetings + preview.counts.recordings).toBe(0)
-  expect((await deleteJob(preview.token!, 1)).status).toBe('deleted')
+  expect((await deleteJob(1, preview.token!)).status).toBe('deleted')
   expect(rows('meetings WHERE job_id = ?', other.job)).toBe(2)
   expect(existsSync(other.wav)).toBe(true)
 })

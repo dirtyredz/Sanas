@@ -1,9 +1,7 @@
 import type { MeetingResume } from '@shared/meeting-resume'
 import {
   JOB_TEXT_FIELDS,
-  JUDGEMENT_FIELDS,
-  type ApplicationRowStatus,
-  type ApplicationStage,
+  isJudgementField,
   type ConflictChoice,
   type FieldOutcome,
   type ImportFieldKey,
@@ -108,10 +106,9 @@ export function resolveRefresh(
     if (item.key === 'glossary') out.glossary = incoming.glossary
     else if (item.key === 'resume') out.resume = incoming.resume
     else out.fields[item.key] = incoming.fields[item.key]
-    if ((JUDGEMENT_FIELDS as readonly string[]).includes(item.key)) {
-      const key = item.key as JudgementField
-      if (incoming.sources[key]) out.sources[key] = incoming.sources[key]
-      else delete out.sources[key]
+    if (isJudgementField(item.key)) {
+      if (incoming.sources[item.key]) out.sources[item.key] = incoming.sources[item.key]
+      else delete out.sources[item.key]
     }
   }
   return out
@@ -130,26 +127,4 @@ export function nextBaseline(
     resume: incoming.resume,
     sources,
   }
-}
-
-/** A linked application's row status in the picker. */
-export function linkedStatus(input: {
-  linkRoot: string
-  currentRoot: string
-  linkHash: string | null
-  linkFingerprint: string
-  linkStage: ApplicationStage
-  archived: boolean
-  packHash: string | null
-  packFingerprint: string
-  packStage: ApplicationStage
-}): ApplicationRowStatus {
-  if (input.linkRoot !== input.currentRoot) return 'source-mismatch'
-  // Closed means archive-only: never offer a refresh for a closed application.
-  if (input.packStage === 'closed') return input.archived ? 'imported' : 'archive-available'
-  const changed =
-    input.packHash !== input.linkHash ||
-    input.packFingerprint !== input.linkFingerprint ||
-    input.packStage !== input.linkStage
-  return changed ? 'refresh-available' : 'imported'
 }

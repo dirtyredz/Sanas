@@ -57,7 +57,7 @@ export async function applyApplication(
     })
     return { status: 'created', jobId }
   }
-  const local = getLocalJobState(payload.jobId!)
+  const local = getLocalJobState(payload.jobId)
   if (!local?.link || localAggregate(local) !== payload.localAggregate) return stale
   const resolved = resolveRefresh(
     payload.plan,

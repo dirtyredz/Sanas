@@ -7,9 +7,9 @@ import { requireLibrarySender, requireToken } from './validate'
 /** Counted job deletion: library window only; deletion needs the preview's token. */
 export function registerJobDeletionIpc(): void {
   ipcMain.handle(IPC.JobsDeletePreview, (e, jobId: unknown) =>
-    previewJobDeletion(requireId(jobId, 'job id'), requireLibrarySender(e)),
+    previewJobDeletion(requireLibrarySender(e), requireId(jobId, 'job id')),
   )
   ipcMain.handle(IPC.JobsDelete, (e, token: unknown) =>
-    deleteJob(requireToken(token), requireLibrarySender(e)),
+    deleteJob(requireLibrarySender(e), requireToken(token)),
   )
 }

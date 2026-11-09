@@ -1,7 +1,7 @@
 import type { ApplicationListing, ApplicationSummary } from '@shared/jobs/applications'
 import { loadSettings } from '../../../../config/settings'
 import { listApplicationLinks, type ApplicationLink } from '../../../../db/repos/job/applications'
-import { linkedStatus } from '../merge-preview'
+import { linkedStatus } from './row-status'
 import { listPackFiles } from '../source/pack-files'
 import { refreshPacks } from '../source/refresh-runner'
 import { resolveSourceConfig } from '../source/source-config'

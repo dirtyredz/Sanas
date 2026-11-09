@@ -12,18 +12,27 @@ import { packFingerprint, validatePack, type ValidPack } from '../source/validat
 // the source configuration, the pack fingerprint and — for a refresh — the job's saved
 // state; any change returns "Changed since preview—review again."
 
-export interface PreviewPayload {
-  mode: 'create' | 'refresh'
+interface PayloadBase {
   applicationId: string
-  jobId: number | null
   configKey: string
   fingerprint: string
-  localAggregate: string | null
   incoming: SourceValues
-  name: { proposed: string; shortened: boolean } | null
-  drafts: DraftResult | null
+}
+
+export interface CreatePayload extends PayloadBase {
+  mode: 'create'
+  name: { proposed: string; shortened: boolean }
+  drafts: DraftResult
+}
+
+export interface RefreshPayload extends PayloadBase {
+  mode: 'refresh'
+  jobId: number
+  localAggregate: string
   plan: PlanItem[]
 }
+
+export type PreviewPayload = CreatePayload | RefreshPayload
 
 export const tokens = createPreviewTokens<PreviewPayload>()
 
