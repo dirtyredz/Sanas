@@ -1,13 +1,13 @@
 import { expect, it, vi } from 'vitest'
 import type { MeetingState } from '@shared/types'
-import { useTranscript, type TranscriptLine } from '../useTranscript'
+import { useTranscript, type TranscriptLine } from './useTranscript'
 const h = vi.hoisted(() => ({
   state: { meetingId: 7, status: 'live' } as MeetingState,
   lines: [] as TranscriptLine[],
   shown: { current: 7 as number | null },
   effects: [] as (() => void)[],
 }))
-vi.mock('../useMeetingState', () => ({ useMeetingState: () => h.state }))
+vi.mock('./useMeetingState', () => ({ useMeetingState: () => h.state }))
 vi.mock('react', () => ({
   useRef: () => h.shown,
   useEffect: (fn: () => void) => h.effects.push(fn),
