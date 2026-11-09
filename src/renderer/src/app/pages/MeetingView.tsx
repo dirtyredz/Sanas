@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Job, Meeting, Segment, Suggestion } from '@shared/types'
 import type { MeetingResume } from '@shared/meeting-resume'
-import { suggestionLabel, suggestionOrigin } from '@shared/suggestion-label'
 import { speakerDisplay } from '../../lib/speaker-label'
 import { formatClock, formatWhen } from '../../lib/format-time'
 import { errorText } from '../../lib/ipc-error'
-import { SuggestionContent } from '../../lib/suggestions/SuggestionContent'
+import { SpeakerEditor } from '../meeting/SpeakerEditor'
+import { MeetingSuggestionsTab } from '../meeting/MeetingSuggestionsTab'
+import { usePresentationHistory } from '../meeting/usePresentationHistory'
 import { useMeetingContext } from '../../lib/meeting/useMeetingContext'
 import { SummaryMarkdown } from '../../lib/SummaryMarkdown'
-import type { PresentationHistory } from '@shared/presentation/types'
 import { presentationTimeline, slideMarker } from '@shared/presentation/timeline'
 
 export function MeetingView({
@@ -20,22 +20,9 @@ export function MeetingView({
 }): React.JSX.Element {
   const { context } = useMeetingContext(meeting.id)
   const [segments, setSegments] = useState<Segment[]>([])
-  const [presentation, setPresentation] = useState<PresentationHistory>({ slides: [], events: [] })
-  useEffect(() => {
-    let active = true
-    setPresentation({ slides: [], events: [] })
-    window.sanas.presentation
-      .getHistory(meeting.id)
-      .then((history) => {
-        if (active) setPresentation(history)
-      })
-      .catch((e) => {
-        if (active) setNotice({ kind: 'warn', text: String(e) })
-      })
-    return () => {
-      active = false
-    }
-  }, [meeting.id])
+  const presentation = usePresentationHistory(meeting.id, (text) =>
+    setNotice({ kind: 'warn', text }),
+  )
   const [resume, setResume] = useState<MeetingResume | null>(null)
   useEffect(() => {
     let active = true
@@ -236,46 +223,12 @@ export function MeetingView({
 
       {tab === 'transcript' && (
         <>
-          {speakers.length > 0 && (
-            <div className="speaker-editor">
-              {speakers.map((sp) => (
-                <span key={sp} className="speaker-row">
-                  <input
-                    placeholder={`S${sp + 1}`}
-                    aria-label={`Name for speaker ${sp + 1}`}
-                    defaultValue={names.get(sp) ?? ''}
-                    onBlur={(e) =>
-                      window.sanas.meetings
-                        .renameSpeaker(meeting.id, sp, e.target.value)
-                        .then(reload)
-                    }
-                  />
-                  {speakers.length > 1 && (
-                    <select
-                      value=""
-                      aria-label={`Merge speaker ${sp + 1} into`}
-                      title="Merge this speaker into another (fixes diarization drift)"
-                      onChange={(e) => {
-                        if (e.target.value === '') return
-                        window.sanas.meetings
-                          .mergeSpeakers(meeting.id, sp, Number(e.target.value))
-                          .then(reload)
-                      }}
-                    >
-                      <option value="">merge into…</option>
-                      {speakers
-                        .filter((o) => o !== sp)
-                        .map((o) => (
-                          <option key={o} value={o}>
-                            {names.get(o) ?? `S${o + 1}`}
-                          </option>
-                        ))}
-                    </select>
-                  )}
-                </span>
-              ))}
-            </div>
-          )}
+          <SpeakerEditor
+            meetingId={meeting.id}
+            speakers={speakers}
+            names={names}
+            onChanged={reload}
+          />
           <div className="transcript">
             {segments.length === 0 && <p className="empty">No transcript captured.</p>}
             {presentationTimeline(segments, presentation).map((row) => {
@@ -305,34 +258,7 @@ export function MeetingView({
           <p style={{ whiteSpace: 'pre-wrap' }}>{context.text}</p>
         </section>
       )}
-      {tab === 'suggestions' && (
-        <div className="transcript">
-          {suggestions.length === 0 && <p className="empty">No suggestions were generated.</p>}
-          {suggestions.map((s) => (
-            <div key={s.id} id={`suggestion-${s.id}`} className="suggestion-entry">
-              <p className="line">
-                <span className="ts">{formatClock(s.tMs)}</span>
-                <span className="who">{suggestionLabel(s)}</span>
-                <span className="text muted">{suggestionOrigin(s)}</span>
-              </p>
-              <div className="suggestion-body">
-                {s.requestText && <p>Request: {s.requestText}</p>}
-                {s.sourceSuggestionId && (
-                  <a href={`#suggestion-${s.sourceSuggestionId}`}>Back to source</a>
-                )}
-                {suggestions
-                  .filter((child) => child.sourceSuggestionId === s.id)
-                  .map((child) => (
-                    <a key={child.id} href={`#suggestion-${child.id}`}>
-                      More detail
-                    </a>
-                  ))}
-                <SuggestionContent text={s.text} manualKind={s.manualKind} />
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      {tab === 'suggestions' && <MeetingSuggestionsTab suggestions={suggestions} />}
     </div>
   )
 }
