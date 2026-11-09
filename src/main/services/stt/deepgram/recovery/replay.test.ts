@@ -201,3 +201,30 @@ it('stop cancels a pressure-blocked pump and ignores late capture and transcript
   expect(sent(socket)).toEqual([])
   expect(onTranscript).not.toHaveBeenCalled()
 })
+
+it('outage replay: buffered audio reaches the replacement socket once, reset precedes its transcripts, and the retired socket is fenced', async () => {
+  const { onSignal, onTranscript } = await setup()
+  const first = latest()
+  const result = (text: string) => ({
+    type: 'Results',
+    is_final: true,
+    channel_index: [0, 1],
+    channel: {
+      alternatives: [{ transcript: text, words: [{ word: text, speaker: 0, start: 0, end: 0.5 }] }],
+    },
+  })
+  session.sendAudio(Buffer.alloc(16000, 1))
+  first.message(result('Before'))
+  first.emit('close', { code: 1006 })
+  session.sendAudio(Buffer.alloc(32000, 2)) // captured during the outage
+  const second = await reopen()
+  expect(sent(second)).toEqual([Buffer.alloc(32000, 2)]) // replayed once, without the pre-outage audio
+  expect(onSignal.mock.calls.filter(([s]) => s.kind === 'reset')).toHaveLength(1)
+  const resetOrder =
+    onSignal.mock.invocationCallOrder[onSignal.mock.calls.findIndex(([s]) => s.kind === 'reset')]
+  first.message(result('Retired'))
+  second.message(result('Buffered'))
+  expect(onTranscript.mock.calls.map(([t]) => t.text)).toEqual(['Before', 'Buffered'])
+  expect(resetOrder).toBeLessThan(onTranscript.mock.invocationCallOrder[1])
+  expect(sent(second)).toEqual([Buffer.alloc(32000, 2)]) // nothing re-sent after the transcripts
+})
