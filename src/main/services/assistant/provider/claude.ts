@@ -81,8 +81,7 @@ export function requestOptions(req: AssistRequest): SdkRequestOptions {
   if (req.maxRetries !== undefined && Number.isInteger(req.maxRetries) && req.maxRetries >= 0) {
     opts.maxRetries = req.maxRetries
   }
-  // a screenshot is sent once per explicit action: never resend it behind the owner's back
-  if (req.image) opts.maxRetries = 0
+  // the retry decision belongs to the request builder (a screenshot is sent once: maxRetries 0)
   return opts
 }
 

@@ -42,6 +42,10 @@ export interface ManualAdmissionDeps {
   start(request: SuggestionRequest): SuggestionHandle | null
 }
 
+/** A detail request may expand a screenshot answer, so it gets at least the capture budget
+ *  (prose plus one fix block); one owner for the number: capture-prompts.ts. */
+const DETAIL_MAX_TOKENS = CAPTURE_MAX_TOKENS
+
 export function manualRequest(
   snap: AssistSnapshot,
   settings: AssistSettings,
@@ -78,7 +82,7 @@ export function manualRequest(
         source.text +
         '\n</source-answer>' +
         (source.manualKind === 'capture' ? '\n' + CAPTURE_DETAIL_NOTE : ''),
-      maxTokens: 2400,
+      maxTokens: DETAIL_MAX_TOKENS,
     }
   }
   if (input.kind === 'capture') {
@@ -88,7 +92,9 @@ export function manualRequest(
       image: input.image,
       requestText: question || undefined,
       maxTokens: CAPTURE_MAX_TOKENS,
-      maxRetries: 0, // one explicit action, one provider call
+      // one explicit action, one provider call: a screenshot is never resent behind the
+      // owner's back. This builder owns the decision; the provider just honours maxRetries.
+      maxRetries: 0,
       userContent:
         (question ? TYPED_CAPTURE_INSTRUCTION : CAPTURE_INSTRUCTION) +
         '\n' +

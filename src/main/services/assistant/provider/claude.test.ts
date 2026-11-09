@@ -188,9 +188,9 @@ it('owns separate cache breakpoints for stable job and optional effective deck',
 describe('image input', () => {
   const image = { mediaType: 'image/png' as const, base64: 'aGVsbG8=' }
 
-  it('sends the image before the text and never retries it', async () => {
+  it('sends the image before the text and honours the builder retry decision', async () => {
     sdk.calls = []
-    await claudeProvider.complete({ ...base, image, maxRetries: 3, cacheableContext: 'deck' })
+    await claudeProvider.complete({ ...base, image, maxRetries: 0, cacheableContext: 'deck' })
     expect(sdk.calls[0].body.messages).toEqual([
       {
         role: 'user',
