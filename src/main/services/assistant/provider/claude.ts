@@ -5,12 +5,6 @@ import { usageFromAnthropic } from './claude-usage'
 import { reportUsage, reportTiming } from './provider-evidence'
 import { tagProviderError, type ProviderFailureCategory } from './provider-error'
 
-// Adaptive thinking is model-specific. Opus and Sonnet 5.x accept effort; Haiku and
-// unknown custom model IDs get the portable request shape so choosing one cannot break calls.
-function supportsEffort(model: string): boolean {
-  return /^claude-(?:opus|sonnet)-5(?:-|$)/.test(model)
-}
-
 /** Calls whose output budget is at or under this are short, speakable answers (classifier,
  *  points, smart, coach, interviewer). A model that thinks first would spend the whole
  *  budget on reasoning and return no text (stop_reason max_tokens), so thinking is turned off.
@@ -19,13 +13,28 @@ const SHORT_BUDGET_MAX_TOKENS = 500
 
 type ThinkingOff = { type: 'disabled' } | { type: 'between_tools' }
 
-/** The API rejects the wrong "off" value with a 400, so it is per model family:
- *  Haiku takes 'disabled'; Sonnet takes 'between_tools' (and 400s on 'disabled'); Opus takes
- *  neither (omit); unknown custom ids get nothing so choosing one cannot break calls. */
-function thinkingOff(model: string): ThinkingOff | undefined {
-  if (/^claude-haiku-5(?:-|$)/.test(model)) return { type: 'disabled' }
-  if (/^claude-sonnet-5(?:-|$)/.test(model)) return { type: 'between_tools' }
-  return undefined
+/** What one model family accepts on the wire. The API 400s on the wrong shape, so every
+ *  family quirk lives in this one record and a new family is a new row, not a new predicate.
+ *  - effort: adaptive thinking effort (output_config). Opus and Sonnet 5.x accept it.
+ *  - thinkingOff: the family's own "off" value for short-budget calls. Haiku takes
+ *    'disabled'; Sonnet takes 'between_tools' (and 400s on 'disabled'); Opus takes neither
+ *    (omit). */
+interface FamilyCapabilities {
+  effort: boolean
+  thinkingOff?: ThinkingOff
+}
+
+/** Haiku and unknown custom model IDs get the portable request shape (no effort, no
+ *  thinking override) so choosing one cannot break calls. */
+const PORTABLE: FamilyCapabilities = { effort: false }
+
+function familyCapabilities(model: string): FamilyCapabilities {
+  if (/^claude-opus-5(?:-|$)/.test(model)) return { effort: true }
+  if (/^claude-sonnet-5(?:-|$)/.test(model))
+    return { effort: true, thinkingOff: { type: 'between_tools' } }
+  if (/^claude-haiku-5(?:-|$)/.test(model))
+    return { effort: false, thinkingOff: { type: 'disabled' } }
+  return PORTABLE
 }
 
 /** The effort and thinking a request actually puts on the wire: one value, used for both the
@@ -35,9 +44,10 @@ function wirePolicy(req: Pick<AssistRequest, 'model' | 'maxTokens' | 'effort'>):
   effort: AssistRequest['effort'] | undefined
   thinking: ThinkingOff | undefined
 } {
+  const family = familyCapabilities(req.model)
   return {
-    effort: supportsEffort(req.model) ? req.effort : undefined,
-    thinking: req.maxTokens > SHORT_BUDGET_MAX_TOKENS ? undefined : thinkingOff(req.model),
+    effort: family.effort ? req.effort : undefined,
+    thinking: req.maxTokens > SHORT_BUDGET_MAX_TOKENS ? undefined : family.thinkingOff,
   }
 }
 
