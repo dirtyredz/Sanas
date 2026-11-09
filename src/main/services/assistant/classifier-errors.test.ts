@@ -1,4 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest'
+import { tagProviderError } from './provider-error'
 import { classifyTurn } from './classifier'
 import { TokenBudgetError } from './completion-result'
 const req = {
@@ -53,7 +54,7 @@ it('keeps a sanitized error class name and a connection category, never the mess
   const connection = await classifyTurn(
     {
       complete: async () => {
-        throw named('APIConnectionError', 'SECRET_KEY PRIVATE_BODY')
+        throw tagProviderError(named('APIConnectionError', 'SECRET_KEY PRIVATE_BODY'), 'connection')
       },
     },
     req,
@@ -83,6 +84,18 @@ it('keeps a sanitized error class name and a connection category, never the mess
   )
   expect(hostile.status === 'failed' && hostile.diagnostic).not.toHaveProperty('errorName')
   expect(JSON.stringify([connection, budget, hostile])).not.toMatch(/SECRET|PRIVATE/)
+})
+it('does not recognise vendor class names itself: only the provider-tagged category counts', async () => {
+  const lookalike = Object.assign(new Error('x'), { name: 'APIConnectionTimeoutError' })
+  const result = await classifyTurn(
+    {
+      complete: async () => {
+        throw lookalike
+      },
+    },
+    req,
+  )
+  expect(result).toMatchObject({ diagnostic: { category: 'provider' } })
 })
 it('rejects arbitrary request-id text and error bodies', async () => {
   const result = await classifyTurn(

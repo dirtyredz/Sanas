@@ -3,6 +3,7 @@ import type { AssistantProvider, AssistRequest } from './types'
 import { completionText } from './completion-result'
 import { usageFromAnthropic } from './claude-usage'
 import { reportUsage, reportTiming } from './provider-usage'
+import { tagProviderError, type ProviderFailureCategory } from './provider-error'
 
 // Adaptive thinking is model-specific. Opus and Sonnet 5.x accept effort; Haiku and
 // unknown custom model IDs get the portable request shape so choosing one cannot break calls.
@@ -34,6 +35,18 @@ function thinkingParam(req: Pick<AssistRequest, 'model' | 'maxTokens'>): {
   const off = thinkingOff(req.model)
   // the SDK types lag the API: 'between_tools' is valid on the wire but not in ThinkingConfigParam
   return off ? { thinking: off as Anthropic.ThinkingConfigParam } : {}
+}
+
+/** Maps the SDK's transport errors to the neutral category failure-diagnostics reads. The
+ *  timeout class extends the connection class, so it is checked first. */
+function failureCategory(error: unknown): ProviderFailureCategory | undefined {
+  try {
+    if (error instanceof Anthropic.APIConnectionTimeoutError) return 'timeout'
+    if (error instanceof Anthropic.APIConnectionError) return 'connection'
+  } catch {
+    /* classification is best effort: it must never replace the real error */
+  }
+  return undefined
 }
 
 interface SdkRequestOptions {
@@ -126,7 +139,7 @@ export const claudeProvider: AssistantProvider = {
     } catch (e) {
       // whatever usage the stream saw before it failed or was cancelled, marked partial
       reportUsage(req.onUsage, usageFromAnthropic(stream.currentMessage?.usage, true))
-      throw e
+      throw tagProviderError(e, failureCategory(e))
     }
     reportUsage(req.onUsage, usageFromAnthropic(final.usage, false))
     const text = final.content

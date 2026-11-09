@@ -1,3 +1,5 @@
+import { providerFailureCategory } from './provider-error'
+
 /** Only allowlisted transport metadata may cross the provider boundary into diagnostics. */
 export interface FailureDiagnostic {
   category:
@@ -11,7 +13,7 @@ export interface FailureDiagnostic {
     | 'cancelled'
   httpStatus?: number
   requestId?: string
-  /** Error class name only (e.g. APIConnectionError, TokenBudgetError) — never a message. */
+  /** Error class name only (e.g. TokenBudgetError) — never a message. */
   errorName?: string
   model: string
   elapsedMs: number
@@ -38,14 +40,16 @@ export function failureDiagnostic(
     typeof value.name === 'string' && /^[A-Za-z][A-Za-z0-9]{0,63}$/.test(value.name)
       ? value.name
       : undefined
-  const timeout = value.name === 'APIConnectionTimeoutError' || value.name === 'TimeoutError'
+  // the provider classifies its own transport errors (provider-error.ts); this only sanitizes
+  const tagged = providerFailureCategory(error)
+  const timeout = tagged === 'timeout' || value.name === 'TimeoutError' // TimeoutError: AbortSignal.timeout
   return {
     category:
       reason !== 'provider'
         ? reason
         : timeout
           ? 'timeout'
-          : value.name === 'APIConnectionError'
+          : tagged === 'connection'
             ? 'connection'
             : status === 401 || status === 403
               ? 'authentication'
