@@ -1,4 +1,5 @@
 // Browser-preview mock for New job from application / Refresh from application.
+import { CLOSED_CREATE_MESSAGE, stageCapabilities } from '@shared/jobs/application-stage'
 import type { MeetingResume } from '@shared/meeting-resume'
 import {
   STALE_PREVIEW_MESSAGE,
@@ -110,7 +111,6 @@ export function mockJobApplications(
       }
       let preview: ApplicationPreview
       if (job) {
-        const closedActive = pack.stage === 'closed' && !job.archived
         const local = (key: JobTextField): string => job[key]
         const field = (key: ImportFieldKey, outcome: FieldOutcome, from: string, to: string) => ({
           key,
@@ -141,12 +141,12 @@ export function mockJobApplications(
             field('resume', 'unchanged', savedResume, savedResume),
           ],
           stageChange: pack.stage === 'closed' ? { from: 'interview', to: 'closed' } : null,
-          offerArchive: closedActive,
+          offerArchive: stageCapabilities(pack.stage, job).archive,
           archived: job.archived,
           hasChanges: true,
         }
-      } else if (pack.stage === 'closed') {
-        throw new Error('This application is closed, so it cannot create a new job.')
+      } else if (!stageCapabilities(pack.stage, null).create) {
+        throw new Error(CLOSED_CREATE_MESSAGE)
       } else {
         const drafted = (key: ImportFieldKey, text: string): PreviewField => ({
           key,
@@ -234,7 +234,7 @@ export function mockJobApplications(
         if (takeIncoming && f.key !== 'glossary' && f.key !== 'resume')
           job[f.key] = plainValue(f.incoming)
       }
-      if (request.archive) job.archived = true
+      if (request.archive && preview.offerArchive) job.archived = true
       return { status: 'updated', jobId: job.id, archived: job.archived }
     },
   }

@@ -1,3 +1,4 @@
+import { stageCapabilities } from '@shared/jobs/application-stage'
 import type { ApplicationListing, ApplicationSummary } from '@shared/jobs/applications'
 import { loadSettings } from '../../../../config/settings'
 import { listApplicationLinks, type ApplicationLink } from '../../../../db/repos/job/applications'
@@ -39,10 +40,9 @@ function summarize(
     error: null,
     retryable: false,
   }
-  // A closed application means a failure notice: it is shown only while a job is linked to it
-  // (so that job can be archived), never as something to start from.
+  // Hidden when the policy says so (a closed application with no job); see stageCapabilities.
+  if (!stageCapabilities(pack.stage, link ?? null).visible) return null
   if (!link) {
-    if (pack.stage === 'closed') return null
     return { ...base, status: 'new', jobId: null, jobName: null, archived: false }
   }
   return {

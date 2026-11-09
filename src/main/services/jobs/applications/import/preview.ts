@@ -1,3 +1,4 @@
+import { CLOSED_CREATE_MESSAGE, stageCapabilities } from '@shared/jobs/application-stage'
 import type { ApplicationPreview } from '@shared/jobs/applications'
 import { getApplicationLink, getLocalJobState } from '../../../../db/repos/job/applications'
 import { draftJudgementFields } from '../draft-fields'
@@ -28,8 +29,7 @@ export async function previewApplication(
     normalized: pack.normalized,
   }
   if (!link) {
-    if (pack.stage === 'closed')
-      throw new Error('This application is closed, so it cannot create a new job.')
+    if (!stageCapabilities(pack.stage, null).create) throw new Error(CLOSED_CREATE_MESSAGE)
     const drafts = await draftJudgementFields(incoming.missing, {
       company: pack.company,
       role: pack.role,
@@ -87,7 +87,7 @@ export async function previewApplication(
     name: null,
     fields: refreshFields(plan, local, incoming),
     stageChange,
-    offerArchive: pack.stage === 'closed' && !local.archived,
+    offerArchive: stageCapabilities(pack.stage, local).archive,
     archived: local.archived,
     hasChanges:
       plan.some((i) => i.outcome === 'incoming' || i.outcome === 'conflict') ||

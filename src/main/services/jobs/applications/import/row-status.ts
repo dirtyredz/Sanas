@@ -1,3 +1,4 @@
+import { stageCapabilities } from '@shared/jobs/application-stage'
 import type { ApplicationRowStatus, ApplicationStage } from '@shared/jobs/applications'
 
 // The picker row status of an application that already has a job linked to it.
@@ -15,8 +16,9 @@ export function linkedStatus(input: {
   packStage: ApplicationStage
 }): ApplicationRowStatus {
   if (input.linkRoot !== input.currentRoot) return 'source-mismatch'
-  // Closed means archive-only: never offer a refresh for a closed application.
-  if (input.packStage === 'closed') return input.archived ? 'imported' : 'archive-available'
+  const can = stageCapabilities(input.packStage, { archived: input.archived })
+  if (can.archive) return 'archive-available'
+  if (!can.refresh) return 'imported' // closed and archived: nothing left to offer
   const changed =
     input.packHash !== input.linkHash ||
     input.packFingerprint !== input.linkFingerprint ||

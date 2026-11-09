@@ -1,3 +1,4 @@
+import { stageCapabilities } from '@shared/jobs/application-stage'
 import {
   STALE_PREVIEW_MESSAGE,
   type ApplyRequest,
@@ -65,7 +66,7 @@ export async function applyApplication(
     local.link.baseline.sources,
     request.choices,
   )
-  const archive = !!request.archive && pack.stage === 'closed' && !local.archived
+  const archive = !!request.archive && stageCapabilities(pack.stage, local).archive
   applyApplicationRefresh({
     jobId: local.id,
     fields: resolved.fields,
