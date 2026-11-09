@@ -69,7 +69,7 @@ workspace the answer is a preview above a draggable divider whose ratio persists
 `overlayWhisperRatio`; Answer gives it the whole column.
 
 **Main-window reveal.** The overlay's Open Sanas invokes the parameterless typed channel
-`MainWindowShow` (`app.showMain()` in preload; handler in `ipc/windows.ts`), which calls the
+`MainWindowShow` (`app.showMain()` in preload; handler in `ipc/shell/windows.ts`), which calls the
 same `createMainWindow()` entry point startup and second-instance use: an existing window is
 restored if minimized, shown and focused — never reloaded or routed, so the Live page and its
 microphone session keep running. The overlay's Context and the Live page edit the same saved
@@ -429,7 +429,7 @@ reassign/deduplicate grounding before deleting source meetings.
 tables (`job_slides`, `meeting_slides`, `meeting_slide_events`, deck versions) remain and are
 never written, except the version-0 deck row every meeting needs for foreign keys.
 `db/repos/meeting/meeting-presentation.ts` reads them (`getPresentationHistory`,
-`hasLegacySlides`); `ipc/presentation-history.ts` serves the read-only history; MeetingView,
+`hasLegacySlides`); `ipc/history/presentation-history.ts` serves the read-only history; MeetingView,
 exports (`meetings/export.ts`) and regenerated summaries (`meetings/summary/presentation-history.ts`)
 interleave markers with segments by audio time, markers first at ties, never as speech.
 
