@@ -2,8 +2,8 @@
 id: dk-ddf47b88
 type: feature
 created: 2026-10-05
-status: todo
-since: 2026-10-05
+status: done
+since: 2026-11-09
 area: post-v1-ideas
 priority: P3
 rank: zn

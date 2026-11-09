@@ -42,7 +42,13 @@ export function RetentionSection({
     } catch (e) {
       setCleanUpError(errorText(e))
     }
-    setPreview(await window.sanas.retention.preview())
+    // Refresh even after a failed run, but a failing refresh is an error to show, never an
+    // unhandled rejection; the clean-up's own error, if any, takes precedence.
+    try {
+      setPreview(await window.sanas.retention.preview())
+    } catch (e) {
+      setCleanUpError((current) => current || errorText(e))
+    }
   }
 
   const nothingDue =
