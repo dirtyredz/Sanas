@@ -56,6 +56,7 @@ sanas/
 │   │   │   └── screens/                   # fixture display and verification
 │   │   ├── diagnostics/                   # isolated packaged smoke diagnostics
 │   │   ├── windows/                       # BrowserWindow builders and main → all-windows broadcast
+│   │   │   ├── app-window.ts              # shared window factory: security webPreferences + dev/prod page load
 │   │   │   └── interviewer-window.ts      # restricted mock output window
 │   │   ├── ipc/                           # validated typed IPC handlers; delegate only (job-resume/: job resume get/set + native resume picker; jobs/: jobs, glossary, deletion and application IPC)
 │   │   ├── system-audio.ts                # display-media loopback handler
@@ -201,7 +202,7 @@ sanas/
 
 - `src/main/lifecycle/` — userData identity, capped/redacted main logging and normal startup wiring; normal startup is not loaded by smoke
 - `src/main/diagnostics/` — isolated, headless packaged diagnostics used by `--smoke`
-- `src/main/windows/` — BrowserWindow builders and the main → all-windows broadcast (`overlay-bounds.ts`: pure on-screen fitting of saved overlay bounds; `main-window.ts`: create or reveal — restore/show/focus, never reload; `window-chrome.ts`: the hidden title bar + caption-button colours mirrored from tokens.css)
+- `src/main/windows/` — BrowserWindow builders and the main → all-windows broadcast (`app-window.ts`: `createAppWindow`/`loadAppPage`, the only definition of window webPreferences and dev-URL vs file loading; `overlay-bounds.ts`: pure on-screen fitting of saved overlay bounds; `main-window.ts`: create or reveal — restore/show/focus, never reload; `window-chrome.ts`: the hidden title bar + caption-button colours mirrored from tokens.css)
 - `src/main/ipc/` — typed IPC handlers; validate ingress and delegate, with no business logic (`windows.ts`: overlay toggle/resize/ghost, compose handshake and the parameterless Open Sanas; `validate.ts` also owns `requireMeetingStart`, the Start options check; `presentation-history.ts`: read-only historical slide markers; `hotkeys.ts`: global-shortcut status)
 - `src/main/` — process entry (`index.ts`, normal vs `--smoke` dispatch) and the display-media loopback handler (`system-audio.ts`)
 - `src/main/services/` — main-process services and provider seams
@@ -359,8 +360,6 @@ main-process code belongs in a responsibility folder above, not beside them.
   `suggestions` CHECK constraint has no `capture` kind. A real `capture` kind needs a table rebuild
   migration; the codec in `db/repos/manual-kind.ts` is the only place to change.
 
-- `windows/main-window.ts`, `overlay-window.ts` and `interviewer-window.ts` share webPreferences/load-URL
-  boilerplate. The third window has arrived; a shared `createAppWindow(opts)` factory is tracked as a P1 item.
 - `AssistRequest.model`, `AssistRequest.effort` and `AssistRequest.workspaceId` map closely to
   Anthropic-specific knobs, and the Claude provider derives a per-model "thinking off" value from a short `maxTokens`
   (`SHORT_BUDGET_MAX_TOKENS` in claude.ts), also Anthropic-specific. A second provider will need its own model settings and interpretation.

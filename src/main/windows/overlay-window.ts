@@ -1,8 +1,8 @@
 import { BrowserWindow, screen, type Rectangle } from 'electron'
-import { join } from 'path'
 import { IPC } from '@shared/ipc'
 import type { OverlayResizeRequest } from '@shared/types'
 import { loadSettings, saveSettings } from '../config/settings'
+import { createAppWindow, loadAppPage } from './app-window'
 import { fitOverlayBounds } from './overlay-bounds'
 
 let overlay: BrowserWindow | null = null
@@ -41,23 +41,19 @@ function createOverlay(): BrowserWindow {
   // Saved bounds outlive monitors: validate against what is connected now (the fallback is
   // not persisted until the user moves/resizes the overlay).
   const fit = fitCurrentBounds(loadSettings().overlayBounds)
-  overlay = new BrowserWindow({
-    ...fit,
-    show: false,
-    frame: false,
-    transparent: true,
-    // Electron does not support native resizing for transparent windows; renderer grips
-    // drive the programmatic resize path below instead.
-    resizable: false,
-    minWidth: MIN_WIDTH,
-    minHeight: MIN_HEIGHT,
-    skipTaskbar: true,
-    title: 'Sanas Overlay',
-    webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: false,
+  overlay = createAppWindow({
+    window: {
+      ...fit,
+      show: false,
+      frame: false,
+      transparent: true,
+      // Electron does not support native resizing for transparent windows; renderer grips
+      // drive the programmatic resize path below instead.
+      resizable: false,
+      minWidth: MIN_WIDTH,
+      minHeight: MIN_HEIGHT,
+      skipTaskbar: true,
+      title: 'Sanas Overlay',
     },
   })
 
@@ -90,11 +86,7 @@ function createOverlay(): BrowserWindow {
   overlay.on('moved', persistBounds)
   overlay.on('resized', persistBounds)
 
-  if (process.env.ELECTRON_RENDERER_URL) {
-    overlay.loadURL(`${process.env.ELECTRON_RENDERER_URL}/overlay.html`)
-  } else {
-    overlay.loadFile(join(__dirname, '../renderer/overlay.html'))
-  }
+  void loadAppPage(overlay, 'overlay.html')
   return overlay
 }
 

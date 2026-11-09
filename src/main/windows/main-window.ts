@@ -1,5 +1,5 @@
 import { app, BrowserWindow } from 'electron'
-import { join } from 'path'
+import { createAppWindow, loadAppPage } from './app-window'
 import { mainWindowChromeOptions } from './window-chrome'
 
 let mainWindow: BrowserWindow | null = null
@@ -23,18 +23,14 @@ function reveal(window: BrowserWindow): BrowserWindow {
 export function createMainWindow(): BrowserWindow {
   if (mainWindow && !mainWindow.isDestroyed()) return reveal(mainWindow)
 
-  mainWindow = new BrowserWindow({
-    width: 1100,
-    height: 750,
-    show: false,
-    autoHideMenuBar: true,
-    title: 'Sanas',
-    ...mainWindowChromeOptions(),
-    webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: false, // preload uses require for electron APIs; renderer stays isolated
+  mainWindow = createAppWindow({
+    window: {
+      width: 1100,
+      height: 750,
+      show: false,
+      autoHideMenuBar: true,
+      title: 'Sanas',
+      ...mainWindowChromeOptions(),
     },
   })
 
@@ -47,10 +43,6 @@ export function createMainWindow(): BrowserWindow {
     app.quit()
   })
 
-  if (process.env.ELECTRON_RENDERER_URL) {
-    mainWindow.loadURL(`${process.env.ELECTRON_RENDERER_URL}/index.html`)
-  } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
-  }
+  void loadAppPage(mainWindow, 'index.html')
   return mainWindow
 }
