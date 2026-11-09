@@ -17,7 +17,7 @@ import {
 } from '../../db/repos/meeting/meetings'
 import { getMeetingGrounding } from '../../db/repos/meeting/meeting-grounding'
 import { discardRecording, startRecording, stopRecording, writeAudio } from '../audio-store'
-import { rediarizeMeeting } from './rediarize/rediarize'
+import { rediarizeMeeting } from './postprocess/rediarize/rediarize'
 import { summarizeLines } from './summary/summarize'
 import { autoEmailSummary } from './summary/summary-email'
 import { clearPostProcessing, markPostProcessing } from './status/post-processing'

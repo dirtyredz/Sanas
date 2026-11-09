@@ -11,7 +11,7 @@ import { createMeeting } from './meeting-create'
 import { getMeetingContext, hasMeetingContext, saveMeetingContext } from './meeting-context'
 import { insertSegment, listSegments } from '../segments'
 import { insertSuggestion, listSuggestions } from '../suggestions'
-import { mergeMeetings } from '../../../services/meetings/merge/merge'
+import { mergeMeetings } from '../../../services/meetings/postprocess/merge/merge'
 
 // Repository-local SQLite coverage for meeting context: revision 0 at creation, text-only
 // revisions, and merge moving one part's context history onto the kept meeting.

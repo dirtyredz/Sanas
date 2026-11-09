@@ -146,7 +146,7 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
 
 - **Deleting a meeting is two deletes.** The row (segments, suggestions, names cascade) and
   the WAV on disk. `db/repos/meeting/meetings.deleteMeeting` is row-only by design — go through
-  `services/meetings/remove.ts` (`removeMeeting`) from anywhere outside repos, or the file
+  `services/meetings/records/remove.ts` (`removeMeeting`) from anywhere outside repos, or the file
   stays behind. Retention and the Delete button both use it. If the WAV is locked by another
   program the row is kept too (a file without a row is an orphan): Delete shows "still in use —
   try again", retention counts it as failed and retries next run.
@@ -684,7 +684,7 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   - Practice meetings are excluded by `listMeetings`; deletion counts query every table directly (`db/repos/job/job-deletion.ts`). Never reuse `listMeetings` to count what a job holds.
   - Unsorted is name-resolved, not guaranteed to be ID 1. Both ID 1 and the row named `Unsorted` are protected (`isProtectedJob` and the trigger), so a legacy ordinary job at ID 1 is also undeletable.
   - The database backup does not include WAV recordings, and file deletion is not atomic: a partial deletion keeps the job and reports what is gone. The confirmation says recordings cannot be recovered.
-  - Never `DELETE FROM jobs` for a job that has meetings: the v13 `jobs_delete_guard` trigger refuses it. Meetings must go through `services/meetings/remove.ts` first (it deletes the WAV), then `deleteJobRow`.
+  - Never `DELETE FROM jobs` for a job that has meetings: the v13 `jobs_delete_guard` trigger refuses it. Meetings must go through `services/meetings/records/remove.ts` first (it deletes the WAV), then `deleteJobRow`.
   - Resumes CLI failure (missing script, non-zero exit, timeout) is not fatal: the picker shows "Couldn't refresh from resumes" and lists the packs already on disk. The producer is not built yet, so this is today's normal state. Only a sanitized first stderr line (max 160 chars) is ever shown, never stdout.
   - The persona limit is 20,000 characters everywhere (`JOB_PERSONA_MAX_CHARS` in `shared/jobs/limits.ts`, widened from 2,000); do not re-hardcode it.
   - A pack's `contentHash` can be missing or reused; refresh change detection also compares Sanas's own pack fingerprint (sha256 of normalized content excluding `contentHash`/`updatedAt`).

@@ -3,7 +3,7 @@ import { isUnsortedJob } from '@shared/jobs/unsorted'
 import { getDb } from '../../index'
 
 // Counting and the final row delete for removing a job. Meetings are removed one by one by
-// services/jobs/deletion.ts (through services/meetings/remove.ts, which also deletes the
+// services/jobs/deletion.ts (through services/meetings/records/remove.ts, which also deletes the
 // recording); the v13 jobs_delete_guard trigger refuses a job row that still has any.
 
 /** ID 1 and the name-resolved Unsorted bucket can never be deleted (Unsorted is found by

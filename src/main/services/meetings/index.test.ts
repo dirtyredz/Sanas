@@ -78,7 +78,7 @@ vi.mock('../audio-store', () => ({
   stopRecording: vi.fn(),
   writeAudio: vi.fn(),
 }))
-vi.mock('./rediarize/rediarize', () => ({ rediarizeMeeting: vi.fn(async () => false) }))
+vi.mock('./postprocess/rediarize/rediarize', () => ({ rediarizeMeeting: vi.fn(async () => false) }))
 vi.mock('./summary/summarize', () => ({ summarizeLines: vi.fn(async () => false) }))
 vi.mock('./summary/summary-email', () => ({ autoEmailSummary: vi.fn() }))
 vi.mock('./status/post-processing', () => ({

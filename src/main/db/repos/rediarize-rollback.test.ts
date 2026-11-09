@@ -13,7 +13,7 @@ import { createMeeting } from './meeting/meeting-create'
 import { updateMeetingAudioPath } from './meeting/meetings'
 import { insertSegment, listSegments } from './segments'
 import { setSpeakerName, listSpeakerNames } from './speakers'
-import { rediarizeMeeting } from '../../services/meetings/rediarize/rediarize'
+import { rediarizeMeeting } from '../../services/meetings/postprocess/rediarize/rediarize'
 
 let sqlite: DatabaseSync
 let meetingId: number

@@ -10,7 +10,7 @@
  *  `jobs_delete_guard` refuses to delete the default Unsorted bucket (ID 1, and any row named
  *  'Unsorted', because ensureDefaultJob resolves it by name) and any job that still has
  *  meetings. Deleting a job with history therefore has to remove its meetings first through
- *  services/meetings/remove.ts, which also deletes their recordings; a direct row delete
+ *  services/meetings/records/remove.ts, which also deletes their recordings; a direct row delete
  *  could otherwise cascade meetings away and strand their WAV files.
  *  Frozen migration: never edit after it ships. */
 export const applicationSchema = `

@@ -386,7 +386,7 @@ On meeting end, two fire-and-forget passes:
    (`SttProvider.transcribeFile`); batch diarization sees the whole file, so speaker
    labels are stable. Live segments are replaced wholesale (streaming labels drift).
    Batch re-numbers the voices, so "that's me" pins (mono) and speaker names are carried
-   over by time overlap (`meetings/rediarize/speaker-carryover.ts`); names/merges stay user-editable
+   over by time overlap (`meetings/postprocess/rediarize/speaker-carryover.ts`); names/merges stay user-editable
    per meeting in the transcript view.
 
 ## Meeting context and manual assistance
@@ -430,7 +430,7 @@ tables (`job_slides`, `meeting_slides`, `meeting_slide_events`, deck versions) r
 never written, except the version-0 deck row every meeting needs for foreign keys.
 `db/repos/meeting/meeting-presentation.ts` reads them (`getPresentationHistory`,
 `hasLegacySlides`); `ipc/history/presentation-history.ts` serves the read-only history; MeetingView,
-exports (`meetings/export.ts`) and regenerated summaries (`meetings/summary/presentation-history.ts`)
+exports (`meetings/records/export.ts`) and regenerated summaries (`meetings/summary/presentation-history.ts`)
 interleave markers with segments by audio time, markers first at ties, never as speech.
 
 ### Screen capture (no persistence)
@@ -544,7 +544,7 @@ only) counts every table directly (`db/repos/job/job-deletion.ts`; `listMeetings
 practice) and returns a token; it is blocked for Unsorted and while any child meeting is live,
 paused or post-processing. `jobs:delete` consumes the token, re-checks the snapshot, takes a
 SQLite backup (`backups/before-job-delete-*.db`, abort on failure; the renderer gets only the file name, never the absolute path), removes each meeting through
-`services/meetings/remove.ts` (row and WAV), then deletes the job row; glossary, resume, link and
+`services/meetings/records/remove.ts` (row and WAV), then deletes the job row; glossary, resume, link and
 legacy `job_slides` cascade. A failed meeting removal keeps the job and reports what is already
 gone. The v13 `jobs_delete_guard` trigger refuses the protected jobs and any job that still has
 meetings, so no path can cascade meetings away without deleting their recordings.

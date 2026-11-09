@@ -1,19 +1,19 @@
 import type { Meeting, MergeResult } from '@shared/types'
-import { getDb } from '../../../db'
-import { applyMerge, deleteMeeting, getMeeting } from '../../../db/repos/meeting/meetings'
-import { maxSpeaker, reassignSegments } from '../../../db/repos/segments'
+import { getDb } from '../../../../db'
+import { applyMerge, deleteMeeting, getMeeting } from '../../../../db/repos/meeting/meetings'
+import { maxSpeaker, reassignSegments } from '../../../../db/repos/segments'
 import {
   clearSuggestionContextRevisions,
   reassignSuggestions,
   shiftSuggestionContextRevisions,
-} from '../../../db/repos/suggestions'
-import { reassignSpeakerNames } from '../../../db/repos/speakers'
-import { isPostProcessing } from '../status/post-processing'
-import { removeAudioFile } from '../remove'
+} from '../../../../db/repos/suggestions'
+import { reassignSpeakerNames } from '../../../../db/repos/speakers'
+import { isPostProcessing } from '../../status/post-processing'
+import { removeAudioFile } from '../../records/remove'
 import { CONTEXT_REVISION_OFFSET, planMerge, type MergePart } from './merge-plan'
-import { getMeetingGrounding } from '../../../db/repos/meeting/meeting-grounding'
-import { hasMeetingContext, moveContextHistory } from '../../../db/repos/meeting/meeting-context'
-import { hasLegacySlides } from '../../../db/repos/meeting/meeting-presentation'
+import { getMeetingGrounding } from '../../../../db/repos/meeting/meeting-grounding'
+import { hasMeetingContext, moveContextHistory } from '../../../../db/repos/meeting/meeting-context'
+import { hasLegacySlides } from '../../../../db/repos/meeting/meeting-presentation'
 
 // Folds several meeting rows into one — the repair for a conversation that a dropped
 // connection split into pieces before Pause existed, and for any stop/start done by hand.
