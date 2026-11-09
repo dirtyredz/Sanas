@@ -19,6 +19,12 @@ function Write-OwnerLog([string]$Message) {
   Add-Content -LiteralPath $script:OwnerLog -Value $Message
   Write-Output $Message
 }
+# owner/repo that releases publish to, from electron-builder.yml (single source: scripts/release/publish/repo.mjs).
+function Get-ReleaseRepo {
+  $slug = (& node (Join-Path $PSScriptRoot '../release/publish/repo.mjs') 2>$null)
+  if ($LASTEXITCODE -ne 0 -or -not $slug) { throw 'Could not read the release repo from electron-builder.yml.' }
+  return $slug.Trim()
+}
 function Invoke-GhJson {
   param([string[]]$Arguments)
   $output = & gh @Arguments 2>$null

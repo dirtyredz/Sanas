@@ -1,6 +1,8 @@
-export function githubClient(token = process.env.GH_TOKEN) {
+import { releaseRepo } from './repo.mjs'
+
+export function githubClient(token = process.env.GH_TOKEN, slug = releaseRepo().slug) {
   return async (route, options = {}) => {
-    const response = await fetch('https://api.github.com/repos/dirtyredz/Sanas' + route, {
+    const response = await fetch(`https://api.github.com/repos/${slug}${route}`, {
       ...options,
       headers: {
         Accept: 'application/vnd.github+json',

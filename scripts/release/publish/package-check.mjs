@@ -4,6 +4,7 @@ import { pathToFileURL } from 'node:url'
 import asar from '@electron/asar'
 import yaml from 'js-yaml'
 import { inventory } from './assets.mjs'
+import { releaseRepo } from './repo.mjs'
 
 export function checkPackage(folder = 'release') {
   const config = yaml.load(readFileSync('electron-builder.yml', 'utf8'))
@@ -29,11 +30,12 @@ export function checkPackage(folder = 'release') {
   )
   if (bindings.length !== 1 || !bindings[0].includes('better-sqlite3'))
     throw new Error('Unpacked SQLite binding missing or ambiguous')
+  const repo = releaseRepo()
   const update = yaml.load(readFileSync(join(resources, 'app-update.yml'), 'utf8'))
   if (
     update.provider !== 'github' ||
-    update.owner !== 'dirtyredz' ||
-    update.repo !== 'Sanas' ||
+    update.owner !== repo.owner ||
+    update.repo !== repo.repo ||
     update.publisherName != null
   )
     throw new Error('Updater configuration mismatch')

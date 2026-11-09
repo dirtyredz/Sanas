@@ -11,12 +11,13 @@ function Assert-SanasExited {
 Invoke-OwnerRun 'install-latest' {
   if ($DryRun) { Write-OwnerLog 'DRY RUN: validate latest stable installer, require Sanas exited, cold-backup and hash all user data, install and verify version. No download, backup or installation performed.'; return }
   Assert-SanasExited
-  $release = Invoke-GhJson @('api', 'repos/dirtyredz/Sanas/releases/latest')
+  $repo = Get-ReleaseRepo
+  $release = Invoke-GhJson @('api', "repos/$repo/releases/latest")
   if ($release.draft -or $release.prerelease -or $release.tag_name -notmatch '^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$') { throw 'Invalid stable release.' }
   $version = $release.tag_name.Substring(1)
   $folder = Join-Path $script:OwnerRoot ('.tmp/install/' + [guid]::NewGuid().ToString('N'))
   New-Item -ItemType Directory -Path $folder -Force | Out-Null
-  & gh release download $release.tag_name --repo dirtyredz/Sanas --dir $folder --pattern "Sanas-$version-x64-Setup.exe" --pattern "Sanas-$version-x64-Setup.exe.blockmap" --pattern 'latest.yml' 2>$null
+  & gh release download $release.tag_name --repo $repo --dir $folder --pattern "Sanas-$version-x64-Setup.exe" --pattern "Sanas-$version-x64-Setup.exe.blockmap" --pattern 'latest.yml' 2>$null
   if ($LASTEXITCODE -ne 0) { throw 'Release download failed.' }
   & node (Join-Path $PSScriptRoot 'validate-download.mjs') $folder $version 1>$null 2>$null
   if ($LASTEXITCODE -ne 0) { throw 'Installer metadata verification failed.' }
