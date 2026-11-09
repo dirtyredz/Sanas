@@ -35,7 +35,7 @@ historical pins; `shared/meeting/speaker-identity.ts` carries main-owned confirm
 selected IDs. `app/meeting/speakers/LiveSpeakerControls.tsx` owns the live voice picker and
 awaited pin feedback; the page and overlay consume authoritative state.
 `lib/meeting/useTranscript.ts` applies confirmed selections to both transcript views;
-its identity regression lives under `lib/meeting/transcript/`.
+its identity regression test sits beside it.
 
 Resumes are owned by the job: `db/repos/job/` (`job-resume.ts` + v11 schema), `ipc/jobs/resume/` (get/set + the main-owned PDF/DOCX import picker) and the
 job page's Resume tab (`app/jobs/resume/`: `JobResume.tsx`, `ResumeDraftEditor.tsx`, `resume-draft.ts`).
@@ -82,6 +82,7 @@ sanas/
 │   │   │   ├── jobs/                       # jobs, glossary, deletion, application and memory IPC
 │   │   │   │   └── resume/                 # job resume get/set + native resume picker
 │   │   │   ├── history/                    # read-only historical slide markers
+│   │   │   ├── audio/                      # generation-bound capture ingress: PCM validation and probes
 │   │   │   ├── live-controls/              # context, admission, capture and visibility-ack IPC
 │   │   │   ├── mock-interview/             # mock commands + validation
 │   │   │   ├── platform/                   # global-hotkey status
@@ -90,12 +91,14 @@ sanas/
 │   │   ├── services/
 │   │   │   ├── stt/                        # SttProvider seam, endpointing and keyterm budget
 │   │   │   │   └── deepgram/               # Deepgram provider, session, event normalization, watchdog, stream URL
+│   │   │   │       └── recovery/               # bounded PCM backlog and fake-socket test support
 │   │   │   ├── turns/                      # pure completed-turn assembly, transcript formatting/windowing
 │   │   │   ├── assistant/                  # prompts, triggers, shared types and answer logic
 │   │   │   │   ├── answer-context/         # answer prompt context: window split, anchor text, told stories, ShownLedger
 │   │   │   │   ├── classifier/             # turn classifier, verdict parsing, failure diagnostics
 │   │   │   │   ├── provider/               # AssistantProvider seam, Claude implementation (the only Anthropic SDK importer)
 │   │   │   │   ├── coach/                  # next-point policy and prompts
+│   │   │   │   │   └── coverage/           # frozen job-point catalog and quoted-speech ledger
 │   │   │   │   └── live-controls/          # typed/detail/audience prompt instructions
 │   │   │   ├── mock-interview/             # product plans/fixtures, interviewer, turn engine, session/results
 │   │   │   │   ├── turns/                  # engine, interviewer and session lifecycle
@@ -108,9 +111,11 @@ sanas/
 │   │   │   │   │   ├── manual/             # Answer now, manual and screen-capture admission, composer screen drafts
 │   │   │   │   │   ├── coach/              # next-point coaching coordinator
 │   │   │   │   │   ├── suggestion/         # request building, in-flight policy, runner, run publication
+│   │   │   │   │   │   └── answers/        # answer occurrence reservations and run lifecycle coverage
 │   │   │   │   │   └── latency/            # stage-timing correlation and summary
 │   │   │   │   ├── observation/            # best-effort observers: meeting stream, run events, assistance decisions
 │   │   │   │   ├── capture/                # channel identity and capture health
+│   │   │   │   │   └── timing/             # ordered main-clock brackets and accepted-sample rebasing
 │   │   │   │   ├── context/                # prepare/commit/publish meeting-context changes + meeting grounding
 │   │   │   │   ├── status/                 # live meeting and post-processing guards, historical job filing
 │   │   │   │   ├── summary/                # summary generation, output parsing, email, historical slide markers
@@ -155,6 +160,7 @@ sanas/
 │   │       │   ├── controls/               # Switch, FieldRow, Badge, KeyBadge
 │   │       │   ├── pages/                  # route/page components
 │   │       │   ├── meeting/                # saved-meeting record pieces
+│   │       │   │   └── speakers/           # live voice picker and pin feedback
 │   │       │   ├── mock-interview/         # practice results table and mock-interview hook
 │   │       │   ├── jobs/                   # job detail tabs
 │   │       │   │   ├── applications/       # New job from / refresh from application
@@ -230,21 +236,23 @@ handler (`system-audio.ts`); new main-process code belongs in a responsibility f
 - `src/main/ipc/jobs/` — jobs, glossary, deletion and application IPC (`jobs.ts`, `deletion.ts`, `applications.ts`, `memory.ts`, `validate.ts`, and `resume/` for the job resume); the privileged channels answer only the library window (`requireLibrarySender`).
 - `src/main/ipc/jobs/resume/` — `jobs.getResume`/`setResume` (validated by `validateResume`) and `resume-import.ts`, the native PDF/DOCX picker returning an unsaved draft; the renderer never supplies a filesystem path.
 - `src/main/ipc/history/` — `presentation-history.ts`: read-only historical slide markers.
-- `src/main/ipc/audio/` ? generation-bound capture ownership, PCM validation and probe replies.
+- `src/main/ipc/audio/` — generation-bound capture ownership, PCM validation and probe replies.
 - `src/main/ipc/live-controls/` — context, admission, capture and visibility-ack IPC (`live-controls.ts` + `-validation`).
 - `src/main/ipc/mock-interview/` — validated mock commands (`mock-interview.ts` + `-validation`); speech ACKs require the output sender.
-- `src/main/ipc/platform/` — OS-facing listeners: `audio-chunk.ts` (the contained audio-chunk `.on` listener) and `hotkeys.ts` (global-shortcut status).
+- `src/main/ipc/platform/` — `hotkeys.ts`: global-shortcut status IPC.
 - `src/main/ipc/screen-capture/` — screen-capture IPC (`screen-capture.ts` + `-validation`).
 - `src/main/ipc/shell/` — window and app-shell IPC: `windows.ts` (overlay toggle/resize/ghost, compose handshake and the parameterless Open Sanas) and `updates.ts` (typed updater snapshots and get/check/restart).
 - `src/main/services/` — main-process services and provider seams.
 - `src/main/services/stt/` — the swappable STT seam (`index.ts`, `types.ts`); `keyterm-budget.ts` holds Deepgram's keyterm limits so callers pass an ordered list and never a vendor budget; `endpointing.ts` the shared endpointing silence the scripted STT mirrors.
 - `src/main/services/stt/deepgram/` — the Deepgram implementation behind the seam: provider and batch (`deepgram.ts`), socket lifecycle and PCM-anchored clock (`deepgram-session.ts`, `DeepgramSession`), stall watchdog (`deepgram-watchdog.ts`), stream URL (`deepgram-stream-url.ts`) and message normalization (`deepgram-events.ts`); only `stt/index.ts` (and the rehearsal runner's dynamic import) reach it.
+- `src/main/services/stt/deepgram/recovery/` — reconnect continuity: the bounded PCM FIFO (`pcm-backlog.ts`) and the fake socket recovery tests use.
 - `src/main/services/turns/` — pure turn assembly and identity-role types; no I/O or timers; `latest-question.ts` picks the question Answer now answers; `transcript-format.ts` is the canonical main-side transcript labels/windowing.
 - `src/main/services/assistant/` — the swappable assistant seam and shared answer/classification logic.
 - `src/main/services/assistant/answer-context/` — `automatic-turn.ts` owns the neutral automatic focus block and `TriggeringTurn`; answer prompt context: current-exchange/background window split, anchor text (`anchor.ts`: `CURRENT_QUESTION_RULE`, `ANCHOR_REMINDER`, `LatestQuestion`), told stories, `ShownLedger` (`shown-ledger.ts`: the one place a shown suggestion is routed into the recent/told/coach memories, used by `LiveSession` and the eval), and `topic-switch-fixture.ts` (invented data + window builder; scoring lives in `scripts/eval/carried-terms.ts`).
 - `src/main/services/assistant/classifier/` — the turn classifier (`classifier.ts`), pure tolerant-but-conservative verdict parsing (`classifier-verdict.ts`: canonical `formatVerdict`, `isAcceptedVerdict` and the one `CLASSIFIER_FAILURE_REASONS` list and content-free malformed shapes) and `failure-diagnostics.ts` (allowlists provider failure metadata for classifier diagnostics: category incl. `connection`, error class `errorName`, status, request ID, model, elapsed; the assistance coordinator owns the suspension timer and publishes availability through MeetingState).
 - `src/main/services/assistant/provider/` — the `AssistantProvider` seam (`provider.ts`), the Claude implementation (`claude.ts`), `claude-usage.ts` (extracts Anthropic usage into `ProviderUsage`; missing = unknown), provider-neutral `provider-evidence.ts` (`reportUsage`/`reportTiming`) and `provider-error.ts` (the neutral failure category a provider tags on its transport errors; failure-diagnostics reads it, never vendor class names); the only home that imports `@anthropic-ai/sdk`.
 - `src/main/services/assistant/coach/` — next-point eligibility policy and coach prompt construction.
+- `src/main/services/assistant/coach/coverage/` — the frozen job-point catalog (`catalog.ts`) and the bounded quoted user-speech ledger (`ledger.ts`) behind coach evidence.
 - `src/main/services/assistant/live-controls/` — typed, detail, audience and screen-capture request instructions.
 - `src/main/services/mock-interview/` — one product engine, plan validation, interviewer seam consumer, session lifecycle, bundled JSON plans/PNG fixtures and shared live-turn result correlation; `shortcuts.ts` is the mock-only shortcut registration/release.
 - `src/main/services/mock-interview/turns/` — interviewer consumer, serialized engine, `answer-wait.ts` (candidate-answer silence/idle-prompt clock), session lifecycle, and the result evidence/report builders (`evidence.ts`, `report.ts`). `request-outcome.ts` holds `RequestOutcome`/`RequestTiming`, `publicOutcome` and `proseWords`: the request shapes the report builds on, also imported by the diagnostics rehearsal; production assist code does not carry them. Rule: nothing in `turns/` imports the parent.
@@ -257,9 +265,11 @@ handler (`system-audio.ts`); new main-process code belongs in a responsibility f
 - `src/main/services/meetings/assist/manual/` — Answer now (`answer-now.ts`: the hotkey answer and its evidence retrieval), manual and screen-capture admission (`manual-requests.ts`, `capture-requests.ts`) and `capture-drafts.ts` (in-memory composer screen drafts).
 - `src/main/services/meetings/assist/coach/` — `coach-coordinator.ts`: next-point coaching while the user talks (feeds the coach policy, owns its timer and buffered run; yields to every answer).
 - `src/main/services/meetings/assist/suggestion/` — `suggestion-requests.ts` (request building; `promptMismatchCategories` decides when two requests are the same prompt, comparing every field except an explicit short list; `EvidenceHandle`), `suggestion-in-flight.ts`, `suggestion-runner.ts` (lanes, deadline and persistence) and `run-publication.ts` (the per-run held-text and publish gate).
+- `src/main/services/meetings/assist/suggestion/answers/` — `answer-coverage.ts`: meeting-local answer ownership; callers hold an opaque `AnswerReservation` and use `AnswerCoverage` operations (reserve, release, releaseUnpublished, attachRunCancel, lifecycle).
 - `src/main/services/meetings/assist/latency/` — `latency.ts` (`LatencyTracker` + `observeLatency()` own both subscriptions and correlate diagnostics and run observations into bounded, allowlisted stage-timing records) and `latency-summary.ts` (`summarizeLatency` reports them).
 - `src/main/services/meetings/observation/` — the one home for observation: `observer-bus.ts` (shared typed pub/sub; a throwing listener is dropped, never policy), `meeting-observation.ts` (transcript/signal/state; window policy and mock-interview consume it), `run-observation.ts` (runner events plus `EffectiveProfile`, the full/smart/points policy a run used), `diagnostics.ts` (coordinator decisions; rehearsal subscribes like any consumer). They stay separate streams with their own payloads and consumers and share only the bus and the rule that observation never changes behaviour; payload types come from `assist/`, which emits into them.
-- `src/main/services/meetings/capture/` — AUDIO capture-side identity and capture-health policy (screen capture lives in `services/screen-capture/`).
+- `src/main/services/meetings/capture/` — AUDIO capture-side identity and capture-health policy (screen capture lives in `services/screen-capture/`); `speaker-session.ts` (`SpeakerSession`: mono connection mapping, private pins and `resolve()` identity).
+- `src/main/services/meetings/capture/timing/` — `capture-clock.ts` and `capture-session.ts`: ordered main-clock brackets and accepted-sample rebasing.
 - `src/main/services/meetings/context/` — pure preparation followed by commit/publication of live context changes and meeting grounding: `start-request.ts` (`StartRequest`: the renderer's `MeetingStartOptions` plus main-only `practice`), `start-grounding.ts` (`resolveStartGrounding`, the selected job's saved resume (none for Unsorted) plus the profile, resolved inside serialized Start for Live and Mock), `profile.ts` (`interviewProfileSnapshot`, Start selection of the Settings profile), `candidate-data.ts` (neutral escaping and delimited prompt framing for resume (`candidateFacts`) and Interview profile (`interviewProfileFacts`), so resume code and the profile never import each other), `meeting-facts.ts` (combines a `MeetingGrounding` into the candidate-facts block, resume first), `candidate-keyterms.ts` (STT term extraction/interleave for resume and profile, `candidateKeyterms`) and `meeting-keyterms.ts` (the STT hints, glossary plus resume/profile terms, for streaming and batch).
 - `src/main/services/meetings/status/` — live-meeting identity, post-processing guards (both expose `on…Change` signals via `change-signal.ts`, so the updates service re-broadcasts without polling) and `filing.ts` (historical job filing; refuses a live meeting).
 - `src/main/services/meetings/summary/` — meeting summaries, structured output handling and summary email; `presentation-history.ts` is the historical slide-marker formatting for summaries (presentation mode retired 2026-11-04).
@@ -302,6 +312,7 @@ handler (`system-audio.ts`); new main-process code belongs in a responsibility f
 - `src/renderer/src/app/controls/` — small shared library controls (`Switch`, `FieldRow`, `Badge`, `KeyBadge`); styles live in `styles/controls.css`.
 - `src/renderer/src/app/pages/` — one component per library route/page; `SettingsPage` is layout and wiring only (its state is `useSettingsDraft`).
 - `src/renderer/src/app/meeting/` — pieces of the saved-meeting record: `MeetingRecordHeader` (title and summarize/email/export/delete actions), `TranscriptPanel` (transcript with slide markers plus `SpeakerEditor`), `MeetingSuggestionsTab` and `usePresentationHistory`; `pages/MeetingView` loads the record and composes them with the filing, summary and context cards.
+- `src/renderer/src/app/meeting/speakers/` — `LiveSpeakerControls.tsx`: the live voice picker and awaited pin feedback.
 - `src/renderer/src/app/mock-interview/` — `MockResults` (practice results table) and `useMockInterview` (setup, job/plan choice, mock state, past sessions, mic capture); `pages/MockInterviewPage` is layout and wiring.
 - `src/renderer/src/app/jobs/` — `JobOverview` (name, context, glossary), `JobEmail` (recipient) and `JobMeetings` (history/merge); resume and memory live in `jobs/resume/` and `jobs/memory/`. `JobTabs` owns tab/panel IDs, keyboard focus and mounted panels from a name/render table. `pages/JobDetail` owns load, the meetings list (reloaded via `JobMeetings`' `onMerged`), shared draft/save, composition and meeting drill-in; the tabs stay mounted (hidden) behind an open meeting so drafts survive. `job-draft.ts` holds the pure job-draft rules (unsaved-edit check before a refresh).
 - `src/renderer/src/app/jobs/applications/` — New job from application / Refresh from application: `ApplicationPicker` (rows and statuses via `picker-rows.ts`), `ApplicationPreview` (create form or per-field refresh review, conflicts defaulting to Keep Sanas), `preview-format.ts` (field labels and display text for the typed preview values), `apply-request.ts` (builds the apply request) and `useApplicationListing.ts` (the listing hook).
