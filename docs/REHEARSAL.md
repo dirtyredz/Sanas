@@ -1,5 +1,44 @@
 # Meeting rehearsals
 
+## Matched profiles and copied-log summaries
+
+From any cwd, invoke these scripts by absolute path (relative paths below assume repo root):
+
+```powershell
+./scripts/rehearsal/compare.ps1
+./scripts/rehearsal/summarize.ps1 -LogCopy C:/private/copied-sanas-logs
+# Explicit paid opt-in, using environment credentials only; never reads owner settings:
+./scripts/rehearsal/compare.ps1 -RealProvider
+```
+
+Comparison runs four fixed factual/behavioural/code/room questions through the production
+automatic request builder and suggestion runner, using the existing `RehearsalAssistant`.
+Each question/profile pair repeats three times, alternating Full/Smart order. Grounding,
+transcript and empty shown-story history are identical for each matched pair. It bypasses
+STT/classification intentionally, measuring the profile/provider leg. Defaults are Full
+Opus 5.5 / 1,200 / medium and Smart Sonnet 5.5 / 500 / low; every sample records the
+effective policy. No owner settings or profile is modified. Full remains selected by the
+owner; this harness never selects it for the product or changes the repository default.
+
+Default canned mode makes no provider calls. Real mode requires `-RealProvider` plus
+`ANTHROPIC_API_KEY` (and optionally `ANTHROPIC_WORKSPACE_ID`) already in the environment;
+there is no credential fetch or download. `cold-first-pass`/`warm-repeat` are cache intent,
+not a cache guarantee; `cacheObserved` comes from provider usage, otherwise unknown. The
+first pass may hit an existing provider cache. Reports omit answers, so independent blinded
+quality review remains an owner acceptance step before any profile decision.
+
+The summary tool reads only a directory of copied `*.log` / `*.log.N` files. It prints
+median and nearest-rank p90 by stage with sample/missing counts, denominators for runs,
+candidates and classified attempts, outcomes, verdict/path/profile counts, discarded and
+mismatched work, and separate renderer states. Only delivered automatic runs enter answer
+stage distributions. Legacy logs lack a session ID: their candidate/attempt counts may
+collide across app restarts, and the report flags this. Do not include overlapping copies
+of the same log. Missing records/overflow cannot be reconstructed from copied lines.
+Raw `audioCursorGapMs_PROXY` is never presented as calibrated speech-end latency.
+Frame-after-commit receipt is a renderer proxy, not physical paint. Logs and comparison
+reports go under `.tmp/owner-runs/`; wrappers end with OK/FAILED. Canned speed proves no
+real-provider improvement, and acoustic calibration is not implemented in this slice.
+
 Run from any directory (use the absolute script path when outside the repo):
 
 ```powershell

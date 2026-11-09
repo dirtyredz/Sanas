@@ -4,6 +4,26 @@ _How the system works. For code shape, see [../STRUCTURE.md](../STRUCTURE.md)._
 
 ## Overview
 
+Latency round 3 extends the existing assistance/run observers, without a database change:
+run records now include a tracker `sessionId`, meeting/run/stored suggestion IDs, effective
+profile/model/token budget/effort (custom model IDs become `custom`), classifier start/end
+offsets, SDK request dispatch, first protocol event, first text, fetch attempt/retry counts,
+promotion and readable broadcast. Terminal outcomes and discard reasons stay separate.
+`providerPolicy` records the actual wire effort (including omitted) and thinking mode;
+the profile's requested effort is kept separately. Records also carry cumulative overflow
+and explicit linked/missing/not-applicable run correlation.
+`candidateTerminal` identifies the final candidate outcome; open dependent runs retain its
+identity even when a fallback settles first. Request mismatch evidence lists only bounded
+categories (`user-content`, `grounding-context`, `model-profile`, `carried-turns`, `image`,
+`other`); user content combines transcript, told stories and meeting context.
+
+The overlay acknowledges readable committed content through typed `SuggestionVisibility`
+IPC. Main stamps receipt and checks window visibility. The same tracker emits bounded
+`visibility` records keyed by session/meeting/run, including hidden/unselected states;
+these are not answer runs. Visible rAF receipt duration is relative to readable broadcast.
+No renderer clock is subtracted from main's clock. Acoustic clock calibration is still
+unavailable; the raw audio cursor gap remains a proxy, not calibrated speech-end latency.
+
 The **Mock interview** tab starts a practice meeting for a chosen job using the normal
 settings, userData, recording and STT lifecycle. The shared renderer Start helper opens This PC
 mic + loopback before typed mock IPC calls the existing serialized meeting service. Stereo is

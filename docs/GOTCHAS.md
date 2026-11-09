@@ -2,6 +2,28 @@
 
 _Non-obvious traps. Read before touching the related area._
 
+### November 9 latency evidence
+
+- Null meeting snapshots must terminate queued/ready candidates. Classified rejections
+  retain candidate identity until dependent runs settle; `candidateTerminal` distinguishes
+  the single final outcome from discarded attempts. Missing categories are `unknown`,
+  never inferred as policy. `sessionId` separates process/tracker lifetimes in copied logs.
+- Provider `request-start` is SDK stream dispatch; `attempt` counts actual fetch calls,
+  including SDK retries. `first-protocol` is the first stream event, not text or reasoning.
+  Absent provider timing/usage (including canned runs) is unknown, not zero.
+- Renderer `frame-after-commit` is an rAF callback after a React content commit, received
+  on main's clock. It is a visibility proxy, not compositor/physical paint. Hidden windows
+  and unselected answers are separate states, excluded from visibility duration claims.
+  Late acknowledgements use a bounded 64-run retention window; absent acknowledgements
+  are missing evidence. A hidden renderer need not run frame callbacks.
+- Acoustic calibration remains deferred: PCM ingress has an audio cursor but no capture
+  timestamp or bound on pre-IPC buffering delay. Do not convert `audioCursorGapMs` into
+  speech-end latency. A future bridge needs paired capture/main samples, uncertainty,
+  pause/reconnect invalidation and known-WAV/jitter tests before deriving that duration.
+- Endpoint stays 600 ms: 300 and 450 fragment the 600 ms multipart continuation fixture.
+  Synthetic boundaries prove assembly behavior only; real STT may differ. Grace stays
+  150 ms and fallback 1,800 ms.
+
 The normal main process writes `sanas-main.log` (plus one rotated `.1` file) under Electron's
 `app.getPath('logs')`; on Windows this is normally `%APPDATA%\sanas\logs`. Packaged smoke never
 starts this logger or writes there.

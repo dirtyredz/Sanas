@@ -3,6 +3,9 @@
 _Code-shape map: components, responsibilities, dependencies, structural debt._
 _System design lives in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)._
 
+Current rulings live in `docs/DECISIONS.md`; its August/September history is preserved
+in `docs/DECISIONS-2026-08-09.md` to keep the current decision map below 800 lines.
+
 Last full review: 2026-08-27
 
 ## Status
@@ -21,6 +24,9 @@ importer/validator stay under `services/meetings/context/resume/` and the type i
 
 Rehearsal homes: `src/main/rehearsal/` owns explicit isolated rehearsal dispatch, scenario
 validation/assertions (`scenario/`) and scripted providers/correlation (`outcomes/`).
+`runner/comparison.ts` reuses the request builder, runner and rehearsal assistant for matched
+Full/Smart trials. `scripts/rehearsal/compare.ps1` and `summarize.ps1` wrap local Node tools
+for those trials and copied-log stage percentiles; both log under `.tmp/owner-runs/`.
 Its `runner/` owns flags, evidence, steps, clock/audio pumping and final checks/report;
 `audio/` owns WAV replay/socket faults,
 and `screens/` owns fixture acquisition and real display verification;
