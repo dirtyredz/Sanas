@@ -629,8 +629,9 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   merge guard read the meeting snapshot through `getMeetingGrounding` only.
 - Start resolves the job resume in main (`resolveStartGrounding`) with no await before
   `createMeeting`, so the snapshot is exactly what was saved at Start. No job selected
-  (Unsorted) resolves to no resume **before** `ensureDefaultJob()`; do not reorder that, or
-  the bucket job's saved resume would leak into Unsorted calls. Mock reaches the same path;
+  (Unsorted) resolves to no resume, and `resolveStartGrounding` never touches the bucket job
+  (`startMeeting` files the meeting under `jobId ?? ensureDefaultJob()`), so call order no
+  longer matters; `setJobResume` also refuses a resume on the bucket. Mock reaches the same path;
   neither Start accepts a renderer resume any more.
 - Live is always mounted. Its "job has a resume" flag is re-read when the page is shown again
   (`useJobHasResume`), and only counts for the job it was read for, so a resume saved on the

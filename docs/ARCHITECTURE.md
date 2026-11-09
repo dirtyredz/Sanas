@@ -485,8 +485,8 @@ Start carries no resume. `meeting.start(jobId, channels, { interview?, meetingCo
 `mockInterview.start(plan, jobId, channels)` both reach `startMeeting`, which, inside the
 serialized Start and with no await before `createMeeting`, calls
 `resolveStartGrounding` (`services/meetings/context/start-grounding.ts`): the selected job's
-saved resume (none when no job was chosen, resolved before `ensureDefaultJob()` supplies the
-Unsorted bucket) and the Interview profile (`practice || (interview ?? hasSavedResume)`).
+saved resume (none when no job was chosen) and the Interview profile (`practice || (interview ?? hasSavedResume)`);
+`startMeeting` then files the meeting under `jobId ?? ensureDefaultJob()` (the Unsorted bucket).
 Live state exposes a small `noResume` cue for practice sessions with neither resume nor profile.
 
 The meeting snapshot: the service hands `createMeeting` (`db/repos/meeting/meeting-create.ts`) a main-built `MeetingCreateInput`; it stores `resume_name` and `resume_text` in the same transaction as the initial meeting context. The resume and profile snapshots are read back only through `getMeetingGrounding(id)` (`{ resume, interviewProfile, hasBiography }`), never on list rows; STT hints, candidate facts, re-diarize, the merge guard, the `noResume` cue and the prompt block all go through it. The append-only v9 migration uses the existing pre-upgrade SQLite backup flow. A database trigger rejects changes to these fields; job filing leaves them intact. Resume-bearing merges are refused to avoid losing or misattributing candidate facts.

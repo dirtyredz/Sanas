@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron'
 import { IPC } from '@shared/ipc'
 import { getJobResume, setJobResume } from '../../../db/repos/job/job-resume'
-import { validateResume } from '../../../services/meetings/context/resume/resume'
+import { validateResume } from '../../../services/jobs/resume/resume'
 import { requireId } from '../../validate'
 import { registerResumeImportIpc } from './resume-import'
 

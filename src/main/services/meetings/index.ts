@@ -28,6 +28,7 @@ import { LiveSession } from './assist/live-session'
 import { insertSegment, setSpeakerIsUser } from '../../db/repos/segments'
 import { broadcast } from '../../windows/broadcast'
 import { createMeeting } from '../../db/repos/meeting/meeting-create'
+import { ensureDefaultJob } from '../../db/repos/jobs'
 import { createLiveControls } from './live-controls'
 import { CaptureRequests } from './assist/capture-requests'
 import { createScreenCapture } from '../screen-capture'
@@ -309,11 +310,12 @@ export function startMeeting(
 
     // no await between resolving the job's saved resume and creating the meeting: the
     // snapshot is exactly what was saved when Start ran
-    const { job, resume, interviewProfile } = resolveStartGrounding(
+    const { resume, interviewProfile } = resolveStartGrounding(
       jobId,
       request,
       settings.interviewProfile,
     )
+    const job = jobId ?? ensureDefaultJob()
     const id = createMeeting(
       job,
       `${request.practice ? 'Practice' : 'Meeting'} ${new Date().toLocaleString()}`,

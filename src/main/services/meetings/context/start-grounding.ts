@@ -1,18 +1,17 @@
 import type { MeetingResume } from '@shared/meeting-resume'
-import { ensureDefaultJob } from '../../../db/repos/jobs'
 import { getJobResume } from '../../../db/repos/job/job-resume'
 import { interviewProfileSnapshot } from './profile'
 import type { StartRequest } from './start-request'
 
 export interface StartGrounding {
-  job: number
   resume: MeetingResume | null
   interviewProfile: string
 }
 
 /** What a new meeting snapshots, resolved synchronously inside serialized Start: the selected
- *  job's saved resume and the Interview profile. With no job selected (Unsorted) the resume is
- *  resolved to none before the fallback bucket job is supplied. Live and Mock share this. */
+ *  job's saved resume (none when no job was selected, i.e. Unsorted) and the Interview profile.
+ *  It never resolves the bucket job, so it does not depend on call order; the caller files the
+ *  meeting under `jobId ?? ensureDefaultJob()`. Live and Mock share this. */
 export function resolveStartGrounding(
   jobId: number | undefined,
   request: StartRequest,
@@ -20,7 +19,6 @@ export function resolveStartGrounding(
 ): StartGrounding {
   const resume = jobId === undefined ? null : getJobResume(jobId)
   return {
-    job: jobId ?? ensureDefaultJob(),
     resume,
     interviewProfile: interviewProfileSnapshot(request, resume !== null, savedProfile),
   }

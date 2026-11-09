@@ -7,7 +7,7 @@ import {
 } from '@shared/jobs/applications'
 import { JOB_NAME_MAX_CHARS } from '@shared/jobs/limits'
 import { fitKeyterms } from '../../stt/keyterm-budget'
-import { validateResume } from '../../meetings/context/resume/resume'
+import { validateResume } from '../resume/resume'
 import type { ValidPack } from './source/validate-pack'
 
 // Converts a validated pack into what a job stores. Notes carry only the producer's verified

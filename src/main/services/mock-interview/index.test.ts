@@ -34,9 +34,9 @@ vi.mock('../meetings', async () => {
       _channels: number,
       request: { practice?: boolean; interview?: boolean },
     ) => {
-      const { job, resume, interviewProfile } = resolveStartGrounding(jobId, request, 'Profile')
+      const { resume, interviewProfile } = resolveStartGrounding(jobId, request, 'Profile')
       return {
-        meetingId: createMeeting(job, 'Practice', {
+        meetingId: createMeeting(jobId, 'Practice', {
           practice: request.practice,
           resume,
           interviewProfile,

@@ -19,8 +19,8 @@ Resumes are owned by the job: `db/repos/job/` (`job-resume.ts` + v11 schema), `i
 job page's Resume tab (`app/jobs/JobResume.tsx`, `ResumeDraftEditor.tsx`, `resume-draft.ts`).
 Start resolves the snapshot in `services/meetings/context/start-grounding.ts` for both Live
 and Mock; `lib/meeting/resume/useJobHasResume.ts` gives Live its Interview default. The
-importer/validator stay under `services/meetings/context/resume/` and the type in
-`shared/meeting-resume.ts` (names predate job ownership; moving them is deferred).
+importer/validator now live in `services/jobs/resume/`; the type stays in
+`shared/meeting-resume.ts` (it is also the meeting snapshot contract; renaming it is deferred).
 
 Rehearsal homes: `src/main/rehearsal/` owns explicit isolated rehearsal dispatch, scenario
 validation/assertions (`scenario/`) and scripted providers/correlation (`outcomes/`).
@@ -224,7 +224,7 @@ sanas/
 - `src/main/services/meetings/assist/testing/` — test-only fake-clock harness shared by the live-assistance suites
 - `src/main/services/meetings/capture/` — AUDIO capture-side identity and capture-health policy (screen capture lives in `services/screen-capture/`)
 - `src/main/services/meetings/context/` — pure preparation followed by commit/publication of live context changes; `meeting-keyterms.ts` builds the STT hints (glossary plus resume/profile terms) for streaming and batch
-- `src/main/services/meetings/context/resume/` — resume (job-saved and meeting snapshot): ingress validation (`resume.ts`), bounded PDF/DOCX parsing (`import-file.ts`); (term extraction lives beside `candidate-data.ts` in `context/candidate-keyterms.ts`: `candidateKeyterms`, shared by resume and profile)
+- `src/main/services/jobs/resume/` — job resume: ingress validation (`resume.ts`), bounded PDF/DOCX parsing (`import-file.ts`); (term extraction lives beside `candidate-data.ts` in `context/candidate-keyterms.ts`: `candidateKeyterms`, shared by resume and profile)
 - `src/main/services/meetings/context/candidate-data.ts` (and `candidate-keyterms.ts`: STT term extraction/interleave for resume and profile) — neutral escaping and delimited prompt framing for resume (`candidateFacts`) and Interview profile (`interviewProfileFacts`); so `resume/` and the profile never import each other
 - `src/main/services/meetings/context/meeting-facts.ts` — combines a `MeetingGrounding` into the candidate-facts block (resume first); `profile.ts` — `interviewProfileSnapshot`, Start selection of the Settings profile; `start-request.ts` — `StartRequest` (the renderer's `MeetingStartOptions` plus main-only `practice`); `start-grounding.ts` — `resolveStartGrounding`, the selected job's saved resume (none for Unsorted) plus the profile, resolved inside serialized Start for Live and Mock
 - `src/main/services/meetings/presentation/` — historical slide-marker formatting for summaries (presentation mode retired 2026-11-04)
@@ -383,8 +383,8 @@ main-process code belongs in a responsibility folder above, not beside them.
 - `shared/meeting-resume.ts` owns the text/name contract and limits (used for both the job's saved resume and the meeting snapshot).
 - `db/repos/job/job-resume.ts` (+ v11 `job-resume-schema.ts`) owns the job's saved resume; `ipc/jobs/resume/` exposes get/set and `resume-import.ts`, the native PDF/DOCX picker; the renderer never supplies a filesystem path.
 - `services/meetings/context/start-grounding.ts` is the one place Start reads the job resume; nothing else reads `job_resumes` for a meeting.
-- `main/services/meetings/context/resume/import-file.ts` owns bounded local reads and offline parser lifecycle.
-- `main/services/meetings/context/resume/` owns validation (run once, at IPC ingress), escaped candidate-fact framing and deterministic terminology extraction.
+- `main/services/jobs/resume/import-file.ts` owns bounded local reads and offline parser lifecycle.
+- `main/services/jobs/resume/` owns validation (run once, at IPC ingress), escaped candidate-fact framing and deterministic terminology extraction.
 - `db/repos/meeting/meeting-resume-schema.ts` owns append-only v9 SQL and the immutable-update guard; `createMeeting` persists the text in its one transaction. The resume is not on the `Meeting` row: `getMeetingGrounding(id).resume` is the only read (`MeetingView` via `meetings.getResume`).
 - `app/jobs/JobResume.tsx` owns the job editor (draft, import, explicit Save resume); `MeetingView` shows a meeting's saved text read-only. Live/Mock setup have no resume input.
 - `MeetingPrompts` attaches candidate facts to the meeting's one system prompt before saving grounding. `meetingKeyterms` builds one ordered hint list for streaming and batch STT; the provider applies its own limits.
