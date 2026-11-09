@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
 import { validateResume } from './resume'
-import { candidateFacts } from '../../meetings/context/grounding/candidate-data'
+import { candidateFacts } from '../../assistant/prompts/candidate-data'
 import {
   candidateKeyterms,
   interleaveKeyterms,

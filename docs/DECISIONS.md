@@ -296,7 +296,7 @@ Resume and Interview profile are two snapshots of the same idea: what the user c
 themselves in this meeting. They are read together by `getMeetingGrounding(id)` (`{ resume, interviewProfile,
 hasBiography }`) and every consumer (STT hints, candidate facts, re-diarize, merge guard, status cue, prompt
 fallback) uses it, so "no biography" has one definition and the service holds no resume/profile caches.
-Escaping/framing live in neutral `context/grounding/candidate-data.ts` so the two artifacts do not import each other.
+Escaping/framing live in neutral `assistant/prompts/candidate-data.ts` so the two artifacts do not import each other.
 Rejected: keeping per-artifact getters plus caches in `meetings/index.ts` (two sources of truth, drift risk).
 A renderer-facing `StartRequest` is separate from the main-resolved `MeetingCreateInput`, so a renderer-supplied
 profile is unrepresentable.

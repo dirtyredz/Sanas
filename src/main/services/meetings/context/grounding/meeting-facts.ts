@@ -1,5 +1,5 @@
 import type { MeetingGrounding } from '../../../../db/repos/meeting/meeting-grounding'
-import { candidateFacts, interviewProfileFacts } from './candidate-data'
+import { candidateFacts, interviewProfileFacts } from '../../../assistant/prompts/candidate-data'
 
 /** Candidate-facts prompt block for a meeting's grounding; empty when it has neither
  *  resume nor profile. */
