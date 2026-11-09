@@ -25,7 +25,7 @@ import { CoachPolicy } from '../../../assistant/coach/coach-policy'
 import { speakerLabel } from '../../../turns/transcript-format'
 import type { SuggestionHandle, SuggestionRunner } from '../suggestion/suggestion-runner'
 import { SpeculativeAnswer } from './speculative-answer'
-import { ClassifierBreaker } from './classifier/classifier-breaker'
+import { ClassifierBreaker } from './breaker/classifier-breaker'
 import {
   answerNowRequest,
   automaticAnswerRequest,

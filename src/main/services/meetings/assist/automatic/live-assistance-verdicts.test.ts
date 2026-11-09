@@ -4,7 +4,7 @@ import { CONTINUATION_GRACE_MS } from '../../../turns/turn-assembler'
 import type { AssistDiagnostic } from '../../observation/diagnostics'
 import { LatencyTracker, type LatencyRecord } from '../latency/latency'
 import { subscribeRuns } from '../../observation/run-observation'
-import { otherTurn, setup, them } from './testing/live-assistance-harness'
+import { otherTurn, setup, them } from './live-assistance-harness'
 
 // The six accepted automatic verdicts share one neutral speculative prompt: each promotes the
 // speculation with exactly one answer request, and each gets the overlapped timing. Stage
