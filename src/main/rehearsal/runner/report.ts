@@ -6,12 +6,10 @@ import type { RehearsalOptions } from './options'
 import type { CollectedEvidence } from './evidence'
 import type { StepExecutor } from './steps'
 import type { RehearsalAssistant } from '../outcomes/providers'
+import type { Segment } from '@shared/types'
 import type { RehearsalScreens } from '../screens/fixture-display'
-import * as meetings from '../../services/meetings'
-import { isPostProcessing } from '../../services/meetings/status/post-processing'
 import { listSegments } from '../../db/repos/segments'
 import { getMeeting } from '../../db/repos/meeting/meetings'
-import { sleep } from './clock'
 export async function finishReport({
   options,
   collected,
@@ -19,6 +17,8 @@ export async function finishReport({
   model,
   screens,
   meetingId,
+  liveRows,
+  stoppedMs,
   now,
   batchCount,
   taskErrors,
@@ -29,6 +29,9 @@ export async function finishReport({
   model: RehearsalAssistant
   screens: RehearsalScreens
   meetingId: number
+  /** Segment rows read before the meeting stopped (see stopMeetingAndWait). */
+  liveRows: Segment[]
+  stoppedMs: number
   now(): number
   batchCount(): number
   taskErrors: string[]
@@ -36,8 +39,6 @@ export async function finishReport({
   const { scenario, tier, assistant, wav } = options
   const { evidence, finals, interimCount, finalReceipts, turnCompletions } = collected
   const { starts } = executor
-  // Check live storage BEFORE batch replacement can hide an interim-persistence defect.
-  const liveRows = listSegments(meetingId)
   const storedLines = liveRows
     .map((r) => JSON.stringify([r.tStartMs, r.tEndMs, r.text, r.speaker, r.isUser]))
     .sort()
@@ -52,12 +53,6 @@ export async function finishReport({
       storedLines.length === finalLines.length &&
       storedLines.every((r, i) => r === finalLines[i]),
   })
-  const stoppedMs = now()
-  for (const request of model.requests) request.pendingAtStop = request.status === 'pending'
-  await meetings.stopMeeting()
-  const deadline = performance.now() + (assistant === 'claude' || tier === 'audio' ? 330000 : 10000)
-  while (isPostProcessing(meetingId) && performance.now() < deadline) await sleep(20)
-  if (isPostProcessing(meetingId)) throw new Error('Post-processing deadline exceeded')
   const saved = getMeeting(meetingId)
   evidence.push({
     kind: 'summary',

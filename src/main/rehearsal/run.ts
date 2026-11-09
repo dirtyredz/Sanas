@@ -78,6 +78,7 @@ export async function runRehearsal(): Promise<void> {
     const { createStepExecutor } = await import('./runner/steps')
     const { pumpClock, sleep } = await import('./runner/clock')
     const { finishReport, writeReport } = await import('./runner/report')
+    const { stopMeetingAndWait } = await import('./runner/shutdown')
     cleanup = async () => {
       if (meetings.currentState().meetingId !== null) await meetings.stopMeeting()
       screens.close()
@@ -155,6 +156,7 @@ export async function runRehearsal(): Promise<void> {
       evidence,
       executor,
     })
+    const { liveRows, stoppedMs } = await stopMeetingAndWait({ options, model, meetingId, now })
     const result = await finishReport({
       options,
       collected,
@@ -162,6 +164,8 @@ export async function runRehearsal(): Promise<void> {
       model,
       screens,
       meetingId,
+      liveRows,
+      stoppedMs,
       now,
       batchCount: () => batchCount,
       taskErrors,
