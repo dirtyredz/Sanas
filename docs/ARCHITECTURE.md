@@ -4,26 +4,6 @@ _How the system works. For code shape, see [../STRUCTURE.md](../STRUCTURE.md)._
 
 ## Overview
 
-Latency round 3 extends the existing assistance/run observers, without a database change:
-run records now include a tracker `sessionId`, meeting/run/stored suggestion IDs, effective
-profile/model/token budget/effort (custom model IDs become `custom`), classifier start/end
-offsets, SDK request dispatch, first protocol event, first text, fetch attempt/retry counts,
-promotion and readable broadcast. Terminal outcomes and discard reasons stay separate.
-`providerPolicy` records the actual wire effort (including omitted) and thinking mode;
-the profile's requested effort is kept separately. Records also carry cumulative overflow
-and explicit linked/missing/not-applicable run correlation.
-`candidateTerminal` identifies the final candidate outcome; open dependent runs retain its
-identity even when a fallback settles first. Request mismatch evidence lists only bounded
-categories (`user-content`, `grounding-context`, `model-profile`, `carried-turns`, `image`,
-`other`); user content combines transcript, told stories and meeting context.
-
-The overlay acknowledges readable committed content through typed `SuggestionVisibility`
-IPC. Main stamps receipt and checks window visibility. The same tracker emits bounded
-`visibility` records keyed by session/meeting/run, including hidden/unselected states;
-these are not answer runs. Visible rAF receipt duration is relative to readable broadcast.
-No renderer clock is subtracted from main's clock. Acoustic clock calibration is still
-unavailable; the raw audio cursor gap remains a proxy, not calibrated speech-end latency.
-
 The **Mock interview** tab starts a practice meeting for a chosen job using the normal
 settings, userData, recording and STT lifecycle. The shared renderer Start helper opens This PC
 mic + loopback before typed mock IPC calls the existing serialized meeting service. Stereo is
@@ -227,6 +207,30 @@ Mic (getUserMedia, renderer)
   `summarizeLatency()` (latency-summary.ts) gives counts and medians per "verdict · path", speculation
   started/promoted/discarded with reasons, fallbacks, outcomes and missing/partial usage.
   Rehearsal reports and Mock feed the same tracker (docs/REHEARSAL.md).
+- **Answer latency evidence** (extends the observers above; no database change):
+  - Run records carry a tracker `sessionId`, meeting/run/stored-suggestion IDs, the effective
+    profile, model, token budget and effort (a custom model ID is recorded as `custom`),
+    classifier start/end offsets, SDK request dispatch, first protocol event, first text,
+    fetch attempt/retry counts, promotion and the readable broadcast. Terminal outcomes and
+    discard reasons stay separate. `providerPolicy` records the actual wire effort (including
+    omitted) and thinking mode; the profile's requested effort is kept separately. Records
+    also carry cumulative overflow and an explicit linked/missing/not-applicable run
+    correlation.
+  - `candidateTerminal` marks a candidate's final outcome; open dependent runs keep its
+    identity even when a fallback settles first. Request mismatch evidence lists only bounded
+    categories (`user-content`, `grounding-context`, `model-profile`, `carried-turns`,
+    `image`, `other`); user content combines transcript, told stories and meeting context.
+  - The overlay acknowledges readable committed content through the typed
+    `SuggestionVisibility` IPC (one `SUGGESTION_VISIBILITY_STATES` list in
+    `shared/live-controls/visibility.ts`); the handler passes only the window's visibility to
+    `acknowledgeVisibility()`, which stamps main's receipt. The tracker emits bounded
+    `visibility` records keyed by session/meeting/run, including hidden/unselected states;
+    these are not answer runs. The visible rAF receipt duration is relative to the readable
+    broadcast, and no renderer clock is subtracted from main's clock.
+  - Acoustic clock calibration is unavailable: the raw audio-cursor gap is a proxy, not
+    calibrated speech-end latency.
+  - `scripts/rehearsal/trials/summarize.mjs` reports copied logs with the same rules
+    (`latency-summary.ts`: delivered rule, whole-ms medians, stage lists).
 - **Turn-close measurement:** `TurnFinal` carries optional `ingressAt` (monotonic, stamped in
   `meetings/index.ts` before the synchronous insert) and `audioCursorMs`; `TurnAssembler` attaches
   `CompletedTurn.assembly` (ingress→assembly, last-final→close, boundary→close, timer lateness,
