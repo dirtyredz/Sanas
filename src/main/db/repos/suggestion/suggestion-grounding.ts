@@ -1,5 +1,5 @@
 import { readManualKind } from './manual-kind'
-import { getDb } from '../index'
+import { getDb } from '../../index'
 import type { Suggestion } from '@shared/types'
 
 export interface SuggestionGroundingRow extends Suggestion {

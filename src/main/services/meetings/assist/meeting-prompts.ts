@@ -4,7 +4,7 @@ import { meetingCandidateFacts } from '../context/meeting-facts'
 import type { MeetingContext } from '@shared/live-controls/types'
 import { getJob } from '../../../db/repos/job/jobs'
 import { listGlossary } from '../../../db/repos/job/glossary'
-import { saveMeetingGrounding } from '../../../db/repos/suggestion-grounding'
+import { saveMeetingGrounding } from '../../../db/repos/suggestion/suggestion-grounding'
 import { buildSystemPrompt } from '../../assistant/prompts'
 
 /** The meeting's prompt state: one system prompt (persona, job context and talking points,

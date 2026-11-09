@@ -1,13 +1,13 @@
 import type { Meeting, MergeResult } from '@shared/types'
 import { getDb } from '../../../../db'
 import { applyMerge, deleteMeeting, getMeeting } from '../../../../db/repos/meeting/meetings'
-import { maxSpeaker, reassignSegments } from '../../../../db/repos/segments'
+import { maxSpeaker, reassignSegments } from '../../../../db/repos/transcript/segments'
 import {
   clearSuggestionContextRevisions,
   reassignSuggestions,
   shiftSuggestionContextRevisions,
-} from '../../../../db/repos/suggestions'
-import { reassignSpeakerNames } from '../../../../db/repos/speakers'
+} from '../../../../db/repos/suggestion/suggestions'
+import { reassignSpeakerNames } from '../../../../db/repos/transcript/speakers'
 import { isPostProcessing } from '../../status/post-processing'
 import { removeAudioFile } from '../../records/remove'
 import { CONTEXT_REVISION_OFFSET, planMerge, type MergePart } from './merge-plan'

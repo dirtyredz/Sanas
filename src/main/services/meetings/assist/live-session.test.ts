@@ -22,13 +22,13 @@ vi.mock('../../../db/repos/job/glossary', () => ({ listGlossary: () => [] }))
 vi.mock('../../../db/repos/meeting/meeting-context', () => ({
   getMeetingContext: () => ({ meetingId: 1, revision: 0, text: f.initialContext }),
 }))
-vi.mock('../../../db/repos/suggestion-grounding', () => ({
+vi.mock('../../../db/repos/suggestion/suggestion-grounding', () => ({
   saveMeetingGrounding: f.saveMeetingGrounding,
   detailSource: vi.fn(),
   existingDetail: () => undefined,
 }))
-vi.mock('../../../db/repos/suggestions', () => ({ insertSuggestion: vi.fn() }))
-vi.mock('../../../db/repos/speakers', () => ({ speakerNameMap: () => new Map() }))
+vi.mock('../../../db/repos/suggestion/suggestions', () => ({ insertSuggestion: vi.fn() }))
+vi.mock('../../../db/repos/transcript/speakers', () => ({ speakerNameMap: () => new Map() }))
 vi.mock('../../../windows/broadcast', () => ({ broadcast: vi.fn() }))
 vi.mock('../status/live-meeting', () => ({ liveMeetingId: () => 1, isLiveMeeting: () => true }))
 vi.mock('../status/post-processing', () => ({

@@ -1,6 +1,6 @@
 import type { HistoryHit, Segment } from '@shared/types'
 import type { Excerpt } from './retrieval'
-import { speakerNameMap } from '../../db/repos/speakers'
+import { speakerNameMap } from '../../db/repos/transcript/speakers'
 import { formatClockMs, speakerLabel } from '../turns/transcript-format'
 const MAX_CHARS = 12000
 /** Excerpts → the text the model reads (one block per meeting, labelled lines in time

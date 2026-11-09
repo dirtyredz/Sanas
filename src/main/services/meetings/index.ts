@@ -25,7 +25,7 @@ import { isLiveMeeting, liveMeetingId, setLiveMeeting } from './status/live-meet
 import { resolveSpeakerIdentity } from './capture/channel-identity'
 import { CAPTURE_WARNING, CaptureHealth } from './capture/capture-health'
 import { LiveSession } from './assist/live-session'
-import { insertSegment, setSpeakerIsUser } from '../../db/repos/segments'
+import { insertSegment, setSpeakerIsUser } from '../../db/repos/transcript/segments'
 import { broadcast } from '../../windows/broadcast'
 import { createMeeting } from '../../db/repos/meeting/meeting-create'
 import { ensureDefaultJob } from '../../db/repos/job/jobs'

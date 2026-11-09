@@ -1,5 +1,5 @@
 import type { Admission, ManualRequest } from '@shared/live-controls/types'
-import type { SuggestionGroundingRow } from '../../../../db/repos/suggestion-grounding'
+import type { SuggestionGroundingRow } from '../../../../db/repos/suggestion/suggestion-grounding'
 import { COMPACT_CONTRACT } from '../../../assistant/compact-contract'
 import {
   AUDIENCE_INSTRUCTION,

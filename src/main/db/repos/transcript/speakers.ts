@@ -1,4 +1,4 @@
-import { getDb } from '../index'
+import { getDb } from '../../index'
 
 export interface SpeakerName {
   speaker: number

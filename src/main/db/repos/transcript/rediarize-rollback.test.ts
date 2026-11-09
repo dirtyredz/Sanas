@@ -1,19 +1,19 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import type { DatabaseSync } from 'node:sqlite'
-import { sqliteTestDatabase } from '../testing/sqlite-test-database'
+import { sqliteTestDatabase } from '../../testing/sqlite-test-database'
 import type { Database } from 'better-sqlite3'
 const mock = vi.hoisted(() => ({ db: null as unknown as Database, transcribe: vi.fn() }))
-vi.mock('../index', () => ({ getDb: () => mock.db }))
-vi.mock('../../config/settings', () => ({ loadSettings: () => ({ deepgramApiKey: 'stub' }) }))
-vi.mock('../../services/stt', () => ({ sttProvider: { transcribeFile: mock.transcribe } }))
+vi.mock('../../index', () => ({ getDb: () => mock.db }))
+vi.mock('../../../config/settings', () => ({ loadSettings: () => ({ deepgramApiKey: 'stub' }) }))
+vi.mock('../../../services/stt', () => ({ sttProvider: { transcribeFile: mock.transcribe } }))
 vi.mock('fs', () => ({ existsSync: () => true }))
-import { runMigrations } from '../migrations'
-import { createJob } from './job/jobs'
-import { createMeeting } from './meeting/meeting-create'
-import { updateMeetingAudioPath } from './meeting/meetings'
+import { runMigrations } from '../../migrations'
+import { createJob } from '../job/jobs'
+import { createMeeting } from '../meeting/meeting-create'
+import { updateMeetingAudioPath } from '../meeting/meetings'
 import { insertSegment, listSegments } from './segments'
 import { setSpeakerName, listSpeakerNames } from './speakers'
-import { rediarizeMeeting } from '../../services/meetings/postprocess/rediarize/rediarize'
+import { rediarizeMeeting } from '../../../services/meetings/postprocess/rediarize/rediarize'
 
 let sqlite: DatabaseSync
 let meetingId: number

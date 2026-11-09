@@ -8,8 +8,12 @@ import {
   deleteSegmentsForMeeting,
   insertSegment,
   listSegments,
-} from '../../../../db/repos/segments'
-import { clearSpeakerNames, setSpeakerName, speakerNameMap } from '../../../../db/repos/speakers'
+} from '../../../../db/repos/transcript/segments'
+import {
+  clearSpeakerNames,
+  setSpeakerName,
+  speakerNameMap,
+} from '../../../../db/repos/transcript/speakers'
 import { getDb } from '../../../../db'
 import { resolveSpeakerIdentity } from '../../capture/channel-identity'
 import { carrySpeakerNames, carryUserIdentity } from './speaker-carryover'

@@ -26,7 +26,7 @@ vi.mock('../../../db/repos/meeting/meetings', () => ({
   getMeeting: () => ({ id: 1, jobId: 2 }),
   updateMeetingSummary: vi.fn(),
 }))
-vi.mock('../../../db/repos/segments', () => ({
+vi.mock('../../../db/repos/transcript/segments', () => ({
   listSegments: () =>
     Array.from({ length: 5 }, (_, i) => ({
       speaker: 0,
@@ -38,7 +38,7 @@ vi.mock('../../../db/repos/segments', () => ({
 }))
 vi.mock('../../../db/repos/job/jobs', () => ({ getJob: () => null }))
 vi.mock('../../../db/repos/job/glossary', () => ({ listGlossary: () => [] }))
-vi.mock('../../../db/repos/speakers', () => ({ speakerNameMap: () => new Map() }))
+vi.mock('../../../db/repos/transcript/speakers', () => ({ speakerNameMap: () => new Map() }))
 vi.mock('../../../db/repos/meeting/meeting-context', () => ({
   getMeetingContext: () => ({ text: 'OWNER_CORRECTION' }),
 }))

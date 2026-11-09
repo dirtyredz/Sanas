@@ -111,7 +111,7 @@ vi.mock('./assist/live-session', () => ({
     relabel = vi.fn()
   },
 }))
-vi.mock('../../db/repos/segments', () => ({
+vi.mock('../../db/repos/transcript/segments', () => ({
   insertSegment: vi.fn(),
   setSpeakerIsUser: vi.fn(),
 }))

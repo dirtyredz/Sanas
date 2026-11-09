@@ -9,8 +9,8 @@ import { runMigrations } from '../../migrations'
 import { createJob, ensureDefaultJob } from '../job/jobs'
 import { createMeeting } from './meeting-create'
 import { getMeetingContext, hasMeetingContext, saveMeetingContext } from './meeting-context'
-import { insertSegment, listSegments } from '../segments'
-import { insertSuggestion, listSuggestions } from '../suggestions'
+import { insertSegment, listSegments } from '../transcript/segments'
+import { insertSuggestion, listSuggestions } from '../suggestion/suggestions'
 import { mergeMeetings } from '../../../services/meetings/postprocess/merge/merge'
 
 // Repository-local SQLite coverage for meeting context: revision 0 at creation, text-only

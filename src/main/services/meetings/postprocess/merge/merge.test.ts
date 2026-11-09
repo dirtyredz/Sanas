@@ -16,13 +16,16 @@ vi.mock('../../../../db/repos/meeting/meeting-grounding', () => ({
     hasBiography: !!f.grounding.resume || !!f.grounding.interviewProfile,
   }),
 }))
-vi.mock('../../../../db/repos/segments', () => ({ maxSpeaker: vi.fn(), reassignSegments: vi.fn() }))
-vi.mock('../../../../db/repos/suggestions', () => ({
+vi.mock('../../../../db/repos/transcript/segments', () => ({
+  maxSpeaker: vi.fn(),
+  reassignSegments: vi.fn(),
+}))
+vi.mock('../../../../db/repos/suggestion/suggestions', () => ({
   reassignSuggestions: vi.fn(),
   shiftSuggestionContextRevisions: vi.fn(),
   clearSuggestionContextRevisions: vi.fn(),
 }))
-vi.mock('../../../../db/repos/speakers', () => ({ reassignSpeakerNames: vi.fn() }))
+vi.mock('../../../../db/repos/transcript/speakers', () => ({ reassignSpeakerNames: vi.fn() }))
 vi.mock('../../../../db/repos/meeting/meeting-context', () => ({
   hasMeetingContext: vi.fn(),
   moveContextHistory: vi.fn(),

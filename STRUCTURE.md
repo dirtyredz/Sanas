@@ -397,7 +397,7 @@ main-process code belongs in a responsibility folder above, not beside them.
   before adding more.
 - Screen answers are stored as `typed` plus a `[Screen capture]` request-text marker because the
   `suggestions` CHECK constraint has no `capture` kind. A real `capture` kind needs a table rebuild
-  migration; the codec in `db/repos/manual-kind.ts` is the only place to change.
+  migration; the codec in `db/repos/suggestion/manual-kind.ts` is the only place to change.
 
 - `AssistRequest.model`, `AssistRequest.effort` and `AssistRequest.workspaceId` map closely to
   Anthropic-specific knobs, and the Claude provider derives a per-model "thinking off" value from a short `maxTokens`

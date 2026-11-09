@@ -1,4 +1,4 @@
-import { getDb } from '../index'
+import { getDb } from '../../index'
 import type { Segment } from '@shared/types'
 
 export function listSegments(meetingId: number): Segment[] {
