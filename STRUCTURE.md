@@ -200,15 +200,15 @@ sanas/
 - `src/renderer/src/lib/meeting/start-captured-meeting.ts` — shared capture acquisition/adoption/cleanup.
 - `src/shared/mock-interview/` — cross-process mock contracts.
 
-- `src/main/lifecycle/` — userData identity, capped/redacted main logging and normal startup wiring; normal startup is not loaded by smoke
+- `src/main/lifecycle/` — userData identity, capped/redacted main logging and normal startup wiring (`window-policy.ts`: quit when the main window closes, hide the overlay when a meeting goes idle); normal startup is not loaded by smoke
 - `src/main/diagnostics/` — isolated, headless packaged diagnostics used by `--smoke`
-- `src/main/windows/` — BrowserWindow builders and the main → all-windows broadcast (`app-window.ts`: `createAppWindow`/`loadAppPage`, the only definition of window webPreferences and dev-URL vs file loading; `overlay-bounds.ts`: pure on-screen fitting of saved overlay bounds; `main-window.ts`: create or reveal — restore/show/focus, never reload; `window-chrome.ts`: the hidden title bar + caption-button colours mirrored from tokens.css)
-- `src/main/ipc/` — typed IPC handlers; validate ingress and delegate, with no business logic (`windows.ts`: overlay toggle/resize/ghost, compose handshake and the parameterless Open Sanas; `validate.ts` also owns `requireMeetingStart`, the Start options check; `presentation-history.ts`: read-only historical slide markers; `hotkeys.ts`: global-shortcut status)
+- `src/main/windows/` — BrowserWindow builders and the main → all-windows broadcast (`app-window.ts`: `createAppWindow`/`loadAppPage`, the only definition of window webPreferences and dev-URL vs file loading; `overlay-bounds.ts`: pure on-screen fitting of saved overlay bounds; `main-window.ts`: create or reveal — restore/show/focus, never reload, reports close through `onMainWindowClosed`; `overlay-window.ts`: show/hide/toggle; `window-chrome.ts`: the hidden title bar + caption-button colours mirrored from tokens.css)
+- `src/main/ipc/` — typed IPC handlers; validate ingress and delegate, with no business logic (`windows.ts`: overlay toggle/resize/ghost, compose handshake and the parameterless Open Sanas; `validate.ts` also owns `requireMeetingStart`, the Start options check; `presentation-history.ts`: read-only historical slide markers; `hotkeys.ts`: global-shortcut status; `audio-chunk.ts`: the contained audio-chunk `.on` listener)
 - `src/main/` — process entry (`index.ts`, normal vs `--smoke` dispatch) and the display-media loopback handler (`system-audio.ts`)
 - `src/main/services/` — main-process services and provider seams
 - `src/main/services/stt/` — the swappable STT seam (`index.ts`, `types.ts`); `keyterm-budget.ts` holds Deepgram's keyterm limits so callers pass an ordered list and never a vendor budget; `endpointing.ts` the shared endpointing silence the scripted STT mirrors
 - `src/main/services/stt/deepgram/` — the Deepgram implementation behind the seam: provider and batch (`deepgram.ts`), socket lifecycle and PCM-anchored clock (`deepgram-session.ts`, `DeepgramSession`), stall watchdog (`deepgram-watchdog.ts`), stream URL (`deepgram-stream-url.ts`) and message normalization (`deepgram-events.ts`); only `stt/index.ts` (and the rehearsal runner's dynamic import) reach it
-- `src/main/services/assistant/classifier-verdict.ts` — pure tolerant-but-conservative verdict parsing, canonical `formatVerdict`, `isAcceptedVerdict` and the one `CLASSIFIER_FAILURE_REASONS` list and content-free malformed shapes; `claude-usage.ts` extracts Anthropic usage into `ProviderUsage` (missing = unknown) and `provider-usage.ts` holds the provider-neutral `reportUsage`
+- `src/main/services/assistant/classifier-verdict.ts` — pure tolerant-but-conservative verdict parsing, canonical `formatVerdict`, `isAcceptedVerdict` and the one `CLASSIFIER_FAILURE_REASONS` list and content-free malformed shapes; `claude-usage.ts` extracts Anthropic usage into `ProviderUsage` (missing = unknown); `provider-evidence.ts` holds the provider-neutral `reportUsage`/`reportTiming`, and `provider-error.ts` the neutral failure category a provider tags on its transport errors (failure-diagnostics reads it, never vendor class names)
 - `src/main/services/assistant/failure-diagnostics.ts` — allowlists provider failure metadata for classifier diagnostics (category incl. `connection`, error class `errorName`, status, request ID, model, elapsed); the assistance coordinator owns the suspension timer and publishes availability through MeetingState
 - `src/main/ipc/job-resume/` — `jobs.getResume`/`setResume` (validated by `validateResume`) and `resume-import.ts`, the native PDF/DOCX picker returning an unsaved draft; the renderer never supplies a filesystem path
 - `src/renderer/src/lib/meeting/start-selection.ts` — remembered Start selection persistence and the Interview default/override rule
@@ -227,7 +227,7 @@ sanas/
 - `src/main/services/meetings/context/candidate-data.ts` (and `candidate-keyterms.ts`: STT term extraction/interleave for resume and profile) — neutral escaping and delimited prompt framing for resume (`candidateFacts`) and Interview profile (`interviewProfileFacts`); so `resume/` and the profile never import each other
 - `src/main/services/meetings/context/meeting-facts.ts` — combines a `MeetingGrounding` into the candidate-facts block (resume first); `profile.ts` — `interviewProfileSnapshot`, Start selection of the Settings profile; `start-request.ts` — `StartRequest` (the renderer's `MeetingStartOptions` plus main-only `practice`); `start-grounding.ts` — `resolveStartGrounding`, the selected job's saved resume (none for Unsorted) plus the profile, resolved inside serialized Start for Live and Mock
 - `src/main/services/meetings/presentation/` — historical slide-marker formatting for summaries (presentation mode retired 2026-11-04)
-- `src/main/services/meetings/status/` — live-meeting identity, post-processing guards and `filing.ts` (historical job filing; refuses a live meeting)
+- `src/main/services/meetings/status/` — live-meeting identity, post-processing guards (both expose `on…Change` signals via `change-signal.ts`, so the updates service re-broadcasts without polling) and `filing.ts` (historical job filing; refuses a live meeting)
 - `src/main/services/meetings/summary/` — meeting summaries, structured output handling and summary email
 - `src/main/services/meetings/rediarize/` — batch re-diarization and speaker identity/name carry-over
 - `src/main/services/meetings/merge/` — split-recording merge planning and application
@@ -342,6 +342,10 @@ main-process code belongs in a responsibility folder above, not beside them.
   `.workspace-actions` sit in `overlay-panels.css` while the workspace frame is in `overlay-shell.css`.
 - `services/assistant/` has 15 entries; a `classifier/` subfolder for `classifier.ts`,
   `classifier-verdict.ts` and `failure-diagnostics.ts` is the natural next split.
+- The provider-neutral seam still carries Anthropic vocabulary: `ProviderTiming`'s `'policy'` variant
+  (`assistant/types.ts`) names Anthropic's `effort` levels and `thinking` modes (`between_tools`). Widen
+  it to opaque provider-tagged strings when a second `AssistantProvider` arrives; until then
+  `claude.ts` computes one `wirePolicy()` per request for both the body and the event.
 - `services/meetings/` and `services/assistant/` are both broad (many files plus subfolders);
   group by lifecycle vs. policy before adding more siblings. `meetings/assist/` holds 17 code files
   (over the 12 cap) after `latency.ts`; a split into automatic (live-assistance, ledger,

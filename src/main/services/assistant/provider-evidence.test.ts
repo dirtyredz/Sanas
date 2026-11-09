@@ -22,7 +22,7 @@ vi.mock('@anthropic-ai/sdk', () => ({
 
 import { claudeProvider } from './claude'
 import { usageFromAnthropic } from './claude-usage'
-import { reportUsage } from './provider-usage'
+import { reportUsage } from './provider-evidence'
 import type { ProviderUsage } from './types'
 
 const base = {

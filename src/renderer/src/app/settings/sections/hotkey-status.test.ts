@@ -6,6 +6,7 @@ const keys = (overlay: string): Record<HotkeyAction, string> => ({
   overlayHotkey: overlay,
   assistHotkey: 'Control+Shift+Enter',
   captureHotkey: 'Control+Shift+S',
+  pauseHotkey: 'Control+Shift+P',
   composeHotkey: 'Control+Shift+K',
 })
 

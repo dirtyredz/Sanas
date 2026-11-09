@@ -2,8 +2,8 @@
 id: dk-fa90ae92
 type: task
 created: 2026-11-04
-status: todo
-since: 2026-11-04
+status: done
+since: 2026-11-09
 area: ci
 priority: P2
 rank: zzzzzzzzzzzzzzzzzzzz

@@ -2,8 +2,8 @@
 id: dk-1ead6d6f
 type: task
 created: 2026-11-03
-status: todo
-since: 2026-11-03
+status: done
+since: 2026-11-09
 area: assistant
 priority: P2
 rank: zzzzzzzzzzzzzzzzzy

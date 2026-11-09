@@ -99,16 +99,23 @@ it('installation errors remain recoverable without install-on-quit', async () =>
   service.stopUpdates()
 })
 
-it('smoke initializes no updater even when packaged', async () => {
-  process.argv.push('--smoke')
-  try {
-    const service = await import('./service')
-    service.startUpdates()
-    expect(mock.check).not.toHaveBeenCalled()
-    expect(vi.getTimerCount()).toBe(0)
-  } finally {
-    process.argv.splice(process.argv.lastIndexOf('--smoke'), 1)
-  }
+it('re-broadcasts when a restart guard changes, without polling', async () => {
+  const service = await import('./service')
+  const live = await import('../../meetings/status/live-meeting')
+  service.startUpdates()
+  await service.checkForUpdates()
+  events.emit('update-downloaded', { version: '0.1.1' })
+  mock.broadcast.mockClear()
+  live.setLiveMeeting(7)
+  expect(mock.broadcast).toHaveBeenCalledOnce()
+  expect(service.getUpdateState().canRestart).toBe(false)
+  live.setLiveMeeting(null)
+  expect(mock.broadcast).toHaveBeenCalledTimes(2)
+  expect(service.getUpdateState().canRestart).toBe(true)
+  service.stopUpdates()
+  live.setLiveMeeting(8)
+  expect(mock.broadcast).toHaveBeenCalledTimes(2)
+  live.setLiveMeeting(null)
 })
 it('preserves recoverable error state when installer emits error synchronously', async () => {
   const service = await import('./service')

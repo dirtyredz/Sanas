@@ -226,6 +226,7 @@ export const sampleSettings: SettingsView = {
   overlayHotkey: 'CommandOrControl+Shift+Space',
   assistHotkey: 'CommandOrControl+Shift+Enter',
   captureHotkey: 'Control+Shift+S',
+  pauseHotkey: 'Control+Shift+P',
   audioDeviceId: '',
   recordAudio: true,
   meetingSource: 'elsewhere',

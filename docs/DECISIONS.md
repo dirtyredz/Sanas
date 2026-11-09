@@ -2,6 +2,25 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-11-09 — Pause/resume hotkey: pause in main, resume through the window
+
+Global `pauseHotkey` (Ctrl+Shift+P). Pause is main's own call (`togglePause`); the window's mic already
+stops whenever the meeting leaves `live`. Resume cannot be main-only: capture (getUserMedia and the
+loopback) is opened by the renderer, and main refuses a topology the meeting did not start with, so a
+paused meeting broadcasts `MeetingResumeRequest` and `LiveMeetingPage` runs the same Resume as its button.
+Rejected: main reopening the mic (capture ownership is renderer-side), and a hotkey that only pauses (the
+interruption ends and the user would be back at the mouse). Repeat-guarded for 1 s like capture.
+
+## 2026-11-09 — Closing the main window quits Sanas
+
+The main window is the app. The overlay and mock windows are BrowserWindows too, so
+`window-all-closed` never fires while one is open; `lifecycle/window-policy.ts` quits when the
+main window closes (`before-quit` still ends a running mock first). Rejected: a tray/background
+mode, and hiding the main window instead of quitting. A live non-mock meeting at quit is left
+for `closeDanglingMeetingsAtStartup`. The same module hides the overlay when a meeting goes
+idle (Stop, overlay Stop, end of a mock) by subscribing to meeting state, so
+`services/meetings` no longer imports the overlay window.
+
 ## 2026-11-09 — Keep Full; retain 600 ms endpoint after continuation fixtures
 
 Owner ruling: Full stays. Do not change saved settings, defaults, Full's Opus model,

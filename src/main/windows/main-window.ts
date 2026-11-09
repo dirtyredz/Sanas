@@ -1,8 +1,15 @@
-import { app, BrowserWindow } from 'electron'
+import type { BrowserWindow } from 'electron'
 import { createAppWindow, loadAppPage } from './app-window'
 import { mainWindowChromeOptions } from './window-chrome'
 
 let mainWindow: BrowserWindow | null = null
+let closedHandler: (() => void) | undefined
+
+/** What happens when the main window closes is app policy (lifecycle/start.ts registers it);
+ *  this module only owns the window. */
+export function onMainWindowClosed(handler: () => void): void {
+  closedHandler = handler
+}
 
 /** True when an IPC sender is the library window (privileged job deletion/import). */
 export function isMainWindowSender(id: number): boolean {
@@ -35,12 +42,9 @@ export function createMainWindow(): BrowserWindow {
   })
 
   mainWindow.on('ready-to-show', () => mainWindow?.show())
-  // The main window is the app: the overlay and mock windows are BrowserWindows too, so
-  // 'window-all-closed' never fires while one is open. Closing it quits Sanas (the
-  // before-quit path in lifecycle/start.ts still ends a running mock first).
   mainWindow.on('closed', () => {
     mainWindow = null
-    app.quit()
+    closedHandler?.()
   })
 
   void loadAppPage(mainWindow, 'index.html')

@@ -81,3 +81,28 @@ it('fires one screen capture per deliberate press of a held shortcut', () => {
   registered[0]()
   expect(capture).toHaveBeenCalledTimes(2)
 })
+it('debounces the pause shortcut independently of capture, and leaves other shortcuts unguarded', () => {
+  const registered: (() => void)[] = []
+  let now = 0
+  const pause = vi.fn()
+  const capture = vi.fn()
+  const overlay = vi.fn()
+  registerShortcuts(
+    (_key, cb) => {
+      registered.push(cb)
+      return true
+    },
+    { pauseHotkey: 'A', captureHotkey: 'B', overlayHotkey: 'C' },
+    { pauseHotkey: pause, captureHotkey: capture, overlayHotkey: overlay },
+    vi.fn(),
+    () => now,
+  )
+  registered.forEach((cb) => cb())
+  now = 300
+  registered.forEach((cb) => cb()) // auto-repeat
+  now = 1200
+  registered[0]()
+  expect(pause).toHaveBeenCalledTimes(2)
+  expect(capture).toHaveBeenCalledTimes(1)
+  expect(overlay).toHaveBeenCalledTimes(2)
+})

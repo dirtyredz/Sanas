@@ -7,11 +7,19 @@
 // removal, used by retention as well — so the fact lives here, on its own, with the
 // orchestrator as its only writer.
 
+import { createChangeSignal } from './change-signal'
+
 let live: number | null = null
+const changed = createChangeSignal()
+
+/** Fires after the live meeting is set or cleared. */
+export const onLiveMeetingChange = changed.subscribe
 
 /** Called by the orchestrator, and by nothing else. */
 export function setLiveMeeting(id: number | null): void {
+  if (live === id) return
   live = id
+  changed.notify()
 }
 
 export function liveMeetingId(): number | null {

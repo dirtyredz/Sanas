@@ -55,6 +55,8 @@ export const IPC = {
   // live events (main → all windows)
   TranscriptEvent: 'transcript:event',
   MeetingState: 'meeting:state',
+  /** The pause hotkey fired while paused: only the renderer can reopen the mic, so it resumes. */
+  MeetingResumeRequest: 'meeting:resume-request',
   SuggestionEvent: 'suggestion:event',
   SuggestionVisibility: 'suggestion:visibility',
   /** A meeting's stored record changed post-hoc (re-diarization) — reload views. */

@@ -3,10 +3,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const sdk = vi.hoisted(() => ({
   calls: [] as { body: Record<string, unknown>; options: Record<string, unknown> }[],
   clients: [] as Record<string, unknown>[],
+  failWith: null as Error | null,
 }))
 
 vi.mock('@anthropic-ai/sdk', () => ({
   default: class {
+    static APIConnectionError = class APIConnectionError extends Error {}
+    static APIConnectionTimeoutError = class APIConnectionTimeoutError
+      extends this.APIConnectionError {}
     messages = {
       stream: (body: Record<string, unknown>, options: Record<string, unknown>) => {
         sdk.calls.push({ body, options })
@@ -17,10 +21,13 @@ vi.mock('@anthropic-ai/sdk', () => ({
               callback()
             }
           },
-          finalMessage: async () => ({
-            stop_reason: 'end_turn',
-            content: [{ type: 'text', text: 'question' }],
-          }),
+          finalMessage: async () => {
+            if (sdk.failWith) throw sdk.failWith
+            return {
+              stop_reason: 'end_turn',
+              content: [{ type: 'text', text: 'question' }],
+            }
+          },
         }
       },
     }
@@ -31,6 +38,8 @@ vi.mock('@anthropic-ai/sdk', () => ({
 }))
 
 import { claudeProvider, requestOptions } from './claude'
+import { providerFailureCategory } from './provider-error'
+import Anthropic from '@anthropic-ai/sdk'
 
 const base = {
   apiKey: 'sk-test',
@@ -45,6 +54,7 @@ describe('Claude provider request options', () => {
   beforeEach(() => {
     sdk.calls = []
     sdk.clients = []
+    sdk.failWith = null
   })
 
   it('forwards a per-request retry limit and deadline', async () => {
@@ -199,5 +209,40 @@ describe('image input', () => {
     sdk.calls = []
     await claudeProvider.complete(base)
     expect(sdk.calls[0].body.messages).toEqual([{ role: 'user', content: 'turn' }])
+  })
+
+  it('the reported policy event always equals what the request body put on the wire', async () => {
+    const cases = [
+      { model: 'claude-haiku-5-5', maxTokens: 64 },
+      { model: 'claude-sonnet-5-5', maxTokens: 64 },
+      { model: 'claude-opus-5-5', maxTokens: 1200 },
+      { model: 'custom-model', maxTokens: 64 },
+    ]
+    for (const c of cases) {
+      sdk.calls = []
+      const timing = vi.fn()
+      await claudeProvider.complete({ ...base, ...c, effort: 'medium', onTiming: timing })
+      const policy = timing.mock.calls.map(([e]) => e).find((e) => e.kind === 'policy')
+      const body = sdk.calls[0].body as {
+        output_config?: { effort: string }
+        thinking?: { type: string }
+      }
+      expect(policy.effort).toBe(body.output_config?.effort ?? 'omitted')
+      expect(policy.thinking).toBe(body.thinking?.type ?? 'default')
+    }
+  })
+
+  it('tags SDK transport errors with a neutral category at the seam, timeout before connection', async () => {
+    const failures: [Error, string | undefined][] = [
+      [new Anthropic.APIConnectionTimeoutError(), 'timeout'],
+      [new Anthropic.APIConnectionError({}), 'connection'],
+      [new Error('other'), undefined],
+    ]
+    for (const [error, category] of failures) {
+      sdk.failWith = error
+      const caught = await claudeProvider.complete(base).catch((e) => e)
+      expect(caught).toBe(error) // same object: message, status and request id intact
+      expect(providerFailureCategory(caught)).toBe(category)
+    }
   })
 })

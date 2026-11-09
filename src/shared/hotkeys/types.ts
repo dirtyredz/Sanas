@@ -1,5 +1,6 @@
 // Global shortcut contracts shared by registration (main), the preload bridge and Settings.
-export type HotkeyAction = 'composeHotkey' | 'overlayHotkey' | 'assistHotkey' | 'captureHotkey'
+export type HotkeyAction =
+  'composeHotkey' | 'overlayHotkey' | 'assistHotkey' | 'captureHotkey' | 'pauseHotkey'
 export interface HotkeyStatus {
   action: HotkeyAction
   accelerator: string

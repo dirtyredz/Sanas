@@ -31,3 +31,11 @@ it('installs into the hooks directory resolved by Git for a linked worktree', ()
   expect(existsSync(join(hooks, 'pre-commit'))).toBe(true)
   expect(readFileSync(join(hooks, 'pre-commit'), 'utf8')).toContain('lint-staged')
 })
+
+it('the shipped pre-commit hook runs lint-staged, then the full typecheck when TypeScript is staged', () => {
+  const hook = readFileSync(join(__dirname, 'pre-commit.sh'), 'utf8')
+  expect(hook).toContain('npx --no-install lint-staged')
+  expect(hook).toContain('npm run --silent typecheck')
+  expect(hook).toContain('git diff --cached --name-only')
+  expect(hook).toContain('SANAS_SKIP_TYPECHECK')
+})

@@ -12,6 +12,7 @@
     "preview": "electron-vite preview",
     "dist": "electron-vite build && electron-builder --config electron-builder.yml --publish never",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "gate": "npm run typecheck && npm run lint",
     "rebuild": "electron-rebuild -f -w better-sqlite3",
     "postinstall": "electron-rebuild -f -w better-sqlite3",
     "lint": "oxlint",

@@ -158,6 +158,8 @@ const api = {
       ipcRenderer.on(IPC.MeetingState, listener)
       return () => ipcRenderer.removeListener(IPC.MeetingState, listener)
     },
+    /** The pause hotkey fired while paused: resume with a freshly opened capture. */
+    onResumeRequest: (cb: () => void): (() => void) => subscribe(IPC.MeetingResumeRequest, cb),
   },
   assist: {
     acknowledgeVisibility: (value: SuggestionVisibility): Promise<void> =>

@@ -32,7 +32,7 @@ import { createLiveControls } from './live-controls'
 import { CaptureRequests } from './assist/capture-requests'
 import { createScreenCapture } from '../screen-capture'
 import { CaptureDrafts } from './assist/capture-drafts'
-import { hideOverlay, overlayBounds } from '../../windows/overlay-window'
+import { overlayBounds } from '../../windows/overlay-window'
 
 // Orchestrates one live meeting at a time: STT session, persistence, event fan-out, and
 // lifecycle. Live assistance — the prompt window, shown headlines, system prompt and the
@@ -397,6 +397,15 @@ export function pauseMeeting(reason?: string): Promise<MeetingState> {
   })
 }
 
+/** The global pause hotkey. Pausing is main's own business (the window's mic stops itself
+ *  when the meeting leaves `live`). Resuming needs a freshly opened capture, which only the
+ *  renderer can make, so a paused meeting asks the window to run its Resume instead. */
+export async function togglePause(): Promise<void> {
+  const { status } = currentState()
+  if (status === 'live') await pauseMeeting()
+  else if (status === 'paused') broadcast(IPC.MeetingResumeRequest, null)
+}
+
 /** Reopens the connection on the same meeting, continuing its clock. The capture
  *  topology must match the one the meeting started with: the WAV header and the
  *  provider's channel mapping were both fixed when it began. */
@@ -480,7 +489,6 @@ export function stopMeeting(): Promise<MeetingState> {
             }),
       ]).then(() => clearPostProcessing(endedId))
     }
-    hideOverlay() // the meeting is over (Stop, overlay Stop, end of a mock); Pause never gets here
     return setState({ meetingId: null, status: 'idle' })
   })
 }
