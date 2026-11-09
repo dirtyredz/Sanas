@@ -1,4 +1,4 @@
-import type { ProviderUsage } from '../../assistant/types'
+import type { ProviderUsage } from '../services/assistant/types'
 
 export type RequestStatus = 'pending' | 'completed' | 'declined' | 'failed' | 'cancelled'
 

@@ -3,7 +3,7 @@ import type { RunObservation } from '../../meetings/observation/run-observation'
 import type { AssistDiagnostic } from '../../meetings/observation/diagnostics'
 import { LatencyTracker } from '../../meetings/assist/latency/latency'
 import type { LatencySummary } from '../../meetings/assist/latency/latency-summary'
-import { proseWords, type RequestOutcome } from '../../meetings/assist/outcomes'
+import { proseWords, type RequestOutcome } from '../../../diagnostics/request-outcome'
 import { liveTurnReport, type LiveTransition } from './report'
 import type { LiveEngine } from './engine'
 

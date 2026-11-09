@@ -12,7 +12,8 @@ import type {
   SttBatchTranscript,
 } from '../../../services/stt/types'
 import type { Step } from '../scenario/scenario'
-import { beginOutcome, turnSteps, type RequestOutcome } from './outcomes'
+import { beginOutcome, turnSteps } from './outcomes'
+import type { RequestOutcome } from '../../request-outcome'
 import { isNoSuggestion } from '@shared/live-controls/readable-suggestion'
 import { ENDPOINTING_MS } from '../../../services/stt/endpointing'
 

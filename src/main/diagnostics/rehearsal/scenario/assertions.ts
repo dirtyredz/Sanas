@@ -1,6 +1,6 @@
 import type { Expectation, Scenario } from './scenario'
 import { semanticMatch } from './semantics'
-import type { RequestOutcome } from '../outcomes/outcomes'
+import type { RequestOutcome } from '../../request-outcome'
 
 export interface Evidence {
   kind: Expectation['kind']
