@@ -118,6 +118,8 @@ export class LiveSession {
   begin(jobId: number): void {
     this.historyScope = null
     const job = getJob(jobId)
+    // Early exit mirroring ELIGIBLE_MEETING_SQL (db/repos/job/eligible-meeting.ts); "ended" cannot
+    // apply to the live meeting, so only the Unsorted and practice parts are tested here.
     if (!(job && isUnsortedJob(job)) && !getMeeting(liveMeetingId()!)?.practice) {
       this.historyScope = {
         meetingId: liveMeetingId()!,

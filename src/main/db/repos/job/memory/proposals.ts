@@ -1,31 +1,31 @@
-import { UNSORTED_JOB_NAME } from '@shared/jobs/unsorted'
-import { createHash, randomUUID } from 'node:crypto'
-import type { JobMemoryView, MemoryProposal, MemoryReview } from '@shared/jobs/memory'
+import type { MemoryProposal, MemoryReview } from '@shared/jobs/memory'
 import { getDb } from '../../../index'
-import { getApprovedMemory, ordinaryJob, replaceMemory, validateMemory } from './approved'
+import { ELIGIBLE_MEETING_SQL } from '../eligible-meeting'
+import { replaceMemory } from './approved'
 
-export interface MemorySource {
+/** Persistence only. The review rules (staleness, skip, retry, view status) live in
+ *  services/jobs/memory; the one decision made here is the atomic compare-and-set of approval. */
+export interface MemorySourceRow {
   meetingId: number
   jobId: number
   title: string
   startedAt: string
   summary: string
   actions: string
-  fingerprint: string
 }
-export function memorySource(meetingId: number): MemorySource | null {
-  const row = getDb()
-    .prepare(
-      `SELECT m.id AS meetingId,m.job_id AS jobId,m.title,m.started_at AS startedAt,
+/** An eligible meeting that has a summary or action items, or null. */
+export function readMemorySource(meetingId: number): MemorySourceRow | null {
+  return (
+    (getDb()
+      .prepare(
+        `SELECT m.id AS meetingId,m.job_id AS jobId,m.title,m.started_at AS startedAt,
     coalesce(m.summary,'') AS summary,coalesce(m.action_items,'') AS actions
     FROM meetings m JOIN jobs j ON j.id=m.job_id
-    WHERE m.id=? AND m.ended_at IS NOT NULL AND m.practice=0 AND j.name<>'${UNSORTED_JOB_NAME}'
+    WHERE m.id=? AND ${ELIGIBLE_MEETING_SQL}
     AND (coalesce(m.summary,'')<>'' OR coalesce(m.action_items,'')<>'')`,
-    )
-    .get(meetingId) as Omit<MemorySource, 'fingerprint'> | undefined
-  return row
-    ? { ...row, fingerprint: createHash('sha256').update(JSON.stringify(row)).digest('hex') }
-    : null
+      )
+      .get(meetingId) as MemorySourceRow | undefined) ?? null
+  )
 }
 const columns = `p.meeting_id AS meetingId,p.job_id AS jobId,m.title,m.started_at AS startedAt,
   p.fingerprint,p.base_revision AS baseRevision,p.generation,p.text,p.status`
@@ -36,50 +36,51 @@ export function getProposal(meetingId: number): MemoryProposal | undefined {
     )
     .get(meetingId) as MemoryProposal | undefined
 }
-export function validProposal(p: MemoryProposal): boolean {
-  const source = memorySource(p.meetingId)
-  return (
-    !!source &&
-    source.jobId === p.jobId &&
-    source.fingerprint === p.fingerprint &&
-    getApprovedMemory(p.jobId).revision === p.baseRevision
-  )
-}
-export function memoryView(jobId: number): JobMemoryView {
-  const proposals = getDb()
+/** Stored (not yet staleness-checked) proposals still awaiting a decision, oldest meeting first. */
+export function openProposals(jobId: number): MemoryProposal[] {
+  return getDb()
     .prepare(
       `SELECT ${columns} FROM job_memory_proposals p JOIN meetings m ON m.id=p.meeting_id WHERE p.job_id=? AND p.status NOT IN ('approved','dismissed') ORDER BY m.started_at,m.id`,
     )
     .all(jobId) as MemoryProposal[]
-  return {
-    approved: getApprovedMemory(jobId),
-    eligible: ordinaryJob(jobId),
-    proposals: proposals.map((p) => ({ ...p, status: validProposal(p) ? p.status : 'stale' })),
-  }
 }
-export function beginProposal(source: MemorySource, retry = false): MemoryProposal | null {
-  const old = getProposal(source.meetingId)
-  if (!retry && old?.fingerprint === source.fingerprint && old.status !== 'stale') return null
-  const revision = getApprovedMemory(source.jobId).revision
+/** Upserts the meeting's proposal as a fresh `generating` row under a new generation id. */
+export function startProposal(
+  source: { meetingId: number; jobId: number; fingerprint: string },
+  baseRevision: number,
+  generation: string,
+): MemoryProposal {
   getDb()
     .prepare(
       `INSERT INTO job_memory_proposals(meeting_id,job_id,fingerprint,base_revision,generation,status)
     VALUES (?,?,?,?,?,'generating') ON CONFLICT(meeting_id) DO UPDATE SET job_id=excluded.job_id,
     fingerprint=excluded.fingerprint,base_revision=excluded.base_revision,generation=excluded.generation,text='',status='generating'`,
     )
-    .run(source.meetingId, source.jobId, source.fingerprint, revision, randomUUID())
+    .run(source.meetingId, source.jobId, source.fingerprint, baseRevision, generation)
   return getProposal(source.meetingId)!
 }
-export function finishProposal(p: MemoryProposal, text: string | null): void {
-  if (text !== null) validateMemory(text)
-  const status = !validProposal(p) ? 'stale' : text === null ? 'failed' : 'pending'
+/** Settles a generating row; a later generation's row is left untouched. */
+export function settleProposal(
+  meetingId: number,
+  generation: string,
+  text: string,
+  status: 'pending' | 'failed' | 'stale',
+): void {
   getDb()
     .prepare(
       "UPDATE job_memory_proposals SET text=?,status=? WHERE meeting_id=? AND generation=? AND status='generating'",
     )
-    .run(text ?? '', status, p.meetingId, p.generation)
+    .run(text, status, meetingId, generation)
 }
-export function approveProposal(jobId: number, review: MemoryReview): void {
+/** Approval as one transaction: the stored proposal must still be the reviewed pending one for
+ *  this job, built on the reviewed revision, from a source whose current `sourceFingerprint`
+ *  equals the stored one (null = source gone or moved); then the approved text is replaced
+ *  (which re-checks the revision) and the proposal marked approved. */
+export function markApprovedIf(
+  jobId: number,
+  review: MemoryReview,
+  sourceFingerprint: string | null,
+): void {
   getDb().transaction(() => {
     const p = getProposal(review.meetingId)
     if (
@@ -88,7 +89,8 @@ export function approveProposal(jobId: number, review: MemoryReview): void {
       p.generation !== review.generation ||
       p.status !== 'pending' ||
       p.baseRevision !== review.revision ||
-      !validProposal(p)
+      sourceFingerprint === null ||
+      p.fingerprint !== sourceFingerprint
     )
       throw new Error('Proposal changed. Reload and regenerate before approval.')
     replaceMemory(jobId, review.revision, review.text)

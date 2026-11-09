@@ -1,4 +1,4 @@
-import { createLatencyFixture } from '../../db/repos/history/latency-fixture'
+import { createLatencyFixture } from '../../db/testing/latency-fixture'
 /** Fixture-only, invoked by trials/history-latency.mjs under Electron's Node ABI. */
 import Database from 'better-sqlite3'
 import { mkdirSync, writeFileSync, readdirSync } from 'node:fs'

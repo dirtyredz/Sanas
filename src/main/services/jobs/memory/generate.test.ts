@@ -18,14 +18,16 @@ const m = vi.hoisted(() => ({
 vi.mock('../../../config/settings', () => ({
   loadSettings: () => ({ anthropicApiKey: m.key, answerModel: 'answer' }),
 }))
-vi.mock('../../../db/repos/job/memory/approved', () => ({
+vi.mock('../../../db/repos/job/memory/approved', async (original) => ({
+  ...(await original<typeof import('../../../db/repos/job/memory/approved')>()),
   getApprovedMemory: () => ({ text: 'Approved only', revision: m.revision }),
 }))
 vi.mock('../../../db/repos/job/memory/proposals', () => ({
-  memorySource: () => m.source,
-  beginProposal: () => ({ generation: 'id' }),
-  finishProposal: m.finish,
+  getProposal: () => undefined,
+  startProposal: () => ({ meetingId: 1, generation: 'id' }),
+  settleProposal: m.finish,
 }))
+vi.mock('./source', () => ({ memorySource: () => m.source, proposalIsCurrent: () => true }))
 vi.mock('../../assistant/provider', () => ({ assistantProvider: { complete: m.complete } }))
 vi.mock('../../meetings/status/post-processing', () => ({
   whilePostProcessing: async (_id: number, f: () => Promise<void>) => {
@@ -51,7 +53,7 @@ it('rewrites with approved-only evidence, answer model and bounded timeout', asy
   expect(r).toMatchObject({ model: 'answer', timeoutMs: 30000 })
   expect(r.system).toContain('COMPLETE REPLACEMENT')
   expect(r.userContent).toContain('Approved only')
-  expect(m.finish).toHaveBeenCalledWith({ generation: 'id' }, 'New replacement')
+  expect(m.finish).toHaveBeenCalledWith(1, 'id', 'New replacement', 'pending')
   expect(m.holds).toBe(0)
 })
 it('serializes per job and releases counted holds after provider failure', async () => {
@@ -73,13 +75,13 @@ it('serializes per job and releases counted holds after provider failure', async
   await Promise.all([a, b])
   expect(m.complete).toHaveBeenCalledTimes(2)
   expect(m.holds).toBe(0)
-  expect(m.finish).toHaveBeenLastCalledWith({ generation: 'id' }, null)
+  expect(m.finish).toHaveBeenLastCalledWith(1, 'id', '', 'failed')
 })
 it('exposes missing keys as failed and preserves both bounded source sections', async () => {
   m.key = ''
   await generateMemory(1)
   expect(m.complete).not.toHaveBeenCalled()
-  expect(m.finish).toHaveBeenCalledWith({ generation: 'id' }, null)
+  expect(m.finish).toHaveBeenCalledWith(1, 'id', '', 'failed')
   const input = JSON.parse(
     memoryRewriteInput('', { ...m.source, summary: 's'.repeat(25000), actions: 'a'.repeat(25000) }),
   )

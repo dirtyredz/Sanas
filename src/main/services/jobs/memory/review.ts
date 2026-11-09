@@ -1,23 +1,33 @@
-import { saveMemory, validateMemory } from '../../../db/repos/job/memory/approved'
 import {
-  approveProposal,
+  getApprovedMemory,
+  ordinaryJob,
+  saveMemory,
+  validateMemory,
+} from '../../../db/repos/job/memory/approved'
+import {
   dismissProposal,
-  memorySource,
-  memoryView,
+  markApprovedIf,
+  openProposals,
 } from '../../../db/repos/job/memory/proposals'
 import { generateMemory, generatingMemory } from './generate'
+import { memorySource, proposalIsCurrent } from './source'
 import type { JobMemoryView, MemoryReview } from '@shared/jobs/memory'
 
-/** The memory-review workflow: IPC validates shapes, repos persist, this owns the rules. */
+/** The memory-review workflow: IPC validates shapes, repos persist, this owns the rules
+ *  (view status, approval currency, retry eligibility). */
 
-/** A persisted generating row after restart is retryable, never an eternal spinner. */
+/** Proposals whose source or approved base moved read as stale; a persisted generating row
+ *  with no live generation (after restart) reads as failed and retryable, never an eternal spinner. */
 export function reviewMemory(jobId: number): JobMemoryView {
-  const view = memoryView(jobId)
   return {
-    ...view,
-    proposals: view.proposals.map((p) =>
-      p.status === 'generating' && !generatingMemory(p.meetingId) ? { ...p, status: 'failed' } : p,
-    ),
+    approved: getApprovedMemory(jobId),
+    eligible: ordinaryJob(jobId),
+    proposals: openProposals(jobId).map((p) => {
+      if (!proposalIsCurrent(p)) return { ...p, status: 'stale' }
+      return p.status === 'generating' && !generatingMemory(p.meetingId)
+        ? { ...p, status: 'failed' }
+        : p
+    }),
   }
 }
 export function saveApprovedMemory(jobId: number, revision: number, text: string): JobMemoryView {
@@ -27,7 +37,8 @@ export function saveApprovedMemory(jobId: number, revision: number, text: string
 }
 export function approveMemoryProposal(jobId: number, review: MemoryReview): JobMemoryView {
   validateMemory(review.text)
-  approveProposal(jobId, review)
+  const source = memorySource(review.meetingId)
+  markApprovedIf(jobId, review, source?.jobId === jobId ? source.fingerprint : null)
   return reviewMemory(jobId)
 }
 export function dismissMemoryProposal(

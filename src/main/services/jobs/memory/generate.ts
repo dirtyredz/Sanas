@@ -1,9 +1,26 @@
+import { randomUUID } from 'node:crypto'
+import type { MemoryProposal } from '@shared/jobs/memory'
 import { loadSettings } from '../../../config/settings'
-import { getApprovedMemory } from '../../../db/repos/job/memory/approved'
-import { beginProposal, finishProposal, memorySource } from '../../../db/repos/job/memory/proposals'
+import { getApprovedMemory, validateMemory } from '../../../db/repos/job/memory/approved'
+import { getProposal, settleProposal, startProposal } from '../../../db/repos/job/memory/proposals'
 import { assistantProvider } from '../../assistant/provider'
 import { whilePostProcessing } from '../../meetings/status/post-processing'
 import { MEMORY_SYSTEM, memoryRewriteInput } from './prompts'
+import { memorySource, proposalIsCurrent, type MemorySource } from './source'
+
+/** Skips an unchanged, non-stale source unless retrying; otherwise starts a new generation
+ *  against the last approved revision. */
+function beginProposal(source: MemorySource, retry: boolean): MemoryProposal | null {
+  const old = getProposal(source.meetingId)
+  if (!retry && old?.fingerprint === source.fingerprint && old.status !== 'stale') return null
+  return startProposal(source, getApprovedMemory(source.jobId).revision, randomUUID())
+}
+/** Stale if the source or approved base moved meanwhile, failed when no text came back. */
+function finishProposal(p: MemoryProposal, text: string | null): void {
+  if (text !== null) validateMemory(text)
+  const status = !proposalIsCurrent(p) ? 'stale' : text === null ? 'failed' : 'pending'
+  settleProposal(p.meetingId, p.generation, text ?? '', status)
+}
 
 const queues = new Map<number, Promise<void>>()
 const active = new Map<number, number>()

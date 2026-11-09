@@ -1,6 +1,6 @@
-import { UNSORTED_JOB_NAME } from '@shared/jobs/unsorted'
 import type { Database } from 'better-sqlite3'
 import { ftsAnyOf } from '../../fts-query'
+import { ELIGIBLE_MEETING_SQL } from '../job/eligible-meeting'
 
 /** Bounded, lightweight projections of past same-job history. Ranking and shaping live in
  * services/history/live; these take a connection so the read-only worker can run them too. */
@@ -12,7 +12,7 @@ export interface HistoryHit {
   /** Segment start in ms; null for summary hits. */
   time: number | null
 }
-const SCOPE = `m.job_id=? AND m.id<>? AND m.ended_at IS NOT NULL AND m.practice=0 AND j.name<>'${UNSORTED_JOB_NAME}'`
+const SCOPE = `m.job_id=? AND m.id<>? AND ${ELIGIBLE_MEETING_SQL}`
 const LIMIT = 6
 
 export function transcriptHits(

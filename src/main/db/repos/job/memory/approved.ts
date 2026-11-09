@@ -1,15 +1,13 @@
-import { isUnsortedJob } from '@shared/jobs/unsorted'
 import { JOB_MEMORY_MAX_CHARS, type ApprovedMemory } from '@shared/jobs/memory'
 import { getDb } from '../../../index'
+import { ORDINARY_JOB_SQL } from '../eligible-meeting'
 
 export function validateMemory(text: unknown): asserts text is string {
   if (typeof text !== 'string' || text.length > JOB_MEMORY_MAX_CHARS || text.includes('\0'))
     throw new Error('Memory must be text of at most 3,000 characters.')
 }
 export function ordinaryJob(jobId: number): boolean {
-  const job = getDb().prepare('SELECT name FROM jobs WHERE id = ?').get(jobId) as
-    { name: string } | undefined
-  return !!job && !isUnsortedJob(job)
+  return !!getDb().prepare(`SELECT 1 FROM jobs j WHERE j.id = ? AND ${ORDINARY_JOB_SQL}`).get(jobId)
 }
 export function getApprovedMemory(jobId: number): ApprovedMemory {
   return (
