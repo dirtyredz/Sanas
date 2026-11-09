@@ -23,6 +23,7 @@ import { autoEmailSummary } from './summary/summary-email'
 import { clearPostProcessing, markPostProcessing } from './status/post-processing'
 import { isLiveMeeting, liveMeetingId, setLiveMeeting } from './status/live-meeting'
 import { resolveSpeakerIdentity } from './capture/channel-identity'
+import { SpeakerSession } from './capture/speaker-session'
 import { CAPTURE_WARNING, CaptureHealth } from './capture/capture-health'
 import { LiveSession } from './assist/live-session'
 import { insertSegment, setSpeakerIsUser } from '../../db/repos/transcript/segments'
@@ -67,7 +68,7 @@ let meetingJobId = 0 // remembered so a resume can re-send the job's keyterms
 let meetingChannels: ChannelCount = 1
 let paused = false
 let audioMsReceived = 0 // the meeting's clock: audio actually captured, in ms
-const userSpeakers = new Set<number>() // diarized indices pinned as "me"
+const speakers = new SpeakerSession()
 const lostRecordings = new Set<number>() // meetings whose WAV died while they were running
 let persistFailed = false // one warning per meeting, not one per line
 const captureHealth = new CaptureHealth()
@@ -111,11 +112,13 @@ export function currentState(): MeetingState {
   const meetingId = liveMeetingId()
   if (meetingId === null) return { meetingId: null, status: 'idle' }
   const noResume = practiceWithoutBiography(meetingId) ? { noResume: true } : {}
-  if (paused) return { meetingId, status: 'paused', ...noResume }
+  const identity = meetingChannels === 1 ? { speakerIdentity: speakers.status() } : {}
+  if (paused) return { meetingId, status: 'paused', ...noResume, ...identity }
   return {
     meetingId,
     status: 'live',
     ...noResume,
+    ...identity,
     ...(captureHealth.warned ? { captureWarning: CAPTURE_WARNING } : {}),
     ...(assistance.automaticUnavailable()
       ? {
@@ -132,6 +135,8 @@ function practiceWithoutBiography(meetingId: number): boolean {
 }
 
 function setState(state: MeetingState): MeetingState {
+  if (state.meetingId !== null && meetingChannels === 1)
+    state = { ...state, speakerIdentity: speakers.status() }
   if (state.meetingId !== null && practiceWithoutBiography(state.meetingId))
     state = { ...state, noResume: true }
   observeMeeting({ kind: 'state', value: state })
@@ -195,7 +200,17 @@ function handleTranscript(t: SttTranscript): void {
   const audioCursorMs = audioMsReceived
   // stereo: channel IS identity; mono: manual "that's me" pinning
   const stereo = meetingChannels === 2
-  const who = resolveSpeakerIdentity(t.channel, t.speaker, stereo, userSpeakers)
+  const before = speakers.status().currentSpeakerIds.length
+  const mapped = stereo ? t.speaker : speakers.map(t.speaker)
+  const who = resolveSpeakerIdentity(
+    t.channel,
+    mapped,
+    stereo,
+    speakers.pins,
+    speakers.status().identityNeedsConfirmation,
+  )
+  if (!stereo && speakers.status().currentSpeakerIds.length !== before)
+    setState({ ...currentState(), ...(lastError ? { error: lastError } : {}) })
   const ev: TranscriptEvent = {
     meetingId: id,
     isFinal: t.isFinal,
@@ -252,13 +267,22 @@ function handleTranscript(t: SttTranscript): void {
 function handleSignal(s: SttSignal): void {
   if (liveMeetingId() === null) return
   observeMeeting({ kind: 'signal', value: s })
-  if (s.kind === 'reset') assistance.connectionReset()
-  else if (s.kind === 'boundary') assistance.boundary(s.channel, s.atMs, s.source)
+  if (s.kind === 'reset') {
+    resetSpeakerConnection()
+    assistance.connectionReset()
+  } else if (s.kind === 'boundary') assistance.boundary(s.channel, s.atMs, s.source)
   else {
     const stereo = meetingChannels === 2
     const role = stereo ? resolveSpeakerIdentity(s.channel, -1, true).role : 'unknown'
     assistance.activity(s.channel, s.atMs, role)
   }
+}
+
+function resetSpeakerConnection(): void {
+  if (meetingChannels !== 1) return
+  speakers.resetConnection()
+  assistance.setIdentityNeedsConfirmation(speakers.status().identityNeedsConfirmation)
+  setState({ ...currentState(), ...(lastError ? { error: lastError } : {}) })
 }
 
 /** Opens an STT connection for the current meeting, continuing the meeting's clock.
@@ -333,7 +357,8 @@ export function startMeeting(
     paused = false
     audioMsReceived = 0
     persistFailed = false
-    userSpeakers.clear()
+    speakers.clear()
+    assistance.setIdentityNeedsConfirmation(false)
     captureHealth.reset()
     live.begin(job) // window, headlines and prompt are per meeting; a resume keeps them
 
@@ -433,6 +458,7 @@ export function resumeMeeting(channels: ChannelCount): Promise<MeetingState> {
       })
     }
     try {
+      resetSpeakerConnection()
       session = await openSession(meetingId, deepgramApiKey, Math.round(audioMsReceived))
     } catch (e) {
       session = null
@@ -547,10 +573,13 @@ export function pinSpeaker(speaker: number, isUser: boolean): void {
   if (meetingId !== null && meetingChannels === 2) {
     throw new Error('This meeting uses mic + system audio — voices are identified by channel.')
   }
-  if (isUser) userSpeakers.add(speaker)
-  else userSpeakers.delete(speaker)
+  if (meetingId === null) throw new Error('No current meeting.')
+  speakers.validate(speaker)
+  setSpeakerIsUser(meetingId, speaker, isUser)
+  speakers.pin(speaker, isUser)
   live.relabel(speaker, isUser) // the prompt window and pending work follow the new identity
-  if (meetingId !== null) setSpeakerIsUser(meetingId, speaker, isUser)
+  assistance.setIdentityNeedsConfirmation(speakers.status().identityNeedsConfirmation)
+  setState({ ...currentState(), ...(lastError ? { error: lastError } : {}) })
 }
 
 export const meetingAudioMs = (): number => audioMsReceived

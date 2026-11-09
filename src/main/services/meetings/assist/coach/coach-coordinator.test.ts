@@ -23,6 +23,24 @@ describe('live assistance: next point while the user talks', () => {
     expect(t.generations).toHaveLength(0)
   })
 
+  it('cancels pending coaching and excludes uncertain speech until confirmation', async () => {
+    const t = setup({ coachWhileTalking: true })
+    explain(t)
+    expect(t.generations).toHaveLength(1)
+    t.assist.setIdentityNeedsConfirmation(true)
+    expect(t.generations[0].req.signal?.aborted).toBe(true)
+    t.generations[0].d.resolve('Obsolete next point')
+    await vi.advanceTimersByTimeAsync(0)
+    t.assist.final(me(words(50), 22000, 45000))
+    await vi.advanceTimersByTimeAsync(30000)
+    expect(t.generations).toHaveLength(1)
+    expect(t.events).toEqual([])
+    t.assist.setIdentityNeedsConfirmation(false)
+    t.assist.final(me(words(50), 46000, 70000))
+    expect(t.generations).toHaveLength(2)
+    t.assist.halt()
+  })
+
   it('suggests a buffered next point on a long explanation', async () => {
     const t = setup({ coachWhileTalking: true })
     explain(t)

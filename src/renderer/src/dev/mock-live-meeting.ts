@@ -11,6 +11,9 @@ let state: MeetingState = { meetingId: null, status: 'idle' }
 let liveTimer: ReturnType<typeof setTimeout> | null = null
 let liveChannels = 1
 const pinned = new Set<number>()
+const currentSpeakers = new Set<number>()
+let speakerOffset = 0
+let identityNeedsConfirmation = false
 let suggestionSeq = 0
 let scriptAt = 0 // where the scripted meeting got to, so resume continues it
 let scriptTimeMs = 0
@@ -44,7 +47,17 @@ const SCRIPT: { speaker: number; user: boolean; text: string }[] = [
 export const getMeetingState = (): MeetingState => state
 
 export function setState(next: MeetingState): void {
-  state = next
+  state =
+    next.meetingId !== null && liveChannels === 1
+      ? {
+          ...next,
+          speakerIdentity: {
+            currentSpeakerIds: [...currentSpeakers],
+            selectedSpeakerIds: [...pinned],
+            identityNeedsConfirmation,
+          },
+        }
+      : next
   stateListeners.forEach((l) => l(state))
 }
 
@@ -58,8 +71,13 @@ function runScript(meetingId: number, i: number, t: number): void {
   scriptTimeMs = t
   const line = SCRIPT[i % SCRIPT.length]
   // stereo: the user is channel 0 → speaker -1, isUser; mono: a diarized index, pinned or not
-  const speaker = liveChannels === 2 && line.user ? -1 : line.speaker
-  const isUser = liveChannels === 2 ? line.user : pinned.has(line.speaker)
+  const speaker =
+    liveChannels === 2 && line.user ? -1 : line.speaker + (liveChannels === 1 ? speakerOffset : 0)
+  const isUser = liveChannels === 2 ? line.user : pinned.has(speaker)
+  if (liveChannels === 1) {
+    currentSpeakers.add(speaker)
+    setState(state)
+  }
   const words = line.text.split(' ')
   const partial = words.slice(0, Math.ceil(words.length / 2)).join(' ')
   const base = { meetingId, speaker, isUser, tStartMs: t, tEndMs: t + 3000 }
@@ -68,7 +86,7 @@ function runScript(meetingId: number, i: number, t: number): void {
     if (state.status !== 'live') return
     emit({ ...base, isFinal: true, text: line.text })
     // coach demo: the user is explaining, so one buffered next point arrives (start, then done)
-    if (i === 3) streamSuggestion('ambient', 'next-point')
+    if (i === 3 && !identityNeedsConfirmation) streamSuggestion('ambient', 'next-point')
     liveTimer = setTimeout(() => runScript(meetingId, i + 1, t + 4500), 1800)
   }, 1200)
 }
@@ -132,6 +150,9 @@ export const on =
 export function startScript(meetingId: number, channels: number): MeetingState {
   liveChannels = channels
   pinned.clear()
+  currentSpeakers.clear()
+  speakerOffset = 0
+  identityNeedsConfirmation = false
   setState({ meetingId, status: 'live' })
   scriptAt = 0
   scriptTimeMs = 0
@@ -153,6 +174,9 @@ export function pauseScript(): MeetingState {
 /** Continues the script where it stopped. */
 export function resumeScript(): MeetingState {
   const id = state.meetingId ?? 99
+  speakerOffset += 3
+  currentSpeakers.clear()
+  identityNeedsConfirmation ||= pinned.size > 0
   setState({ meetingId: id, status: 'live' })
   setTimeout(() => runScript(id, scriptAt, scriptTimeMs), 600)
   return state
@@ -165,6 +189,15 @@ export function stopScript(): MeetingState {
 }
 
 export function pinSpeaker(speaker: number, isUser: boolean): void {
+  if (
+    state.meetingId === null ||
+    liveChannels === 2 ||
+    speaker < 0 ||
+    (!currentSpeakers.has(speaker) && !pinned.has(speaker))
+  )
+    throw new Error('Unknown voice')
+  if (isUser && currentSpeakers.has(speaker)) identityNeedsConfirmation = false
   if (isUser) pinned.add(speaker)
   else pinned.delete(speaker)
+  setState(state)
 }

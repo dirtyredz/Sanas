@@ -129,6 +129,7 @@ export interface SuggestionEvent extends SuggestionMetadata {
 }
 
 export interface MeetingState {
+  speakerIdentity?: import('./meeting/speaker-identity').SpeakerIdentityStatus
   meetingId: number | null
   /** 'paused' keeps the meeting open with nothing being captured. */
   status: 'idle' | 'live' | 'paused' | 'error'

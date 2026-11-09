@@ -1,3 +1,7 @@
+import { DeepgramSession } from '../stt/deepgram/deepgram-session'
+import { FakeSocket } from '../stt/deepgram/recovery/fake-socket.test-support'
+import { writeAudio } from '../audio-store'
+import { insertSegment, setSpeakerIsUser } from '../../db/repos/transcript/segments'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { CAPTURE_WARNING } from './capture/capture-health'
 import { sttProvider } from '../stt'
@@ -96,6 +100,7 @@ vi.mock('./assist/live-session', () => ({
   LiveSession: class {
     assistance = {
       automaticUnavailable: () => false,
+      setIdentityNeedsConfirmation: vi.fn(),
       answerNow: vi.fn(),
       activity: vi.fn(),
       boundary: vi.fn(),
@@ -125,6 +130,8 @@ vi.mock('../../windows/overlay-window', () => ({
 
 import {
   currentState,
+  pinSpeaker,
+  meetingAudioMs,
   sendAudioChunk,
   startMeeting,
   pauseMeeting,
@@ -141,6 +148,94 @@ function silentLoopbackWithMicSpeech(ms: number): Buffer {
 }
 
 describe('meeting capture health', () => {
+  it('pin → outage → buffered audio → reconnect → re-pin preserves history and records once', async () => {
+    vi.useFakeTimers()
+    FakeSocket.instances = []
+    vi.stubGlobal('WebSocket', FakeSocket)
+    const rows: Parameters<typeof insertSegment>[0][] = []
+    vi.mocked(insertSegment).mockImplementation((row) => {
+      rows.push({ ...row })
+      return rows.length
+    })
+    vi.mocked(setSpeakerIsUser).mockImplementation((_meeting, speaker, isUser) => {
+      for (const row of rows) if (row.speaker === speaker) row.isUser = isUser
+    })
+    vi.mocked(writeAudio).mockClear()
+    vi.mocked(sttProvider.start).mockImplementationOnce(async (options) => {
+      const provider = new DeepgramSession(options)
+      const ready = provider.connect()
+      FakeSocket.instances[0].open()
+      await ready
+      return provider
+    })
+    const result = (text: string) => ({
+      type: 'Results',
+      is_final: true,
+      channel_index: [0, 1],
+      channel: {
+        alternatives: [
+          { transcript: text, words: [{ word: text, speaker: 0, start: 0, end: 0.5 }] },
+        ],
+      },
+    })
+    try {
+      await startMeeting(5, 1)
+      const first = FakeSocket.instances[0]
+      sendAudioChunk(Buffer.alloc(32000, 1))
+      first.message(result('Before'))
+      pinSpeaker(0, true)
+      const history = { ...rows[0] }
+      first.emit('close', { code: 1006 })
+      expect(currentState().speakerIdentity?.identityNeedsConfirmation).toBe(true)
+      sendAudioChunk(Buffer.alloc(32000, 2))
+      expect(meetingAudioMs()).toBe(2000)
+      await vi.advanceTimersByTimeAsync(1000)
+      const second = FakeSocket.instances[1]
+      second.open()
+      await vi.advanceTimersByTimeAsync(0)
+      expect(second.sent.filter(Buffer.isBuffer)).toEqual([Buffer.alloc(32000, 2)])
+      first.message(result('Retired'))
+      second.message(result('Buffered'))
+      expect(rows).toHaveLength(2)
+      expect(rows[1]).toMatchObject({ speaker: 1, isUser: false, tStartMs: 1000 })
+      expect(fakes.liveFinal.mock.calls.at(-1)![1].role).toBe('unknown')
+      pinSpeaker(0, true)
+      expect(currentState().speakerIdentity?.identityNeedsConfirmation).toBe(true)
+      vi.mocked(setSpeakerIsUser).mockImplementationOnce(() => {
+        throw new Error('Disk unavailable')
+      })
+      expect(() => pinSpeaker(1, true)).toThrow('Disk unavailable')
+      expect(currentState().speakerIdentity?.identityNeedsConfirmation).toBe(true)
+      expect(rows[1].isUser).toBe(false)
+      pinSpeaker(1, true)
+      expect(currentState().speakerIdentity?.identityNeedsConfirmation).toBe(false)
+      expect(rows[0]).toEqual(history)
+      expect(rows[1].isUser).toBe(true)
+      expect(meetingAudioMs()).toBe(2000)
+      expect(writeAudio).toHaveBeenCalledTimes(2)
+      await pauseMeeting()
+      await resumeMeeting(1)
+      expect(currentState().speakerIdentity?.identityNeedsConfirmation).toBe(true)
+      fakes.onTranscript!({
+        channel: 0,
+        speaker: 0,
+        isFinal: true,
+        text: 'Resumed',
+        tStartMs: 2000,
+        tEndMs: 2500,
+      })
+      expect(rows[2]).toMatchObject({ speaker: 2, isUser: false })
+      first.message(result('Stale session'))
+      expect(rows).toHaveLength(3)
+      expect(() => pinSpeaker(999, true)).toThrow('current meeting')
+    } finally {
+      await stopMeeting()
+      vi.mocked(insertSegment).mockReset()
+      vi.mocked(setSpeakerIsUser).mockReset()
+      vi.useRealTimers()
+      vi.unstubAllGlobals()
+    }
+  })
   beforeEach(() => {
     fakes.currentMeetingId = null
     fakes.onTranscript = null

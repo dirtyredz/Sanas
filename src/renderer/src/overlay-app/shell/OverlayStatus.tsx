@@ -50,11 +50,19 @@ export function OverlayStatus({
     !meeting.captureWarning &&
     !meeting.automaticAnswerWarning &&
     !meeting.noResume &&
+    !meeting.speakerIdentity?.identityNeedsConfirmation &&
     !capture.notice
   )
     return null
   return (
     <div className="overlay-status" aria-live="polite">
+      {meeting.speakerIdentity?.identityNeedsConfirmation && (
+        <Expandable
+          tone="warn"
+          text="Identify your voice again. Automatic answers and Next point are paused; Answer now still works."
+          action={<OpenSanasButton />}
+        />
+      )}
       {meeting.noResume && <p className="ov-status ov-status--info">No resume or profile</p>}
       {error && <Expandable tone="error" text={error} action={<OpenSanasButton />} />}
       {meeting.automaticAnswerWarning && (

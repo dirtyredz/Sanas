@@ -42,6 +42,12 @@ export function useTranscript(): {
   useEffect(() => {
     // Clear for a new meeting only; resuming a paused one keeps what is on screen.
     if (state.status === 'live' && state.meetingId !== shownMeetingId.current) setLines([])
+    else if (state.speakerIdentity) {
+      const selected = new Set(state.speakerIdentity.selectedSpeakerIds)
+      setLines((previous) =>
+        previous.map((line) => ({ ...line, isUser: selected.has(line.speaker) })),
+      )
+    }
     if (state.meetingId !== null) shownMeetingId.current = state.meetingId
   }, [state])
 

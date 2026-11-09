@@ -129,6 +129,12 @@ export class LiveAssistance {
     this.coach.cancel()
   }
   private active = false
+  private identityNeedsConfirmation = false
+
+  setIdentityNeedsConfirmation(required: boolean): void {
+    this.identityNeedsConfirmation = required
+    this.identityChanged()
+  }
   private epoch = 0
   private assembler = new TurnAssembler()
   private recentTurns: CompletedTurn[] = []
@@ -161,7 +167,7 @@ export class LiveAssistance {
       settings: () => deps.settings(),
       snapshot: () => deps.snapshot(),
       runner: deps.runner,
-      active: () => this.active,
+      active: () => this.active && !this.identityNeedsConfirmation,
       epoch: () => this.epoch,
       guard,
       candidatePending: () => this.candidatePending(),
@@ -248,7 +254,7 @@ export class LiveAssistance {
 
   final(f: TurnFinal): void {
     this.guard(() => {
-      if (!this.active) return
+      if (!this.active || this.identityNeedsConfirmation) return
       const now = this.deps.now()
       const { accepted, completed } = this.assembler.final(f, now)
       this.handleCompleted(completed, now)
@@ -267,7 +273,7 @@ export class LiveAssistance {
    *  and 'unknown' in mono, where activity says nothing about who is speaking. */
   activity(channel: number, atMs: number, role: IdentityRole): void {
     this.guard(() => {
-      if (!this.active) return
+      if (!this.active || this.identityNeedsConfirmation) return
       const now = this.deps.now()
       this.assembler.activity(channel, atMs, now)
       this.scheduleTurnTimer(now)
@@ -277,7 +283,7 @@ export class LiveAssistance {
 
   boundary(channel: number, atMs: number, source: 'endpoint' | 'utterance-end'): void {
     this.guard(() => {
-      if (!this.active) return
+      if (!this.active || this.identityNeedsConfirmation) return
       const now = this.deps.now()
       this.assembler.boundary(channel, atMs, source, now)
       this.scheduleTurnTimer(now)

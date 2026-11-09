@@ -1,6 +1,19 @@
 import { describe, expect, it } from 'vitest'
 import { resolveSpeakerIdentity } from './channel-identity'
 
+it('explicit mono uncertainty overrides a pin without changing stereo channel identity', () => {
+  expect(resolveSpeakerIdentity(0, 4, false, new Set([4]), true)).toEqual({
+    speaker: 4,
+    isUser: false,
+    role: 'unknown',
+  })
+  expect(resolveSpeakerIdentity(0, 4, true, new Set([4]), true)).toEqual({
+    speaker: -1,
+    isUser: true,
+    role: 'user',
+  })
+})
+
 describe('channel identity', () => {
   it('stereo: channel 0 is the user, channel 1 is others', () => {
     expect(resolveSpeakerIdentity(0, 2, true)).toEqual({ speaker: -1, isUser: true, role: 'user' })

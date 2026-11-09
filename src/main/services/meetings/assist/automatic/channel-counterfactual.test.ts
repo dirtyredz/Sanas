@@ -2,6 +2,42 @@ import { afterEach, expect, it, vi } from 'vitest'
 import { LiveAssistance } from './live-assistance'
 import { resolveSpeakerIdentity } from '../../capture/channel-identity'
 afterEach(() => vi.useRealTimers())
+it('invalidates a pending classifier before uncertain replacement speech can arrive', async () => {
+  vi.useFakeTimers()
+  const s = setup()
+  let resolve!: (value: Awaited<ReturnType<typeof s.classify>>) => void
+  s.classify.mockImplementationOnce(
+    () =>
+      new Promise((done) => {
+        resolve = done
+      }),
+  )
+  await question(s.assist, 1)
+  expect(s.classify).toHaveBeenCalledTimes(1)
+  s.assist.setIdentityNeedsConfirmation(true)
+  resolve({ status: 'classified', kind: 'question', addressee: 'me' })
+  await vi.advanceTimersByTimeAsync(5000)
+  expect(s.start).not.toHaveBeenCalled()
+  s.assist.halt()
+})
+it('suspends automatic admission through resume until re-pin, while Answer now stays available', async () => {
+  vi.useFakeTimers()
+  const s = setup()
+  s.assist.setIdentityNeedsConfirmation(true)
+  s.assist.connectionReset()
+  await question(s.assist, 1)
+  s.assist.halt()
+  s.assist.start()
+  await question(s.assist, 1, 2000)
+  expect(s.classify).not.toHaveBeenCalled()
+  s.assist.answerNow()
+  expect(s.start).toHaveBeenCalledTimes(1)
+  s.assist.setIdentityNeedsConfirmation(false)
+  await question(s.assist, 1, 4000)
+  expect(s.classify).toHaveBeenCalledTimes(1)
+  expect(s.start).toHaveBeenCalledTimes(2)
+  s.assist.halt()
+})
 function setup(fail = false) {
   const classify = vi.fn(async () =>
     fail

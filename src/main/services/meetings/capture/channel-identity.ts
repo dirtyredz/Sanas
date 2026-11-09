@@ -17,12 +17,14 @@ export function resolveSpeakerIdentity(
   stereo: boolean,
   /** mono fallback: the set of diarized indices the user has pinned as "me" */
   pinnedUserSpeakers?: ReadonlySet<number>,
+  identityNeedsConfirmation = false,
 ): SpeakerIdentity {
   if (stereo) {
     if (channel === 0) return { speaker: -1, isUser: true, role: 'user' }
     if (channel === 1) return { speaker, isUser: false, role: 'other' }
     return { speaker: -1, isUser: false, role: 'unknown' }
   }
+  if (identityNeedsConfirmation) return { speaker, isUser: false, role: 'unknown' }
   if (pinnedUserSpeakers?.has(speaker)) return { speaker, isUser: true, role: 'user' }
   return { speaker, isUser: false, role: speaker >= 0 ? 'other' : 'unknown' }
 }

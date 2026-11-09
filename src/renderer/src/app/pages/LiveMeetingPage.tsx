@@ -1,3 +1,4 @@
+import { LiveSpeakerControls } from '../meeting/speakers/LiveSpeakerControls'
 import { useJobHasResume } from '../../lib/meeting/useJobHasResume'
 import {
   contextDraftAfterStart,
@@ -45,7 +46,6 @@ export function LiveMeetingPage({ visible = true }: { visible?: boolean }): Reac
   const [busy, setBusy] = useState(false)
   const [micError, setMicError] = useState('')
   const [notice, setNotice] = useState('')
-  const [userSpeakers, setUserSpeakers] = useState<Set<number>>(new Set())
   const [jobs, setJobs] = useState<Job[]>([])
   const [jobId, setJobId] = useState<number | ''>('')
   const choiceChanged = useRef(false)
@@ -151,7 +151,6 @@ export function LiveMeetingPage({ visible = true }: { visible?: boolean }): Reac
         setInterviewOverride(undefined) // the next meeting starts from the job's default
         micRef.current = mic
         setSysAudio(mic.channels === 2)
-        setUserSpeakers(new Set())
         if (source === 'this-pc' && mic.channels === 1) {
           setNotice(
             'System audio is unavailable, so this is mic-only: every voice is diarized. Mark your own voice below.',
@@ -223,19 +222,6 @@ export function LiveMeetingPage({ visible = true }: { visible?: boolean }): Reac
     setBusy(false)
   }
 
-  const togglePin = (speaker: number): void => {
-    const isUser = !userSpeakers.has(speaker)
-    window.sanas.meeting.pinSpeaker(speaker, isUser)
-    setUserSpeakers((prev) => {
-      const next = new Set(prev)
-      if (isUser) next.add(speaker)
-      else next.delete(speaker)
-      return next
-    })
-  }
-
-  // mono only: in stereo the channel decides who is the user, nothing to pin
-  const speakers = sysAudio ? [] : [...new Set(lines.map((l) => l.speaker).filter((s) => s >= 0))]
   const sourceHint = SOURCES.find((s) => s.value === source)?.hint ?? ''
 
   return (
@@ -361,21 +347,11 @@ export function LiveMeetingPage({ visible = true }: { visible?: boolean }): Reac
       {state.captureWarning && <p className="notice warn">{state.captureWarning}</p>}
       {notice && <p className="notice warn">{notice}</p>}
 
-      {active && !sysAudio && (
-        <div className="speaker-bar">
-          <span className="muted">Which voice is you?</span>
-          {speakers.length === 0 && <span className="muted">— nothing heard yet</span>}
-          {speakers.map((s) => (
-            <button
-              key={s}
-              className={`chip ${userSpeakers.has(s) ? 'me' : ''}`}
-              onClick={() => togglePin(s)}
-              title="Click to mark this voice as you"
-            >
-              {userSpeakers.has(s) ? 'Me' : `Speaker ${s + 1}`}
-            </button>
-          ))}
-        </div>
+      {active && state.speakerIdentity && (
+        <LiveSpeakerControls
+          identity={state.speakerIdentity}
+          heardIds={lines.map((line) => line.speaker)}
+        />
       )}
 
       <div className="transcript" ref={scrollRef}>
@@ -389,7 +365,9 @@ export function LiveMeetingPage({ visible = true }: { visible?: boolean }): Reac
           </p>
         )}
         {lines.map((l, i) => {
-          const isUser = l.isUser || userSpeakers.has(l.speaker)
+          const isUser = state.speakerIdentity
+            ? state.speakerIdentity.selectedSpeakerIds.includes(l.speaker)
+            : l.isUser
           return (
             <p key={i} className={`line ${l.interim ? 'interim' : ''}`}>
               <span className="ts">{formatClock(l.tStartMs)}</span>
