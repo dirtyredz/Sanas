@@ -181,6 +181,7 @@ sanas/
 │   │       │   │   └── composer/           # Ask: draft state, submission, view
 │   │       │   ├── controls/               # overlay control wrappers and icons
 │   │       │   ├── layout/                 # opacity, divider ratio/drag, resize grips
+│   │       │   ├── styles/                 # the overlay's four CSS layers
 │   │       │   └── capture/                # capture action, status subscription, composer attachment state
 │   │       ├── audio/                      # mic/loopback capture and worklet bridge
 │   │       ├── lib/                        # pure shared renderer helpers
@@ -324,7 +325,8 @@ handler (`system-audio.ts`); new main-process code belongs in a responsibility f
 - `src/renderer/src/app/settings/sections/` — one component per Settings section, including independent update state and `InterviewProfileSection.tsx` (the one plain-text Interview profile editor), plus pure status wording (`hotkey-status.ts`, `update-status.ts`); `SettingsSectionPage.tsx` is the section index that renders the selected section.
 - `src/renderer/src/app/settings/frame/` — what every section shares: the section list (`settings-sections.ts`), card (`SettingsSection`), the index (`SettingsNav`, Up/Down), the animated scrolling pane (`SettingsPane`, owner of `SETTINGS_PANE_ID`), the draft state (`useSettingsDraft`: load, externally changed keys, save state machine), the pure patch/dirty/validation logic and page-ownership lists (`settings-draft.ts`) and the save bar.
 - `src/renderer/src/app/settings/frame/paging/` — the pager: pure page order (`page-order.ts`: `ORDER`, `selectPage`, `stepPage`, `pageDirection`) and the thin React state wrapper `useSettingsPager`.
-- `src/renderer/src/app/styles/` — layered shared stylesheet; no per-page stylesheets. `tokens.css` is shared by both windows; the library imports `index.css` (base → controls → shell → transcript → pages → settings), the overlay imports `overlay-app/overlay.css` (tokens → controls → `overlay-controls` → `overlay-shell` → `overlay-panels` → `overlay-suggestions`).
+- `src/renderer/src/app/styles/` — layered shared stylesheet; no per-page stylesheets. `tokens.css` is shared by both windows; the library imports `index.css` (base → controls → shell → transcript → pages → settings), the overlay imports `overlay-app/overlay.css` (shared tokens → controls, then its own `overlay-app/styles/` layers).
+- `src/renderer/src/overlay-app/styles/` — the overlay's four CSS layers, imported in order by `overlay.css`: `overlay-controls` → `overlay-shell` → `overlay-panels` → `overlay-suggestions`.
 - `src/renderer/src/interviewer-app/` — local OS speech, captions and shares; no provider/network calls.
 - `src/renderer/src/overlay-app/` — deliberately small, separate overlay bundle; `no-native-popups.test.ts` scans every file under it for native tooltip/select/dialog UI that would leak into screen shares.
 - `src/renderer/src/overlay-app/shell/` — `OverlaySession` (composes every controller once), `OverlayShell` layout, header, persistent status, preferences popover, window state, Answer every question.
@@ -404,9 +406,8 @@ a separate check, rather than ordinary Vitest loading of `better-sqlite3`.
 
 ## Structural debt
 
-- The overlay's CSS layers (`overlay-controls/-shell/-panels/-suggestions.css`) live in
-  `app/styles/` beside the library's, so the shared folder mixes two bundles; `.workspace-body` /
-  `.workspace-actions` sit in `overlay-panels.css` while the workspace frame is in `overlay-shell.css`.
+- `.workspace-body` / `.workspace-actions` sit in `overlay-app/styles/overlay-panels.css` while the
+  workspace frame is in `overlay-shell.css`.
 - The provider-neutral seam still carries Anthropic vocabulary: `ProviderTiming`'s `'policy'` variant
   (`assistant/types.ts`) names Anthropic's `effort` levels and `thinking` modes (`between_tools`). Widen
   it to opaque provider-tagged strings when a second `AssistantProvider` arrives; until then

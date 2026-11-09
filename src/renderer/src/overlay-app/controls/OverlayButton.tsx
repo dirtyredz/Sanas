@@ -9,7 +9,7 @@ export interface OverlayButtonProps extends ButtonHTMLAttributes<HTMLButtonEleme
   busy?: boolean
 }
 
-/** The overlay's one button vocabulary (styles in app/styles/overlay-controls.css). Every
+/** The overlay's one button vocabulary (styles in overlay-app/styles/overlay-controls.css). Every
  *  button is type="button" and outside the window's drag region. */
 export const OverlayButton = forwardRef<HTMLButtonElement, OverlayButtonProps>(
   function OverlayButton(

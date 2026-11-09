@@ -3,7 +3,7 @@
    the transparent overlay window. */
 @import '../app/styles/tokens.css';
 @import '../app/styles/controls.css';
-@import '../app/styles/overlay-controls.css';
-@import '../app/styles/overlay-shell.css';
-@import '../app/styles/overlay-panels.css';
-@import '../app/styles/overlay-suggestions.css';
+@import './styles/overlay-controls.css';
+@import './styles/overlay-shell.css';
+@import './styles/overlay-panels.css';
+@import './styles/overlay-suggestions.css';
