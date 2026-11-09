@@ -1,10 +1,10 @@
 import { ipcMain } from 'electron'
-import { IPC } from '../../shared/ipc'
+import { IPC } from '../../../shared/ipc'
 import {
   getUpdateState,
   checkForUpdates,
   restartToUpdate,
-} from '../services/platform/updates/service'
+} from '../../services/platform/updates/service'
 
 export function registerUpdatesIpc(): void {
   ipcMain.handle(IPC.UpdatesGet, () => getUpdateState())

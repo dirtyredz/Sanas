@@ -1,7 +1,7 @@
 import type { SuggestionMetadata } from '@shared/live-controls/types'
 import { readManualKind, storedManualKind } from './manual-kind'
 import { saveLegacyGrounding } from './suggestion-grounding'
-import { getDb } from '../index'
+import { getDb } from '../../index'
 import type { Suggestion, SuggestionPurpose, SuggestionTrigger } from '@shared/types'
 
 export function listSuggestions(meetingId: number): Suggestion[] {

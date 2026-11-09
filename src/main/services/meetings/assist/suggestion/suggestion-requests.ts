@@ -23,6 +23,9 @@ import type { SuggestionRequest } from './suggestion-runner'
 // self-contained SuggestionRequest. Pure; the snapshot is taken synchronously by the
 // caller, so nothing here can observe state that changes while a request runs.
 
+/** Frozen same-job evidence for one answer request; the history session implements it. */
+export type EvidenceHandle = { ready: Promise<string>; cancel(): void }
+
 /** The live meeting at the moment a request is built. */
 export interface AssistSnapshot {
   /** The meeting's current context text (owner-supplied, per meeting). */

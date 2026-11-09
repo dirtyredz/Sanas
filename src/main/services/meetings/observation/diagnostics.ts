@@ -67,20 +67,9 @@ export interface AssistDiagnostic {
   discard?: DiscardCategory
   mismatchCategories?: PromptMismatchCategory[]
 }
-let observer: ((event: AssistDiagnostic) => void) | undefined
-export function observeRehearsalAssistance(next?: (event: AssistDiagnostic) => void): void {
-  if (!process.argv.includes('--rehearsal'))
-    throw new Error('Rehearsal observer requires explicit mode')
-  observer = next
-}
 const bus = createObserverBus<AssistDiagnostic>()
 export const subscribeAssistance = bus.subscribe
 export function observeAssistance(event: AssistDiagnostic): void {
-  // Diagnostics must never alter admission or fail-closed behavior.
-  try {
-    observer?.(event)
-  } catch {
-    /* observer is best effort */
-  }
+  // Diagnostics must never alter admission or fail-closed behavior: the bus drops a throwing listener.
   bus.publish(event)
 }

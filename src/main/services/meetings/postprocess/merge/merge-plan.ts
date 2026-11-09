@@ -15,7 +15,7 @@
 // kept meeting's empty revision 0 and shifted by the part's time offset. Two or more parts
 // with context are refused — interleaving independent histories has no honest answer.
 
-import { parseSqliteDateTime } from '../../../db/sqlite-time'
+import { parseSqliteDateTime } from '../../../../db/sqlite-time'
 
 export interface MergePart {
   /** Recorded slides or slide events from before presentation mode was retired. */

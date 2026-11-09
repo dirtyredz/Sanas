@@ -9,7 +9,7 @@ import { createJob } from './job/jobs'
 import { createMeeting } from './meeting/meeting-create'
 import { getMeeting, listMeetings, deleteMeeting } from './meeting/meetings'
 import { searchSegments } from './history/transcripts'
-import { insertSegment } from './segments'
+import { insertSegment } from './transcript/segments'
 import { ftsAllOf, ftsAnyOf } from '../fts-query'
 import { listPracticeSessions, saveMockResult } from './practice'
 

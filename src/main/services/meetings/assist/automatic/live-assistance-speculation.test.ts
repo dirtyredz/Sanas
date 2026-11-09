@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ClassifierOutcome } from '../../../assistant/classifier/classifier'
 import { CONTINUATION_GRACE_MS } from '../../../turns/turn-assembler'
-import { me, otherTurn, setup, them } from './testing/live-assistance-harness'
+import { me, otherTurn, setup, them } from './live-assistance-harness'
 import { freezeEvidence } from '../../../history/live/session'
 
 const diagnostics = vi.hoisted(() => vi.fn())

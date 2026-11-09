@@ -4,32 +4,35 @@ const f = vi.hoisted(() => ({
   transaction: vi.fn(),
   remove: vi.fn(),
 }))
-vi.mock('../../../db', () => ({ getDb: () => ({ transaction: f.transaction }) }))
-vi.mock('../../../db/repos/meeting/meetings', () => ({
+vi.mock('../../../../db', () => ({ getDb: () => ({ transaction: f.transaction }) }))
+vi.mock('../../../../db/repos/meeting/meetings', () => ({
   getMeeting: () => ({ id: 1, title: 'Interview' }),
   applyMerge: vi.fn(),
   deleteMeeting: vi.fn(),
 }))
-vi.mock('../../../db/repos/meeting/meeting-grounding', () => ({
+vi.mock('../../../../db/repos/meeting/meeting-grounding', () => ({
   getMeetingGrounding: () => ({
     ...f.grounding,
     hasBiography: !!f.grounding.resume || !!f.grounding.interviewProfile,
   }),
 }))
-vi.mock('../../../db/repos/segments', () => ({ maxSpeaker: vi.fn(), reassignSegments: vi.fn() }))
-vi.mock('../../../db/repos/suggestions', () => ({
+vi.mock('../../../../db/repos/transcript/segments', () => ({
+  maxSpeaker: vi.fn(),
+  reassignSegments: vi.fn(),
+}))
+vi.mock('../../../../db/repos/suggestion/suggestions', () => ({
   reassignSuggestions: vi.fn(),
   shiftSuggestionContextRevisions: vi.fn(),
   clearSuggestionContextRevisions: vi.fn(),
 }))
-vi.mock('../../../db/repos/speakers', () => ({ reassignSpeakerNames: vi.fn() }))
-vi.mock('../../../db/repos/meeting/meeting-context', () => ({
+vi.mock('../../../../db/repos/transcript/speakers', () => ({ reassignSpeakerNames: vi.fn() }))
+vi.mock('../../../../db/repos/meeting/meeting-context', () => ({
   hasMeetingContext: vi.fn(),
   moveContextHistory: vi.fn(),
 }))
-vi.mock('../../../db/repos/meeting/meeting-presentation', () => ({ hasLegacySlides: vi.fn() }))
-vi.mock('../status/post-processing', () => ({ isPostProcessing: () => false }))
-vi.mock('../remove', () => ({ removeAudioFile: f.remove }))
+vi.mock('../../../../db/repos/meeting/meeting-presentation', () => ({ hasLegacySlides: vi.fn() }))
+vi.mock('../../status/post-processing', () => ({ isPostProcessing: () => false }))
+vi.mock('../../records/remove', () => ({ removeAudioFile: f.remove }))
 import { mergeMeetings } from './merge'
 
 it.each([

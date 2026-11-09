@@ -9,7 +9,7 @@ import {
 } from '../../../db/repos/meeting/meetings'
 import { toSqliteDateTime } from '../../../db/sqlite-time'
 import { listRecordings } from '../../audio-store'
-import { removeAudioFile, removeMeeting } from '../../meetings/remove'
+import { removeAudioFile, removeMeeting } from '../../meetings/records/remove'
 
 // Age-based clean-up of what a meeting leaves behind. Audio files are the bulky part
 // (~115 MB per mono hour); transcripts and summaries are small — so the two have

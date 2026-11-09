@@ -160,7 +160,7 @@ export function listAudioPaths(): string[] {
 }
 
 /** Row-only delete (segments, suggestions, speaker names cascade). The audio file is
- *  the caller's job — use services/meetings/remove.ts, not this, from outside repos. */
+ *  the caller's job — use services/meetings/records/remove.ts, not this, from outside repos. */
 export function deleteMeeting(meetingId: number): void {
   getDb().prepare(`DELETE FROM meetings WHERE id = ?`).run(meetingId)
 }

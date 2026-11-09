@@ -4,12 +4,14 @@ import { writeFileSync } from 'node:fs'
 import { ScriptedSttProvider, RehearsalAssistant } from './outcomes/providers'
 import { RehearsalScreens } from './screens/fixture-display'
 import { installSocketFaults } from './audio/socket-fault'
-import { imageDigest, publicOutcome } from './outcomes/outcomes'
+import { imageDigest } from './outcomes/outcomes'
+import { publicOutcome } from '../request-outcome'
 import { flag, prepareProfile, readOptions } from './runner/options'
 import { collectEvidence } from './runner/evidence'
 
 /** Called instead of normal startup, before settings/DB/services are imported. */
 export async function runRehearsal(): Promise<void> {
+  if (!process.argv.includes('--rehearsal')) throw new Error('Rehearsal mode required')
   if (flag('tier') === 'live') {
     console.error('Live rehearsals moved to the Mock interview tab in Sanas.')
     app.exit(1)

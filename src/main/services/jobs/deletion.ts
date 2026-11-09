@@ -15,14 +15,14 @@ import {
   jobDeletionSnapshot,
   type JobDeletionSnapshot,
 } from '../../db/repos/job/job-deletion'
-import { removeMeeting } from '../meetings/remove'
+import { removeMeeting } from '../meetings/records/remove'
 import { isLiveMeeting } from '../meetings/status/live-meeting'
 import { isPostProcessing } from '../meetings/status/post-processing'
 import { createPreviewTokens } from './preview-tokens'
 
 // Deleting a job cascades to everything recorded under it (owner decision 2026-11-06):
 // count → confirm those exact counts → back up the database → remove each meeting through
-// meetings/remove.ts (row and recording) → delete the job row. The SQLite backup does not
+// meetings/records/remove.ts (row and recording) → delete the job row. The SQLite backup does not
 // cover recordings and file deletion is not atomic, so a meeting that cannot be removed stops
 // the run, keeps the job, and the result says what is already gone.
 

@@ -11,7 +11,7 @@ import { registerIpcHandlers } from '../ipc'
 import { answerNow, captureScreen, togglePause } from '../services/meetings'
 import { registerSystemAudioLoopback } from '../system-audio'
 import { scheduleRetention } from '../services/platform/retention'
-import { closeDanglingMeetingsAtStartup } from '../services/meetings/recovery/startup-recovery'
+import { closeDanglingMeetingsAtStartup } from '../services/meetings/postprocess/recovery/startup-recovery'
 import { registerWindowPolicy } from './window-policy'
 
 let initialized = false

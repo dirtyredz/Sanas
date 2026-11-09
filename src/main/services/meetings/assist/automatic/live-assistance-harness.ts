@@ -1,16 +1,13 @@
 import { vi } from 'vitest'
 import type { SuggestionEvent } from '@shared/types'
-import type { AssistRequest } from '../../../../assistant/types'
-import type {
-  ClassifierOutcome,
-  ClassifyRequest,
-} from '../../../../assistant/classifier/classifier'
-import type { TurnFinal } from '../../../../turns/types'
-import { CONTINUATION_GRACE_MS } from '../../../../turns/turn-assembler'
-import { LiveAssistance, type LiveAssistanceDeps } from '../live-assistance'
-import { SuggestionRunner } from '../../suggestion/suggestion-runner'
-import type { AssistSettings } from '../../suggestion/suggestion-requests'
-import type { ToldStory } from '../../../../assistant/answer-context/told-stories'
+import type { AssistRequest } from '../../../assistant/types'
+import type { ClassifierOutcome, ClassifyRequest } from '../../../assistant/classifier/classifier'
+import type { TurnFinal } from '../../../turns/types'
+import { CONTINUATION_GRACE_MS } from '../../../turns/turn-assembler'
+import { LiveAssistance, type LiveAssistanceDeps } from './live-assistance'
+import { SuggestionRunner } from '../suggestion/suggestion-runner'
+import type { AssistSettings } from '../suggestion/suggestion-requests'
+import type { ToldStory } from '../../../assistant/answer-context/told-stories'
 
 // Shared fake-clock harness for the live-assistance suites. Each suite mocks ./diagnostics
 // itself (vi.mock is hoisted per test file). Providers resolve only when a test says so.

@@ -15,7 +15,9 @@ vi.mock('../../../db/repos/job/jobs', () => ({
   }),
 }))
 vi.mock('../../../db/repos/job/glossary', () => ({ listGlossary: () => [] }))
-vi.mock('../../../db/repos/suggestion-grounding', () => ({ saveMeetingGrounding: () => 1 }))
+vi.mock('../../../db/repos/suggestion/suggestion-grounding', () => ({
+  saveMeetingGrounding: () => 1,
+}))
 vi.mock('../../../db/repos/meeting/meeting-grounding', () => ({
   getMeetingGrounding: () => ({ resume: null, interviewProfile: '', hasBiography: false }),
 }))

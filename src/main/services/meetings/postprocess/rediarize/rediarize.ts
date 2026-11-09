@@ -1,13 +1,21 @@
-import { meetingKeyterms } from '../context/meeting-keyterms'
-import { getMeetingGrounding } from '../../../db/repos/meeting/meeting-grounding'
+import { meetingKeyterms } from '../../context/meeting-keyterms'
+import { getMeetingGrounding } from '../../../../db/repos/meeting/meeting-grounding'
 import { existsSync } from 'fs'
-import { loadSettings } from '../../../config/settings'
-import { sttProvider } from '../../stt'
-import { getMeeting } from '../../../db/repos/meeting/meetings'
-import { deleteSegmentsForMeeting, insertSegment, listSegments } from '../../../db/repos/segments'
-import { clearSpeakerNames, setSpeakerName, speakerNameMap } from '../../../db/repos/speakers'
-import { getDb } from '../../../db'
-import { resolveSpeakerIdentity } from '../capture/channel-identity'
+import { loadSettings } from '../../../../config/settings'
+import { sttProvider } from '../../../stt'
+import { getMeeting } from '../../../../db/repos/meeting/meetings'
+import {
+  deleteSegmentsForMeeting,
+  insertSegment,
+  listSegments,
+} from '../../../../db/repos/transcript/segments'
+import {
+  clearSpeakerNames,
+  setSpeakerName,
+  speakerNameMap,
+} from '../../../../db/repos/transcript/speakers'
+import { getDb } from '../../../../db'
+import { resolveSpeakerIdentity } from '../../capture/channel-identity'
 import { carrySpeakerNames, carryUserIdentity } from './speaker-carryover'
 
 // Post-meeting re-diarization: streaming diarization drifts (S2 becomes S7 mid-

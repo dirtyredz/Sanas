@@ -1,6 +1,6 @@
 import * as meetings from '../../../services/meetings'
 import { isPostProcessing } from '../../../services/meetings/status/post-processing'
-import { listSegments } from '../../../db/repos/segments'
+import { listSegments } from '../../../db/repos/transcript/segments'
 import type { RehearsalOptions } from './options'
 import type { RehearsalAssistant } from '../outcomes/providers'
 import { sleep } from './clock'

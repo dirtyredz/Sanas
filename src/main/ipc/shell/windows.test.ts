@@ -26,8 +26,8 @@ vi.mock('@shared/ipc', () => ({
     MainWindowShow: 'main-show',
   },
 }))
-vi.mock('../windows/main-window', () => ({ createMainWindow: f.showMain }))
-vi.mock('../windows/overlay-window', () => ({
+vi.mock('../../windows/main-window', () => ({ createMainWindow: f.showMain }))
+vi.mock('../../windows/overlay-window', () => ({
   activateComposer: vi.fn(),
   composerReady: vi.fn(),
   releaseOverlayFocus: vi.fn(),

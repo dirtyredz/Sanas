@@ -1,5 +1,5 @@
 import { summarySearchSchema } from './summary-schema'
-import { jobMemorySchema } from '../repos/job/memory/schema'
+import { jobMemorySchema } from './job-memory-schema'
 import { meetingInterviewProfileSchema } from './meeting-interview-profile-schema'
 import { meetingSnapshotClearSchema } from './meeting-snapshot-clear-schema'
 import { meetingResumeSchema } from './meeting-resume-schema'

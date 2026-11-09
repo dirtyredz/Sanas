@@ -1,5 +1,5 @@
 import { expect, it, vi } from 'vitest'
-import type { SuggestionGroundingRow } from '../../../../db/repos/suggestion-grounding'
+import type { SuggestionGroundingRow } from '../../../../db/repos/suggestion/suggestion-grounding'
 import { admitManual, manualRequest, type ManualAdmissionDeps } from './manual-requests'
 import {
   TOPIC_SWITCH_EXCHANGES,

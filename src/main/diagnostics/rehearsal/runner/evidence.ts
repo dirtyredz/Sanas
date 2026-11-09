@@ -4,7 +4,7 @@ import type { Evidence } from '../scenario/assertions'
 import type { Scenario } from '../scenario/scenario'
 import type { RehearsalAssistant } from '../outcomes/providers'
 import { turnSteps } from '../outcomes/outcomes'
-import { observeRehearsalAssistance } from '../../../services/meetings/observation/diagnostics'
+import { subscribeAssistance } from '../../../services/meetings/observation/diagnostics'
 import { observeLatency } from '../../../services/meetings/assist/latency/latency'
 import { observeRehearsalBroadcast } from '../../../windows/broadcast'
 export function collectEvidence(scenario: Scenario, model: RehearsalAssistant, now: () => number) {
@@ -21,7 +21,7 @@ export function collectEvidence(scenario: Scenario, model: RehearsalAssistant, n
   }[] = []
   // the same redacted stage records the main log gets (ids, enums, durations, usage only)
   const latency = observeLatency()
-  observeRehearsalAssistance((e) => {
+  const unsubscribeAssistance = subscribeAssistance((e) => {
     const stepIds = e.turn ? turnSteps(scenario.steps, [e.turn]) : []
     if (e.event === 'turn-completed') for (const id of stepIds) turnCompletions.set(id, now())
     transitions.push({
@@ -82,7 +82,7 @@ export function collectEvidence(scenario: Scenario, model: RehearsalAssistant, n
     close() {
       latency.stop()
       observeRehearsalBroadcast(undefined)
-      observeRehearsalAssistance(undefined)
+      unsubscribeAssistance()
     },
   }
 }

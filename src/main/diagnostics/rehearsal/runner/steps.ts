@@ -4,7 +4,7 @@ import type { ScriptedSttProvider, RehearsalAssistant } from '../outcomes/provid
 import type { RehearsalScreens } from '../screens/fixture-display'
 import type { installSocketFaults } from '../audio/socket-fault'
 import * as meetings from '../../../services/meetings'
-import { listSuggestions } from '../../../db/repos/suggestions'
+import { listSuggestions } from '../../../db/repos/suggestion/suggestions'
 export function createStepExecutor({
   meetingId,
   tier,

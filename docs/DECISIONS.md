@@ -65,7 +65,7 @@ post-processing child meeting blocks deletion.
   and makes deletion unrecoverable in a different way); refusing while any meeting exists (forces
   deleting meetings one at a time first, with no single place that states what will be lost).
 - The v13 `jobs_delete_guard` trigger refuses a job row that still has meetings, so no code path
-  can cascade meetings away without `services/meetings/remove.ts` deleting their WAVs. Deletion
+  can cascade meetings away without `services/meetings/records/remove.ts` deleting their WAVs. Deletion
   is not atomic across files and the database: a failed removal keeps the job and reports what
   was already deleted.
 

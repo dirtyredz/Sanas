@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron'
 import { IPC } from '@shared/ipc'
-import { createMainWindow } from '../windows/main-window'
+import { createMainWindow } from '../../windows/main-window'
 import {
   activateComposer,
   composerReady,
@@ -8,8 +8,8 @@ import {
   resizeOverlay,
   setClickThrough,
   toggleOverlay,
-} from '../windows/overlay-window'
-import { requireBool, requireOverlayResize } from './validate'
+} from '../../windows/overlay-window'
+import { requireBool, requireOverlayResize } from '../validate'
 
 /** Window handlers: overlay show/resize/ghost, the composer focus handshake, and the
  *  overlay's Open Sanas. Validate and delegate only. */
