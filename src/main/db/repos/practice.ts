@@ -1,6 +1,5 @@
 import { getDb } from '../index'
-import { meetingColumns } from './meeting/meeting-columns'
-import { toMeeting, type MeetingRow } from './meeting/meetings'
+import { meetingColumns, toMeeting, type MeetingRow } from './meeting/meeting-columns'
 import type { MockResult, PracticeSession } from '@shared/mock-interview/types'
 
 export const practiceSchema = `

@@ -1,19 +1,6 @@
 import { getDb } from '../../index'
 import type { Meeting } from '@shared/types'
-import { meetingColumns } from './meeting-columns'
-
-export interface MeetingRow {
-  interview_profile_used: number
-  practice: number
-  id: number
-  job_id: number
-  title: string
-  started_at: string
-  ended_at: string | null
-  audio_path: string | null
-  summary: string | null
-  action_items: string | null
-}
+import { meetingColumns, toMeeting, type MeetingRow } from './meeting-columns'
 
 export interface UnendedMeeting {
   id: number
@@ -24,21 +11,6 @@ export interface UnendedMeeting {
 export interface MeetingClosure {
   id: number
   endedAt: string
-}
-
-export function toMeeting(r: MeetingRow): Meeting {
-  return {
-    id: r.id,
-    jobId: r.job_id,
-    practice: r.practice === 1,
-    interviewProfileUsed: r.interview_profile_used === 1,
-    title: r.title,
-    startedAt: r.started_at,
-    endedAt: r.ended_at,
-    audioPath: r.audio_path,
-    summary: r.summary,
-    actionItems: r.action_items,
-  }
 }
 
 export function endMeeting(meetingId: number): void {

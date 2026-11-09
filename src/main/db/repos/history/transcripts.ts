@@ -2,8 +2,8 @@ import type { Meeting, SearchMatch } from '@shared/types'
 import { MATCH_CLOSE, MATCH_OPEN } from '@shared/suggestion/search-markers'
 import type { FtsMatch } from '../../fts-query'
 import { getDb } from '../../index'
-import { meetingColumns } from '../meeting/meeting-columns'
-import { toMeeting, type MeetingRow } from '../meeting/meetings'
+import { meetingColumns, toMeeting, type MeetingRow } from '../meeting/meeting-columns'
+
 /** Ranked full-text search over every transcript (FTS5, bm25). Only an FtsMatch built by
  *  db/fts-query.ts is accepted, so raw user text can never reach the MATCH grammar. snippet()
  *  wraps each matched term in the shared markers; the renderer turns those into <mark>. */
