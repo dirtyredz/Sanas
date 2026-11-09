@@ -189,7 +189,9 @@ sanas/
 │   │       │   └── capture/                # capture action, status subscription, composer attachment state
 │   │       ├── audio/                      # mic/loopback capture and worklet bridge
 │   │       ├── lib/                        # pure shared renderer helpers
-│   │       │   ├── meeting/                # meeting state/transcript hooks + context/, start/
+│   │       │   ├── meeting/                # meeting state/transcript hooks
+│       │   │   ├── context/                # meeting-context draft/apply logic shared by Live page and overlay
+│       │   │   └── start/                  # Start selection rules, job choices, captured-meeting start
 │   │       │   ├── format/                 # time, speaker and hotkey label formatters
 │   │       │   ├── navigation/             # orientation-aware tab arrow/Home/End rule
 │   │       │   └── suggestions/            # safe suggestion rendering and history reducer
@@ -227,12 +229,12 @@ sanas/
 └── STRUCTURE.md
 ```
 
-Container-only directories (`src/`, `src/renderer/`, `src/renderer/src/`, `.github/`, `.github/actions/`) hold no code of their own and
+Container-only directories (`src/`, `src/renderer/`, `src/renderer/src/`, `.github/`, `.github/actions/`, `scripts/release/`) hold no code of their own and
 are deliberately not homes. `src/main/` is a home only for the process entry (`index.ts`); new main-process code belongs in a responsibility folder, not beside it.
 
 **Enforced homes** (one bullet per directory in the tree above, in tree order):
 
-- `src/main/` — process entry only (`index.ts`, normal vs `--smoke` vs `--rehearsal` dispatch).
+- `src/main/` — process entry only (`index.ts`, normal vs `--smoke` vs `--rehearsal` dispatch) plus the ambient `assets.d.ts` module declarations.
 - `src/main/lifecycle/` — userData identity, capped/redacted main logging and normal startup wiring (`window-policy.ts`: quit when the main window closes, hide the overlay when a meeting goes idle); normal startup is not loaded by smoke.
 - `src/main/diagnostics/` — isolated, headless packaged diagnostics: the `--smoke` checks and the `rehearsal/` harness below. It depends on product code (e.g. the request-outcome shapes in `services/mock-interview/turns/`), never the reverse.
 - `src/main/diagnostics/rehearsal/` — isolated dispatch/composition; no ordinary startup policy.
@@ -282,7 +284,8 @@ are deliberately not homes. `src/main/` is a home only for the process entry (`i
 - `src/main/services/meetings/observation/` — the one home for observation: `observer-bus.ts` (shared typed pub/sub; a throwing listener is dropped, never policy), `meeting-observation.ts` (transcript/signal/state; window policy and mock-interview consume it), `run-observation.ts` (runner events plus `EffectiveProfile`, the full/smart/points policy a run used), `diagnostics.ts` (coordinator decisions; rehearsal subscribes like any consumer). They stay separate streams with their own payloads and consumers and share only the bus and the rule that observation never changes behaviour; payload types come from `assist/`, which emits into them.
 - `src/main/services/meetings/capture/` — AUDIO capture-side identity and capture-health policy (screen capture lives in `services/screen-capture/`); `speaker-session.ts` (`SpeakerSession`: mono connection mapping, private pins and `resolve()` identity).
 - `src/main/services/meetings/capture/timing/` — `capture-clock.ts` and `capture-session.ts`: ordered main-clock brackets and accepted-sample rebasing; `capture-binding.ts` (`CaptureBinding`: the meeting's binding to one renderer capture generation — owns the `CaptureTimingSession` and probe interval, routes replies, gates which frames are ingested, calls back `onLoss`/`onDiscontinuity`; `meetings/index.ts` only delegates).
-- `src/main/services/meetings/context/` — pure preparation followed by commit/publication of live context changes (`session.ts`); Start-time meeting grounding lives in `grounding/`: `start-request.ts` (`StartRequest`: the renderer's `MeetingStartOptions` plus main-only `practice`), `start-grounding.ts` (`resolveStartGrounding`, the selected job's saved resume (none for Unsorted) plus the profile, resolved inside serialized Start for Live and Mock), `profile.ts` (`interviewProfileSnapshot`, Start selection of the Settings profile), `meeting-facts.ts` (combines a `MeetingGrounding` into the candidate-facts block, resume first), `candidate-keyterms.ts` (STT term extraction/interleave for resume and profile, `candidateKeyterms`) and `meeting-keyterms.ts` (the STT hints, glossary plus resume/profile terms, for streaming and batch).
+- `src/main/services/meetings/context/` — pure preparation followed by commit/publication of live context changes (`session.ts`); Start-time grounding lives in `grounding/` below.
+- `src/main/services/meetings/context/grounding/` — Start-time meeting grounding: `start-request.ts` (`StartRequest`: the renderer's `MeetingStartOptions` plus main-only `practice`), `start-grounding.ts` (`resolveStartGrounding`, the selected job's saved resume (none for Unsorted) plus the profile, resolved inside serialized Start for Live and Mock), `profile.ts` (`interviewProfileSnapshot`, Start selection of the Settings profile), `meeting-facts.ts` (combines a `MeetingGrounding` into the candidate-facts block, resume first), `candidate-keyterms.ts` (STT term extraction/interleave for resume and profile, `candidateKeyterms`) and `meeting-keyterms.ts` (the STT hints, glossary plus resume/profile terms, for streaming and batch).
 - `src/main/services/meetings/status/` — live-meeting identity, post-processing guards (both expose `on…Change` signals via `change-signal.ts`, so the updates service re-broadcasts without polling) and `filing.ts` (historical job filing; refuses a live meeting).
 - `src/main/services/meetings/summary/` — meeting summaries, structured output handling and summary email; `presentation-history.ts` is the historical slide-marker formatting for summaries (presentation mode retired 2026-11-04).
 - `src/main/services/meetings/records/` — saved-meeting `export.ts` (Markdown export) and `remove.ts` (`removeMeeting`: row and recording).
@@ -332,11 +335,11 @@ are deliberately not homes. `src/main/` is a home only for the process entry (`i
 - `src/renderer/src/app/jobs/memory/` — `JobMemory` composes `ContextSizeMeter`, `ApprovedMemoryEditor` (saved text and explicit save) and `MemoryProposalReview` (oldest-first proposal approve/dismiss/regenerate); `useJobMemory` owns the state, `context-size.ts` the meter maths.
 - `src/renderer/src/app/jobs/resume/` — `JobResume` (saved resume with its own Save resume), `ResumeDraftEditor` (paste/import/preview), `resume-draft.ts` (pure draft rules) and `ResumeUnavailable` (the Unsorted bucket takes no resume).
 - `src/renderer/src/app/settings/` — only the cross-section tests (`settings-pages.test.tsx`, `settings-controls.test.tsx`); everything else is in the folders below.
-- `src/renderer/src/app/settings/sections/` — one component per Settings section, including independent update state and `InterviewProfileSection.tsx` (the one plain-text Interview profile editor), plus pure status wording in `status/` (`hotkey-status.ts`, `update-status.ts`); `SettingsSectionPage.tsx` is the section index that renders the selected section.
+- `src/renderer/src/app/settings/sections/` — one component per Settings section, including independent update state and `InterviewProfileSection.tsx` (the one plain-text Interview profile editor); `SettingsSectionPage.tsx` is the section index that renders the selected section. The folder is intentionally flat (one file per Settings section, so a new section is one new file).
+- `src/renderer/src/app/settings/sections/status/` — pure status wording for sections: `hotkey-status.ts`, `update-status.ts` (and tests).
 - `src/renderer/src/app/settings/frame/` — what every section shares: the section list (`settings-sections.ts`), card (`SettingsSection`), the index (`SettingsNav`, Up/Down), the animated scrolling pane (`SettingsPane`, owner of `SETTINGS_PANE_ID`), the draft state (`useSettingsDraft`: load, externally changed keys, save state machine), the pure patch/dirty/validation logic and page-ownership lists (`settings-draft.ts`) and the save bar.
 - `src/renderer/src/app/settings/frame/paging/` — the pager: pure page order (`page-order.ts`: `ORDER`, `selectPage`, `stepPage`, `pageDirection`) and the thin React state wrapper `useSettingsPager`.
 - `src/renderer/src/app/styles/` — layered shared stylesheet; no per-page stylesheets. `tokens.css` is shared by both windows; the library imports `index.css` (base → controls → shell → transcript → pages → settings), the overlay imports `overlay-app/overlay.css` (shared tokens → controls, then its own `overlay-app/styles/` layers).
-- `src/renderer/src/overlay-app/styles/` — the overlay's four CSS layers, imported in order by `overlay.css`: `overlay-controls` → `overlay-shell` → `overlay-panels` → `overlay-suggestions`.
 - `src/renderer/src/interviewer-app/` — local OS speech, captions and shares; no provider/network calls.
 - `src/renderer/src/overlay-app/` — deliberately small, separate overlay bundle; `no-native-popups.test.ts` scans every file under it for native tooltip/select/dialog UI that would leak into screen shares.
 - `src/renderer/src/overlay-app/shell/` — `OverlaySession` (composes every controller once), `OverlayShell` layout, header, persistent status, preferences popover, window state, Answer every question.
@@ -346,6 +349,7 @@ are deliberately not homes. `src/main/` is a home only for the process entry (`i
 - `src/renderer/src/overlay-app/workspaces/composer/` — Ask: draft state, submission and view; kept as a folder because it has several files.
 - `src/renderer/src/overlay-app/controls/` — the overlay's small control wrappers (button variants, in-DOM `OverlayTip` tooltip, labelled textarea, Open Sanas) and local icons; not a general component framework.
 - `src/renderer/src/overlay-app/layout/` — overlay opacity and divider-ratio persistence, divider drag/measurement, and the three resize grips.
+- `src/renderer/src/overlay-app/styles/` — the overlay's four CSS layers, imported in order by `overlay.css`: `overlay-controls` → `overlay-shell` → `overlay-panels` → `overlay-suggestions`.
 - `src/renderer/src/overlay-app/capture/` — Capture screen action, capture status subscription/helpers and the composer's screen-attachment state (hooks only; the Screen view lives in `workspaces/`).
 - `src/renderer/src/audio/` — renderer capture and AudioWorklet downsampling.
 - `src/renderer/src/lib/` — shared renderer helpers and small shared components, grouped into the folders below (loose: `overlay-workspaces.ts` workspace names and the local shortcut table shared by the overlay and Settings → Hotkeys; `ipc-error.ts`, `glossary-input.ts`, `icons.tsx`, `SummaryMarkdown.tsx`).
@@ -432,13 +436,12 @@ a separate check, rather than ordinary Vitest loading of `better-sqlite3`.
   than reading `anthropicApiKey`/`anthropicWorkspaceId`, but model names (`nudgeModel`, `answerModel`,
   `classifierModel`) are still Anthropic ids; a second provider widens `AssistSettings`, not the coordinators.
 - `services/assistant/` has seven subfolders and one root file (`types.ts`); `live-controls/` could nest under `prompts/` if the root grows again. `meetings/` is grouped (records/, postprocess/) and `meetings/assist/` is split into automatic/, manual/, coach/, suggestion/ and latency/ (dk-c0cd0363).
-- `shell/` and `workspaces/` still reference each other: `WorkspacePanel` reads `panelId`/`tabId`
-  from `shell/navigation/`, and `OverlaySession` imports the composer hook. Workspaces take explicit
-  slices, not the session model (dk-ac7c7c73).
+- `shell/` and `workspaces/` share tab/panel ids and `SecondaryWorkspace` through
+  `lib/overlay-workspaces.ts`; `OverlaySession` still imports the composer hook. Workspaces take
+  explicit slices, not the session model (dk-ac7c7c73).
 - `services/` has 10 children (platform integrations are grouped and transcript formatting lives in `turns/`); adding another sibling means nesting under an existing parent.
 - `src/shared/` has 8 domain folders plus three root contracts (`ipc.ts`, `types.ts`, `settings-limits.ts`) — the documented convention; a new domain becomes a folder, not a root file. `src/main/ipc/` is grouped by feature (jobs/, history/, live-controls/, mock-interview/, platform/, screen-capture/, shell/) with `index.ts` and `validate.ts` at the root.
-- `app/settings/sections/` now holds 13 code files (Applications joined); group related sections
-  before adding more.
+- `app/settings/sections/` holds 13 code files and is intentionally flat: one file per Settings section.
 - Screen answers are stored as `typed` plus a `[Screen capture]` request-text marker because the
   `suggestions` CHECK constraint has no `capture` kind. A real `capture` kind needs a table rebuild
   migration; the codec in `db/repos/suggestion/manual-kind.ts` is the only place to change.
