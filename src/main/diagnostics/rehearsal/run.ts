@@ -1,4 +1,4 @@
-import { stopHistoryWorker } from '../services/history/live/worker-client'
+import { stopHistoryWorker } from '../../services/history/live/worker-client'
 import { app, BrowserWindow } from 'electron'
 import { writeFileSync } from 'node:fs'
 import { ScriptedSttProvider, RehearsalAssistant } from './outcomes/providers'
@@ -30,7 +30,7 @@ export async function runRehearsal(): Promise<void> {
     console.log = () => {}
     console.warn = () => {}
     console.error = () => {}
-    const { saveSettings } = await import('../config/settings')
+    const { saveSettings } = await import('../../config/settings')
     clearCredentials = () => {
       saveSettings({ deepgramApiKey: '', anthropicApiKey: '', anthropicWorkspaceId: '' })
     }
@@ -43,13 +43,13 @@ export async function runRehearsal(): Promise<void> {
       nudgeCooldownSec: 0,
       summaryEmailAuto: false,
     })
-    const { openDb, closeDb } = await import('../db')
+    const { openDb, closeDb } = await import('../../db')
     await openDb()
     let epoch = performance.now()
     const now = (): number => Math.round(performance.now() - epoch)
     const stt = new ScriptedSttProvider(scenario.steps)
-    const { installRehearsalStt } = await import('../services/stt')
-    const { deepgramProvider } = await import('../services/stt/deepgram/deepgram')
+    const { installRehearsalStt } = await import('../../services/stt')
+    const { deepgramProvider } = await import('../../services/stt/deepgram/deepgram')
     let batchCount = 0
     const selectedStt = tier === 'audio' ? deepgramProvider : stt
     installRehearsalStt({
@@ -61,7 +61,7 @@ export async function runRehearsal(): Promise<void> {
       },
     })
     const sockets = tier === 'audio' ? installSocketFaults() : undefined
-    const { claudeProvider } = await import('../services/assistant/provider/claude')
+    const { claudeProvider } = await import('../../services/assistant/provider/claude')
     const model = new RehearsalAssistant(
       now,
       assistant === 'claude' ? claudeProvider : undefined,
@@ -69,12 +69,12 @@ export async function runRehearsal(): Promise<void> {
     )
     const collected = collectEvidence(scenario, model, now)
     const { evidence, finalReceipts, turnCompletions, transitions } = collected
-    const { installRehearsalAssistant } = await import('../services/assistant/provider/provider')
+    const { installRehearsalAssistant } = await import('../../services/assistant/provider/provider')
     installRehearsalAssistant(model)
     const screens = new RehearsalScreens(now)
-    const { installRehearsalDesktop } = await import('../services/screen-capture')
+    const { installRehearsalDesktop } = await import('../../services/screen-capture')
     installRehearsalDesktop(screens.desktop)
-    const meetings = await import('../services/meetings')
+    const meetings = await import('../../services/meetings')
     const { createStepExecutor } = await import('./runner/steps')
     const { pumpClock, sleep } = await import('./runner/clock')
     const { finishReport, writeReport } = await import('./runner/report')
@@ -92,13 +92,13 @@ export async function runRehearsal(): Promise<void> {
       process.argv.includes('--visible') ||
       scenario.steps.some((s) => s.kind === 'screen' && s.real)
     ) {
-      const { registerIpcHandlers } = await import('../ipc')
+      const { registerIpcHandlers } = await import('../../ipc')
       registerIpcHandlers()
-      const { showOverlay } = await import('../windows/overlay-window')
+      const { showOverlay } = await import('../../windows/overlay-window')
       showOverlay()
       await sleep(800)
     }
-    const { createJob } = await import('../db/repos/job/jobs')
+    const { createJob } = await import('../../db/repos/job/jobs')
     const job = createJob(scenario.name)
     const state = await meetings.startMeeting(
       job.id,

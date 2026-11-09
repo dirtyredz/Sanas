@@ -4,7 +4,7 @@ import type { Evidence } from '../scenario/assertions'
 import type { ScriptedSttProvider, RehearsalAssistant } from '../outcomes/providers'
 import type { installSocketFaults } from '../audio/socket-fault'
 import type { StepExecutor } from './steps'
-import * as meetings from '../../services/meetings'
+import * as meetings from '../../../services/meetings'
 export const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms))
 export async function pumpClock({

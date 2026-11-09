@@ -70,8 +70,8 @@ vi.mock('electron', () => ({
   },
 }))
 import { RehearsalScreens, imageDifference } from './fixture-display'
-import { createScreenCapture } from '../../services/screen-capture'
-import { captureDisplay } from '../../services/screen-capture/desktop'
+import { createScreenCapture } from '../../../services/screen-capture'
+import { captureDisplay } from '../../../services/screen-capture/desktop'
 afterEach(() => {
   vi.useRealTimers()
   vi.clearAllMocks()

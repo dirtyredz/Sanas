@@ -8,7 +8,7 @@ const folder = resolve(root, '.tmp/owner-runs')
 await mkdir(folder, { recursive: true })
 const bundle = resolve(folder, `comparison-${process.pid}.mjs`)
 await build({
-  entryPoints: [resolve(root, 'src/main/rehearsal/runner/comparison.ts')],
+  entryPoints: [resolve(root, 'src/main/diagnostics/rehearsal/runner/comparison.ts')],
   outfile: bundle,
   bundle: true,
   platform: 'node',

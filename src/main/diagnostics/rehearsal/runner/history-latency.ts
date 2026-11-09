@@ -1,16 +1,16 @@
-import { createLatencyFixture } from '../../db/testing/latency-fixture'
+import { createLatencyFixture } from '../../../db/testing/latency-fixture'
 /** Fixture-only, invoked by trials/history-latency.mjs under Electron's Node ABI. */
 import Database from 'better-sqlite3'
 import { mkdirSync, writeFileSync, readdirSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { monitorEventLoopDelay } from 'node:perf_hooks'
-import { runMigrations } from '../../db/migrations'
-import { HistoryWorker } from '../../services/history/live/worker-client'
-import { freezeEvidence } from '../../services/history/live/session'
+import { runMigrations } from '../../../db/migrations'
+import { HistoryWorker } from '../../../services/history/live/worker-client'
+import { freezeEvidence } from '../../../services/history/live/session'
 import { RehearsalAssistant } from '../outcomes/providers'
-import { SuggestionRunner } from '../../services/meetings/assist/suggestion/suggestion-runner'
-import { automaticAnswerRequest } from '../../services/meetings/assist/suggestion/suggestion-requests'
-import type { CompletedTurn } from '../../services/turns/types'
+import { SuggestionRunner } from '../../../services/meetings/assist/suggestion/suggestion-runner'
+import { automaticAnswerRequest } from '../../../services/meetings/assist/suggestion/suggestion-requests'
+import type { CompletedTurn } from '../../../services/turns/types'
 
 async function canned(evidence: string): Promise<void> {
   const provider = new RehearsalAssistant(() => performance.now())

@@ -8,8 +8,8 @@ import type { StepExecutor } from './steps'
 import type { RehearsalAssistant } from '../outcomes/providers'
 import type { Segment } from '@shared/types'
 import type { RehearsalScreens } from '../screens/fixture-display'
-import { listSegments } from '../../db/repos/segments'
-import { getMeeting } from '../../db/repos/meeting/meetings'
+import { listSegments } from '../../../db/repos/segments'
+import { getMeeting } from '../../../db/repos/meeting/meetings'
 export async function finishReport({
   options,
   collected,

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
-import { requireMeetingContextText } from '../../../shared/meeting/meeting-context'
+import { requireMeetingContextText } from '../../../../shared/meeting/meeting-context'
 import { rubrics, type Rubric } from './semantics'
 
 export type Fault =

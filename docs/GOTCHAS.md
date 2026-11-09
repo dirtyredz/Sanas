@@ -555,7 +555,7 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
 ## Rehearsals
 
 - Keep runner helpers that import meeting/DB services dynamically loaded after isolated
-  userData and provider setup in `rehearsal/run.ts`; eager imports can initialize normal
+  userData and provider setup in `diagnostics/rehearsal/run.ts`; eager imports can initialize normal
   settings before the rehearsal profile exists.
 - Product plan screens are validated fixture IDs. Shared interview/dashboard PNGs live
   only in `services/mock-interview/fixtures/`; scenario paths resolve relative to their JSON.

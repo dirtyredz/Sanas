@@ -5,7 +5,9 @@ const smoke = process.argv.includes('--smoke')
 const rehearsal = process.argv.includes('--rehearsal')
 if (!rehearsal) configureUserData(smoke)
 if (rehearsal) {
-  void import('./rehearsal/run').then(({ runRehearsal }) => runRehearsal()).catch(() => app.exit(1))
+  void import('./diagnostics/rehearsal/run')
+    .then(({ runRehearsal }) => runRehearsal())
+    .catch(() => app.exit(1))
 } else if (smoke) {
   void import('./diagnostics/smoke').then(({ runSmoke }) => runSmoke())
 } else {

@@ -2,7 +2,7 @@ import { expect, it } from 'vitest'
 import { execFileSync, spawnSync } from 'node:child_process'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { readPcmWav } from '../../src/main/rehearsal/audio/wav'
+import { readPcmWav } from '../../src/main/diagnostics/rehearsal/audio/wav'
 
 const windows = process.platform === 'win32' ? it : it.skip
 windows(

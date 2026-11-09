@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { resolve } from 'node:path'
 const root = fileURLToPath(new URL('../../../', import.meta.url))
 await build({
-  entryPoints: [resolve(root, 'src/main/rehearsal/runner/history-latency.ts')],
+  entryPoints: [resolve(root, 'src/main/diagnostics/rehearsal/runner/history-latency.ts')],
   outfile: resolve(root, 'out/main/chunks/history-latency.cjs'),
   bundle: true,
   platform: 'node',

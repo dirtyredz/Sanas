@@ -22,7 +22,7 @@ and Mock; `lib/meeting/useJobHasResume.ts` gives Live its Interview default. The
 importer/validator now live in `services/jobs/resume/`; the type stays in
 `shared/meeting/meeting-resume.ts` (it is also the meeting snapshot contract; renaming it is deferred).
 
-Rehearsal homes: `src/main/rehearsal/` owns explicit isolated rehearsal dispatch, scenario
+Rehearsal homes: `src/main/diagnostics/rehearsal/` owns explicit isolated rehearsal dispatch, scenario
 validation/assertions (`scenario/`) and scripted providers/correlation (`outcomes/`).
 `runner/comparison.ts` reuses the request builder, runner and rehearsal assistant for matched
 Full/Smart trials. `scripts/rehearsal/trials/compare.ps1` and `summarize.ps1` wrap local Node tools
@@ -48,13 +48,13 @@ sanas/
 │   ├── main/                              # Electron main process
 │   │   ├── index.ts                       # mode dispatch: normal startup, --smoke diagnostics, --rehearsal harness
 │   │   ├── lifecycle/                     # userData identity, capped main log and normal application startup
-│   │   ├── rehearsal/                     # isolated scripted/audio composition
-│   │   │   ├── scenario/                  # validation, assertions, semantic rubrics
-│   │   │   ├── outcomes/                  # providers and request correlation
-│   │   │   ├── runner/                    # options, observers, steps, clock and reports
-│   │   │   ├── audio/                     # WAV replay and socket faults
-│   │   │   └── screens/                   # fixture display and verification
-│   │   ├── diagnostics/                   # isolated packaged smoke diagnostics
+│   │   ├── diagnostics/                   # isolated packaged smoke diagnostics and the rehearsal harness
+│   │   │   └── rehearsal/                 # isolated scripted/audio composition
+│   │   │       ├── scenario/                  # validation, assertions, semantic rubrics
+│   │   │       ├── outcomes/                  # providers and request correlation
+│   │   │       ├── runner/                    # options, observers, steps, clock and reports
+│   │   │       ├── audio/                     # WAV replay and socket faults
+│   │   │       └── screens/                   # fixture display and verification
 │   │   ├── windows/                       # BrowserWindow builders and main → all-windows broadcast
 │   │   │   ├── app-window.ts              # shared window factory: security webPreferences + dev/prod page load
 │   │   │   └── interviewer-window.ts      # restricted mock output window
@@ -189,15 +189,15 @@ sanas/
 
 **Enforced homes:**
 
-- `src/main/rehearsal/` — isolated dispatch/composition; no ordinary startup policy.
-- `src/main/rehearsal/scenario/` — scenario validation, assertions and bounded content rubrics.
-- `src/main/rehearsal/outcomes/` — scripted providers and request/span correlation.
-- `src/main/rehearsal/runner/` — options, observer evidence, step execution, clock/audio pump and final checks/report; `comparison.ts` is the matched Full/Smart trial driver (production request builder + runner + `RehearsalAssistant`), launched only by `scripts/rehearsal/trials/compare.*`.
-- `src/main/rehearsal/audio/` — PCM replay and socket fault injection.
-- `src/main/rehearsal/screens/` — fixture display, capture verification and coordinate geometry.
+- `src/main/diagnostics/rehearsal/` — isolated dispatch/composition; no ordinary startup policy.
+- `src/main/diagnostics/rehearsal/scenario/` — scenario validation, assertions and bounded content rubrics.
+- `src/main/diagnostics/rehearsal/outcomes/` — scripted providers and request/span correlation.
+- `src/main/diagnostics/rehearsal/runner/` — options, observer evidence, step execution, clock/audio pump and final checks/report; `comparison.ts` is the matched Full/Smart trial driver (production request builder + runner + `RehearsalAssistant`), launched only by `scripts/rehearsal/trials/compare.*`.
+- `src/main/diagnostics/rehearsal/audio/` — PCM replay and socket fault injection.
+- `src/main/diagnostics/rehearsal/screens/` — fixture display, capture verification and coordinate geometry.
 - `scripts/eval/` — paid prompt evals: `topic-switch.ps1` (old vs new prompt builders on an invented fixture; `-DryRun` is free) and `.eval.ts`
 - `scripts/rehearsal/` — owner runner, credentials and offline fixture rendering.
-- `scripts/rehearsal/trials/` — matched-profile and latency-summary owner tools: `compare.ps1`/`compare.mjs` (bundle and run `src/main/rehearsal/runner/comparison.ts`), `summarize.ps1`/`summarize.mjs` (copied-log stage percentiles) and `summarize.test.ts`, and `history-latency.ps1`/`history-latency.mjs` (live-history retrieval latency); each `.ps1` dot-sources `../owner-run.ps1` from `$PSScriptRoot` and runs from any cwd.
+- `scripts/rehearsal/trials/` — matched-profile and latency-summary owner tools: `compare.ps1`/`compare.mjs` (bundle and run `src/main/diagnostics/rehearsal/runner/comparison.ts`), `summarize.ps1`/`summarize.mjs` (copied-log stage percentiles) and `summarize.test.ts`, and `history-latency.ps1`/`history-latency.mjs` (live-history retrieval latency); each `.ps1` dot-sources `../owner-run.ps1` from `$PSScriptRoot` and runs from any cwd.
 - `scripts/rehearsal/scenarios/` — versioned scripted/audio scenarios.
 - `scripts/rehearsal/fixtures/` — the rehearsal-only standup screen.
 - `src/main/services/platform/` — email, updates, retention and global-hotkey integrations.
@@ -219,7 +219,7 @@ sanas/
 - `src/shared/mock-interview/` — cross-process mock contracts.
 
 - `src/main/lifecycle/` — userData identity, capped/redacted main logging and normal startup wiring (`window-policy.ts`: quit when the main window closes, hide the overlay when a meeting goes idle); normal startup is not loaded by smoke
-- `src/main/diagnostics/` — isolated, headless packaged diagnostics used by `--smoke`
+- `src/main/diagnostics/` — isolated, headless packaged diagnostics used by `--smoke`, plus the `rehearsal/` harness below
 - `src/main/windows/` — BrowserWindow builders and the main → all-windows broadcast (`app-window.ts`: `createAppWindow`/`loadAppPage`, the only definition for app-page windows — their webPreferences and dev-URL vs file loading (rehearsal fixture display excepted); `overlay-bounds.ts`: pure on-screen fitting of saved overlay bounds; `main-window.ts`: create or reveal — restore/show/focus, never reload, reports close through `onMainWindowClosed`; `overlay-window.ts`: show/hide/toggle; `window-chrome.ts`: the hidden title bar + caption-button colours mirrored from tokens.css)
 - `src/main/ipc/` — typed IPC handlers; validate ingress and delegate, with no business logic (`windows.ts`: overlay toggle/resize/ghost, compose handshake and the parameterless Open Sanas; `validate.ts` also owns `requireMeetingStart`, the Start options check; `presentation-history.ts`: read-only historical slide markers; `hotkeys.ts`: global-shortcut status; `audio-chunk.ts`: the contained audio-chunk `.on` listener)
 - `src/main/` — process entry (`index.ts`, normal vs `--smoke` dispatch) and the display-media loopback handler (`system-audio.ts`)

@@ -3,8 +3,8 @@ import type { Evidence } from '../scenario/assertions'
 import type { ScriptedSttProvider, RehearsalAssistant } from '../outcomes/providers'
 import type { RehearsalScreens } from '../screens/fixture-display'
 import type { installSocketFaults } from '../audio/socket-fault'
-import * as meetings from '../../services/meetings'
-import { listSuggestions } from '../../db/repos/suggestions'
+import * as meetings from '../../../services/meetings'
+import { listSuggestions } from '../../../db/repos/suggestions'
 export function createStepExecutor({
   meetingId,
   tier,

@@ -5,9 +5,9 @@ import {
   electronDesktop,
   type DesktopDeps,
   type CaptureDisplay,
-} from '../../services/screen-capture/desktop'
-import type { EncodableImage } from '../../services/screen-capture/encode'
-import { encodeForAssistant } from '../../services/screen-capture/encode'
+} from '../../../services/screen-capture/desktop'
+import type { EncodableImage } from '../../../services/screen-capture/encode'
+import { encodeForAssistant } from '../../../services/screen-capture/encode'
 import type { Fault, Step } from '../scenario/scenario'
 import { mapRectangle, type Rectangle } from './geometry'
 

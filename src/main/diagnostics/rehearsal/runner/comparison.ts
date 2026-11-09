@@ -2,11 +2,11 @@ import { RehearsalAssistant } from '../outcomes/providers'
 import {
   automaticAnswerRequest,
   type AssistSettings,
-} from '../../services/meetings/assist/suggestion/suggestion-requests'
-import { buildSystemPrompt } from '../../services/assistant/prompts'
-import { SuggestionRunner } from '../../services/meetings/assist/suggestion/suggestion-runner'
-import { observeLatency } from '../../services/meetings/assist/latency/latency'
-import type { CompletedTurn } from '../../services/turns/types'
+} from '../../../services/meetings/assist/suggestion/suggestion-requests'
+import { buildSystemPrompt } from '../../../services/assistant/prompts'
+import { SuggestionRunner } from '../../../services/meetings/assist/suggestion/suggestion-runner'
+import { observeLatency } from '../../../services/meetings/assist/latency/latency'
+import type { CompletedTurn } from '../../../services/turns/types'
 
 export const comparisonQuestions = [
   { category: 'factual', text: 'Which database did you use for the delivery service?' },
@@ -40,7 +40,7 @@ export async function compareProfiles(options: { realProvider?: boolean; repeats
   if (options.realProvider && !process.env.ANTHROPIC_API_KEY)
     throw new Error('Real provider requires ANTHROPIC_API_KEY')
   const real = options.realProvider
-    ? (await import('../../services/assistant/provider/claude')).claudeProvider
+    ? (await import('../../../services/assistant/provider/claude')).claudeProvider
     : undefined
   const provider = new RehearsalAssistant(() => performance.now(), real)
   const settings: AssistSettings = {

@@ -1,10 +1,10 @@
 import { afterEach, expect, it, vi } from 'vitest'
 import { ScriptedSttProvider, RehearsalAssistant } from './providers'
 import { imageDigest } from './outcomes'
-import { CLASSIFIER_SYSTEM } from '../../services/assistant/classifier/classifier'
-import type { AssistRequest } from '../../services/assistant/types'
+import { CLASSIFIER_SYSTEM } from '../../../services/assistant/classifier/classifier'
+import type { AssistRequest } from '../../../services/assistant/types'
 import type { Step } from '../scenario/scenario'
-import { CONTINUATION_GRACE_MS, TurnAssembler } from '../../services/turns/turn-assembler'
+import { CONTINUATION_GRACE_MS, TurnAssembler } from '../../../services/turns/turn-assembler'
 
 it('keeps a multi-question turn open while retimed scripted speech is still advancing', async () => {
   const first = { ...utterance, atMs: 0, durationMs: 2100 }

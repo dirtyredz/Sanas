@@ -1,12 +1,12 @@
-import { IPC } from '../../../shared/ipc'
-import type { SuggestionEvent, TranscriptEvent, MeetingState } from '../../../shared/types'
+import { IPC } from '../../../../shared/ipc'
+import type { SuggestionEvent, TranscriptEvent, MeetingState } from '../../../../shared/types'
 import type { Evidence } from '../scenario/assertions'
 import type { Scenario } from '../scenario/scenario'
 import type { RehearsalAssistant } from '../outcomes/providers'
 import { turnSteps } from '../outcomes/outcomes'
-import { observeRehearsalAssistance } from '../../services/meetings/observation/diagnostics'
-import { observeLatency } from '../../services/meetings/assist/latency/latency'
-import { observeRehearsalBroadcast } from '../../windows/broadcast'
+import { observeRehearsalAssistance } from '../../../services/meetings/observation/diagnostics'
+import { observeLatency } from '../../../services/meetings/assist/latency/latency'
+import { observeRehearsalBroadcast } from '../../../windows/broadcast'
 export function collectEvidence(scenario: Scenario, model: RehearsalAssistant, now: () => number) {
   const evidence: Evidence[] = []
   const finalReceipts = new Map<string, number>()

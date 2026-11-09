@@ -1,20 +1,20 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
-import type { AssistantProvider, AssistRequest } from '../../services/assistant/types'
-import { CLASSIFIER_SYSTEM } from '../../services/assistant/classifier/classifier'
+import type { AssistantProvider, AssistRequest } from '../../../services/assistant/types'
+import { CLASSIFIER_SYSTEM } from '../../../services/assistant/classifier/classifier'
 import {
   formatVerdict,
   parseClassification,
-} from '../../services/assistant/classifier/classifier-verdict'
+} from '../../../services/assistant/classifier/classifier-verdict'
 import type {
   SttProvider,
   SttSession,
   SttSessionOptions,
   SttBatchTranscript,
-} from '../../services/stt/types'
+} from '../../../services/stt/types'
 import type { Step } from '../scenario/scenario'
 import { beginOutcome, turnSteps, type RequestOutcome } from './outcomes'
 import { isNoSuggestion } from '@shared/live-controls/readable-suggestion'
-import { ENDPOINTING_MS } from '../../services/stt/endpointing'
+import { ENDPOINTING_MS } from '../../../services/stt/endpointing'
 
 type Utterance = Extract<Step, { kind: 'utterance' }>
 
