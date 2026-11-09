@@ -15,6 +15,14 @@ Layout below reflects what exists.
 
 ## Layout
 
+Reconnect continuity: `stt/deepgram/recovery/` owns the bounded PCM FIFO and fake-socket
+recovery tests. `meetings/capture/speaker-session.ts` owns mono connection mapping and
+historical pins; `shared/meeting/speaker-identity.ts` carries main-owned confirmation/current/
+selected IDs. `app/meeting/speakers/LiveSpeakerControls.tsx` owns the live voice picker and
+awaited pin feedback; the page and overlay consume authoritative state.
+`lib/meeting/useTranscript.ts` applies confirmed selections to both transcript views;
+its identity regression lives under `lib/meeting/transcript/`.
+
 Resumes are owned by the job: `db/repos/job/` (`job-resume.ts` + v11 schema), `ipc/jobs/resume/` (get/set + the main-owned PDF/DOCX import picker) and the
 job page's Resume tab (`app/jobs/resume/`: `JobResume.tsx`, `ResumeDraftEditor.tsx`, `resume-draft.ts`).
 Start resolves the snapshot in `services/meetings/context/start-grounding.ts` for both Live

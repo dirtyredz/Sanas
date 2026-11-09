@@ -35,8 +35,8 @@ and pauses of at least two seconds; streaming behavior is unchanged.
 | Pause / resume hotkey (global)                   | ✅     | Ctrl+Shift+P (configurable): pauses a live meeting from main; while paused it asks the Sanas window to run its Resume, since only the renderer can reopen the mic (window may be minimised, not closed); 1 s repeat guard |
 | Overlay local shortcuts                          | ✅     | while focused: Ctrl+1–3, 5, 6 workspaces (Ctrl+4 unbound since Slide was retired), Ctrl+, preferences, Esc back to Answer; listed in Settings → Hotkeys                                                                   |
 | Overlay hidden from screen capture               | ✅     | always excluded from screen shares, screenshots and recordings; no toggle                                                                                                                                                 |
-| Deepgram auto-reconnect                          | ✅     | backoff, PCM-anchored timestamps across reconnects (WAV clock)                                                                                                                                                            |
-| Stalled-STT recovery                             | ✅     | 9 s without Results while audio flows retires the socket and reconnects; lost text is not replayed; long-silence behaviour awaits live check                                                                              |
+| Deepgram auto-reconnect                          | ✅     | backoff, up to 30 seconds of unsent PCM replay with WAV-aligned timestamps; buffer overflow pauses                                                                                                                        |
+| Stalled-STT recovery                             | ✅     | 9 s without Results while audio flows retires the socket and reconnects; unsent audio replays; already handed-off lost text is not recoverable; long-silence behaviour awaits live check                                  |
 | System-audio loopback capture                    | ✅     | same-PC meetings; ch0=me ch1=them via multichannel                                                                                                                                                                        |
 | Post-meeting batch re-diarization                | ✅     | stable speaker labels; needs recordAudio (default on)                                                                                                                                                                     |
 | Speaker rename + merge                           | ✅     | per meeting, in transcript view; export uses names                                                                                                                                                                        |
@@ -214,3 +214,8 @@ The context meter counts saved Notes, approved memory and glossary, with a separ
 Notes preview. Other prompt fields and unapproved proposals are excluded. Answer now and
 specific automatic turns can use up to three same-job past transcript/summary snippets.
 Retrieval deadlines favor answer responsiveness over historical context.
+
+Mono voice identity survives in historical rows across reconnect/resume. New speech receives
+fresh IDs and, after a prior pin, Live and overlay ask “Identify your voice again”. Automatic
+answers and Next point pause until confirmation; Answer now remains available. Stereo channel
+identity is unchanged.

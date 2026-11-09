@@ -17,7 +17,8 @@ starts this logger or writes there.
   use an AudioWorklet for the downsample to 16 kHz mono.
 - **Diarization is per-connection:** Deepgram speaker indices (0/1/2…) are stable only
   within one WS session; a reconnect can reshuffle them. Re-pin "that's me" after a
-  reconnect, or persist a voice heuristic.
+  reconnect/resume. Mono IDs are now meeting-local: historical pins stay put, while the new
+  connection must be confirmed. Do not infer voice continuity from replayed audio.
 - **Diarization needs warm-up + sentence-length speech.** 1–4 word alternating
   utterances all collapse to speaker 0 — the model needs a few sentences per voice to
   build fingerprints. Short-fragment tests are the worst case; judge diarization on
@@ -177,14 +178,14 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   result, so pausing during silence would rewind the clock and the resumed session would
   overlap what was already stored.
 - **Reconnect offsets follow the PCM stream, never finals.** `stt/deepgram/deepgram-session.ts` counts
-  every PCM byte handed to `sendAudio` (even chunks dropped during backoff) and freezes each
+  every PCM byte handed to `sendAudio` (including queued backoff chunks) and freezes each
   socket's offset at the cursor where its first transmitted chunk started, applied to finals,
   interims, endpoint, utterance-end and VAD alike. Live times therefore stay on the WAV clock after
   a reconnect. The old "offset = last final's end" rule drifted earlier after silence; do not
-  reintroduce it, and do not use the socket-open time, last final or wall clock. Audio dropped
-  during backoff still produces no live text (re-diarization recovers it when `recordAudio` is on).
+  reintroduce it, and do not use the socket-open time, last final or wall clock. Queued backoff
+  audio replays at its original position, never through recording or main audio ingress.
 - **A lost connection pauses, it does not error.** The Deepgram session retries with backoff
-  on its own; only when those are exhausted does it report, and the orchestrator turns that
+  on its own; when those are exhausted or the audio buffer fills it reports, and main turns that
   into a pause so the meeting row survives. The UI shows the reason and a Resume button.
 - **A recording merge could not delete is reported, not swallowed.** `mergeMeetings`
   returns `recordingsLeftBehind` and the job view says so instead of opening the merged
@@ -208,8 +209,9 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   “merge into…” in the meeting view. Merging is irreversible — the other rows are deleted once
   their segments, suggestions and names have moved.
 - **Resume opens a NEW STT connection**, so diarized speaker indices can be renumbered across
-  the pause exactly as they can across an internal reconnect. Post-meeting re-diarization is
-  what makes labels stable — and it only runs when `recordAudio` is on, since it needs the WAV.
+  the pause exactly as they can across an internal reconnect. New mono speech receives fresh
+  meeting-local IDs. A prior pin requires confirmation before automatic answers/coaching resume;
+  Answer now remains available. Correcting an earlier voice does not dismiss the new-voice cue.
 - **Resume must use the same capture topology.** The WAV header and the provider's channel
   mapping were both fixed when the meeting started, so main refuses a resume whose channel
   count differs (loopback can fail on any attempt, turning This-PC stereo into mono).
@@ -217,10 +219,11 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   pause, resume and stop all mutate module state across awaits; without the queue two
   resumes open two sessions, and without the generation a dying session's late transcript
   lands on its successor.
-- **Audio captured during the provider's reconnect backoff is not transcribed.** The socket
-  is closed, so those chunks reach the WAV but never the provider — a gap in the live
-  transcript that post-meeting re-diarization recovers (it reads the WAV) only when
-  recording is on. Buffering that audio for replay is docs/BACKLOG.md P2.
+- **Unsent reconnect audio is bounded to 30 seconds.** Provider-owned FIFO replay preserves
+  capture positions and sends oldest-first. Overflow pauses with an explicit buffer-full message,
+  never drops an internal slice and pretends the stream is contiguous. A successful socket send
+  is not acknowledgement: audio handed off before failure may still be absent from live text.
+  Replay does not reconstruct the unfinished pre-reset assistance turn.
 - **No audio is accepted before BOTH the STT session and the recording are ready.** The
   session is opened, the WAV is opened, and only then is the session published to
   `sendAudioChunk` — so the provider, the file and the clock all begin on the same chunk.

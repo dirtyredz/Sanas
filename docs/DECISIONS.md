@@ -2,6 +2,20 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-11-09 — Bounded reconnect replay and explicit voice reconfirmation
+
+Supersedes the November 5 no-replay behavior. Retain up to 30 seconds of unsent PCM in
+provider-owned memory and replay by original byte position. Bound socket pressure and pump
+work; overflow pauses rather than silently cutting a gap. Already handed-off audio has no
+provider acknowledgement and cannot be guaranteed recoverable. Recording/capture count once.
+
+Mono raw speaker indices are connection-local. Allocate meeting-local IDs, retain historical
+pins, and reset mapping before replacement transcripts. After a prior pin, request explicit
+re-pinning on reconnect/resume. Cancel pending identity-dependent work and suspend automatic
+answers/coaching until confirmation; manual Answer now remains available. Rejected: transferring
+an index or guessing from voice overlap without validated voice matching. No schema migration;
+existing repository relabeling and batch overlap rules remain valid for the new unique IDs.
+
 ## 2026-11-09 — Pause/resume hotkey: pause in main, resume through the window
 
 Global `pauseHotkey` (Ctrl+Shift+P). Pause is main's own call (`togglePause`); the window's mic already
@@ -134,7 +148,7 @@ The old "offset = last final's end" rule stamped speech after a reconnect earlie
 during backoff) and freezes each socket's offset at the cursor where its first transmitted chunk
 started; it applies to finals, interims, endpoint, utterance-end and VAD alike. A `ResultWatchdog`
 (9 s without any Results while audio flows) retires a silently stalled socket, emits one reset and
-reuses the bounded backoff. Lost text is not recovered; audio replay stays dk-0af7b509. Rejected:
+reuses the bounded backoff. The unsent-audio no-replay policy here is superseded by the November 9 decision. Rejected:
 wall-clock offsets (jitter), offset from socket open (ignores the first chunk's real position).
 
 ## 2026-11-04 — Presentation mode retired; meeting context can be entered before Start

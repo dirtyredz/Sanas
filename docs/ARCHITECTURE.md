@@ -124,17 +124,29 @@ Mic (getUserMedia, renderer)
   implicitly "Me". An unexpected socket close emits `reset` at once, before the backoff.
 - **Session and clock:** `stt/deepgram/deepgram-session.ts` (`DeepgramSession`) owns the socket lifecycle;
   `deepgram.ts` (same folder) keeps the provider and batch transcription; `deepgram-stream-url.ts` builds the URL.
-  Every PCM byte handed to `sendAudio` is counted (including chunks dropped in reconnect backoff)
+  Every PCM byte handed to `sendAudio` is counted (including chunks queued in reconnect backoff)
   from `startOffsetMs`; each socket's offset is frozen where its first transmitted chunk started and
   applied to finals, interims, endpoint, utterance-end and VAD, so timestamps stay on the meeting
   audio clock (= the WAV) across reconnects. `deepgram-watchdog.ts` (`ResultWatchdog`): armed by the
   first transmitted chunk; any Results message (even empty) refreshes it; stall = audio sent in the
   last 2 s and 9 s without Results. A stall retires the socket, emits one reset, closes it (4000
   `stalled`) and runs the bounded backoff (1, 2, 4, 8, 8 s), then reports "connection lost
-  (stalled)". Opening is bounded at 10 s; Stop never resurrects a socket. No audio is replayed.
+  (stalled)". Opening is bounded at 10 s; Stop never resurrects a socket.
+  `deepgram/recovery/pcm-backlog.ts` owns up to 30 seconds of copied unsent PCM (960 KB mono,
+  1.92 MB stereo), with original byte positions. Reconnect drains oldest-first before live
+  audio, with bounded handoffs per 10 ms pump and a 256 KB socket-pressure ceiling. Failed
+  sends retain the unsent suffix. Overflow pauses explicitly; Stop and terminal failure clear
+  retained audio. Handoff is not acknowledgement: audio already sent but lost cannot be recovered.
 - Speaker labels: in This-PC (stereo) mode the user is structural (channel 0); in Elsewhere
   (mono) mode the user pins their own diarized voice ("that's me"), persisted per meeting and
-  carried through re-diarization by time overlap.
+  carried through re-diarization by time overlap. `capture/speaker-session.ts` maps mono raw
+  indices to monotonically allocated meeting-local IDs. Reconnect reset (before replay) and
+  resume start a fresh mapping; historical pins and labels remain attached to their old IDs.
+  After a prior pin, main publishes `speakerIdentity.identityNeedsConfirmation` until a current
+  voice is pinned. Historical corrections cannot confirm the new connection. Identity-dependent
+  pending work is cancelled, automatic answers and coaching are suspended, and manual Answer
+  now remains available. LiveSpeakerControls and OverlayStatus keep a persistent re-pin cue;
+  selected/current IDs come from main and pin failures never optimistically change selection.
 
 ### Assistance (Claude)
 
