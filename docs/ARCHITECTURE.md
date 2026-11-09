@@ -491,7 +491,7 @@ Final shutdown closes the connection. Smoke never imports normal startup and use
 Explicit `--rehearsal` dispatch bypasses normal startup and creates a unique worktree-local
 userData before opening settings/SQLite. The runner installs providers and DesktopDeps before
 importing the meeting orchestrator. Scripted interims/finals/boundaries feed its real callbacks;
-audio replay feeds `sendAudioChunk` at 20 ms intervals. The real lifecycle owns turn assembly,
+audio replay feeds `sendCapturedAudio` at 20 ms intervals (synthetic capture frames through `CaptureBinding`, the same gate IPC uses). The real lifecycle owns turn assembly,
 coach/answer admission, persistence, broadcasts, recording, summaries and batch replacement.
 Only optional Visible/real-capture mode creates the production overlay and registers IPC.
 No normal retention/updater/email/hotkey startup runs. Main-only observation collects final,
