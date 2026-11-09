@@ -120,7 +120,7 @@ const liveControls = createLiveControls({
   serialize: serialized,
   clockMs: () => audioMsReceived,
   live,
-  captures: capture.requests,
+  captures: capture.typedQuestions,
 })
 
 export function currentState(): MeetingState {

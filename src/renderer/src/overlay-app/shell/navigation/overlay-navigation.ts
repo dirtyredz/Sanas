@@ -5,8 +5,6 @@
 
 import type { Workspace } from '../../../lib/overlay-workspaces'
 
-export type SecondaryWorkspace = Exclude<Workspace, 'answer'>
-
 export interface NavigationState {
   meetingId: number | null
   workspace: Workspace
@@ -20,9 +18,6 @@ export type NavigationEvent =
   | { type: 'compose' }
   | { type: 'preferences'; open: boolean }
   | { type: 'escape' }
-
-export const tabId = (workspace: Workspace): string => `ov-tab-${workspace}`
-export const panelId = (workspace: Workspace): string => `ov-panel-${workspace}`
 
 export function initialNavigation(meetingId: number | null): NavigationState {
   return { meetingId, workspace: 'answer', preferencesOpen: false }

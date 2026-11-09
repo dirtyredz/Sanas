@@ -7,21 +7,21 @@ import { overlayBounds } from '../../../../windows/overlay-window'
 import { createScreenCapture } from '../../../screen-capture'
 import { CaptureDrafts } from './capture-drafts'
 import { CaptureRequests } from './capture-requests'
-import type { LiveSession } from '../live-session'
+import type { CaptureSessionPort, TypedQuestionWithScreen } from './capture-ports'
 import { assistReady } from '../suggestion/suggestion-requests'
 
 interface CaptureFeatureDeps {
   serialize<T>(fn: () => Promise<T>): Promise<T>
   liveMeetingId(): number | null
-  live: Pick<LiveSession, 'canRequest' | 'request'>
+  live: CaptureSessionPort
 }
 
 /** Screen-capture wiring for the running meeting: the display capture (overlay bounds),
  *  the composer draft store and the request coordinator, so the orchestrator knows none of
- *  them. `requests` is what `createLiveControls` needs to send a typed question with its
+ *  them. `typedQuestions` is what `createLiveControls` needs to send a typed question with its
  *  attached screen. */
 export function createCaptureFeature(deps: CaptureFeatureDeps): {
-  requests: Pick<CaptureRequests<unknown>, 'sendWithDraft'>
+  typedQuestions: TypedQuestionWithScreen
   /** Capture screen (overlay button or shortcut). The display is chosen synchronously inside
    *  this call, so the shortcut calls it BEFORE revealing the overlay. */
   captureScreen(meetingId?: number | null): Promise<Admission>
@@ -45,7 +45,7 @@ export function createCaptureFeature(deps: CaptureFeatureDeps): {
     drafts: new CaptureDrafts(),
   })
   return {
-    requests,
+    typedQuestions: requests,
     captureScreen: (meetingId = null) => requests.capture(meetingId),
     attachScreen: (meetingId) => requests.attach(meetingId),
     discardScreen: (meetingId, token) => requests.discard(meetingId, token),

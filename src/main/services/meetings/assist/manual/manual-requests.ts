@@ -16,6 +16,7 @@ import type { AssistImage } from '../../../assistant/types'
 import { renderTranscriptWindow } from '../../../turns/transcript-format'
 import {
   answerBase,
+  assistReady,
   meetingContext,
   type AssistSettings,
   type AssistSnapshot,
@@ -145,7 +146,7 @@ export function admitManual(
     const existing = deps.existingDetail(input.meetingId, input.sourceSuggestionId)
     if (existing) return { accepted: true, storedSuggestionId: existing }
   }
-  if (!request.apiKey)
+  if (!assistReady(deps.settings()))
     return {
       accepted: false,
       reason: 'unavailable',

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { WORKSPACE_LABELS, type Workspace } from '../../lib/overlay-workspaces'
-import { panelId, tabId, type SecondaryWorkspace } from '../shell/navigation/overlay-navigation'
+import { panelId, tabId, type SecondaryWorkspace } from '../../lib/overlay-workspaces'
 
 /** One secondary workspace's frame. Every workspace stays mounted so drafts and scroll
  *  positions survive switching; inactive ones are hidden and inert (out of the tab order). */

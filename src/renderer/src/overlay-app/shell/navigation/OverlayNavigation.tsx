@@ -8,8 +8,7 @@ import {
   IconTranscript,
 } from '../../controls/overlay-icons'
 import { WORKSPACE_LABELS } from '../../../lib/overlay-workspaces'
-import { WORKSPACES, type Workspace } from '../../../lib/overlay-workspaces'
-import { panelId, tabId } from './overlay-navigation'
+import { WORKSPACES, panelId, tabId, type Workspace } from '../../../lib/overlay-workspaces'
 import { workspaceShortcut } from './overlay-shortcuts'
 import { OverlayTip } from '../../controls/OverlayTip'
 

@@ -3,6 +3,11 @@
 
 export const WORKSPACES = ['answer', 'ask', 'screen', 'transcript', 'context'] as const
 export type Workspace = (typeof WORKSPACES)[number]
+export type SecondaryWorkspace = Exclude<Workspace, 'answer'>
+
+/** Tab/panel element ids: the rail's tabs and each workspace panel reference one another. */
+export const tabId = (workspace: Workspace): string => `ov-tab-${workspace}`
+export const panelId = (workspace: Workspace): string => `ov-panel-${workspace}`
 
 export const WORKSPACE_LABELS: Record<Workspace, string> = {
   answer: 'Answer',

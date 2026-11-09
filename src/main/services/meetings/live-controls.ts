@@ -8,7 +8,7 @@ import { IPC } from '@shared/ipc'
 import { getMeetingContext, saveMeetingContext } from '../../db/repos/meeting/meeting-context'
 import { broadcast } from '../../windows/broadcast'
 import type { LiveSession } from './assist/live-session'
-import type { CaptureRequests } from './assist/manual/capture-requests'
+import type { TypedQuestionWithScreen } from './assist/manual/capture-ports'
 import { applyContext } from './context/session'
 import { isLiveMeeting, liveMeetingId } from './status/live-meeting'
 
@@ -16,7 +16,7 @@ interface LiveControlsDeps {
   serialize<T>(fn: () => Promise<T>): Promise<T>
   clockMs(): number
   live: LiveSession
-  captures: Pick<CaptureRequests<unknown>, 'sendWithDraft'>
+  captures: TypedQuestionWithScreen
 }
 
 /** Thin facade for controls that act on the running meeting without owning its lifecycle. */
