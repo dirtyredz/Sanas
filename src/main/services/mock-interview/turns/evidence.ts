@@ -13,6 +13,10 @@ import type { LiveEngine } from './engine'
 export class MockEvidence {
   readonly requests: RequestOutcome[] = []
   readonly transitions: LiveTransition[] = []
+  /** Unpublished speculative answers: they join `requests` only when promoted, so a discarded
+   *  speculation is never an answer in the per-question report (its count lives in the
+   *  assistance transitions). */
+  private readonly staged = new Map<number, RequestOutcome>()
   private readonly latency = new LatencyTracker()
   constructor(private now: () => number) {}
   assist(event: AssistDiagnostic): void {
@@ -24,7 +28,7 @@ export class MockEvidence {
   run(event: RunObservation): void {
     this.latency.run(event)
     if (event.kind === 'begin') {
-      this.requests.push({
+      const record: RequestOutcome = {
         id: event.id,
         suggestionId: event.id,
         purpose: event.purpose,
@@ -33,20 +37,20 @@ export class MockEvidence {
         atMs: this.now(),
         status: 'pending',
         answer: '',
-      })
+      }
+      if (event.speculative) this.staged.set(event.id, record)
+      else this.requests.push(record)
       return
     }
     const id = event.kind === 'visible' ? event.event.suggestionId : event.id
-    const r = this.requests.find((r) => r.id === id)
+    const r = this.requests.find((r) => r.id === id) ?? this.staged.get(id)
     if (!r) return
     if (event.kind === 'first-text') r.firstDeltaMs ??= this.now()
     else if (event.kind === 'usage') r.usage = { ...event.usage }
-    else if (event.kind === 'promoted' || event.kind === 'first-readable') return
-    else if (event.kind === 'settled' && event.outcome === 'discarded') {
-      // an unpublished speculation was never an answer: it stays out of the per-question
-      // report (its count lives in the assistance transitions)
-      this.requests.splice(this.requests.indexOf(r), 1)
-    } else if (event.kind === 'visible') {
+    else if (event.kind === 'promoted') {
+      if (this.staged.delete(id)) this.requests.push(r)
+    } else if (event.kind === 'first-readable') return
+    else if (event.kind === 'visible') {
       const e = event.event
       if ((e.kind === 'delta' && e.text) || e.kind === 'done') r.firstVisibleMs ??= this.now()
       if (e.kind === 'done') {
@@ -54,6 +58,7 @@ export class MockEvidence {
         r.proseWords = proseWords(e.text)
       }
     } else if (event.kind === 'settled') {
+      this.staged.delete(id)
       r.completedMs = this.now()
       r.status =
         event.outcome === 'done'
