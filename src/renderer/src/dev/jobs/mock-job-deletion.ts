@@ -6,7 +6,7 @@ import type {
   JobDeletionPreview,
   JobDeletionResult,
 } from '@shared/jobs/deletion'
-import { mockMemoryCounts, removeMockMemory } from '../memory/mock-memory'
+import { mockMemoryCounts, removeMockMemory } from './mock-job-memory'
 import { glossary, jobs, meetings, segments, suggestions } from '../mock-fixtures'
 
 type SanasApi = Window['sanas']

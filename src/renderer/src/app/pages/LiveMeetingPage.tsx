@@ -1,4 +1,4 @@
-import { useJobHasResume } from '../../lib/meeting/resume/useJobHasResume'
+import { useJobHasResume } from '../../lib/meeting/useJobHasResume'
 import {
   contextDraftAfterStart,
   interviewChecked,
