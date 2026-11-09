@@ -1,7 +1,7 @@
 import { expect, it, vi } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 vi.mock('../../audio/mic', () => ({ startCapture: vi.fn() }))
-import { MockResults } from './MockInterviewPage'
+import { MockResults } from '../mock-interview/MockResults'
 import { AppHeader } from '../shell/AppHeader'
 it('shows the tab and honest per-question results with outcome reasons', () => {
   const nav = renderToStaticMarkup(
