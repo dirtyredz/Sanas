@@ -1,6 +1,6 @@
 /** v9: extracted text and display name only. Immutable on its own; the one sanctioned clear (a job change) is added by v12 (meeting-snapshot-clear-schema.ts), which supersedes this trigger.
  *  Frozen migration: the 40000 in the CHECK mirrors RESUME_MAX_CHARS at the time it shipped
- *  and must not be edited; the app-level limit lives in shared/meeting-resume.ts. */
+ *  and must not be edited; the app-level limit lives in shared/meeting/meeting-resume.ts. */
 export const meetingResumeSchema = `
   ALTER TABLE meetings ADD COLUMN resume_name TEXT NOT NULL DEFAULT '';
   ALTER TABLE meetings ADD COLUMN resume_text TEXT NOT NULL DEFAULT ''
