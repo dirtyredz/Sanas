@@ -1,6 +1,6 @@
 param([int]$TimeoutSeconds = 60)
 $ErrorActionPreference = 'Stop'
-$root = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
+$root = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../..'))
 $exe = Join-Path $root 'release/win-unpacked/Sanas.exe'
 $folder = Join-Path $root ('.tmp/smoke/' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $folder -Force | Out-Null

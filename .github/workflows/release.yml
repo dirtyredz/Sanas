@@ -36,7 +36,7 @@ jobs:
       - id: version
         env:
           GH_TOKEN: ${{ github.token }}
-        run: node scripts/release/version.mjs
+        run: node scripts/release/publish/version.mjs
   verify:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -72,11 +72,11 @@ jobs:
         with:
           electron: 'true'
       - run: npm ci
-      - run: node scripts/release/version.mjs --stamp "$env:RELEASE_VERSION"
+      - run: node scripts/release/publish/version.mjs --stamp "$env:RELEASE_VERSION"
       - run: npm run dist
       # Signing must precede final blockmap/metadata generation and validation.
-      - run: node scripts/release/package-check.mjs
-      - run: pwsh -NoProfile -File scripts/release/smoke.ps1
+      - run: node scripts/release/publish/package-check.mjs
+      - run: pwsh -NoProfile -File scripts/release/smoke/smoke.ps1
       - id: candidate
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
@@ -108,4 +108,4 @@ jobs:
           artifact-ids: ${{ needs.build.outputs.artifact_id }}
           merge-multiple: true
           path: candidate
-      - run: node scripts/release/publish.mjs candidate
+      - run: node scripts/release/publish/publish.mjs candidate

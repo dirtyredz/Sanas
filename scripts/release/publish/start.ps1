@@ -1,5 +1,5 @@
 param([switch]$DryRun)
-. (Join-Path $PSScriptRoot '../owner/owner-run.ps1')
+. (Join-Path $PSScriptRoot '../../owner/owner-run.ps1')
 Invoke-OwnerRun 'release-start' {
   if ($DryRun) { Write-OwnerLog 'DRY RUN: resolve main SHA, dispatch release.yml with unique correlation ID, wait for its run. No dispatch performed.'; return }
   $head = Invoke-GhJson @('api', 'repos/dirtyredz/Sanas/commits/main')

@@ -27,7 +27,7 @@ Paths below are relative to the repository root. Keep screen capture separate fr
 | **New** `src/renderer/src/lib/suggestions/CaptureThumbnail.tsx`; change `SuggestionContent.tsx`, `whisper-history.ts` in that directory; `src/renderer/src/app/pages/MeetingView.tsx`                                            | Shared image review, complete diagnosis rendering, metadata propagation, and history refresh.                                                                                                                   |
 | Change `src/renderer/overlay.html`, `src/renderer/src/overlay-app/overlay.css`, `src/renderer/src/app/styles/pages.css`, `src/renderer/src/app/settings/RetentionSection.tsx`                                                    | Local image CSP, existing stylesheet homes, and accurate capture-retention copy/accounting.                                                                                                                     |
 | **New** `src/renderer/src/dev/mock-screen-capture.ts`; change `mock-api.ts`, `mock-live-controls.ts` in that directory                                                                                                           | Browser-preview capture fixtures and behavior. Keep fixture/state logic out of the already substantial mock bridge.                                                                                             |
-| **New** `src/main/diagnostics/screen-capture-checks.ts`, `src/main/db/repos/screen-capture-checks.ts`; change `src/main/diagnostics/smoke.ts`, `scripts/release/smoke.ps1`                                                       | Disposable Electron-ABI migration/repository verification. Diagnostics orchestrates; repository helpers own fixture SQL. Update the wrapper’s hardcoded schema expectation.                                     |
+| **New** `src/main/diagnostics/screen-capture-checks.ts`, `src/main/db/repos/screen-capture-checks.ts`; change `src/main/diagnostics/smoke.ts`, `scripts/release/smoke/smoke.ps1`                                                 | Disposable Electron-ABI migration/repository verification. Diagnostics orchestrates; repository helpers own fixture SQL. Update the wrapper’s hardcoded schema expectation.                                     |
 
 Colocate tests listed below. No inspected production file requires extraction solely for size; keep every changed code file below approximately 800 lines. The deliberate extractions are shortcut contracts and composer attachment state.
 
@@ -164,8 +164,8 @@ No builds or tests were run during planning. The implementer must run the docume
 4. `npm run format:check`
 5. `npm run build`
 6. `npm run dist`
-7. `node scripts/release/package-check.mjs`
-8. `pwsh -NoProfile -File scripts/release/smoke.ps1`
+7. `node scripts/release/publish/package-check.mjs`
+8. `pwsh -NoProfile -File scripts/release/smoke/smoke.ps1`
 
 The packaged smoke must include the new disposable capture database checks and expect schema v8.
 

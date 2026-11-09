@@ -1,5 +1,5 @@
 param([switch]$DryRun)
-. (Join-Path $PSScriptRoot '../owner/owner-run.ps1')
+. (Join-Path $PSScriptRoot '../../owner/owner-run.ps1')
 . (Join-Path $PSScriptRoot 'install-version.ps1')
 function Assert-SanasExited {
   $active = @(Get-CimInstance Win32_Process | Where-Object {

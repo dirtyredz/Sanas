@@ -55,8 +55,8 @@ Use Node 22, PowerShell (7 recommended; Windows PowerShell also supported) and a
 already be installed. After merging/pushing an approved change, run:
 
 ```powershell
-pwsh -NoProfile -File scripts/release/start.ps1 -DryRun
-pwsh -NoProfile -File scripts/release/start.ps1
+pwsh -NoProfile -File scripts/release/publish/start.ps1 -DryRun
+pwsh -NoProfile -File scripts/release/publish/start.ps1
 ```
 
 The main-only manual workflow stamps a disposable build, verifies, builds unsigned x64 NSIS,
@@ -69,8 +69,8 @@ release to reuse its version. The updater feed is public dirtyredz/Sanas, withou
 For first installation, exit both dev and installed Sanas, then run:
 
 ```powershell
-pwsh -NoProfile -File scripts/release/install-latest.ps1 -DryRun
-pwsh -NoProfile -File scripts/release/install-latest.ps1
+pwsh -NoProfile -File scripts/release/install/install-latest.ps1 -DryRun
+pwsh -NoProfile -File scripts/release/install/install-latest.ps1
 ```
 
 The script verifies installer hashes/metadata, cold-copies the complete APPDATA/sanas directory
@@ -90,7 +90,7 @@ For main-process startup or runtime failures, inspect `%APPDATA%\sanas\logs\sana
 `sanas-main.log.1` for the previous capped file). API-key-shaped values are redacted.
 
 Local acceptance: npm run typecheck, npm run lint, npm test, npm run format:check, then npm run dist,
-node scripts/release/package-check.mjs and pwsh -NoProfile -File scripts/release/smoke.ps1. Dist
+node scripts/release/publish/package-check.mjs and pwsh -NoProfile -File scripts/release/smoke/smoke.ps1. Dist
 never publishes. Smoke creates no window and uses disposable data. Native migration fixture suites
 and remote readback were excluded from the trimmed plan. The first real update after a subsequent
 release remains the installed-upgrade acceptance check.
