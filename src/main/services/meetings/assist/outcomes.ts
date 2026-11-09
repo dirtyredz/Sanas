@@ -1,19 +1,30 @@
 import type { ProviderUsage } from '../../assistant/types'
 
-export interface RequestOutcome {
+export type RequestStatus = 'pending' | 'completed' | 'declined' | 'failed' | 'cancelled'
+
+/** What any consumer needs to time one request: who it was, when it was received, when text
+ *  first arrived and became visible, and when it completed or was delivered (all on the
+ *  observer's monotonic clock). */
+export interface RequestTiming {
   id: number
   suggestionId?: number
   purpose: string
-  manualKind?: string
-  stepIds: string[]
-  turnSpans: { startMs: number; endMs: number }[]
   atMs: number
   firstDeltaMs?: number
   firstVisibleMs?: number
   completedMs?: number
   deliveredMs?: number
+  status: RequestStatus
+}
+
+/** A request's timing plus the correlation and reporting fields only the mock-interview and
+ *  rehearsal diagnostics consumers keep (scenario steps, turn spans, image digest, verdict,
+ *  usage, synthetic answer text). */
+export interface RequestOutcome extends RequestTiming {
+  manualKind?: string
+  stepIds: string[]
+  turnSpans: { startMs: number; endMs: number }[]
   imageDigest?: string
-  status: 'pending' | 'completed' | 'declined' | 'failed' | 'cancelled'
   pendingAtStop?: boolean
   answer: string
   proseWords?: number
