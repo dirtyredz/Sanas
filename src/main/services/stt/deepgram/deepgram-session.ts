@@ -28,7 +28,7 @@ const SAMPLE_RATE = 16000
 const BYTES_PER_SAMPLE = 2
 const CONNECT_ERROR = 'Deepgram connection failed — check API key/network'
 
-type RecoverReason = 'close' | 'stall'
+type RecoverReason = 'close' | 'stall' | 'send'
 
 export class DeepgramSession implements SttSession {
   private ws: WebSocket | null = null // the installed, current socket
@@ -96,7 +96,8 @@ export class DeepgramSession implements SttSession {
     this.ws = ws
     this.socketOffsetMs = null
     this.keepalive = setInterval(() => {
-      if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'KeepAlive' }))
+      if (ws.readyState === WebSocket.OPEN)
+        this.sendGuarded(ws, JSON.stringify({ type: 'KeepAlive' }))
     }, KEEPALIVE_MS)
     this.watchdog = new ResultWatchdog({
       now: () => Date.now(),
@@ -154,7 +155,8 @@ export class DeepgramSession implements SttSession {
     this.ws = null // from here the old socket's events are ignored
     this.clearConnectionTimers()
     this.signal({ kind: 'reset' }) // continuity is gone now, not after the backoff
-    if (reason === 'stall' && old) closeQuietly(old, 4000, 'stalled')
+    if (reason !== 'close' && old)
+      closeQuietly(old, 4000, reason === 'send' ? 'send failed' : 'stalled')
 
     for (const delay of RECONNECT_DELAYS_MS) {
       if (this.stopped) return
@@ -172,7 +174,7 @@ export class DeepgramSession implements SttSession {
     }
     this.recovering = false
     if (this.stopped) return
-    const why = reason === 'stall' ? 'stalled' : `close ${code}`
+    const why = reason === 'stall' ? 'stalled' : reason === 'send' ? 'send failed' : `close ${code}`
     this.opts.onError(`Deepgram connection lost (${why}) — reconnect failed`)
   }
 
@@ -194,12 +196,25 @@ export class DeepgramSession implements SttSession {
     this.watchdog = null
   }
 
+  /** A transport that throws synchronously from send() is treated like a dead socket: the
+   *  throw is contained here (it would otherwise escape the keepalive timer or the IPC audio
+   *  listener) and the connection recovers. Returns whether the frame was handed over. */
+  private sendGuarded(ws: WebSocket, data: string | Buffer): boolean {
+    try {
+      ws.send(data)
+      return true
+    } catch {
+      if (this.ws === ws) void this.recover('send')
+      return false
+    }
+  }
+
   sendAudio(chunk: Buffer): void {
     const before = this.bytesSeen
     this.bytesSeen += chunk.length // the recording clock counts audio we had to drop too
     const ws = this.ws
     if (this.stopped || !ws || ws.readyState !== WebSocket.OPEN) return
-    ws.send(chunk)
+    if (!this.sendGuarded(ws, chunk)) return
     this.socketOffsetMs ??= this.cursorMs(before)
     this.watchdog?.audioSent()
   }
@@ -219,7 +234,12 @@ export class DeepgramSession implements SttSession {
       closeQuietly(ws)
       return
     }
-    ws.send(JSON.stringify({ type: 'CloseStream' }))
+    try {
+      ws.send(JSON.stringify({ type: 'CloseStream' }))
+    } catch {
+      closeQuietly(ws) // a transport that throws on send cannot flush; just close it
+      return
+    }
     await new Promise<void>((resolve) => {
       const timer = setTimeout(resolve, STOP_CLOSE_WAIT_MS) // don't hang forever on a dead socket
       ws.addEventListener(

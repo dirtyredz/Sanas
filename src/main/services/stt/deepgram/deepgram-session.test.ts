@@ -330,6 +330,42 @@ describe('Deepgram session', () => {
     })
   })
 
+  describe('a transport whose send() throws synchronously', () => {
+    it('is contained in sendAudio and recovers like a dead socket', async () => {
+      const { session, signals } = await connected()
+      const first = sockets()[0]
+      first.send = () => {
+        throw new Error('write after end')
+      }
+      expect(() => session.sendAudio(pcm(0.1))).not.toThrow()
+      expect(signals).toEqual([{ kind: 'reset' }])
+      expect(first.closes).toEqual([[4000, 'send failed']])
+      await vi.advanceTimersByTimeAsync(1000)
+      expect(sockets()).toHaveLength(2)
+      await session.stop()
+    })
+
+    it('is contained in the keepalive timer', async () => {
+      const { session, signals } = await connected()
+      sockets()[0].send = () => {
+        throw new Error('write after end')
+      }
+      await expect(vi.advanceTimersByTimeAsync(10_000)).resolves.not.toThrow()
+      expect(signals).toEqual([{ kind: 'reset' }])
+      await session.stop()
+    })
+
+    it('does not fail stop() when CloseStream cannot be sent', async () => {
+      const { session } = await connected()
+      const first = sockets()[0]
+      first.send = () => {
+        throw new Error('write after end')
+      }
+      await expect(session.stop()).resolves.toBeUndefined()
+      expect(first.closes).toHaveLength(1)
+    })
+  })
+
   describe('result-stall watchdog', () => {
     it('recovers a socket that stops answering while PCM flows', async () => {
       const { session, signals } = await connected()
