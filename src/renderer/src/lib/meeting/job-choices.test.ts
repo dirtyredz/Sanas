@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
 import type { Job } from '@shared/types'
-import { applyJobList, startableJobs } from './job-choices'
+import { rememberedJob, rememberJob, selectionAfterReload, startableJobs } from './job-choices'
 
 const job = (id: number, name: string): Job => ({
   id,
@@ -25,24 +25,44 @@ it('drops the Unsorted bucket row so the picker lists Unsorted once', () => {
   expect(startableJobs(owner).map((j) => j.name)).toEqual(['Centene', 'Constellation'])
 })
 
-it('a reload after a job is created offers the new job and keeps the selection', () => {
-  const before = applyJobList(store('2'), owner)
-  expect(before.jobId).toBe(2)
-  const after = applyJobList(store('2'), [...owner, job(4, 'Ten Mile Square')], before.jobId)
-  expect(after.jobs.map((j) => j.name)).toContain('Ten Mile Square')
-  expect(after.jobId).toBe(2)
+const reload = (all: Job[], remembered: string | undefined, newer?: number | '') =>
+  selectionAfterReload(store(remembered), startableJobs(all), newer)
+
+it('a reload after a job is created keeps the selection', () => {
+  const before = reload(owner, '2')
+  expect(before).toBe(2)
+  expect(reload([...owner, job(4, 'Ten Mile Square')], '2', before)).toBe(2)
 })
 
 it('drops a deleted job (and its remembered choice) on the next visible reload', () => {
-  const before = applyJobList(store('3'), owner)
-  expect(before.jobId).toBe(3)
-  const after = applyJobList(store('3'), owner.slice(0, 2), before.jobId)
-  expect(after.jobs.map((j) => j.id)).toEqual([2])
-  expect(after.jobId).toBe('')
+  const before = reload(owner, '3')
+  expect(before).toBe(3)
+  expect(reload(owner.slice(0, 2), '3', before)).toBe('')
 })
 
 it('falls back to Unsorted when the selected job was archived or is the bucket row', () => {
-  expect(applyJobList(store(), owner.slice(0, 2), 3).jobId).toBe('')
-  expect(applyJobList(store('1'), owner).jobId).toBe('')
-  expect(applyJobList(store(), owner, 1).jobId).toBe('')
+  expect(reload(owner.slice(0, 2), undefined, 3)).toBe('')
+  expect(reload(owner, '1')).toBe('')
+  expect(reload(owner, undefined, 1)).toBe('')
+})
+
+it('a job named like the bucket is only ever the bucket', () => {
+  expect(startableJobs([job(9, 'Unsorted'), job(10, 'Unsorted 2')]).map((j) => j.id)).toEqual([10])
+})
+
+it('Unsorted replaces the remembered job across remounts', () => {
+  const data = new Map<string, string>()
+  const storage = {
+    getItem: (k: string) => data.get(k) ?? null,
+    setItem: (k: string, v: string) => {
+      data.set(k, v)
+    },
+    removeItem: (k: string) => {
+      data.delete(k)
+    },
+  }
+  rememberJob(storage, '7')
+  expect(rememberedJob(storage, [{ id: 7 }])).toBe(7)
+  rememberJob(storage, '')
+  expect(rememberedJob(storage, [{ id: 7 }])).toBe('')
 })

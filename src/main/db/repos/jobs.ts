@@ -1,4 +1,5 @@
 import { getDb } from '../index'
+import { reservedNameError, UNSORTED_JOB_NAME } from '@shared/jobs/unsorted'
 import type { Job } from '@shared/types'
 
 interface JobRow {
@@ -50,11 +51,15 @@ export function getJob(id: number): Job | null {
 }
 
 export function createJob(name: string): Job {
+  const reserved = reservedNameError(name, null)
+  if (reserved) throw new Error(reserved)
   const res = getDb().prepare(`INSERT INTO jobs (name) VALUES (?)`).run(name)
   return getJob(Number(res.lastInsertRowid))!
 }
 
 export function updateJob(job: Omit<Job, 'createdAt' | 'archived'>): Job {
+  const reserved = reservedNameError(job.name, getJob(job.id))
+  if (reserved) throw new Error(reserved)
   getDb()
     .prepare(
       `UPDATE jobs SET name = ?, company_info = ?, project_scope = ?, notes = ?,
@@ -82,9 +87,9 @@ export function setJobArchived(id: number, archived: boolean): void {
 /** Meetings need a job; used when starting a meeting with none selected. */
 export function ensureDefaultJob(): number {
   const db = getDb()
-  const existing = db.prepare(`SELECT id FROM jobs WHERE name = 'Unsorted'`).get() as
+  const existing = db.prepare(`SELECT id FROM jobs WHERE name = ?`).get(UNSORTED_JOB_NAME) as
     { id: number } | undefined
   if (existing) return existing.id
-  const res = db.prepare(`INSERT INTO jobs (name) VALUES ('Unsorted')`).run()
+  const res = db.prepare(`INSERT INTO jobs (name) VALUES (?)`).run(UNSORTED_JOB_NAME)
   return Number(res.lastInsertRowid)
 }

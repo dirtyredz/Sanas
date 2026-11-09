@@ -1,6 +1,7 @@
 import type { ApplyRequest, JobTextField, JudgementField } from '@shared/jobs/applications'
 import type { ImportBaseline } from '@shared/jobs/import-baseline'
 import { JOB_NAME_MAX_CHARS } from '@shared/jobs/limits'
+import { reservedNameError } from '@shared/jobs/unsorted'
 import { normalizeGlossary } from '../map-pack'
 import type { CreatePayload } from './preview-session'
 
@@ -38,5 +39,7 @@ export function jobName(proposal: CreatePayload['name'], requested: string | und
   const name = (requested ?? proposal.proposed).trim()
   if (!name || name.length > JOB_NAME_MAX_CHARS)
     throw new Error(`Give the job a name of 1–${JOB_NAME_MAX_CHARS} characters.`)
+  const reserved = reservedNameError(name, null)
+  if (reserved) throw new Error(reserved)
   return name
 }

@@ -1,3 +1,4 @@
+import { isUnsortedJob } from '@shared/jobs/unsorted'
 // Browser-preview mock for counted job deletion.
 import type { MeetingResume } from '@shared/meeting-resume'
 import type {
@@ -53,7 +54,7 @@ export function mockJobDeletion(
           token: null,
         }
       }
-      if (job.id === 1 || job.name === 'Unsorted') {
+      if (job.id === 1 || isUnsortedJob(job)) {
         return {
           jobId,
           jobName: job.name,

@@ -3,10 +3,9 @@ import {
   contextDraftAfterStart,
   interviewChecked,
   meetingStartOptions,
-  rememberJob,
 } from '../../lib/meeting/start-selection'
 import { MEETING_CONTEXT_MAX_CHARS } from '@shared/meeting-context'
-import { applyJobList, startableJobs } from '../../lib/meeting/job-choices'
+import { rememberJob, selectionAfterReload, startableJobs } from '../../lib/meeting/job-choices'
 import { startCapturedMeeting } from '../../lib/meeting/start-captured-meeting'
 import { MeetingContextEditor } from '../../lib/meeting/MeetingContextEditor'
 import { useEffect, useRef, useState } from 'react'
@@ -74,11 +73,11 @@ export function LiveMeetingPage({ visible = true }: { visible?: boolean }): Reac
     // this page stays mounted while hidden, so reload the jobs each time it is shown
     if (!visible) return
     window.sanas.jobs.list().then((all) => {
-      setJobs(startableJobs(all))
+      const choices = startableJobs(all)
+      setJobs(choices)
       // remember last-used job across sessions
-      setJobId(
-        (current) =>
-          applyJobList(localStorage, all, choiceChanged.current ? current : undefined).jobId,
+      setJobId((current) =>
+        selectionAfterReload(localStorage, choices, choiceChanged.current ? current : undefined),
       )
     })
     window.sanas.settings.get().then((s) => setSource(s.meetingSource))

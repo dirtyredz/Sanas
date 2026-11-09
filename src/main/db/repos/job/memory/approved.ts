@@ -1,3 +1,4 @@
+import { isUnsortedJob } from '@shared/jobs/unsorted'
 import { JOB_MEMORY_MAX_CHARS, type ApprovedMemory } from '@shared/jobs/memory'
 import { getDb } from '../../../index'
 
@@ -8,7 +9,7 @@ export function validateMemory(text: unknown): asserts text is string {
 export function ordinaryJob(jobId: number): boolean {
   const job = getDb().prepare('SELECT name FROM jobs WHERE id = ?').get(jobId) as
     { name: string } | undefined
-  return !!job && job.name !== 'Unsorted'
+  return !!job && !isUnsortedJob(job)
 }
 export function getApprovedMemory(jobId: number): ApprovedMemory {
   return (

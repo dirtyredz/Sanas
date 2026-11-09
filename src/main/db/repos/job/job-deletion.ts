@@ -1,17 +1,15 @@
 import type { JobDeletionCounts } from '@shared/jobs/deletion'
+import { isUnsortedJob } from '@shared/jobs/unsorted'
 import { getDb } from '../../index'
 
 // Counting and the final row delete for removing a job. Meetings are removed one by one by
 // services/jobs/deletion.ts (through services/meetings/remove.ts, which also deletes the
 // recording); the v13 jobs_delete_guard trigger refuses a job row that still has any.
 
-/** The name ensureDefaultJob resolves the default bucket by. */
-export const UNSORTED_JOB_NAME = 'Unsorted'
-
 /** ID 1 and the name-resolved Unsorted bucket can never be deleted (Unsorted is found by
  *  name, not guaranteed to be ID 1; both stay protected and nothing is renumbered). */
 export function isProtectedJob(id: number, name: string): boolean {
-  return id === 1 || name === UNSORTED_JOB_NAME
+  return id === 1 || isUnsortedJob({ name })
 }
 
 export interface JobMeetingRef {

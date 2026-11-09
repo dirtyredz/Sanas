@@ -1,3 +1,4 @@
+import { UNSORTED_JOB_NAME } from '@shared/jobs/unsorted'
 import { createHash, randomUUID } from 'node:crypto'
 import type { JobMemoryView, MemoryProposal, MemoryReview } from '@shared/jobs/memory'
 import { getDb } from '../../../index'
@@ -18,7 +19,7 @@ export function memorySource(meetingId: number): MemorySource | null {
       `SELECT m.id AS meetingId,m.job_id AS jobId,m.title,m.started_at AS startedAt,
     coalesce(m.summary,'') AS summary,coalesce(m.action_items,'') AS actions
     FROM meetings m JOIN jobs j ON j.id=m.job_id
-    WHERE m.id=? AND m.ended_at IS NOT NULL AND m.practice=0 AND j.name<>'Unsorted'
+    WHERE m.id=? AND m.ended_at IS NOT NULL AND m.practice=0 AND j.name<>'${UNSORTED_JOB_NAME}'
     AND (coalesce(m.summary,'')<>'' OR coalesce(m.action_items,'')<>'')`,
     )
     .get(meetingId) as Omit<MemorySource, 'fingerprint'> | undefined

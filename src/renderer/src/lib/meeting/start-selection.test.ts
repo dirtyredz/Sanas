@@ -1,27 +1,6 @@
 import { expect, it } from 'vitest'
-import {
-  contextDraftAfterStart,
-  interviewChecked,
-  meetingStartOptions,
-  rememberedJob,
-  rememberJob,
-} from './start-selection'
-it('Unsorted replaces the remembered job across remounts', () => {
-  const data = new Map<string, string>()
-  const storage = {
-    getItem: (k: string) => data.get(k) ?? null,
-    setItem: (k: string, v: string) => {
-      data.set(k, v)
-    },
-    removeItem: (k: string) => {
-      data.delete(k)
-    },
-  }
-  rememberJob(storage, '7')
-  expect(rememberedJob(storage, [{ id: 7 }])).toBe(7)
-  rememberJob(storage, '')
-  expect(rememberedJob(storage, [{ id: 7 }])).toBe('')
-})
+import { contextDraftAfterStart, interviewChecked, meetingStartOptions } from './start-selection'
+import { rememberedJob } from './job-choices'
 it.each(['', 9] as const)('late job loading preserves newer selection %s', async (choice) => {
   const storage = { getItem: () => '7', setItem: () => {}, removeItem: () => {} }
   let resolve!: (jobs: { id: number }[]) => void

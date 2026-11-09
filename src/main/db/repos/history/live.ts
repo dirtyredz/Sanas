@@ -1,3 +1,4 @@
+import { UNSORTED_JOB_NAME } from '@shared/jobs/unsorted'
 import type { Database } from 'better-sqlite3'
 import { ftsAnyOf } from '../../fts-query'
 
@@ -13,7 +14,7 @@ export interface LiveHit {
 export function liveHits(db: Database, jobId: number, currentId: number, query: string): LiveHit[] {
   const match = ftsAnyOf(query)
   if (!match) return []
-  const scope = `m.job_id=? AND m.id<>? AND m.ended_at IS NOT NULL AND m.practice=0 AND j.name<>'Unsorted'`
+  const scope = `m.job_id=? AND m.id<>? AND m.ended_at IS NOT NULL AND m.practice=0 AND j.name<>'${UNSORTED_JOB_NAME}'`
   const transcript = db
     .prepare(
       `SELECT m.id AS meetingId,substr(m.title,1,120) AS title,m.started_at AS date,s.t_start_ms AS time,

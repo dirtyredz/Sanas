@@ -1,8 +1,11 @@
+import { isUnsortedJob } from '@shared/jobs/unsorted'
 import type { Job } from '@shared/types'
-import { rememberedJob } from './start-selection'
 
-/** Name of the bucket row main keeps for meetings started with no job (ensureDefaultJob). */
-export const UNSORTED_NAME = 'Unsorted'
+// What Live's job picker offers and which job it remembers across sessions.
+
+type SelectionStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
+
+const LAST_JOB_KEY = 'sanas.lastJobId'
 
 /**
  * Jobs a start picker offers as real choices. The Unsorted bucket row is excluded: the
@@ -10,20 +13,35 @@ export const UNSORTED_NAME = 'Unsorted'
  * bucket), so listing the row too showed "Unsorted" twice.
  */
 export function startableJobs<T extends Pick<Job, 'name'>>(all: readonly T[]): T[] {
-  return all.filter((job) => job.name !== UNSORTED_NAME)
+  return all.filter((job) => !isUnsortedJob(job))
+}
+
+/** The remembered job when it is still offered, else '' (Unsorted); a newer explicit choice
+ *  made while the list was loading wins. */
+export function rememberedJob(
+  storage: SelectionStorage,
+  jobs: readonly { id: number }[],
+  newerChoice?: number | '',
+): number | '' {
+  if (newerChoice !== undefined) return newerChoice
+  const id = Number(storage.getItem(LAST_JOB_KEY))
+  return jobs.some((job) => job.id === id) ? id : ''
+}
+
+export function rememberJob(storage: SelectionStorage, value: string): void {
+  if (value) storage.setItem(LAST_JOB_KEY, value)
+  else storage.removeItem(LAST_JOB_KEY)
 }
 
 /**
- * Applies a freshly loaded job list: the visible choices, and the selection to keep. A
- * remembered or current selection that points at the Unsorted row or a vanished job
- * resolves to '' (Unsorted).
+ * The selection to keep after a fresh job list (already reduced to `startableJobs`). A
+ * remembered or current selection that points at a vanished job resolves to '' (Unsorted).
  */
-export function applyJobList(
-  storage: Parameters<typeof rememberedJob>[0],
-  all: readonly Job[],
+export function selectionAfterReload(
+  storage: SelectionStorage,
+  jobs: readonly { id: number }[],
   newerChoice?: number | '',
-): { jobs: Job[]; jobId: number | '' } {
-  const jobs = startableJobs(all)
-  const jobId = rememberedJob(storage, jobs, newerChoice)
-  return { jobs, jobId: jobId !== '' && !jobs.some((j) => j.id === jobId) ? '' : jobId }
+): number | '' {
+  const id = rememberedJob(storage, jobs, newerChoice)
+  return id !== '' && !jobs.some((j) => j.id === id) ? '' : id
 }

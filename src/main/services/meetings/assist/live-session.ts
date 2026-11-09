@@ -1,3 +1,4 @@
+import { isUnsortedJob } from '@shared/jobs/unsorted'
 import { getDb } from '../../../db'
 import { getMeeting } from '../../../db/repos/meeting/meetings'
 import { listGlossary } from '../../../db/repos/job/glossary'
@@ -116,7 +117,8 @@ export class LiveSession {
    *  assistance started. A resume keeps all of it and only restarts assistance. */
   begin(jobId: number): void {
     this.historyScope = null
-    if (getJob(jobId)?.name !== 'Unsorted' && !getMeeting(liveMeetingId()!)?.practice) {
+    const job = getJob(jobId)
+    if (!(job && isUnsortedJob(job)) && !getMeeting(liveMeetingId()!)?.practice) {
       this.historyScope = {
         meetingId: liveMeetingId()!,
         jobId,
