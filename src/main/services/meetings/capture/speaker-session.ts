@@ -1,8 +1,9 @@
 import type { SpeakerIdentityStatus } from '@shared/meeting/speaker-identity'
+import { resolveSpeakerIdentity, type SpeakerIdentity } from './channel-identity'
 
 /** Mono diarization indices are connection-local. Historical IDs and pins are not. */
 export class SpeakerSession {
-  readonly pins = new Set<number>()
+  private readonly pins = new Set<number>()
   private current = new Map<number, number>()
   private next = 0
   private needsConfirmation = false
@@ -15,6 +16,10 @@ export class SpeakerSession {
       this.current.set(raw, id)
     }
     return id
+  }
+  /** Who a transcript belongs to, given this session's pins and confirmation state. */
+  resolve(channel: number, mapped: number, stereo: boolean): SpeakerIdentity {
+    return resolveSpeakerIdentity(channel, mapped, stereo, this.pins, this.needsConfirmation)
   }
   resetConnection(): void {
     this.current.clear()

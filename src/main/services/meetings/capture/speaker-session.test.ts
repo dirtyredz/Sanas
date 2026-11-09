@@ -8,7 +8,7 @@ it('isolates reused raw indices and retains historical pins across reconnect and
   speakers.resetConnection()
   const next = speakers.map(0)
   expect(next).not.toBe(old)
-  expect(speakers.pins.has(next)).toBe(false)
+  expect(speakers.status().selectedSpeakerIds.includes(next)).toBe(false)
   expect(speakers.status().identityNeedsConfirmation).toBe(true)
   speakers.pin(old, false)
   speakers.pin(old, true)

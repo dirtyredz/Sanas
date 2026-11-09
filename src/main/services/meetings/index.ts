@@ -263,13 +263,7 @@ function handleTranscript(t: SttTranscript): void {
   const stereo = meetingChannels === 2
   const before = speakers.status().currentSpeakerIds.length
   const mapped = stereo ? t.speaker : speakers.map(t.speaker)
-  const who = resolveSpeakerIdentity(
-    t.channel,
-    mapped,
-    stereo,
-    speakers.pins,
-    speakers.status().identityNeedsConfirmation,
-  )
+  const who = speakers.resolve(t.channel, mapped, stereo)
   if (!stereo && speakers.status().currentSpeakerIds.length !== before)
     setState({ ...currentState(), ...(lastError ? { error: lastError } : {}) })
   const ev: TranscriptEvent = {
