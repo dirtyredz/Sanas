@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Meeting } from '@shared/types'
-import { formatWhen } from '../../lib/format-time'
+import { formatWhen } from '../../lib/format/format-time'
 import { errorText } from '../../lib/ipc-error'
 export function JobMeetings({
   meetings,

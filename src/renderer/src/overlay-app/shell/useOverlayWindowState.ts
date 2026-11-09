@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { SettingsView } from '@shared/types'
-import { hotkeyLabel } from '../../lib/hotkey-label'
+import { hotkeyLabel } from '../../lib/format/hotkey-label'
 
 export interface GlobalShortcutLabels {
   /** Show / hide / unghost the overlay. */

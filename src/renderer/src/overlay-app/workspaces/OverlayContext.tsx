@@ -1,6 +1,6 @@
 import type { MeetingContext } from '@shared/live-controls/types'
-import { useMeetingContext } from '../../lib/meeting/useMeetingContext'
-import { useMeetingContextDraft } from '../../lib/meeting/useMeetingContextDraft'
+import { useMeetingContext } from '../../lib/meeting/context/useMeetingContext'
+import { useMeetingContextDraft } from '../../lib/meeting/context/useMeetingContextDraft'
 import { OverlayButton } from '../controls/OverlayButton'
 import { OverlayTextArea } from '../controls/OverlayTextArea'
 import { MEETING_CONTEXT_MAX_CHARS } from '@shared/meeting/meeting-context'

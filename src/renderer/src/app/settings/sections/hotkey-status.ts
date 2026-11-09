@@ -1,5 +1,5 @@
 import type { HotkeyAction, HotkeyStatus } from '@shared/hotkeys/types'
-import { hotkeyLabel } from '../../../lib/hotkey-label'
+import { hotkeyLabel } from '../../../lib/format/hotkey-label'
 import type { BadgeTone } from '../../controls/Badge'
 
 export interface HotkeyRowState {

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { HistoryEvent, HistoryHit, Job, Meeting } from '@shared/types'
 import { MeetingView } from './MeetingView'
-import { formatClock, formatWhen } from '../../lib/format-time'
+import { formatClock, formatWhen } from '../../lib/format/format-time'
 import { errorText } from '../../lib/ipc-error'
 
 interface Exchange {

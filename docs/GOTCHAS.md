@@ -486,7 +486,7 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   microphone capture sessions and stay mounted across tab switches. Reloading the renderer
   would interrupt capture. `MainWindowShow` is parameterless and only restores/shows/focuses.
 - **Meeting context is text only.** The overlay's Context and the Live page's
-  `MeetingContextEditor` share `lib/meeting/meeting-context-draft.ts`; main refuses any Apply
+  `MeetingContextEditor` share `lib/meeting/context/meeting-context-draft.ts`; main refuses any Apply
   payload that still carries a `deck` (an old renderer must not have it silently ignored).
 - **Overlay CSS must not import `base.css`** — its opaque `body` background would cover the
   transparent window. `overlay.css` imports `tokens.css` and `controls.css` plus the scoped

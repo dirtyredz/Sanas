@@ -8,7 +8,7 @@ import { AskPage } from './pages/AskPage'
 import { AppHeader } from './shell/AppHeader'
 import type { Page } from './shell/pages'
 import { useMeetingState } from '../lib/meeting/useMeetingState'
-import { hotkeyLabel } from '../lib/hotkey-label'
+import { hotkeyLabel } from '../lib/format/hotkey-label'
 
 export function App(): React.JSX.Element {
   const [page, setPage] = useState<Page>('live')

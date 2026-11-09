@@ -1,20 +1,24 @@
 import { LiveSpeakerControls } from '../meeting/speakers/LiveSpeakerControls'
-import { useJobHasResume } from '../../lib/meeting/useJobHasResume'
+import { useJobHasResume } from '../../lib/meeting/resume/useJobHasResume'
 import {
   contextDraftAfterStart,
   interviewChecked,
   meetingStartOptions,
-} from '../../lib/meeting/start-selection'
+} from '../../lib/meeting/start/start-selection'
 import { MEETING_CONTEXT_MAX_CHARS } from '@shared/meeting/meeting-context'
-import { rememberJob, selectionAfterReload, startableJobs } from '../../lib/meeting/job-choices'
-import { startCapturedMeeting } from '../../lib/meeting/start-captured-meeting'
-import { MeetingContextEditor } from '../../lib/meeting/MeetingContextEditor'
+import {
+  rememberJob,
+  selectionAfterReload,
+  startableJobs,
+} from '../../lib/meeting/start/job-choices'
+import { startCapturedMeeting } from '../../lib/meeting/start/start-captured-meeting'
+import { MeetingContextEditor } from '../../lib/meeting/context/MeetingContextEditor'
 import { useEffect, useRef, useState } from 'react'
 import type { Job, MeetingSource } from '@shared/types'
 import { startCapture, type CaptureSession } from '../../audio/mic'
 import { useTranscript } from '../../lib/meeting/useTranscript'
-import { speakerDisplay } from '../../lib/speaker-label'
-import { formatClock } from '../../lib/format-time'
+import { speakerDisplay } from '../../lib/format/speaker-label'
+import { formatClock } from '../../lib/format/format-time'
 import { errorText } from '../../lib/ipc-error'
 import { IconLaptop, IconPeople } from '../../lib/icons'
 

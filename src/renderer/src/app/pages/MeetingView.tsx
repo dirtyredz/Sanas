@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Job, Meeting, Segment, Suggestion } from '@shared/types'
 import type { MeetingResume } from '@shared/meeting/meeting-resume'
-import { formatWhen } from '../../lib/format-time'
+import { formatWhen } from '../../lib/format/format-time'
 import { MeetingRecordHeader } from '../meeting/MeetingRecordHeader'
 import { TranscriptPanel } from '../meeting/TranscriptPanel'
 import { MeetingSuggestionsTab } from '../meeting/MeetingSuggestionsTab'
 import { usePresentationHistory } from '../meeting/usePresentationHistory'
-import { useMeetingContext } from '../../lib/meeting/useMeetingContext'
+import { useMeetingContext } from '../../lib/meeting/context/useMeetingContext'
 import { SummaryMarkdown } from '../../lib/SummaryMarkdown'
 
 export function MeetingView({

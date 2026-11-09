@@ -1,5 +1,5 @@
 import type { MeetingSource } from '@shared/types'
-import { startCapture, type CaptureSession } from '../../audio/mic'
+import { startCapture, type CaptureSession } from '../../../audio/mic'
 
 let starting = false
 

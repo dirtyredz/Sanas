@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { useMeetingContext } from '../../lib/meeting/useMeetingContext'
+import { useMeetingContext } from '../../lib/meeting/context/useMeetingContext'
 import {
   useSuggestionHistory,
   type WhisperReadingState,

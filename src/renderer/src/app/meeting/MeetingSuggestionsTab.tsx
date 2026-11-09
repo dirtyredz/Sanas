@@ -1,6 +1,6 @@
 import type { Suggestion } from '@shared/types'
 import { suggestionLabel, suggestionOrigin } from '@shared/suggestion/suggestion-label'
-import { formatClock } from '../../lib/format-time'
+import { formatClock } from '../../lib/format/format-time'
 import { SuggestionContent } from '../../lib/suggestions/SuggestionContent'
 
 /** A saved meeting's suggestions, with source/detail links between follow-ups. */

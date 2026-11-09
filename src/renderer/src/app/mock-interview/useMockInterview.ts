@@ -7,7 +7,7 @@ import type {
   PracticeSession,
 } from '@shared/mock-interview/types'
 import type { CaptureSession } from '../../audio/mic'
-import { startCapturedMeeting } from '../../lib/meeting/start-captured-meeting'
+import { startCapturedMeeting } from '../../lib/meeting/start/start-captured-meeting'
 import { useMeetingState } from '../../lib/meeting/useMeetingState'
 import { errorText } from '../../lib/ipc-error'
 

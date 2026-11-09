@@ -1,8 +1,8 @@
 import type { Segment } from '@shared/types'
 import { presentationTimeline, slideMarker } from '@shared/presentation/timeline'
 import type { PresentationHistory } from '@shared/presentation/types'
-import { speakerDisplay } from '../../lib/speaker-label'
-import { formatClock } from '../../lib/format-time'
+import { speakerDisplay } from '../../lib/format/speaker-label'
+import { formatClock } from '../../lib/format/format-time'
 import { SpeakerEditor } from './SpeakerEditor'
 
 /** A saved meeting's transcript with slide markers, plus the speaker-name editor. */

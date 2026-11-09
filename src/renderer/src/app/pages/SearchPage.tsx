@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Meeting, SearchMatch } from '@shared/types'
 import { MeetingView } from './MeetingView'
-import { formatClock } from '../../lib/format-time'
+import { formatClock } from '../../lib/format/format-time'
 import { splitMatchMarkers } from '@shared/suggestion/search-markers'
 
 /** Matched terms come wrapped in the shared markers; render those as <mark>. */

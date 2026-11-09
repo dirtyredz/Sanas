@@ -1,7 +1,7 @@
 import type { SettingsView } from '@shared/types'
 import { useEffect, useState } from 'react'
 import type { HotkeyAction, HotkeyStatus } from '@shared/hotkeys/types'
-import { hotkeyLabel } from '../../../lib/hotkey-label'
+import { hotkeyLabel } from '../../../lib/format/hotkey-label'
 import { LOCAL_SHORTCUTS } from '../../../lib/overlay-workspaces'
 import { Badge } from '../../controls/Badge'
 import { FieldRow } from '../../controls/FieldRow'

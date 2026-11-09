@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest'
 const mock = vi.hoisted(() => ({ capture: vi.fn() }))
-vi.mock('../../audio/mic', () => ({ startCapture: mock.capture }))
+vi.mock('../../../audio/mic', () => ({ startCapture: mock.capture }))
 import { startCapturedMeeting } from './start-captured-meeting'
 afterEach(() => {
   vi.unstubAllGlobals()
