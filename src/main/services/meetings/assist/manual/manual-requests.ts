@@ -5,7 +5,6 @@ import {
   AUDIENCE_INSTRUCTION,
   DETAIL_INSTRUCTION,
   TYPED_INSTRUCTION,
-  meetingContextBlock,
 } from '../../../assistant/live-controls/prompts'
 import {
   CAPTURE_DETAIL_NOTE,
@@ -16,7 +15,8 @@ import {
 import type { AssistImage } from '../../../assistant/types'
 import { renderTranscriptWindow } from '../../../turns/transcript-format'
 import {
-  answerRequest,
+  answerBase,
+  meetingContext,
   type AssistSettings,
   type AssistSnapshot,
 } from '../suggestion/suggestion-requests'
@@ -52,11 +52,8 @@ export function manualRequest(
   input: AssistInput,
   source?: SuggestionGroundingRow,
 ): SuggestionRequest {
-  const base = answerRequest(snap, settings, 'hotkey')
-  base.manualKind = input.kind
-  const context =
-    renderTranscriptWindow(snap.window, 12000, snap.names) +
-    meetingContextBlock(snap.meetingText ?? '')
+  const base = answerBase(snap, settings, 'hotkey', input.kind)
+  const context = renderTranscriptWindow(snap.window, 12000, snap.names) + meetingContext(snap)
   if (input.kind === 'detail') {
     if (
       !source ||

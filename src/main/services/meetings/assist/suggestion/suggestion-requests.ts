@@ -59,18 +59,23 @@ export type AssistSettings = Pick<
   | 'coachWhileTalking'
 >
 
-/** An answer: automatic (to a classified turn) or requested ("Answer now"). Streams.
- *  Both name the question they answer when there is one (`focus`), and see the stories
- *  already told; only an automatic answer may decline with the no-op. */
-export function answerRequest(
+/** The meeting's owner-supplied context as a prompt block (empty when there is none).
+ *  `coach` selects the next-point framing. The one place the snapshot's text becomes a block. */
+export function meetingContext(snap: AssistSnapshot, coach = false): string {
+  return meetingContextBlock(snap.meetingText ?? '', coach)
+}
+
+/** What every request on the answer lane shares: identity, model, grounding, lane and
+ *  provider budget, but not the user turn. An automatic or Answer now request adds a
+ *  transcript prompt; a manual request adds its own instruction. `manualKind` is a parameter,
+ *  not a field to patch afterwards. */
+export function answerBase(
   snap: AssistSnapshot,
   s: AssistSettings,
   trigger: SuggestionTrigger,
-  focus?: AnswerFocus,
-  evidence = '',
-): SuggestionRequest {
+  manualKind?: SuggestionRequest['manualKind'],
+): Omit<SuggestionRequest, 'userContent'> {
   const profile = assistProfile(trigger, s.whisperMode)
-  const automatic = trigger === 'ambient'
   return {
     meetingId: snap.meetingId,
     trigger,
@@ -83,20 +88,36 @@ export function answerRequest(
     system: snap.system,
     groundingContextId: snap.groundingContextId,
     contextRevision: snap.contextRevision,
+    // points/smart ambient output stays terse; full mode and hotkey answers get code room
+    maxTokens: profile.maxTokens,
+    effort: profile.effort,
+    timeoutMs: suggestionTimeoutMs(trigger, profile.kind === 'full'),
+    delivery: 'stream',
+    allowNoop: trigger === 'ambient',
+    ...(manualKind ? { manualKind } : {}),
+  }
+}
+
+/** An answer: automatic (to a classified turn) or requested ("Answer now"). Streams.
+ *  Both name the question they answer when there is one (`focus`), and see the stories
+ *  already told; only an automatic answer may decline with the no-op. */
+export function answerRequest(
+  snap: AssistSnapshot,
+  s: AssistSettings,
+  trigger: SuggestionTrigger,
+  focus?: AnswerFocus,
+  evidence = '',
+): SuggestionRequest {
+  return {
+    ...answerBase(snap, s, trigger),
     userContent:
       buildUserContent(snap.window, trigger, s.whisperMode, {
         names: snap.names,
         focus,
         told: snap.told,
       }) +
-      meetingContextBlock(snap.meetingText ?? '') +
+      meetingContext(snap) +
       evidence,
-    // points/smart ambient output stays terse; full mode and hotkey answers get code room
-    maxTokens: profile.maxTokens,
-    effort: profile.effort,
-    timeoutMs: suggestionTimeoutMs(trigger, profile.kind === 'full'),
-    delivery: 'stream',
-    allowNoop: automatic,
   }
 }
 
@@ -234,7 +255,7 @@ export function coachRequest(
     system: snap.system,
     contextRevision: snap.contextRevision,
     userContent:
-      meetingContextBlock(snap.meetingText ?? '', true) +
+      meetingContext(snap, true) +
       buildCoachUserContent({
         coverage: snap.coverage,
         excerpt: input.excerpt,
