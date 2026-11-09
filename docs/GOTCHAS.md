@@ -355,10 +355,14 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   and unselected answers are separate states, excluded from visibility duration claims.
   Late acknowledgements use a bounded 64-run retention window; absent acknowledgements
   are missing evidence. A hidden renderer need not run frame callbacks.
-- **Acoustic calibration is unavailable.** PCM ingress has an audio cursor but no capture
-  timestamp or bound on pre-IPC buffering delay. Do not convert `audioCursorGapMs` into
-  speech-end latency. A future bridge needs paired capture/main samples, uncertainty,
-  pause/reconnect invalidation and known-WAV/jitter tests before deriving that duration.
+- **Calibration measures the capture graph, not physical sound.** Main brackets worklet
+  frontier probes without assuming symmetric IPC delay. Only endpoints inside retained
+  anchors with at most 1 s uncertainty produce calibrated lower/upper durations. Stalls,
+  missing metadata, reset and history expiry remain unavailable; never substitute zero.
+  Pre-activation chunks cannot establish recording zero; stale generations are rejected.
+  Replay keeps original sample positions and cannot refresh timing from STT receipt.
+  Suspend/loss requires fresh capture. `audioCursorGapMs` remains a separate proxy.
+  Device/browser input latency and STT endpoint accuracy are outside this measurement.
 - **Endpoint is 600 ms.** 300 and 450 fragment the 600 ms multipart continuation fixture.
   Synthetic boundaries prove assembly behavior only; real STT may differ. The
   grace is 150 ms and the fallback is 1,800 ms.

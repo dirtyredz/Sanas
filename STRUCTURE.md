@@ -4,7 +4,8 @@ _Code-shape map: components, responsibilities, dependencies, structural debt._
 _System design lives in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)._
 
 Current rulings live in `docs/DECISIONS.md`; its August/September history is preserved
-in `docs/archive/DECISIONS-2026-08-09.md` to keep the current decision map below 800 lines.
+in `docs/archive/DECISIONS-2026-08-09.md` to keep the current decision map below 800 lines. November speculation rationale lives in
+`docs/archive/DECISIONS-2026-11-latency.md`.
 
 Last full review: 2026-08-27
 
@@ -14,6 +15,13 @@ Phases 0–3 built + most of Phase 4 (summaries, recording, reconnect, packaging
 Layout below reflects what exists.
 
 ## Layout
+
+Capture calibration: `shared/meeting/audio-capture.ts` owns the typed envelopes and bounds.
+`ipc/audio/` owns validated PCM/probe ingress (moved from `ipc/platform/audio-chunk`).
+`meetings/capture/timing/` owns ordered main-clock brackets and accepted-sample rebasing.
+`renderer/src/audio/capture-clock.ts` bridges generation-bound worklet messages; the static
+worklet stamps sample positions and answers probes only during a processing quantum.
+`diagnostics/rehearsal/audio/synthetic-capture.ts` supplies explicit synthetic graph evidence.
 
 Assistance memory: `meetings/assist/suggestion/answers/` owns occurrence/revision reservations
 and runner lifecycle coverage; `LiveSession` owns its meeting lifetime and main-originated
@@ -76,7 +84,7 @@ sanas/
 │   │   │   ├── history/                    # read-only historical slide markers
 │   │   │   ├── live-controls/              # context, admission, capture and visibility-ack IPC
 │   │   │   ├── mock-interview/             # mock commands + validation
-│   │   │   ├── platform/                   # audio-chunk listener and global-hotkey status
+│   │   │   ├── platform/                   # global-hotkey status
 │   │   │   ├── screen-capture/             # screen-capture IPC + validation
 │   │   │   └── shell/                      # overlay/main windows (toggle, resize, ghost, compose handshake) and updater IPC
 │   │   ├── services/
@@ -222,6 +230,7 @@ handler (`system-audio.ts`); new main-process code belongs in a responsibility f
 - `src/main/ipc/jobs/` — jobs, glossary, deletion and application IPC (`jobs.ts`, `deletion.ts`, `applications.ts`, `memory.ts`, `validate.ts`, and `resume/` for the job resume); the privileged channels answer only the library window (`requireLibrarySender`).
 - `src/main/ipc/jobs/resume/` — `jobs.getResume`/`setResume` (validated by `validateResume`) and `resume-import.ts`, the native PDF/DOCX picker returning an unsaved draft; the renderer never supplies a filesystem path.
 - `src/main/ipc/history/` — `presentation-history.ts`: read-only historical slide markers.
+- `src/main/ipc/audio/` ? generation-bound capture ownership, PCM validation and probe replies.
 - `src/main/ipc/live-controls/` — context, admission, capture and visibility-ack IPC (`live-controls.ts` + `-validation`).
 - `src/main/ipc/mock-interview/` — validated mock commands (`mock-interview.ts` + `-validation`); speech ACKs require the output sender.
 - `src/main/ipc/platform/` — OS-facing listeners: `audio-chunk.ts` (the contained audio-chunk `.on` listener) and `hotkeys.ts` (global-shortcut status).

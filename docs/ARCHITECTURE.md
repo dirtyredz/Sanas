@@ -240,8 +240,20 @@ Mic (getUserMedia, renderer)
     `visibility` records keyed by session/meeting/run, including hidden/unselected states;
     these are not answer runs. The visible rAF receipt duration is relative to the readable
     broadcast, and no renderer clock is subtracted from main's clock.
-  - Acoustic clock calibration is unavailable: the raw audio-cursor gap is a proxy, not
-    calibrated speech-end latency.
+  - Capture-graph calibration uses main-originated probes every 250 ms (one pending,
+    2 s timeout). The worklet replies from a processing quantum with integer source/output
+    frontiers. Main send/receipt brackets, widened by a render quantum and sample rounding,
+    enclose endpoints between anchors; no renderer clock subtraction or extrapolation.
+    Metadata retention is 30 s / 128 anchors; intervals wider than 1 s are unavailable.
+    Accepted capture establishes the sample origin only after Start/Resume activation.
+    Pause, stop/loss/suspension, renderer loss, STT reset, identity changes and discontinuity
+    invalidate mapping and pending evidence. Replayed STT results never refresh anchors.
+  - The latest audio endpoint carries its own interval through overlapping/out-of-order
+    finals. Latency records report validity/reason, interval width and conservative
+    question-end-to-first-readable lower/upper bounds beside final-receipt timing.
+    These measure the AudioWorklet capture graph to main readable broadcast, not physical
+    sound or paint. Browser/device latency and STT endpoint error remain outside the bound.
+    The raw audio-cursor gap remains a proxy. No database or separate telemetry service.
   - `scripts/rehearsal/trials/summarize.mjs` reports copied logs with the same rules
     (`latency-summary.ts`: delivered rule, whole-ms medians, stage lists).
 - **Turn-close measurement:** `TurnFinal` carries optional `ingressAt` (monotonic, stamped in

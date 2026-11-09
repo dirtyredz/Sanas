@@ -229,3 +229,10 @@ Next point can consider earlier confirmed-user discussion after it leaves the tr
 even if coaching was off then. It receives bounded quotes associated with job talking points and
 notes, not an asserted completion checklist. Coverage can miss paraphrases and never overrides
 the current-topic rule. Speaker corrections remove the affected evidence.
+
+## Capture timing diagnostics
+
+Delivered automatic answers can report bounded capture-graph question-end to first-readable
+broadcast latency beside final-receipt timing. Missing or invalid mappings stay unavailable;
+uncertainty is explicit, and the audio-cursor gap stays labelled as a proxy. This changes
+diagnostic evidence, not endpointing or answer policy, and makes no physical-sound latency promise.

@@ -37,7 +37,16 @@ of the same log. Missing records/overflow cannot be reconstructed from copied li
 Raw `audioCursorGapMs_PROXY` is never presented as calibrated speech-end latency.
 Frame-after-commit receipt is a renderer proxy, not physical paint. Logs and comparison
 reports go under `.tmp/owner-runs/`; wrappers end with OK/FAILED. Canned speed proves no
-real-provider improvement, and acoustic calibration is not implemented in this slice.
+real-provider improvement.
+
+The summary prints `questionEndToFirstReadableLowerMs` and
+`questionEndToFirstReadableUpperMs` distributions alongside
+`lastFinalToFirstReadableMs`, plus `captureIntervalWidthMs`. `captureTiming` counts
+valid/unavailable delivered runs and unavailable reasons; failed/discarded outcomes stay
+separate. No midpoint without uncertainty and no physical-sound claim. Scripted/WAV pumping
+supplies explicitly labelled synthetic 20 ms graph observations through the same accepted
+sample/probe path. Zero-lag scripted finals often precede the next anchor and are correctly
+unavailable; canned runs establish wiring, not live transport or model performance.
 
 Run from any directory (use the absolute script path when outside the repo):
 
