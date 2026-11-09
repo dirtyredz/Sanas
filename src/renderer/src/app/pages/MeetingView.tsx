@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Job, Meeting, Segment, Suggestion } from '@shared/types'
-import type { MeetingResume } from '@shared/meeting-resume'
+import type { MeetingResume } from '@shared/meeting/meeting-resume'
 import { formatWhen } from '../../lib/format-time'
 import { MeetingRecordHeader } from '../meeting/MeetingRecordHeader'
 import { TranscriptPanel } from '../meeting/TranscriptPanel'

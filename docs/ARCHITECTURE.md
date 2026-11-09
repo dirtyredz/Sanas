@@ -392,7 +392,7 @@ On meeting end, two fire-and-forget passes:
 ## Meeting context and manual assistance
 
 **Start.** The Live page sends `meeting.start(jobId, channels, { interview?, meetingContext? })`
-(`shared/meeting-start.ts`), validated at ingress by `requireMeetingStart` (`ipc/validate.ts`:
+(`shared/meeting/meeting-start.ts`), validated at ingress by `requireMeetingStart` (`ipc/validate.ts`:
 unknown keys refused, context a string of at most 20,000 characters, never truncated). Main
 composes it with main-only `practice` into `StartRequest`; `createMeeting` writes the meeting row,
 its version-0 `meeting_deck_versions` bookkeeping row and context revision 0 (the exact Start
@@ -430,7 +430,7 @@ tables (`job_slides`, `meeting_slides`, `meeting_slide_events`, deck versions) r
 never written, except the version-0 deck row every meeting needs for foreign keys.
 `db/repos/meeting/meeting-presentation.ts` reads them (`getPresentationHistory`,
 `hasLegacySlides`); `ipc/presentation-history.ts` serves the read-only history; MeetingView,
-exports (`meetings/export.ts`) and regenerated summaries (`meetings/presentation/history.ts`)
+exports (`meetings/export.ts`) and regenerated summaries (`meetings/summary/presentation-history.ts`)
 interleave markers with segments by audio time, markers first at ties, never as speech.
 
 ### Screen capture (no persistence)

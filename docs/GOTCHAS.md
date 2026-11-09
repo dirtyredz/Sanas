@@ -642,7 +642,7 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   limitation notice or “let me pick one”; prompt assertions cannot establish actual model
   compliance.
 - The filler marker ⟨…⟩ must be stripped by anything that is not the safe suggestion renderers
-  (`stripFillerMarkers` in `src/shared/filler-marker.ts`): export, remembered headlines, any new
+  (`stripFillerMarkers` in `src/shared/suggestion/filler-marker.ts`): export, remembered headlines, any new
   copy/summary path. Rendering goes through `FillerText`; never show the raw characters.
 
 - Resume drafts never go in localStorage or settings. The meeting's copy is immutable, even if the job's resume is later edited or removed. Filing the meeting under a _different_ job is the one exception: it clears the resume and profile snapshot (`moveMeetingToJob`, guarded by `meeting_snapshot_clear`; v12 triggers). Never UPDATE those columns anywhere else.

@@ -1,4 +1,4 @@
-import { RESUME_MAX_CHARS, type MeetingResume } from '@shared/meeting-resume'
+import { RESUME_MAX_CHARS, type MeetingResume } from '@shared/meeting/meeting-resume'
 
 /** Validate at main-process ingress, including pasted text and direct service callers. */
 export function validateResume(raw: unknown): MeetingResume | null {

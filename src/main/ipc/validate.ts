@@ -1,7 +1,7 @@
 import type { Job, OverlayResizeRequest, Settings } from '@shared/types'
 import { SETTINGS_SCHEMA } from '../config/settings-schema'
-import { requireMeetingContextText } from '@shared/meeting-context'
-import type { MeetingStartOptions } from '@shared/meeting-start'
+import { requireMeetingContextText } from '@shared/meeting/meeting-context'
+import type { MeetingStartOptions } from '@shared/meeting/meeting-start'
 import {
   JOB_CONTEXT_MAX_CHARS,
   JOB_NAME_MAX_CHARS,

@@ -3,7 +3,7 @@ import { useMeetingContext } from '../../lib/meeting/useMeetingContext'
 import { useMeetingContextDraft } from '../../lib/meeting/useMeetingContextDraft'
 import { OverlayButton } from '../controls/OverlayButton'
 import { OverlayTextArea } from '../controls/OverlayTextArea'
-import { MEETING_CONTEXT_MAX_CHARS } from '@shared/meeting-context'
+import { MEETING_CONTEXT_MAX_CHARS } from '@shared/meeting/meeting-context'
 
 /** Context: quick, text-only edits to this meeting's background. Unsaved text is never applied or
  *  carried over by opening Sanas. */

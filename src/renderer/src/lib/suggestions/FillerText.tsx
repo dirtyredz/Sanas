@@ -1,4 +1,4 @@
-import { splitFiller } from '@shared/filler-marker'
+import { splitFiller } from '@shared/suggestion/filler-marker'
 
 /** Text with ⟨…⟩ filler spans rendered subtly (dimmed italic). The markers themselves are
  *  never shown; plain text renders as itself. */

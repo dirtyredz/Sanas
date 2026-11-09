@@ -1,4 +1,4 @@
-import type { MeetingResume } from '../meeting-resume'
+import type { MeetingResume } from '../meeting/meeting-resume'
 import type { JobTextField, JudgementField, ValueSource } from './applications'
 
 // Storage-independent value contracts for the resumes import's three-way refresh. The SQLite

@@ -1,4 +1,4 @@
-import type { MeetingResume } from '@shared/meeting-resume'
+import type { MeetingResume } from '@shared/meeting/meeting-resume'
 import {
   JOB_TEXT_FIELDS,
   type ApplicationStage,

@@ -1,5 +1,5 @@
 import type { MeetingContext } from '@shared/live-controls/types'
-import { MEETING_CONTEXT_MAX_CHARS } from '@shared/meeting-context'
+import { MEETING_CONTEXT_MAX_CHARS } from '@shared/meeting/meeting-context'
 import { useMeetingContext } from './useMeetingContext'
 import { useMeetingContextDraft } from './useMeetingContextDraft'
 

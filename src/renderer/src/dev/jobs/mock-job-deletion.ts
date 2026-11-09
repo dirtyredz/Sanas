@@ -1,6 +1,6 @@
 import { isUnsortedJob } from '@shared/jobs/unsorted'
 // Browser-preview mock for counted job deletion.
-import type { MeetingResume } from '@shared/meeting-resume'
+import type { MeetingResume } from '@shared/meeting/meeting-resume'
 import type {
   JobDeletionCounts,
   JobDeletionPreview,

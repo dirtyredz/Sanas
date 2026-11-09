@@ -6,7 +6,10 @@ import type { OverlaySessionModel } from './OverlaySession'
 import { OverlayShell } from './OverlayShell'
 
 // Vitest has no @shared alias: load the real module by path.
-vi.mock('@shared/suggestion-label', () => import('../../../../shared/suggestion-label'))
+vi.mock(
+  '@shared/suggestion/suggestion-label',
+  () => import('../../../../shared/suggestion/suggestion-label'),
+)
 
 const noop = (): void => {}
 const answer: SuggestionView = {

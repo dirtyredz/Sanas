@@ -1,5 +1,5 @@
-import type { MeetingResume } from '@shared/meeting-resume'
-import { RESUME_MAX_CHARS } from '@shared/meeting-resume'
+import type { MeetingResume } from '@shared/meeting/meeting-resume'
+import { RESUME_MAX_CHARS } from '@shared/meeting/meeting-resume'
 import { resumeDraftProblem, withText } from './resume-draft'
 
 /** Paste/import, name, count and preview for an unsaved resume draft. Saving is the caller's. */

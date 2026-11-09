@@ -23,7 +23,7 @@ import {
   getPresentationHistory,
   hasLegacySlides,
 } from '../../../db/repos/meeting/meeting-presentation'
-import { presentationTranscript, SLIDE_SUMMARY_INSTRUCTION } from '../presentation/history'
+import { presentationTranscript, SLIDE_SUMMARY_INSTRUCTION } from './presentation-history'
 import { SUMMARY_CHARS } from '../../assistant/prompts'
 
 // Post-meeting summary + action items. Two entry points share one Claude call:

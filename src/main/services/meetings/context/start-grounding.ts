@@ -1,4 +1,4 @@
-import type { MeetingResume } from '@shared/meeting-resume'
+import type { MeetingResume } from '@shared/meeting/meeting-resume'
 import { getJobResume } from '../../../db/repos/job/job-resume'
 import { interviewProfileSnapshot } from './profile'
 import type { StartRequest } from './start-request'

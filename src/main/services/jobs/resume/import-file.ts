@@ -1,7 +1,7 @@
 import { open } from 'node:fs/promises'
 import { basename, extname } from 'node:path'
 import mammoth from 'mammoth'
-import { RESUME_MAX_BYTES, type MeetingResume } from '@shared/meeting-resume'
+import { RESUME_MAX_BYTES, type MeetingResume } from '@shared/meeting/meeting-resume'
 import { validateResume } from './resume'
 
 /** Only main's native picker supplies paths. Never retain the binary or source path. */

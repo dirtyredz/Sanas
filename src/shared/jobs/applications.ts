@@ -3,7 +3,7 @@
 // application ID, an opaque preview token and its choices. It never sends a pack, a path or
 // command arguments.
 
-import type { MeetingResume } from '../meeting-resume'
+import type { MeetingResume } from '../meeting/meeting-resume'
 
 export const APPLICATION_STAGES = ['interview', 'offer', 'closed'] as const
 export type ApplicationStage = (typeof APPLICATION_STAGES)[number]

@@ -1,4 +1,4 @@
-import type { MeetingStartOptions } from '@shared/meeting-start'
+import type { MeetingStartOptions } from '@shared/meeting/meeting-start'
 
 /** The Interview checkbox: the user's explicit choice when there is one, else on when the
  *  selected job has a saved resume (Unsorted never has one). Start sends only the override,

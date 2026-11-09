@@ -1,4 +1,4 @@
-import type { MeetingResume } from '@shared/meeting-resume'
+import type { MeetingResume } from '@shared/meeting/meeting-resume'
 import { getDb } from '../../index'
 
 /** Everything a meeting was grounded on at Start: its immutable resume and Interview-profile

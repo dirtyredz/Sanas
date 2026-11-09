@@ -1,4 +1,4 @@
-import { INTERVIEW_PROFILE_MAX_CHARS } from '@shared/interview-profile'
+import { INTERVIEW_PROFILE_MAX_CHARS } from '@shared/meeting/interview-profile'
 import type { SettingsView } from '@shared/types'
 import { SettingsSection } from '../frame/SettingsSection'
 

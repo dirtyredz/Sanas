@@ -1,4 +1,4 @@
-import type { MeetingResume } from '@shared/meeting-resume'
+import type { MeetingResume } from '@shared/meeting/meeting-resume'
 import { getDb } from '../../index'
 
 /** What the meetings service hands the repo: the renderer's choices (minus `interview`,

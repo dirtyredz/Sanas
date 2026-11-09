@@ -20,7 +20,7 @@ job page's Resume tab (`app/jobs/resume/`: `JobResume.tsx`, `ResumeDraftEditor.t
 Start resolves the snapshot in `services/meetings/context/start-grounding.ts` for both Live
 and Mock; `lib/meeting/useJobHasResume.ts` gives Live its Interview default. The
 importer/validator now live in `services/jobs/resume/`; the type stays in
-`shared/meeting-resume.ts` (it is also the meeting snapshot contract; renaming it is deferred).
+`shared/meeting/meeting-resume.ts` (it is also the meeting snapshot contract; renaming it is deferred).
 
 Rehearsal homes: `src/main/rehearsal/` owns explicit isolated rehearsal dispatch, scenario
 validation/assertions (`scenario/`) and scripted providers/correlation (`outcomes/`).
@@ -94,9 +94,8 @@ sanas/
 │   │   │   │   │   ├── meeting-facts.ts   # combined candidate-facts block from a grounding
 │   │   │   │   │   ├── candidate-keyterms.ts # STT term extraction/interleave for resume and profile
 │   │   │   │   │   └── meeting-keyterms.ts # glossary + resume/profile STT hints
-│   │   │   │   ├── presentation/          # historical slide-marker formatting (read-only)
 │   │   │   │   ├── status/                # live meeting and post-processing guards, historical job filing (filing.ts)
-│   │   │   │   ├── summary/               # summary generation, output parsing and email
+│   │   │   │   ├── summary/               # summary generation, output parsing, email and historical slide-marker formatting (presentation-history.ts)
 │   │   │   │   ├── rediarize/             # batch pass and speaker carry-over
 │   │   │   │   ├── merge/                 # pure merge planning and DB apply
 │   │   │   │   └── recovery/              # close rows stranded by an earlier process
@@ -162,8 +161,8 @@ sanas/
 │   │       │   └── jobs/               # job mocks: deletion, application import, memory
 │   │       └── env.d.ts                    # Vite client types
 │   └── shared/                              # cross-process IPC and domain contracts
-│       ├── filler-marker.ts                # ⟨…⟩ improvised-answer marker: constants, split and strip
-│       ├── interview-profile.ts            # Interview profile text limit
+│       ├── meeting/                        # meeting start/context/resume contracts, interview-profile limit, summary markdown
+│       ├── suggestion/                     # ⟨…⟩ filler marker, search markers, suggestion labels
 │       ├── jobs/                           # renderer-safe job contracts: applications, import baseline, deletion, limits
 │       ├── mock-interview/                 # typed setup/state/result IPC contracts
 │       ├── presentation/                   # historical slide and timeline contracts (read-only)
@@ -262,7 +261,7 @@ sanas/
 - `src/renderer/src/dev/jobs/` — browser-preview job mocks: `mock-job-deletion.ts`, `mock-job-applications.ts` and `mock-job-memory.ts`; `dev/mock-api.ts` composes them
 - `src/main/services/meetings/context/candidate-data.ts` (and `candidate-keyterms.ts`: STT term extraction/interleave for resume and profile) — neutral escaping and delimited prompt framing for resume (`candidateFacts`) and Interview profile (`interviewProfileFacts`); so resume code and the profile never import each other
 - `src/main/services/meetings/context/meeting-facts.ts` — combines a `MeetingGrounding` into the candidate-facts block (resume first); `profile.ts` — `interviewProfileSnapshot`, Start selection of the Settings profile; `start-request.ts` — `StartRequest` (the renderer's `MeetingStartOptions` plus main-only `practice`); `start-grounding.ts` — `resolveStartGrounding`, the selected job's saved resume (none for Unsorted) plus the profile, resolved inside serialized Start for Live and Mock
-- `src/main/services/meetings/presentation/` — historical slide-marker formatting for summaries (presentation mode retired 2026-11-04)
+- `src/main/services/meetings/summary/presentation-history.ts` — historical slide-marker formatting for summaries (presentation mode retired 2026-11-04)
 - `src/main/services/meetings/status/` — live-meeting identity, post-processing guards (both expose `on…Change` signals via `change-signal.ts`, so the updates service re-broadcasts without polling) and `filing.ts` (historical job filing; refuses a live meeting)
 - `src/main/services/meetings/summary/` — meeting summaries, structured output handling and summary email
 - `src/main/services/meetings/rediarize/` — batch re-diarization and speaker identity/name carry-over
@@ -284,7 +283,7 @@ sanas/
 - `src/main/services/jobs/applications/source/` — the read-only edge to the resumes project: `refresh-runner.ts` (runs its pack CLI), `pack-files.ts` (bounded, contained listing/reading of `.json` packs), `validate-pack.ts` (schema v1 + limits + `packFingerprint`) and `source-config.ts` (re-validated `resumesRoot`/node settings)
 - `src/main/ipc/jobs/` — jobs, glossary, deletion and application IPC (`jobs.ts`, `deletion.ts`, `applications.ts`, `validate.ts`, and `resume/` for the job resume); the privileged channels answer only the library window (`requireLibrarySender`)
 - `src/shared/jobs/` — renderer-safe job contracts and limits: `applications.ts` (pack/preview/apply types; preview values are typed, never display text), `unsorted.ts` (`isUnsortedJob`, the reserved bucket name and `reservedNameError`: the one Unsorted identity), `application-stage.ts` (`stageCapabilities`: the one closed-stage policy — visible, create, refresh, archive — used by listing, preview, apply, row-status and the dev mock), `import-baseline.ts` (storage-independent `ImportBaseline`/`LocalValues`), `deletion.ts`, `limits.ts` (job, glossary and `JOB_PERSONA_MAX_CHARS` limits) and `source-settings.ts` (resumes settings defaults/validation)
-- `src/shared/filler-marker.ts` — `FILLER_OPEN`/`FILLER_CLOSE` for prompts, `splitFiller`/`stripFillerMarkers` for rendering; `src/shared/interview-profile.ts` — the profile text limit
+- `src/shared/suggestion/filler-marker.ts` — `FILLER_OPEN`/`FILLER_CLOSE` for prompts, `splitFiller`/`stripFillerMarkers` for rendering; `src/shared/meeting/interview-profile.ts` — the profile text limit
 - `src/renderer/src/app/settings/sections/InterviewProfileSection.tsx` — the one plain-text Interview profile editor; the Settings draft/pager/save flow owns editing state
 - `src/main/db/repos/` — per-entity repositories (incl. the screen-answer storage codec `manual-kind.ts`); the only place SQL strings live
 - `src/main/config/` — settings/secrets persistence and exhaustive settings validation
@@ -313,12 +312,13 @@ sanas/
 - `src/renderer/src/lib/` — pure presentation helpers shared across renderer pages and bundles (`overlay-workspaces.ts`: workspace names and the local shortcut table shared by the overlay and Settings → Hotkeys)
 - `src/renderer/src/lib/meeting/` — meeting and context reducers/hooks; `meeting-context-draft.ts` + `useMeetingContextDraft.ts` are the draft/apply/reload/conflict logic shared by the Live page's `MeetingContextEditor` and the overlay's Context; `start-selection.ts` also builds the Start options (`meetingStartOptions`) and the pre-Start context draft rule
 - `src/renderer/src/lib/navigation/` — `next-tab-index.ts` and colocated tests: pure orientation-aware wrapping arrows/Home/End rule shared by JobTabs and OverlayNavigation. Settings keeps its distinct clamped, arrow-only page navigation.
-- `src/renderer/src/lib/suggestions/` — text-safe compact/detail renderers and live history state (`FillerText` renders the ⟨…⟩ improvised-answer marker; `src/shared/filler-marker.ts` splits/strips it)
+- `src/renderer/src/lib/suggestions/` — text-safe compact/detail renderers and live history state (`FillerText` renders the ⟨…⟩ improvised-answer marker; `src/shared/suggestion/filler-marker.ts` splits/strips it)
 - `src/renderer/src/dev/` — browser-preview implementation of the typed preload bridge: `mock-api.ts` assembles it, `mock-fixtures.ts` holds the static sample data, `mock-live-meeting.ts` the scripted live meeting; `overlay-scenarios.ts` holds the deterministic overlay preview states (`overlay.html?scenario=<name>`) driven through `mockDriver`
 - `src/renderer/public/` — AudioWorklet processors and other unbundled assets
 - `src/shared/` — types shared by main, preload and renderer
 - `src/shared/presentation/` — historical slide/event/history contracts and timeline ordering (read-only since 2026-11-04)
-- `src/shared/meeting-start.ts` — `MeetingStartOptions` (`interview?`, `meetingContext?`); `src/shared/meeting-context.ts` — the 20,000-character context limit and `requireMeetingContextText`, the one validator Start, Apply and rehearsal scenarios share
+- `src/shared/meeting/` — meeting-level contracts and text limits (also `summary-markdown.ts`); `meeting-start.ts` — `MeetingStartOptions` (`interview?`, `meetingContext?`); `meeting-context.ts` — the 20,000-character context limit and `requireMeetingContextText`, the one validator Start, Apply and rehearsal scenarios share
+- `src/shared/suggestion/` — suggestion-text helpers: `filler-marker.ts`, `search-markers.ts`, `suggestion-label.ts`
 - `src/shared/hotkeys/` — global shortcut action and registration-status contracts
 - `src/shared/live-controls/` — meeting-context, manual-admission, suggestion metadata and screen-capture contracts; `visibility.ts` is the renderer-to-main `SuggestionVisibility` acknowledgement (a commit/frame proxy, not paint), and `readable-suggestion.ts` (`NO_SUGGESTION`, `isNoSuggestion`, `hasReadableText`) is the one definition of a readable suggestion, used by main's first-readable stamp and the overlay's `useSuggestionVisibilityAck`
 - `src/shared/updates/` — renderer-safe update state and operation contracts
@@ -388,7 +388,7 @@ main-process code belongs in a responsibility folder above, not beside them.
   session grows.
 - `services/` has 10 children (the new `jobs/` took it from 9 after grouping platform integrations
   and moving transcript formatting into `turns/`); `meetings/` breadth remains tracked by dk-bd2e1ebf.
-- `src/shared/` (21 entries) and `src/main/ipc/` exceed the 10-entry breadth guideline; the loose
+- `src/shared/` (11 entries after grouping into `meeting/` and `suggestion/`) and `src/main/ipc/` exceed the 10-entry breadth guideline; the loose
   `shared/*.ts` contracts group by domain the way `shared/jobs/` now does (`ipc/job-resume/` moved
   under `ipc/jobs/resume/`; the mock-interview, live-controls and screen-capture IPC pairs now sit in `ipc/<feature>/`, dk-cb03df74).
 - `app/settings/sections/` now holds 13 code files (Applications joined); group related sections
@@ -409,7 +409,7 @@ main-process code belongs in a responsibility folder above, not beside them.
 
 ## Resume (saved on the job, snapshotted on the meeting)
 
-- `shared/meeting-resume.ts` owns the text/name contract and limits (used for both the job's saved resume and the meeting snapshot).
+- `shared/meeting/meeting-resume.ts` owns the text/name contract and limits (used for both the job's saved resume and the meeting snapshot).
 - `db/repos/job/job-resume.ts` (+ v11 `job-resume-schema.ts`) owns the job's saved resume; `ipc/jobs/resume/` exposes get/set and `resume-import.ts`, the native PDF/DOCX picker; the renderer never supplies a filesystem path.
 - `services/meetings/context/start-grounding.ts` is the one place Start reads the job resume; nothing else reads `job_resumes` for a meeting.
 - `main/services/jobs/resume/import-file.ts` owns bounded local reads and offline parser lifecycle.

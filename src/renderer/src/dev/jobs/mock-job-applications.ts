@@ -1,6 +1,6 @@
 // Browser-preview mock for New job from application / Refresh from application.
 import { CLOSED_CREATE_MESSAGE, stageCapabilities } from '@shared/jobs/application-stage'
-import type { MeetingResume } from '@shared/meeting-resume'
+import type { MeetingResume } from '@shared/meeting/meeting-resume'
 import {
   STALE_PREVIEW_MESSAGE,
   type ApplicationListing,

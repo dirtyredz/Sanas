@@ -1,4 +1,4 @@
-import type { MeetingResume } from '@shared/meeting-resume'
+import type { MeetingResume } from '@shared/meeting/meeting-resume'
 import { isUnsortedJob, UNSORTED_RESUME_MESSAGE } from '@shared/jobs/unsorted'
 import { getDb } from '../../index'
 

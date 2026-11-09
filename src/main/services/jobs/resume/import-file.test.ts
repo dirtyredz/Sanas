@@ -1,7 +1,7 @@
 import { afterAll, expect, it } from 'vitest'
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { resolve, join } from 'node:path'
-import { RESUME_MAX_BYTES } from '@shared/meeting-resume'
+import { RESUME_MAX_BYTES } from '@shared/meeting/meeting-resume'
 import { importResumeFile } from './import-file'
 
 await mkdir(resolve('.tmp'), { recursive: true })

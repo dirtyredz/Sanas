@@ -1,4 +1,4 @@
-import { INTERVIEW_PROFILE_MAX_CHARS } from '@shared/interview-profile'
+import { INTERVIEW_PROFILE_MAX_CHARS } from '@shared/meeting/interview-profile'
 import { nodeExecutableProblem, resumesRootProblem } from '@shared/jobs/source-settings'
 import { SETTINGS_LIMITS } from '@shared/settings-limits'
 import type { MeetingSource, Settings, WhisperMode } from '@shared/types'

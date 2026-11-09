@@ -1,5 +1,5 @@
 import type { Suggestion } from '@shared/types'
-import { suggestionLabel, suggestionOrigin } from '@shared/suggestion-label'
+import { suggestionLabel, suggestionOrigin } from '@shared/suggestion/suggestion-label'
 import { formatClock } from '../../lib/format-time'
 import { SuggestionContent } from '../../lib/suggestions/SuggestionContent'
 

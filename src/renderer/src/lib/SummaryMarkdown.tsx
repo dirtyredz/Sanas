@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { parseSummaryInline, parseSummaryMarkdown } from '@shared/summary-markdown'
+import { parseSummaryInline, parseSummaryMarkdown } from '@shared/meeting/summary-markdown'
 
 function Inline({ text }: { text: string }): React.JSX.Element {
   return (

@@ -1,5 +1,5 @@
 import type { ContextUpdate, ManualRequest } from '@shared/live-controls/types'
-import { requireMeetingContextText } from '@shared/meeting-context'
+import { requireMeetingContextText } from '@shared/meeting/meeting-context'
 import { requireId } from '../validate'
 import { requireCaptureToken } from '../screen-capture/screen-capture-validation'
 import {

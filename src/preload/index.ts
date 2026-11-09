@@ -1,5 +1,5 @@
 import type { JobMemoryApi } from '../shared/jobs/memory'
-import type { MeetingResume } from '../shared/meeting-resume'
+import type { MeetingResume } from '../shared/meeting/meeting-resume'
 import type { SuggestionVisibility } from '../shared/live-controls/visibility'
 import type {
   MockPlanId,
@@ -18,7 +18,7 @@ import type { CaptureAttachResult, CaptureStatus } from '../shared/live-controls
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC } from '../shared/ipc'
 import type { PresentationHistory } from '../shared/presentation/types'
-import type { MeetingStartOptions } from '../shared/meeting-start'
+import type { MeetingStartOptions } from '../shared/meeting/meeting-start'
 import type { HotkeyStatus } from '../shared/hotkeys/types'
 import type {
   ApplicationListing,

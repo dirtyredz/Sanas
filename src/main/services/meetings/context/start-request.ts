@@ -1,4 +1,4 @@
-import type { MeetingStartOptions } from '@shared/meeting-start'
+import type { MeetingStartOptions } from '@shared/meeting/meeting-start'
 
 /** What a caller may choose when a meeting starts: the renderer's validated Start options
  *  (`interview`, `meetingContext`) plus main-only `practice` (Mock interview). Grounding is

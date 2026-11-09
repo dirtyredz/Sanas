@@ -4,7 +4,7 @@ import {
   interviewChecked,
   meetingStartOptions,
 } from '../../lib/meeting/start-selection'
-import { MEETING_CONTEXT_MAX_CHARS } from '@shared/meeting-context'
+import { MEETING_CONTEXT_MAX_CHARS } from '@shared/meeting/meeting-context'
 import { rememberJob, selectionAfterReload, startableJobs } from '../../lib/meeting/job-choices'
 import { startCapturedMeeting } from '../../lib/meeting/start-captured-meeting'
 import { MeetingContextEditor } from '../../lib/meeting/MeetingContextEditor'

@@ -1,4 +1,4 @@
-import { RESUME_MAX_CHARS, type MeetingResume } from '@shared/meeting-resume'
+import { RESUME_MAX_CHARS, type MeetingResume } from '@shared/meeting/meeting-resume'
 
 /** Why a draft cannot be saved, or '' when it can. Removing (null) is always saveable. Main
  *  re-validates; this only keeps the Save button honest and the message readable. */

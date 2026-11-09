@@ -1,6 +1,6 @@
 import { mockMemory } from './jobs/mock-job-memory'
-import { MATCH_CLOSE, MATCH_OPEN } from '@shared/search-markers'
-import type { MeetingResume } from '@shared/meeting-resume'
+import { MATCH_CLOSE, MATCH_OPEN } from '@shared/suggestion/search-markers'
+import type { MeetingResume } from '@shared/meeting/meeting-resume'
 import type {
   HistoryEvent,
   HistoryHit,
@@ -42,7 +42,6 @@ import {
   transcriptListeners,
   type Listener,
 } from './mock-live-meeting'
-import { mockPresentation } from './mock-presentation'
 import { mockScreenCapture } from './mock-screen-capture'
 import { mockUpdates } from './mock-updates'
 
@@ -100,7 +99,8 @@ const api: SanasApi = {
   },
   updates: mockUpdates,
   meetingContext: controls.meetingContext,
-  presentation: mockPresentation,
+  // Presentation mode is retired: no recorded slide history in the preview.
+  presentation: { getHistory: async () => ({ events: [], versions: {} }) },
   screenCapture: mockScreenCapture(
     () => getMeetingState().meetingId,
     (event) => suggestionListeners.forEach((cb) => cb(event)),

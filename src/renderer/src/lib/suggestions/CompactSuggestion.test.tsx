@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { CompactSuggestion, parseCompactSuggestion } from './CompactSuggestion'
-import { stripFillerMarkers } from '@shared/filler-marker'
+import { stripFillerMarkers } from '@shared/suggestion/filler-marker'
 
 describe('compact suggestion renderer', () => {
   it('parses a headline, one fenced code block, and two follow-up lines', () => {

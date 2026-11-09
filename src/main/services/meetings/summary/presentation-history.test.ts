@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { presentationTranscript } from './history'
+import { presentationTranscript } from './presentation-history'
 it('keeps active excerpt marker and trailing moves, using only titles rather than scripts', () => {
   const slides = ['one', 'two'].map((title) => ({
     title,

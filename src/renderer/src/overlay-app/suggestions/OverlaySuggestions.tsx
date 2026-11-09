@@ -1,5 +1,5 @@
 import type { MeetingState } from '@shared/types'
-import { suggestionArrivalLabel, suggestionLabel } from '@shared/suggestion-label'
+import { suggestionArrivalLabel, suggestionLabel } from '@shared/suggestion/suggestion-label'
 import { SuggestionContent } from '../../lib/suggestions/SuggestionContent'
 import { OverlayButton } from '../controls/OverlayButton'
 import { IconExpand } from '../controls/overlay-icons'

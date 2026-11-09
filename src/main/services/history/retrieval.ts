@@ -1,5 +1,5 @@
 import type { HistoryHit, Segment } from '@shared/types'
-import { stripMatchMarkers } from '@shared/search-markers'
+import { stripMatchMarkers } from '@shared/suggestion/search-markers'
 import { ftsAnyOf } from '../../db/fts-query'
 import { searchSegments } from '../../db/repos/history/transcripts'
 import { listSegmentsAround } from '../../db/repos/segments'

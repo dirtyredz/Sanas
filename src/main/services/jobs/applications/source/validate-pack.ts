@@ -5,7 +5,7 @@ import {
   type ApplicationStage,
   type JudgementField,
 } from '@shared/jobs/applications'
-import { RESUME_MAX_CHARS } from '@shared/meeting-resume'
+import { RESUME_MAX_CHARS } from '@shared/meeting/meeting-resume'
 
 // Pure validation of one untrusted resumes interview pack (schema v1). Only allowlisted
 // properties are projected; wrong types are errors, never silently absent values. Text is

@@ -1,5 +1,5 @@
-import type { ManualKind } from './live-controls/types'
-import type { SuggestionPurpose, SuggestionTrigger } from './types'
+import type { ManualKind } from '../live-controls/types'
+import type { SuggestionPurpose, SuggestionTrigger } from '../types'
 
 // One label vocabulary for suggestions, shared by the overlay, the meeting history and the
 // Markdown export so a "Next point" never reads as a "Whisper" in one of them. Historical

@@ -1,4 +1,4 @@
-import { parseSummaryInline, parseSummaryMarkdown } from '@shared/summary-markdown'
+import { parseSummaryInline, parseSummaryMarkdown } from '@shared/meeting/summary-markdown'
 import { loadSettings } from '../../../config/settings'
 import { getMeeting } from '../../../db/repos/meeting/meetings'
 import { getJob } from '../../../db/repos/jobs'

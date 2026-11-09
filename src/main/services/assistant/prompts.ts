@@ -1,5 +1,5 @@
 import { jobMemoryBlock } from './answer-context/job-memory'
-import { FILLER_CLOSE, FILLER_OPEN } from '@shared/filler-marker'
+import { FILLER_CLOSE, FILLER_OPEN } from '@shared/suggestion/filler-marker'
 import type { GlossaryTerm, Job, WhisperMode } from '@shared/types'
 import {
   renderTranscriptWindow,
