@@ -1,6 +1,7 @@
 import { normalizeDeepgramMessage } from './deepgram-events'
 import { buildStreamUrl } from './deepgram-stream-url'
 import { ResultWatchdog } from './deepgram-watchdog'
+import { PcmBacklog } from './recovery/pcm-backlog'
 import type { SttSession, SttSessionOptions, SttSignal } from '../types'
 
 // Deepgram streaming over Node's built-in WebSocket.
@@ -11,7 +12,7 @@ import type { SttSession, SttSessionOptions, SttSignal } from '../types'
 // returning Results while PCM keeps flowing (watchdog), it reconnects with backoff and keeps
 // streaming. Continuity caveats (GOTCHAS.md):
 //  - each connection's clock restarts at 0. Timestamps stay on the meeting's AUDIO clock by
-//    counting every PCM byte we are handed (sent or dropped during backoff) and freezing each
+//    counting every PCM byte once (including queued backoff audio) and freezing each
 //    socket's offset at the cursor where its first chunk started. Offsets follow PCM, never the
 //    last final, never wall time;
 //  - diarized speaker indices can reshuffle across connections;
@@ -35,6 +36,7 @@ export class DeepgramSession implements SttSession {
   private keepalive: ReturnType<typeof setInterval> | null = null
   private watchdog: ResultWatchdog | null = null
   private stopped = false
+  private stopping: Promise<void> | null = null
   private recovering = false
   private backoffTimer: ReturnType<typeof setTimeout> | null = null
   private backoffResolve: (() => void) | null = null
@@ -42,10 +44,15 @@ export class DeepgramSession implements SttSession {
   private readonly startOffsetMs: number
   private bytesSeen = 0 // every PCM byte handed to us, sent or not
   private socketOffsetMs: number | null = null // frozen once the socket's first chunk is sent
+  private readonly backlog: PcmBacklog
+  private pumpTimer: ReturnType<typeof setTimeout> | null = null
+  private cancelOpen: (() => void) | null = null
+  private drainComplete: ((ok: boolean) => void) | null = null
 
   constructor(private opts: SttSessionOptions) {
     // a resumed meeting continues where its last session stopped
     this.startOffsetMs = opts.startOffsetMs ?? 0
+    this.backlog = new PcmBacklog(30 * SAMPLE_RATE * BYTES_PER_SAMPLE * opts.channels)
   }
 
   /** Meeting audio time at a byte position. Never rounded per chunk. */
@@ -66,23 +73,41 @@ export class DeepgramSession implements SttSession {
       throw e
     }
     if (this.stopped) {
-      closeQuietly(ws) // Stop landed while opening: never install
+      if (ws.readyState !== WebSocket.CLOSED) closeQuietly(ws) // never install
       return
     }
     this.install(ws)
+    const drained = await new Promise<boolean>((resolve) => {
+      this.drainComplete = resolve
+      this.drain()
+    })
+    if (!this.stopped && (!drained || this.ws !== ws)) throw new Error(CONNECT_ERROR)
   }
 
   private waitForOpen(ws: WebSocket): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error(CONNECT_ERROR)), OPEN_TIMEOUT_MS)
-      const fail = (): void => {
+      let settled = false
+      const timer = setTimeout(() => fail(), OPEN_TIMEOUT_MS)
+      this.cancelOpen = () => {
+        settled = true
         clearTimeout(timer)
+        closeQuietly(ws)
+        resolve()
+      }
+      const fail = (): void => {
+        if (settled) return
+        settled = true
+        clearTimeout(timer)
+        this.cancelOpen = null
         reject(new Error(CONNECT_ERROR))
       }
       ws.addEventListener(
         'open',
         () => {
+          if (settled) return
+          settled = true
           clearTimeout(timer)
+          this.cancelOpen = null
           resolve()
         },
         { once: true },
@@ -96,7 +121,7 @@ export class DeepgramSession implements SttSession {
     this.ws = ws
     this.socketOffsetMs = null
     this.keepalive = setInterval(() => {
-      if (ws.readyState === WebSocket.OPEN)
+      if (ws.readyState === WebSocket.OPEN && (ws.bufferedAmount ?? 0) < 256_000)
         this.sendGuarded(ws, JSON.stringify({ type: 'KeepAlive' }))
     }, KEEPALIVE_MS)
     this.watchdog = new ResultWatchdog({
@@ -149,14 +174,17 @@ export class DeepgramSession implements SttSession {
 
   /** The one way a lost connection is handled: retire it, report one reset, reconnect. */
   private async recover(reason: RecoverReason, code?: number): Promise<void> {
-    if (this.stopped || this.recovering) return
-    this.recovering = true
+    if (this.stopped) return
     const old = this.ws
+    if (!old) return
     this.ws = null // from here the old socket's events are ignored
     this.clearConnectionTimers()
     this.signal({ kind: 'reset' }) // continuity is gone now, not after the backoff
     if (reason !== 'close' && old)
       closeQuietly(old, 4000, reason === 'send' ? 'send failed' : 'stalled')
+    // An initial replay failure belongs to the already-running recovery loop.
+    if (this.recovering) return
+    this.recovering = true
 
     for (const delay of RECONNECT_DELAYS_MS) {
       if (this.stopped) return
@@ -175,6 +203,8 @@ export class DeepgramSession implements SttSession {
     this.recovering = false
     if (this.stopped) return
     const why = reason === 'stall' ? 'stalled' : reason === 'send' ? 'send failed' : `close ${code}`
+    this.backlog.clear()
+    this.stopped = true
     this.opts.onError(`Deepgram connection lost (${why}) — reconnect failed`)
   }
 
@@ -190,6 +220,9 @@ export class DeepgramSession implements SttSession {
   }
 
   private clearConnectionTimers(): void {
+    this.finishDrain(false)
+    if (this.pumpTimer) clearTimeout(this.pumpTimer)
+    this.pumpTimer = null
     if (this.keepalive) clearInterval(this.keepalive)
     this.keepalive = null
     this.watchdog?.stop()
@@ -210,18 +243,56 @@ export class DeepgramSession implements SttSession {
   }
 
   sendAudio(chunk: Buffer): void {
+    if (this.stopped) return
     const before = this.bytesSeen
-    this.bytesSeen += chunk.length // the recording clock counts audio we had to drop too
-    const ws = this.ws
-    if (this.stopped || !ws || ws.readyState !== WebSocket.OPEN) return
-    if (!this.sendGuarded(ws, chunk)) return
-    this.socketOffsetMs ??= this.cursorMs(before)
-    this.watchdog?.audioSent()
+    this.bytesSeen += chunk.length
+    if (!this.backlog.push(chunk, before)) {
+      void this.stop()
+      this.opts.onError('Deepgram audio buffer full (30 seconds) — pause and resume to reconnect.')
+      return
+    }
+    if (!this.pumpTimer) this.drain()
   }
 
-  async stop(): Promise<void> {
+  /** Bounded handoffs and socket pressure; newer capture always joins the FIFO. */
+  private drain(): void {
+    const ws = this.ws
+    if (this.stopped || !ws || ws.readyState !== WebSocket.OPEN) return
+    let budget = 128_000
+    let handoffs = 32
+    while (this.backlog.peek() && budget > 0 && handoffs-- > 0) {
+      const entry = this.backlog.peek()!
+      if ((ws.bufferedAmount ?? 0) + entry.pcm.length > 256_000) break
+      if (!this.sendGuarded(ws, entry.pcm)) return
+      this.socketOffsetMs ??= this.cursorMs(entry.start)
+      this.backlog.shift()
+      budget -= entry.pcm.length
+      this.watchdog?.audioSent()
+    }
+    if (this.backlog.peek())
+      this.pumpTimer = setTimeout(() => {
+        this.pumpTimer = null
+        this.drain()
+      }, 10)
+    else this.finishDrain(true)
+  }
+
+  private finishDrain(ok: boolean): void {
+    const complete = this.drainComplete
+    this.drainComplete = null
+    complete?.(ok)
+  }
+
+  stop(): Promise<void> {
+    return (this.stopping ??= this.shutdown())
+  }
+
+  private async shutdown(): Promise<void> {
     if (this.stopped) return
     this.stopped = true
+    this.backlog.clear()
+    this.cancelOpen?.()
+    this.cancelOpen = null
     this.clearConnectionTimers()
     if (this.backoffTimer) clearTimeout(this.backoffTimer)
     this.backoffTimer = null
@@ -229,6 +300,7 @@ export class DeepgramSession implements SttSession {
     this.backoffResolve = null
 
     const ws = this.ws
+    this.ws = null
     if (!ws) return
     if (ws.readyState !== WebSocket.OPEN) {
       closeQuietly(ws)
@@ -251,6 +323,7 @@ export class DeepgramSession implements SttSession {
         { once: true },
       )
     })
+    closeQuietly(ws)
   }
 }
 

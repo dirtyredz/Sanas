@@ -2,67 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DeepgramSession } from './deepgram-session'
 import type { SttSessionOptions, SttSignal, SttTranscript } from '../types'
 
-// A fake WebSocket: no network. Tests drive open/message/close by hand.
-type Listener = (ev: unknown) => void
-
-class FakeSocket {
-  static OPEN = 1
-  static instances: FakeSocket[] = []
-  readyState = 0
-  sent: unknown[] = []
-  closes: [number | undefined, string | undefined][] = []
-  private listeners = new Map<string, Listener[]>()
-
-  constructor(
-    public url: string,
-    public protocols: string[],
-  ) {
-    FakeSocket.instances.push(this)
-  }
-
-  addEventListener(type: string, fn: Listener, opts?: { once?: boolean }): void {
-    const wrapped: Listener = opts?.once
-      ? (ev) => {
-          this.off(type, wrapped)
-          fn(ev)
-        }
-      : fn
-    this.listeners.set(type, [...(this.listeners.get(type) ?? []), wrapped])
-  }
-
-  private off(type: string, fn: Listener): void {
-    this.listeners.set(
-      type,
-      (this.listeners.get(type) ?? []).filter((l) => l !== fn),
-    )
-  }
-
-  emit(type: string, ev: unknown = {}): void {
-    for (const l of this.listeners.get(type) ?? []) l(ev)
-  }
-
-  open(): void {
-    this.readyState = 1
-    this.emit('open')
-  }
-
-  send(data: unknown): void {
-    this.sent.push(data)
-    // Deepgram answers CloseStream by closing normally
-    if (data === JSON.stringify({ type: 'CloseStream' })) {
-      queueMicrotask(() => this.emit('close', { code: 1000 }))
-    }
-  }
-
-  close(code?: number, reason?: string): void {
-    this.closes.push([code, reason])
-    this.readyState = 3
-  }
-
-  message(data: unknown): void {
-    this.emit('message', { data: JSON.stringify(data) })
-  }
-}
+import { FakeSocket } from './recovery/fake-socket.test-support'
 
 const sockets = (): FakeSocket[] => FakeSocket.instances
 const pcm = (seconds: number, channels = 1): Buffer => Buffer.alloc(seconds * 32000 * channels)
@@ -157,7 +97,7 @@ describe('Deepgram session', () => {
   })
 
   describe('audio clock', () => {
-    it('stamps a reconnected socket from the PCM cursor, counting audio dropped in backoff', async () => {
+    it('stamps a reconnected socket from the PCM cursor, replaying backoff audio at its original position', async () => {
       const { session, transcripts, signals } = await connected()
       const first = sockets()[0]
       session.sendAudio(pcm(1))
@@ -166,13 +106,13 @@ describe('Deepgram session', () => {
       expect(signals).toEqual([{ kind: 'reset' }])
       expect(sockets()).toHaveLength(1) // still in backoff
 
-      session.sendAudio(pcm(2)) // dropped, but the recording clock still counted it
+      session.sendAudio(pcm(2)) // retained at its original recording position
       const second = await reconnectAfter(1000)
       session.sendAudio(pcm(0.5))
       second.message(final('Again.', 0, 0.4))
       expect(transcripts.map((t) => [t.text, t.tStartMs])).toEqual([
         ['Hello.', 0],
-        ['Again.', 3000],
+        ['Again.', 1000],
       ])
       await session.stop()
     })
@@ -185,7 +125,7 @@ describe('Deepgram session', () => {
       const second = await reconnectAfter(1000)
       session.sendAudio(pcm(0.5, 2))
       second.message(final('Stereo.', 0, 0.4))
-      expect(transcripts[0].tStartMs).toBe(2000)
+      expect(transcripts[0].tStartMs).toBe(1000)
       await session.stop()
     })
 
@@ -205,7 +145,7 @@ describe('Deepgram session', () => {
 
     it('freezes the offset at the first chunk sent, not at open or after a wait', async () => {
       const rig = newRig()
-      rig.session.sendAudio(pcm(2)) // no socket yet: dropped, but the recording clock counts it
+      rig.session.sendAudio(pcm(2)) // queued before open
       const connecting = rig.session.connect()
       sockets()[0].open()
       await connecting
@@ -213,7 +153,7 @@ describe('Deepgram session', () => {
       rig.session.sendAudio(pcm(0.5))
       rig.session.sendAudio(pcm(1)) // later chunks must not move the offset
       sockets()[0].message(final('Hi.', 0, 0.4))
-      expect(rig.transcripts[0].tStartMs).toBe(2000)
+      expect(rig.transcripts[0].tStartMs).toBe(0)
       await rig.session.stop()
     })
 
