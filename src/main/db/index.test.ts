@@ -1,6 +1,7 @@
 import { beforeEach, expect, it, vi } from 'vitest'
 const mock = vi.hoisted(() => ({
   version: 6,
+  quick: [{ quick_check: 'ok' }] as Record<string, string>[],
   exists: true,
   backup: vi.fn(),
   migrate: vi.fn(),
@@ -22,7 +23,12 @@ beforeEach(() => {
   vi.clearAllMocks()
   mock.version = 6
   mock.exists = true
-  mock.pragma.mockImplementation((q: string) => (q === 'user_version' ? mock.version : undefined))
+  mock.quick = [{ quick_check: 'ok' }]
+  mock.pragma.mockImplementation((q: string) => {
+    if (q === 'user_version') return mock.version
+    if (q === 'quick_check') return mock.quick
+    if (q === 'foreign_key_check') return []
+  })
   mock.backup.mockResolvedValue('/isolated/backups/pre-upgrade.db')
   mock.migrate.mockImplementation(() => {})
 })
@@ -80,4 +86,14 @@ it.each([
   mock.version = version
   await (await import('./index')).openDb()
   expect(mock.backup).not.toHaveBeenCalled()
+})
+it('refuses a damaged database before backup or migration and closes the handle', async () => {
+  mock.quick = [{ quick_check: 'database disk image is malformed' }]
+  const db = await import('./index')
+  await expect(db.openDb()).rejects.toThrow('initialization failed')
+  expect(mock.backup).not.toHaveBeenCalled()
+  expect(mock.migrate).not.toHaveBeenCalled()
+  expect(mock.pragma).not.toHaveBeenCalledWith('journal_mode = WAL')
+  expect(mock.close).toHaveBeenCalledOnce()
+  expect(() => db.getDb()).toThrow()
 })

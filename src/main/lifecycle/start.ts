@@ -80,8 +80,12 @@ app.on('before-quit', (event) => {
 })
 
 app.on('will-quit', () => {
-  stopUpdates()
-  stopHistoryWorker()
-  closeDb()
-  globalShortcut.unregisterAll()
+  // Each step is independent: a throw in one must not leave the database open or shortcuts registered.
+  try {
+    stopUpdates()
+    stopHistoryWorker()
+  } finally {
+    closeDb()
+    globalShortcut.unregisterAll()
+  }
 })

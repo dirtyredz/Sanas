@@ -4,6 +4,7 @@ import { join } from 'path'
 import { existsSync, mkdirSync } from 'node:fs'
 import { runMigrations, schemaVersion } from './migrations'
 import { backupBeforeMigration } from './backup'
+import { assertDatabaseHealthy } from './integrity'
 
 let db: Database.Database | null = null
 
@@ -30,6 +31,8 @@ async function initialize(): Promise<Database.Database> {
     const current = candidate.pragma('user_version', { simple: true }) as number
     future = current > schemaVersion
     if (future) throw new Error('This database needs a newer version of Sanas.')
+    // Read-only gate before anything can write: damage is surfaced, never migrated over.
+    if (existed) assertDatabaseHealthy(candidate)
     if (existed && current < schemaVersion) backup = await backupBeforeMigration(candidate, folder)
     candidate.pragma('journal_mode = WAL')
     candidate.pragma('foreign_keys = ON')
