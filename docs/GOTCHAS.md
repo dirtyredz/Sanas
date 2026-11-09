@@ -732,6 +732,7 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
 - Reconfirmation alone retains historical confirmed speech. Actual unpinning retracts only that
   speaker's evidence. Re-pinning reconstructs only available current-window finals. Shown cards,
   approved memory and notes are never themselves proof the user said anything.
-- The pre-commit typecheck runs on the staged tree (`scripts/typecheck-staged.mjs` exports the index to a temp dir), not the
-  working tree: an unstaged import fix used to mask a broken index and 915bd31 landed that way. Hooks are copies in the shared
-  `.git/hooks`; after editing `scripts/pre-commit.sh`, re-run `npm run prepare`. The first staged check is a cold `tsc` (~1 min).
+- The pre-commit typecheck is the fast working-tree `npm run typecheck` (~typecheck time), so the hook first refuses the
+  commit when any tracked `.ts`/`.tsx` has unstaged changes or any untracked `.ts`/`.tsx` exists: otherwise an unstaged import
+  fix masks a broken index (915bd31 landed that way). Stage or stash them. Hooks are copies in the shared `.git/hooks`; after
+  editing `scripts/pre-commit.sh`, re-run `npm run prepare`.

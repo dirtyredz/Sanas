@@ -2,6 +2,13 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-11-09 — Pre-commit typecheck: refuse a dirty TypeScript tree, then check the working tree
+
+The hook must typecheck what is committed (915bd31 landed a broken import masked by an unstaged fix). Rule: when
+TypeScript is staged, refuse the commit if any tracked .ts/.tsx has unstaged changes or any .ts/.tsx is untracked,
+then run the fast `npm run typecheck` on the working tree, which then equals the commit. Rejected:
+`scripts/typecheck-staged.mjs` (export the index to a temp dir and typecheck there), ~60 s on every commit.
+
 ## 2026-11-09 — Bounded reconnect replay and explicit voice reconfirmation
 
 Supersedes the November 5 no-replay behavior. Retain up to 30 seconds of unsent PCM in

@@ -39,11 +39,12 @@ it('the shipped pre-commit hook runs lint-staged, then the full typecheck when T
   expect(hook).toContain('SANAS_SKIP_TYPECHECK')
 })
 
-it('the pre-commit typecheck runs against the staged tree, never the working tree (915bd31)', () => {
+it('the pre-commit hook refuses unstaged or untracked TypeScript, then runs the fast working-tree typecheck (915bd31)', () => {
   const hook = readFileSync(join(__dirname, 'pre-commit.sh'), 'utf8')
-  expect(hook).toContain('typecheck-staged.mjs')
-  expect(hook).not.toContain('npm run --silent typecheck')
-  const script = readFileSync(join(__dirname, 'typecheck-staged.mjs'), 'utf8')
-  expect(script).toContain('checkout-index')
-  expect(script).toContain("'typecheck'")
+  expect(hook).toContain("git diff --name-only --diff-filter=ACMRD -- '*.ts' '*.tsx'")
+  expect(hook).toContain("git ls-files --others --exclude-standard -- '*.ts' '*.tsx'")
+  expect(hook).toContain('so the typechecked tree equals the commit')
+  expect(hook).toContain('npm run --silent typecheck')
+  expect(hook.indexOf('exit 1')).toBeLessThan(hook.indexOf('npm run --silent typecheck'))
+  expect(hook).not.toContain('typecheck-staged')
 })
