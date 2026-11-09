@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { ClassifierOutcome } from '../../../assistant/classifier'
+import type { ClassifierOutcome } from '../../../assistant/classifier/classifier'
 import { CONTINUATION_GRACE_MS } from '../../../turns/turn-assembler'
 import { me, otherTurn, setup, them } from './testing/live-assistance-harness'
 import { freezeEvidence } from '../../../history/live/session'

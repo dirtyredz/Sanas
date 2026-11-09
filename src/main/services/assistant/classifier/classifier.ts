@@ -1,6 +1,6 @@
 import { failureDiagnostic, type FailureDiagnostic } from './failure-diagnostics'
-import type { AssistantProvider, ProviderUsage } from './types'
-import { boundedExcerpt } from './excerpt'
+import type { AssistantProvider, ProviderUsage } from '../types'
+import { boundedExcerpt } from '../excerpt'
 import {
   malformedShape,
   parseVerdict,

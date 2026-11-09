@@ -61,7 +61,7 @@ export async function runRehearsal(): Promise<void> {
       },
     })
     const sockets = tier === 'audio' ? installSocketFaults() : undefined
-    const { claudeProvider } = await import('../services/assistant/claude')
+    const { claudeProvider } = await import('../services/assistant/provider/claude')
     const model = new RehearsalAssistant(
       now,
       assistant === 'claude' ? claudeProvider : undefined,
@@ -69,7 +69,7 @@ export async function runRehearsal(): Promise<void> {
     )
     const collected = collectEvidence(scenario, model, now)
     const { evidence, finalReceipts, turnCompletions, transitions } = collected
-    const { installRehearsalAssistant } = await import('../services/assistant/provider')
+    const { installRehearsalAssistant } = await import('../services/assistant/provider/provider')
     installRehearsalAssistant(model)
     const screens = new RehearsalScreens(now)
     const { installRehearsalDesktop } = await import('../services/screen-capture')

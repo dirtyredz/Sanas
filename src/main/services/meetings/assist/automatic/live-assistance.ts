@@ -3,7 +3,7 @@ import {
   type AssistDiagnostic,
   type InvalidationReason,
 } from '../../observation/diagnostics'
-import { formatVerdict, isAcceptedVerdict } from '../../../assistant/classifier-verdict'
+import { formatVerdict, isAcceptedVerdict } from '../../../assistant/classifier/classifier-verdict'
 import { TurnAssembler } from '../../../turns/turn-assembler'
 import {
   ANSWER_NOW_QUESTION_MS,
@@ -19,7 +19,7 @@ import type {
   ClassifyRequest,
   Addressee,
   ResponseKind,
-} from '../../../assistant/classifier'
+} from '../../../assistant/classifier/classifier'
 import { QuestionLedger } from './question-ledger'
 import { CoachPolicy } from '../../../assistant/coach/coach-policy'
 import { speakerLabel } from '../../../turns/transcript-format'

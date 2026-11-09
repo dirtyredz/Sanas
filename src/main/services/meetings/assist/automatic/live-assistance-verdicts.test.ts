@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Addressee, ResponseKind } from '../../../assistant/classifier'
+import type { Addressee, ResponseKind } from '../../../assistant/classifier/classifier'
 import { CONTINUATION_GRACE_MS } from '../../../turns/turn-assembler'
 import type { AssistDiagnostic } from '../../observation/diagnostics'
 import { LatencyTracker, type LatencyRecord } from '../latency/latency'

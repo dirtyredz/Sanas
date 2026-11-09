@@ -11,7 +11,7 @@ import { getJob } from '../../../db/repos/jobs'
 import { listGlossary } from '../../../db/repos/job/glossary'
 import { speakerNameMap } from '../../../db/repos/speakers'
 import { whilePostProcessing } from '../status/post-processing'
-import { assistantProvider } from '../../assistant/provider'
+import { assistantProvider } from '../../assistant/provider/provider'
 import {
   buildSummaryPrompt,
   buildSystemPrompt,

@@ -120,7 +120,7 @@ speculation is discarded and the ordinary path answers.
 ## 2026-11-05 — Tolerant but conservative classifier verdict parsing
 
 Haiku returned "room question" (dk-98a73491) and the strict parser failed the turn closed.
-`assistant/classifier-verdict.ts` now accepts exactly one kind and one addressee as whole words in
+`assistant/classifier/classifier-verdict.ts` now accepts exactly one kind and one addressee as whole words in
 either order, any case/punctuation/labels, or `none` alone. It still fails closed on empty or
 over-long (>120) replies, competing kinds/addressees, `none` mixed with a positive, incomplete pairs,
 substrings/plurals and any hedge/negation/alternative word (not, or, maybe, unclear, ...). Evidence

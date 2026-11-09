@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { redactLogText } from '../../lifecycle/main-log'
+import { redactLogText } from '../../../lifecycle/main-log'
 
 const sdk = vi.hoisted(() => ({
   final: null as null | (() => Promise<unknown>),
@@ -23,7 +23,7 @@ vi.mock('@anthropic-ai/sdk', () => ({
 import { claudeProvider } from './claude'
 import { usageFromAnthropic } from './claude-usage'
 import { reportUsage } from './provider-evidence'
-import type { ProviderUsage } from './types'
+import type { ProviderUsage } from '../types'
 
 const base = {
   apiKey: 'sk-test',

@@ -1,4 +1,4 @@
-import { isClassifierFailure } from '../../../assistant/classifier-verdict'
+import { isClassifierFailure } from '../../../assistant/classifier/classifier-verdict'
 import {
   observeAssistance,
   type DiscardCategory,

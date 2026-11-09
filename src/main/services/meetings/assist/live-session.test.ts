@@ -35,7 +35,7 @@ vi.mock('../status/post-processing', () => ({
   markPostProcessing: vi.fn(),
   clearPostProcessing: vi.fn(),
 }))
-vi.mock('../../assistant/claude', () => ({
+vi.mock('../../assistant/provider/claude', () => ({
   claudeProvider: {
     complete: async (req: AssistRequest) => {
       f.requests.push(req)

@@ -6,7 +6,9 @@ vi.mock('../../../db/index', () => ({ getDb: () => m.db }))
 vi.mock('../../../config/settings', () => ({
   loadSettings: () => ({ anthropicApiKey: 'key', answerModel: 'answer' }),
 }))
-vi.mock('../../assistant/provider', () => ({ assistantProvider: { complete: m.complete } }))
+vi.mock('../../assistant/provider/provider', () => ({
+  assistantProvider: { complete: m.complete },
+}))
 vi.mock('../../meetings/status/post-processing', () => ({
   whilePostProcessing: (_id: number, f: () => Promise<void>) => f(),
 }))

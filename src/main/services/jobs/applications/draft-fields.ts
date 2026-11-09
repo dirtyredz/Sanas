@@ -1,7 +1,7 @@
 import type { JudgementField } from '@shared/jobs/applications'
 import { JOB_CONTEXT_MAX_CHARS } from '@shared/jobs/limits'
 import { loadSettings } from '../../../config/settings'
-import { assistantProvider } from '../../assistant/provider'
+import { assistantProvider } from '../../assistant/provider/provider'
 import type { AssistantProvider } from '../../assistant/types'
 
 // Draft-at-import: when a pack leaves a judgement field (company info, talking points,

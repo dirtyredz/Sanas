@@ -13,7 +13,9 @@ const mock = vi.hoisted(() => ({
 }))
 vi.mock('../../../db/index', () => ({ getDb: () => mock.db }))
 vi.mock('../../../config/settings', () => ({ loadSettings: () => mock.settings }))
-vi.mock('../../assistant/provider', () => ({ assistantProvider: { complete: mock.complete } }))
+vi.mock('../../assistant/provider/provider', () => ({
+  assistantProvider: { complete: mock.complete },
+}))
 vi.mock('./source/refresh-runner', () => ({ refreshPacks: () => mock.refresh() }))
 import { runMigrations } from '../../../db/migrations'
 import { createJob, getJob, listJobs, setJobArchived, updateJob } from '../../../db/repos/jobs'

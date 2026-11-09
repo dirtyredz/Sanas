@@ -1,4 +1,4 @@
-import type { ProviderUsage, ProviderTiming } from './types'
+import type { ProviderUsage, ProviderTiming } from '../types'
 
 export function reportTiming(
   observer: ((event: ProviderTiming) => void) | undefined,

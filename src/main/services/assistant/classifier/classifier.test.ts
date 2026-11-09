@@ -6,7 +6,7 @@ import {
   classifyTurn,
   type ClassifyRequest,
 } from './classifier'
-import type { AssistantProvider, AssistRequest } from './types'
+import type { AssistantProvider, AssistRequest } from '../types'
 
 function provider(impl: (req: AssistRequest) => Promise<string>): {
   p: AssistantProvider

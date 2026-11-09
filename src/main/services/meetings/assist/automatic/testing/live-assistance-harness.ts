@@ -1,7 +1,10 @@
 import { vi } from 'vitest'
 import type { SuggestionEvent } from '@shared/types'
 import type { AssistRequest } from '../../../../assistant/types'
-import type { ClassifierOutcome, ClassifyRequest } from '../../../../assistant/classifier'
+import type {
+  ClassifierOutcome,
+  ClassifyRequest,
+} from '../../../../assistant/classifier/classifier'
 import type { TurnFinal } from '../../../../turns/types'
 import { CONTINUATION_GRACE_MS } from '../../../../turns/turn-assembler'
 import { LiveAssistance, type LiveAssistanceDeps } from '../live-assistance'

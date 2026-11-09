@@ -28,7 +28,9 @@ vi.mock('../../../db/repos/job/memory/proposals', () => ({
   settleProposal: m.finish,
 }))
 vi.mock('./source', () => ({ memorySource: () => m.source, proposalIsCurrent: () => true }))
-vi.mock('../../assistant/provider', () => ({ assistantProvider: { complete: m.complete } }))
+vi.mock('../../assistant/provider/provider', () => ({
+  assistantProvider: { complete: m.complete },
+}))
 vi.mock('../../meetings/status/post-processing', () => ({
   whilePostProcessing: async (_id: number, f: () => Promise<void>) => {
     m.holds++

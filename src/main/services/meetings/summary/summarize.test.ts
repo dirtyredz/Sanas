@@ -49,7 +49,7 @@ vi.mock('../../../db/repos/meeting/meeting-presentation', () => ({
 vi.mock('../status/post-processing', () => ({
   whilePostProcessing: (_id: number, run: () => Promise<unknown>) => run(),
 }))
-vi.mock('../../assistant/claude', () => ({
+vi.mock('../../assistant/provider/claude', () => ({
   claudeProvider: {
     complete: async (request: AssistRequest) => {
       f.request = request

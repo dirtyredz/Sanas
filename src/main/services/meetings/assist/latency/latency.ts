@@ -1,7 +1,7 @@
 import type { SuggestionPurpose } from '@shared/types'
 import type { SuggestionVisibilityState } from '@shared/live-controls/visibility'
 import { randomUUID } from 'node:crypto'
-import type { MalformedShape } from '../../../assistant/classifier-verdict'
+import type { MalformedShape } from '../../../assistant/classifier/classifier-verdict'
 import type { ProviderUsage, ProviderTiming } from '../../../assistant/types'
 import type { EffectiveProfile } from '../../observation/run-observation'
 import type { TurnAssemblyTiming, TurnCompletion } from '../../../turns/types'

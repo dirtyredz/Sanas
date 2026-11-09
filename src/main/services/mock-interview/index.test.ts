@@ -15,7 +15,7 @@ vi.mock('../../windows/interviewer-window', () => ({
   openInterviewer: vi.fn(),
 }))
 vi.mock('../../windows/overlay-window', () => ({ showOverlay: vi.fn() }))
-vi.mock('../assistant/provider', () => ({ assistantProvider: {} }))
+vi.mock('../assistant/provider/provider', () => ({ assistantProvider: {} }))
 vi.mock('./shortcuts', () => ({ registerMockShortcuts: vi.fn() }))
 vi.mock('./turns/interviewer', () => ({ createInterviewer: vi.fn() }))
 vi.mock('../meetings/observation/meeting-observation', () => ({ subscribeMeeting: vi.fn() }))

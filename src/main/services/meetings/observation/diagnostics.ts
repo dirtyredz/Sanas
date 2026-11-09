@@ -2,7 +2,7 @@ import type {
   ClassifierFailureReason,
   MalformedShape,
   VerdictLabel,
-} from '../../assistant/classifier-verdict'
+} from '../../assistant/classifier/classifier-verdict'
 import type { ProviderUsage } from '../../assistant/types'
 import type { CompletedTurn } from '../../turns/types'
 import type { PromptMismatchCategory } from '../assist/suggestion/suggestion-requests'

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('../../../config/settings', () => ({ loadSettings: () => ({}) }))
-vi.mock('../../assistant/provider', () => ({ assistantProvider: { complete: vi.fn() } }))
+vi.mock('../../assistant/provider/provider', () => ({ assistantProvider: { complete: vi.fn() } }))
 
 import type { AssistantProvider } from '../../assistant/types'
 import {

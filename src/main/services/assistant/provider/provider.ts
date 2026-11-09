@@ -1,5 +1,5 @@
 import { claudeProvider } from './claude'
-import type { AssistantProvider } from './types'
+import type { AssistantProvider } from '../types'
 
 export let assistantProvider: AssistantProvider = claudeProvider
 

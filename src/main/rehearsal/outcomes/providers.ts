@@ -1,7 +1,10 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import type { AssistantProvider, AssistRequest } from '../../services/assistant/types'
-import { CLASSIFIER_SYSTEM } from '../../services/assistant/classifier'
-import { formatVerdict, parseClassification } from '../../services/assistant/classifier-verdict'
+import { CLASSIFIER_SYSTEM } from '../../services/assistant/classifier/classifier'
+import {
+  formatVerdict,
+  parseClassification,
+} from '../../services/assistant/classifier/classifier-verdict'
 import type {
   SttProvider,
   SttSession,

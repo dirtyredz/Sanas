@@ -1,7 +1,7 @@
 import { afterEach, expect, it, vi } from 'vitest'
 import { ScriptedSttProvider, RehearsalAssistant } from './providers'
 import { imageDigest } from './outcomes'
-import { CLASSIFIER_SYSTEM } from '../../services/assistant/classifier'
+import { CLASSIFIER_SYSTEM } from '../../services/assistant/classifier/classifier'
 import type { AssistRequest } from '../../services/assistant/types'
 import type { Step } from '../scenario/scenario'
 import { CONTINUATION_GRACE_MS, TurnAssembler } from '../../services/turns/turn-assembler'

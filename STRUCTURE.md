@@ -65,8 +65,10 @@ sanas/
 │   │   │   │   └── deepgram/              # Deepgram provider, session, event normalization, watchdog, stream URL
 │   │   │   ├── turns/                     # pure completed-turn assembly (latest-question.ts: Answer now question pick)
 │   │   │   │   └── transcript-format.ts   # canonical transcript formatting/windowing
-│   │   │   ├── assistant/                 # AssistantProvider seam, Claude, prompts, classifier, triggers, failure-diagnostics.ts
+│   │   │   ├── assistant/                 # prompts, triggers, shared types and answer logic; classifier/ and provider/ below
 │   │   │   │   ├── answer-context/        # answer prompt context: window split, anchor text (anchor.ts), told stories, ShownLedger, invented topic-switch fixture
+│   │   │   │   ├── classifier/            # turn classifier, verdict parsing, failure diagnostics
+│   │   │   │   ├── provider/              # AssistantProvider seam, Claude implementation (the only Anthropic SDK importer), usage/evidence/error
 │   │   │   │   ├── coach/                 # next-point policy and prompts
 │   │   │   │   └── live-controls/         # typed/detail/audience prompt instructions
 │   │   │   ├── mock-interview/            # product plans/fixtures, interviewer, turn engine, session/results
@@ -224,8 +226,10 @@ sanas/
 - `src/main/services/` — main-process services and provider seams
 - `src/main/services/stt/` — the swappable STT seam (`index.ts`, `types.ts`); `keyterm-budget.ts` holds Deepgram's keyterm limits so callers pass an ordered list and never a vendor budget; `endpointing.ts` the shared endpointing silence the scripted STT mirrors
 - `src/main/services/stt/deepgram/` — the Deepgram implementation behind the seam: provider and batch (`deepgram.ts`), socket lifecycle and PCM-anchored clock (`deepgram-session.ts`, `DeepgramSession`), stall watchdog (`deepgram-watchdog.ts`), stream URL (`deepgram-stream-url.ts`) and message normalization (`deepgram-events.ts`); only `stt/index.ts` (and the rehearsal runner's dynamic import) reach it
-- `src/main/services/assistant/classifier-verdict.ts` — pure tolerant-but-conservative verdict parsing, canonical `formatVerdict`, `isAcceptedVerdict` and the one `CLASSIFIER_FAILURE_REASONS` list and content-free malformed shapes; `claude-usage.ts` extracts Anthropic usage into `ProviderUsage` (missing = unknown); `provider-evidence.ts` holds the provider-neutral `reportUsage`/`reportTiming`, and `provider-error.ts` the neutral failure category a provider tags on its transport errors (failure-diagnostics reads it, never vendor class names)
-- `src/main/services/assistant/failure-diagnostics.ts` — allowlists provider failure metadata for classifier diagnostics (category incl. `connection`, error class `errorName`, status, request ID, model, elapsed); the assistance coordinator owns the suspension timer and publishes availability through MeetingState
+- `src/main/services/assistant/classifier/` — the turn classifier (`classifier.ts`), verdict parsing (`classifier-verdict.ts`) and `failure-diagnostics.ts`
+- `src/main/services/assistant/provider/` — the `AssistantProvider` seam (`provider.ts`), the Claude implementation (`claude.ts`, `claude-usage.ts`), provider-neutral `provider-evidence.ts`/`provider-error.ts`; the only home that imports `@anthropic-ai/sdk`
+- `src/main/services/assistant/classifier/classifier-verdict.ts` — pure tolerant-but-conservative verdict parsing, canonical `formatVerdict`, `isAcceptedVerdict` and the one `CLASSIFIER_FAILURE_REASONS` list and content-free malformed shapes; `claude-usage.ts` extracts Anthropic usage into `ProviderUsage` (missing = unknown); `provider-evidence.ts` holds the provider-neutral `reportUsage`/`reportTiming`, and `provider-error.ts` the neutral failure category a provider tags on its transport errors (failure-diagnostics reads it, never vendor class names)
+- `src/main/services/assistant/classifier/failure-diagnostics.ts` — allowlists provider failure metadata for classifier diagnostics (category incl. `connection`, error class `errorName`, status, request ID, model, elapsed); the assistance coordinator owns the suspension timer and publishes availability through MeetingState
 - `src/main/ipc/jobs/resume/` — `jobs.getResume`/`setResume` (validated by `validateResume`) and `resume-import.ts`, the native PDF/DOCX picker returning an unsaved draft; the renderer never supplies a filesystem path
 - `src/renderer/src/lib/meeting/job-choices.ts` — Live picker choices (`startableJobs` drops the Unsorted bucket via `isUnsortedJob`), the remembered job (`rememberedJob`/`rememberJob`) and `selectionAfterReload`
 - `src/renderer/src/lib/meeting/start-selection.ts` — the Interview default/override rule and the Start options
@@ -372,8 +376,7 @@ main-process code belongs in a responsibility folder above, not beside them.
 - The overlay's CSS layers (`overlay-controls/-shell/-panels/-suggestions.css`) live in
   `app/styles/` beside the library's, so the shared folder mixes two bundles; `.workspace-body` /
   `.workspace-actions` sit in `overlay-panels.css` while the workspace frame is in `overlay-shell.css`.
-- `services/assistant/` has 15 entries; a `classifier/` subfolder for `classifier.ts`,
-  `classifier-verdict.ts` and `failure-diagnostics.ts` is the natural next split.
+- `services/assistant/` still has ~12 loose files plus `classifier/`, `provider/`, `answer-context/`, `coach/` and `live-controls/` (dk-651d190a split the first two); prompts/triggers/contracts are the next candidates if it grows.
 - The provider-neutral seam still carries Anthropic vocabulary: `ProviderTiming`'s `'policy'` variant
   (`assistant/types.ts`) names Anthropic's `effort` levels and `thinking` modes (`between_tools`). Widen
   it to opaque provider-tagged strings when a second `AssistantProvider` arrives; until then
@@ -397,7 +400,7 @@ main-process code belongs in a responsibility folder above, not beside them.
 - `AssistRequest.model`, `AssistRequest.effort` and `AssistRequest.workspaceId` map closely to
   Anthropic-specific knobs, and the Claude provider derives a per-model "thinking off" value from a short `maxTokens`
   (`SHORT_BUDGET_MAX_TOKENS` in claude.ts), also Anthropic-specific. A second provider will need its own model settings and interpretation.
-- Live assistance and summaries select `AssistantProvider` through `services/assistant/provider.ts`.
+- Live assistance and summaries select `AssistantProvider` through `services/assistant/provider/provider.ts`.
   Normal startup selects Claude; explicit rehearsal startup may install a canned provider.
 - SMTP credentials use the same plain local-settings trust model as API keys. `safeStorage` encryption
   for all secrets should be one future change if required.

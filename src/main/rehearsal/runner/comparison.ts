@@ -40,7 +40,7 @@ export async function compareProfiles(options: { realProvider?: boolean; repeats
   if (options.realProvider && !process.env.ANTHROPIC_API_KEY)
     throw new Error('Real provider requires ANTHROPIC_API_KEY')
   const real = options.realProvider
-    ? (await import('../../services/assistant/claude')).claudeProvider
+    ? (await import('../../services/assistant/provider/claude')).claudeProvider
     : undefined
   const provider = new RehearsalAssistant(() => performance.now(), real)
   const settings: AssistSettings = {

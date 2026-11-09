@@ -1,4 +1,4 @@
-import { providerFailureCategory } from './provider-error'
+import { providerFailureCategory } from '../provider/provider-error'
 
 /** Only allowlisted transport metadata may cross the provider boundary into diagnostics. */
 export interface FailureDiagnostic {
