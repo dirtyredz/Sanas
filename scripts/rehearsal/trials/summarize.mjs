@@ -1,31 +1,39 @@
+import { build } from 'esbuild'
+import { mkdir, rm } from 'node:fs/promises'
 import { readFileSync, readdirSync } from 'node:fs'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { resolve } from 'node:path'
-import { pathToFileURL } from 'node:url'
 
-const stages = [
-  'classifierMs',
-  'closeToClassifierStartMs',
-  'closeToClassifierEndMs',
-  'closeToRequestMs',
-  'runToProviderRequestMs',
-  'providerRequestToFirstProtocolMs',
-  'providerRequestToFirstTextMs',
-  'requestToFirstTextMs',
-  'closeToPromotionMs',
-  'requestToFirstReadableMs',
-  'closeToFirstReadableMs',
-  'lastFinalToFirstReadableMs',
-]
-export function distribution(values) {
-  const v = values.filter(Number.isFinite).sort((a, b) => a - b)
-  const n = v.length
-  return {
-    n,
-    median: n ? (v[Math.floor((n - 1) / 2)] + v[Math.floor(n / 2)]) / 2 : null,
-    p90: n ? v[Math.ceil(n * 0.9) - 1] : null,
+const root = fileURLToPath(new URL('../../../', import.meta.url))
+
+let rules
+/** The in-app latency rules (delivered rule, rounded median, stage lists), bundled from
+ *  src/main/services/meetings/assist/latency-summary.ts so this report cannot drift from it. */
+export async function loadLatencyRules() {
+  if (rules) return rules
+  const folder = resolve(root, '.tmp/owner-runs')
+  await mkdir(folder, { recursive: true })
+  const bundle = resolve(folder, `latency-rules-${process.pid}.mjs`)
+  await build({
+    entryPoints: [resolve(root, 'src/main/services/meetings/assist/latency-summary.ts')],
+    outfile: bundle,
+    bundle: true,
+    platform: 'node',
+    format: 'esm',
+    packages: 'external',
+    tsconfig: resolve(root, 'tsconfig.node.json'),
+  })
+  try {
+    rules = await import(pathToFileURL(bundle).href)
+  } finally {
+    await rm(bundle, { force: true })
   }
+  return rules
 }
-export function summarizeLogs(text) {
+
+export async function summarizeLogs(text) {
+  const { distribution, isDeliveredAutomatic, tally, STAGE_FIELDS, ASSEMBLY_FIELDS } =
+    await loadLatencyRules()
   const records = []
   let malformed = 0
   for (const line of text.split(/\r?\n/)) {
@@ -38,10 +46,8 @@ export function summarizeLogs(text) {
     }
   }
   const runs = records.filter((r) => r.kind === 'run')
-  const delivered = runs.filter((r) => r.outcome === 'done' && r.classification === 'applies')
-  const tally = (values) =>
-    Object.fromEntries([...new Set(values)].map((v) => [v, values.filter((x) => x === v).length]))
-  const result = {
+  const delivered = runs.filter(isDeliveredAutomatic)
+  return {
     records: records.length,
     malformed,
     runs: runs.length,
@@ -82,7 +88,7 @@ export function summarizeLogs(text) {
       ),
     ),
     stages: Object.fromEntries(
-      stages.map((key) => [
+      STAGE_FIELDS.map((key) => [
         key,
         {
           ...distribution(delivered.map((r) => r[key])),
@@ -91,13 +97,7 @@ export function summarizeLogs(text) {
       ]),
     ),
     assembly: Object.fromEntries(
-      [
-        'lastFinalToCloseMs',
-        'boundaryToCloseMs',
-        'timerLatenessMs',
-        'ingressToAssemblyMs',
-        'audioCursorGapMs',
-      ].map((key) => [
+      ASSEMBLY_FIELDS.map((key) => [
         key === 'audioCursorGapMs' ? 'audioCursorGapMs_PROXY' : key,
         distribution(delivered.map((r) => r.assembly?.[key])),
       ]),
@@ -109,16 +109,19 @@ export function summarizeLogs(text) {
         .map((r) => r.broadcastToRendererReceiptMs),
     ),
   }
-  return result
 }
+
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
-  const folder = process.argv[2]
+  const dryRun = process.argv.includes('--dry-run')
+  const folder = process.argv.slice(2).find((a) => !a.startsWith('--'))
   if (!folder) throw new Error('Provide a directory containing copied app .log files')
-  const text = readdirSync(folder)
-    .filter((name) => /\.log(?:\.\d+)?$/.test(name))
-    .map((name) => readFileSync(resolve(folder, name), 'utf8'))
-    .join('\n')
-  const summary = summarizeLogs(text)
-  console.log(JSON.stringify(summary, null, 2))
-  if (!summary.records || summary.malformed) process.exitCode = 1
+  const names = readdirSync(folder).filter((name) => /\.log(?:\.\d+)?$/.test(name))
+  if (dryRun) {
+    console.log(`Dry run: would summarize ${names.length} log file(s) in ${folder}; read nothing.`)
+  } else {
+    const text = names.map((name) => readFileSync(resolve(folder, name), 'utf8')).join('\n')
+    const summary = await summarizeLogs(text)
+    console.log(JSON.stringify(summary, null, 2))
+    if (!summary.records || summary.malformed) process.exitCode = 1
+  }
 }

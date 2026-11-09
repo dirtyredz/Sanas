@@ -2,7 +2,7 @@
 id: dk-7fbd80c4
 type: task
 created: 2026-11-09
-status: todo
+status: done
 since: 2026-11-09
 area: rehearsal
 priority: P2
