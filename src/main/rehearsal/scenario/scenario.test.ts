@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { readFileSync, readdirSync } from 'node:fs'
-import { parseScenario } from './scenario'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { loadScenario, parseScenario } from './scenario'
 import { evaluate } from './assertions'
 
 const valid = (): unknown =>
@@ -20,6 +20,11 @@ it('scopes model content checks explicitly while retaining shared delivery check
   expect(() =>
     parseScenario({ ...s, expectations: [{ ...s.expectations[0], assistant: 'typo' }] }),
   ).toThrow('Invalid expectation assistant')
+})
+it('resolves every scenario screen step to an existing image', () => {
+  for (const file of readdirSync('scripts/rehearsal/scenarios').filter((f) => f.endsWith('.json')))
+    for (const step of loadScenario('scripts/rehearsal/scenarios/' + file).steps)
+      if (step.kind === 'screen') expect(existsSync(step.image), step.image).toBe(true)
 })
 describe('versioned scenarios', () => {
   it.each(readdirSync('scripts/rehearsal/scenarios').filter((f) => f.endsWith('.json')))(

@@ -1,6 +1,6 @@
 import { expect, it, vi } from 'vitest'
 import { validatePlan } from './plan'
-import { readFileSync, readdirSync, existsSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 const loadLivePlan = (path: string) => validatePlan(JSON.parse(readFileSync(path, 'utf8')))
 
 it.each(['interview', 'client-qa'])('loads the shipped %s plan and local fixtures', (name) => {
@@ -42,18 +42,11 @@ vi.mock('./fixtures/dashboard.png?asset', () => ({
   default: process.cwd() + '/src/main/services/mock-interview/fixtures/dashboard.png',
 }))
 
-it('resolves every bundled plan and rehearsal scenario screen reference', async () => {
+it('resolves every bundled plan screen reference', async () => {
   const { plans, fixtureData } = await import('./catalog')
   for (const plan of Object.values(plans))
     for (const topic of plan.topics)
       if (topic.screen) expect(fixtureData(topic.screen)).toMatch(/^data:image\/png;base64,iVBOR/)
-  const { loadScenario } = await import('../../rehearsal/scenario/scenario')
-  for (const file of readdirSync('scripts/rehearsal/scenarios').filter((f) =>
-    f.endsWith('.json'),
-  )) {
-    for (const step of loadScenario('scripts/rehearsal/scenarios/' + file).steps)
-      if (step.kind === 'screen') expect(existsSync(step.image), step.image).toBe(true)
-  }
 })
 it('validates bundled JSON when the production catalog is loaded', async () => {
   vi.resetModules()
