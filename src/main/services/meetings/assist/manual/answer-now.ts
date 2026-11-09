@@ -45,10 +45,11 @@ export class AnswerNow {
       if (!snap || snap.window.length === 0) return
       const question = host.question()
       const existing = question && host.coverage.find(snap.meetingId, question)
-      if (existing && host.coverage.reuse(existing)) {
+      const reusedId = existing ? host.coverage.reuse(existing) : null
+      if (reusedId !== null) {
         observeAssistance({
           event: 'answer-reused',
-          suggestionId: existing.card!.suggestionId,
+          suggestionId: reusedId,
           reason: 'existing-answer',
         })
         return

@@ -364,7 +364,7 @@ export class LiveAssistance {
       turnedDown: reason === 'answer-now' ? 'duplicate' : 'invalidated',
     })
     c.dropped = true
-    if (c.reservation && !c.reservation.card) this.coverage.release(c.reservation)
+    if (c.reservation) this.coverage.releaseUnpublished(c.reservation)
     c.abort?.abort()
     c.retrieval?.cancel()
     this.speculation.discard(c.turn, reason)
@@ -536,7 +536,7 @@ export class LiveAssistance {
     if (accepted) this.tryGenerate()
     else {
       c.dropped = true
-      if (c.reservation && !c.reservation.card) this.coverage.release(c.reservation)
+      if (c.reservation) this.coverage.releaseUnpublished(c.reservation)
       c.retrieval?.cancel()
       this.speculation.discard(c.turn, `verdict ${verdict}`)
     }
@@ -562,7 +562,7 @@ export class LiveAssistance {
         turnedDown: TURN_DOWN_CATEGORY[reason],
       })
       this.ready = null
-      if (c.reservation && !c.reservation.card) this.coverage.release(c.reservation)
+      if (c.reservation) this.coverage.releaseUnpublished(c.reservation)
       this.speculation.discard(c.turn, 'not-generated')
       return
     }
@@ -622,13 +622,7 @@ export class LiveAssistance {
       if (c.reservation) this.coverage.release(c.reservation)
       return
     }
-    if (c.reservation) {
-      const cancelCandidate = c.reservation.cancel
-      c.reservation.cancel = () => {
-        cancelCandidate()
-        handle.cancel()
-      }
-    }
+    if (c.reservation) this.coverage.attachRunCancel(c.reservation, () => handle.cancel())
     this.observe({
       event: 'answer-started',
       turn: c.turn,

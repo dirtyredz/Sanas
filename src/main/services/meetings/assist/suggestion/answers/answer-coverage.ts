@@ -8,7 +8,12 @@ export interface AnswerOccurrence {
   channel: number
   text: string
 }
+declare const reservationBrand: unique symbol
+/** Opaque handle: callers pass it back to AnswerCoverage operations and nothing else. */
 export interface AnswerReservation {
+  readonly [reservationBrand]: true
+}
+interface Entry {
   readonly token: symbol
   readonly keys: readonly string[]
   readonly lane: 'automatic' | 'manual'
@@ -17,6 +22,7 @@ export interface AnswerReservation {
   settledAt?: number
   attempt: number
 }
+const inner = (r: AnswerReservation): Entry => r as unknown as Entry
 
 const key = (meeting: number, q: AnswerOccurrence): string =>
   JSON.stringify([meeting, q.channel, q.id, q.text.trim().replace(/\s+/g, ' ')])
@@ -24,7 +30,7 @@ const key = (meeting: number, q: AnswerOccurrence): string =>
 /** Meeting-local ownership, independent of prompts and stacked-question bookkeeping.
  * Active attempts survive expiry; completed cards expire with the 90-second question window. */
 export class AnswerCoverage {
-  private entries = new Map<string, AnswerReservation>()
+  private entries = new Map<string, Entry>()
   constructor(
     private now: () => number,
     private select: (card: AnswerSelection) => void = () => {},
@@ -38,19 +44,21 @@ export class AnswerCoverage {
 
   find(meeting: number, q: AnswerOccurrence): AnswerReservation | undefined {
     this.prune()
-    return this.entries.get(key(meeting, q))
+    return this.entries.get(key(meeting, q)) as unknown as AnswerReservation | undefined
   }
 
-  reuse(entry: AnswerReservation): boolean {
-    if (!entry.card) return false
+  /** Re-select the already-shown card; returns its suggestion id, or null if none yet. */
+  reuse(reservation: AnswerReservation): number | null {
+    const entry = inner(reservation)
+    if (!entry.card) return null
     this.select({ ...entry.card })
-    return true
+    return entry.card.suggestionId
   }
 
   reserve(
     meeting: number,
     questions: readonly AnswerOccurrence[],
-    lane: AnswerReservation['lane'],
+    lane: Entry['lane'],
     cancel: () => void,
   ): AnswerReservation | null {
     this.prune()
@@ -59,26 +67,48 @@ export class AnswerCoverage {
     if ([...conflicts].some((e) => e.card || lane === 'automatic' || e.lane === 'manual'))
       return null
     for (const entry of conflicts) {
-      this.release(entry)
+      this.drop(entry)
       entry.cancel()
     }
-    const entry: AnswerReservation = { token: Symbol(), keys, lane, cancel, attempt: 0 }
+    const entry: Entry = { token: Symbol(), keys, lane, cancel, attempt: 0 }
     for (const k of keys) this.entries.set(k, entry)
-    return entry
+    return entry as unknown as AnswerReservation
   }
 
-  owns(entry: AnswerReservation): boolean {
+  owns(reservation: AnswerReservation): boolean {
+    const entry = inner(reservation)
     return entry.keys.every((k) => this.entries.get(k)?.token === entry.token)
   }
 
-  release(entry: AnswerReservation): void {
+  release(reservation: AnswerReservation): void {
+    this.drop(inner(reservation))
+  }
+
+  /** Release only while nothing has been published; a shown card keeps its ownership. */
+  releaseUnpublished(reservation: AnswerReservation): void {
+    const entry = inner(reservation)
+    if (!entry.card) this.drop(entry)
+  }
+
+  /** Make cancelling the reservation also cancel the run that now serves it. */
+  attachRunCancel(reservation: AnswerReservation, cancelRun: () => void): void {
+    const entry = inner(reservation)
+    const previous = entry.cancel
+    entry.cancel = () => {
+      previous()
+      cancelRun()
+    }
+  }
+
+  private drop(entry: Entry): void {
     for (const k of entry.keys) if (this.entries.get(k) === entry) this.entries.delete(k)
   }
 
   /** Runner callbacks are authoritative; stale run settlement cannot release a newer attempt. */
-  lifecycle(entry: AnswerReservation, published: () => void = () => {}): SuggestionLifecycle {
+  lifecycle(reservation: AnswerReservation, published: () => void = () => {}): SuggestionLifecycle {
+    const entry = inner(reservation)
     const attempt = ++entry.attempt
-    const valid = (): boolean => this.owns(entry) && attempt === entry.attempt
+    const valid = (): boolean => this.owns(reservation) && attempt === entry.attempt
     return {
       valid,
       event: (event: SuggestionEvent) => {
@@ -95,14 +125,13 @@ export class AnswerCoverage {
         if (!valid()) return
         if (outcome === 'done' && entry.card && hasReadableText(entry.card.text))
           entry.settledAt = this.now()
-        else this.release(entry)
+        else this.drop(entry)
       },
     }
   }
 
   private prune(): void {
     for (const entry of new Set(this.entries.values()))
-      if (entry.settledAt !== undefined && this.now() - entry.settledAt > 90_000)
-        this.release(entry)
+      if (entry.settledAt !== undefined && this.now() - entry.settledAt > 90_000) this.drop(entry)
   }
 }
