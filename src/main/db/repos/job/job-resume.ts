@@ -1,4 +1,5 @@
 import type { MeetingResume } from '@shared/meeting-resume'
+import { isUnsortedJob, UNSORTED_RESUME_MESSAGE } from '@shared/jobs/unsorted'
 import { getDb } from '../../index'
 
 /** The job's saved resume, or null when it has none. */
@@ -9,12 +10,15 @@ export function getJobResume(jobId: number): MeetingResume | null {
 }
 
 /** Replaces (or, with null, removes) a job's saved resume. Callers validate first. Meetings
- *  already started keep their own snapshot. */
+ *  already started keep their own snapshot. The Unsorted bucket takes no resume (it holds
+ *  unrelated calls); removing one a legacy bucket still carries is allowed. */
 export function setJobResume(jobId: number, resume: MeetingResume | null): MeetingResume | null {
   const db = getDb()
   db.transaction(() => {
-    if (!db.prepare('SELECT id FROM jobs WHERE id = ?').get(jobId))
-      throw new Error('Job not found.')
+    const job = db.prepare('SELECT name FROM jobs WHERE id = ?').get(jobId) as
+      { name: string } | undefined
+    if (!job) throw new Error('Job not found.')
+    if (resume && isUnsortedJob(job)) throw new Error(UNSORTED_RESUME_MESSAGE)
     if (resume)
       db.prepare(
         `INSERT INTO job_resumes (job_id, name, text) VALUES (?, ?, ?)

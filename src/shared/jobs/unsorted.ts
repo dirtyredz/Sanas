@@ -5,6 +5,10 @@
 
 export const UNSORTED_JOB_NAME = 'Unsorted'
 
+/** Why the bucket takes no saved resume (shown in the Resume tab and thrown by main). */
+export const UNSORTED_RESUME_MESSAGE =
+  'Unsorted holds calls that are not tied to one job, so it cannot have a saved resume. Create or pick a job for the call instead.'
+
 /** True for the Unsorted bucket job. */
 export function isUnsortedJob(job: { name: string }): boolean {
   return job.name === UNSORTED_JOB_NAME

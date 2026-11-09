@@ -5,7 +5,7 @@ import { sqliteTestDatabase } from '../../testing/sqlite-test-database'
 const mock = vi.hoisted(() => ({ db: null as unknown as Database }))
 vi.mock('../../index', () => ({ getDb: () => mock.db }))
 import { runMigrations, schemaVersion } from '../../migrations'
-import { createJob } from '../jobs'
+import { createJob, ensureDefaultJob } from '../jobs'
 import { createMeeting } from '../meeting/meeting-create'
 import { getMeetingGrounding } from '../meeting/meeting-grounding'
 import { getJobResume, setJobResume } from './job-resume'
@@ -42,6 +42,18 @@ it('rejects a job that does not exist and enforces the stored limits', () => {
   expect(() => insert.run(job, '', 'text')).toThrow()
   expect(() => insert.run(job, 'Name', '')).toThrow()
   expect(() => insert.run(job, 'Name', 'x'.repeat(40_001))).toThrow()
+})
+
+it('refuses a resume on the Unsorted bucket but lets a legacy one be removed', () => {
+  database()
+  const bucket = ensureDefaultJob()
+  expect(() => setJobResume(bucket, resume)).toThrow(/cannot have a saved resume/)
+  expect(getJobResume(bucket)).toBeNull()
+  sqlite
+    .prepare('INSERT INTO job_resumes (job_id, name, text) VALUES (?, ?, ?)')
+    .run(bucket, 'old', 'text')
+  expect(setJobResume(bucket, null)).toBeNull()
+  expect(getJobResume(bucket)).toBeNull()
 })
 
 it('meeting snapshots outlive later job edits and removal', () => {

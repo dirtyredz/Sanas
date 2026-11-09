@@ -4,6 +4,8 @@ import { MeetingView } from './MeetingView'
 import { errorText } from '../../lib/ipc-error'
 import { JobOverview } from '../jobs/JobOverview'
 import { JobResume } from '../jobs/JobResume'
+import { ResumeUnavailable } from '../jobs/ResumeUnavailable'
+import { isUnsortedJob } from '@shared/jobs/unsorted'
 import { JobEmail } from '../jobs/JobEmail'
 import { JobMeetings } from '../jobs/JobMeetings'
 import { JobTabs } from '../jobs/JobTabs'
@@ -195,13 +197,16 @@ export function JobDetail({
             },
             {
               name: 'Resume',
-              render: () => (
-                <JobResume
-                  key={`${jobId}-${contentVersion}`}
-                  jobId={jobId}
-                  onDirtyChange={setResumeDirty}
-                />
-              ),
+              render: () =>
+                isUnsortedJob(job) ? (
+                  <ResumeUnavailable />
+                ) : (
+                  <JobResume
+                    key={`${jobId}-${contentVersion}`}
+                    jobId={jobId}
+                    onDirtyChange={setResumeDirty}
+                  />
+                ),
             },
             { name: 'Email', render: () => <JobEmail job={job} setJob={setJob} /> },
             {
