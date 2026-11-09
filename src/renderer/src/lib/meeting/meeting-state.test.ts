@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { MeetingState } from '@shared/types'
-import { mergeMeetingState, type MeetingStateSnapshot } from './meeting-state'
+import { clockRunning, mergeMeetingState, type MeetingStateSnapshot } from './meeting-state'
 
 const idle: MeetingState = { meetingId: null, status: 'idle' }
 const live: MeetingState = { meetingId: 7, status: 'live' }
@@ -25,5 +25,14 @@ describe('meeting state initial-read merge', () => {
       state: paused,
       eventSeen: true,
     })
+  })
+})
+
+describe('clockRunning', () => {
+  it('counts only while live and no pause is pending', () => {
+    expect(clockRunning('live', false)).toBe(true)
+    expect(clockRunning('live', true)).toBe(false)
+    expect(clockRunning('paused', false)).toBe(false)
+    expect(clockRunning('idle', false)).toBe(false)
   })
 })

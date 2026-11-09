@@ -17,6 +17,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Job, MeetingSource } from '@shared/types'
 import { startCapture, type CaptureSession } from '../../audio/mic'
 import { useTranscript } from '../../lib/meeting/useTranscript'
+import { clockRunning } from '../../lib/meeting/meeting-state'
 import { speakerDisplay } from '../../lib/format/speaker-label'
 import { formatClock } from '../../lib/format/format-time'
 import { errorText } from '../../lib/ipc-error'
@@ -64,6 +65,8 @@ export function LiveMeetingPage({ visible = true }: { visible?: boolean }): Reac
   // cleared only once a Start is confirmed live, when the text lives with the meeting.
   const [contextDraft, setContextDraft] = useState('')
   const [elapsedMs, setElapsedMs] = useState(0)
+  // set when Pause is pressed so the clock stops before main confirms (see clockRunning)
+  const [pausing, setPausing] = useState(false)
   // elapsed counts listening time only: a pause folds the run so far into `banked`
   const banked = useRef(0)
   const runningSince = useRef(0)
@@ -72,6 +75,11 @@ export function LiveMeetingPage({ visible = true }: { visible?: boolean }): Reac
   const live = state.status === 'live'
   const paused = state.status === 'paused'
   const active = live || paused
+  const ticking = clockRunning(state.status, pausing)
+
+  useEffect(() => {
+    if (!live) setPausing(false) // main confirmed (or the meeting ended): the request is settled
+  }, [live])
 
   useEffect(() => {
     // this page stays mounted while hidden, so reload the jobs each time it is shown
@@ -95,9 +103,9 @@ export function LiveMeetingPage({ visible = true }: { visible?: boolean }): Reac
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
   }, [lines])
 
-  // the clock runs only while live; pausing banks the run and stops it
+  // the clock runs only while ticking; pausing banks the run and stops it
   useEffect(() => {
-    if (!live) return
+    if (!ticking) return
     runningSince.current = Date.now()
     const t = setInterval(
       () => setElapsedMs(banked.current + (Date.now() - runningSince.current)),
@@ -108,7 +116,7 @@ export function LiveMeetingPage({ visible = true }: { visible?: boolean }): Reac
       setElapsedMs(banked.current)
       clearInterval(t)
     }
-  }, [live])
+  }, [ticking])
 
   // the mic stops whenever we are not live — including a pause forced by main after a
   // lost connection, which the Pause button never ran
@@ -172,10 +180,14 @@ export function LiveMeetingPage({ visible = true }: { visible?: boolean }): Reac
 
   const pause = async (): Promise<void> => {
     setBusy(true)
+    setPausing(true)
     try {
       await micRef.current?.stop()
       micRef.current = null
       await window.sanas.meeting.pause()
+    } catch (e) {
+      setPausing(false) // still live in main's eyes, so the clock goes on
+      throw e
     } finally {
       setBusy(false)
     }
