@@ -196,7 +196,7 @@ handler (`system-audio.ts`); new main-process code belongs in a responsibility f
 
 - `src/main/` — process entry (`index.ts`, normal vs `--smoke` vs `--rehearsal` dispatch) and the display-media loopback handler (`system-audio.ts`).
 - `src/main/lifecycle/` — userData identity, capped/redacted main logging and normal startup wiring (`window-policy.ts`: quit when the main window closes, hide the overlay when a meeting goes idle); normal startup is not loaded by smoke.
-- `src/main/diagnostics/` — isolated, headless packaged diagnostics used by `--smoke`, the `rehearsal/` harness below. It depends on product code (e.g. the request-outcome shapes in `services/mock-interview/turns/`), never the reverse.
+- `src/main/diagnostics/` — isolated, headless packaged diagnostics: the `--smoke` checks and the `rehearsal/` harness below. It depends on product code (e.g. the request-outcome shapes in `services/mock-interview/turns/`), never the reverse.
 - `src/main/diagnostics/rehearsal/` — isolated dispatch/composition; no ordinary startup policy.
 - `src/main/diagnostics/rehearsal/scenario/` — scenario validation, assertions and bounded content rubrics.
 - `src/main/diagnostics/rehearsal/outcomes/` — scripted providers and request/span correlation.
@@ -224,7 +224,7 @@ handler (`system-audio.ts`); new main-process code belongs in a responsibility f
 - `src/main/services/assistant/coach/` — next-point eligibility policy and coach prompt construction.
 - `src/main/services/assistant/live-controls/` — typed, detail, audience and screen-capture request instructions.
 - `src/main/services/mock-interview/` — one product engine, plan validation, interviewer seam consumer, session lifecycle, bundled JSON plans/PNG fixtures and shared live-turn result correlation; `shortcuts.ts` is the mock-only shortcut registration/release.
-- `src/main/services/mock-interview/turns/` — interviewer consumer, serialized engine, `answer-wait.ts` (candidate-answer silence/idle-prompt clock), session lifecycle, and the result evidence/report builders (`evidence.ts`, `report.ts`) and `request-outcome.ts` (`RequestOutcome`/`RequestTiming`, `publicOutcome`, `proseWords`: the request shapes the report builds on, also imported by the diagnostics rehearsal; production assist code does not carry them) (nothing in `turns/` imports the parent).
+- `src/main/services/mock-interview/turns/` — interviewer consumer, serialized engine, `answer-wait.ts` (candidate-answer silence/idle-prompt clock), session lifecycle, and the result evidence/report builders (`evidence.ts`, `report.ts`). `request-outcome.ts` holds `RequestOutcome`/`RequestTiming`, `publicOutcome` and `proseWords`: the request shapes the report builds on, also imported by the diagnostics rehearsal; production assist code does not carry them. Rule: nothing in `turns/` imports the parent.
 - `src/main/services/mock-interview/plans/` — bundled JSON validated by pure validatePlan in the production catalog.
 - `src/main/services/mock-interview/fixtures/` — canonical screen PNGs shared by product and rehearsal scenarios.
 - `src/main/services/meetings/` — meeting lifecycle/STT/audio orchestration plus meeting-level facades: `index.ts` (lifecycle, STT wiring, audio and final persistence) and `live-controls.ts` (context/manual/answer-mode control facade).
