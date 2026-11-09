@@ -1,6 +1,7 @@
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
+import { sharedAlias } from './vite.alias'
 
 export default defineConfig({
   main: {
@@ -13,11 +14,7 @@ export default defineConfig({
       },
     },
     plugins: [externalizeDepsPlugin()],
-    resolve: {
-      alias: {
-        '@shared': resolve(__dirname, 'src/shared'),
-      },
-    },
+    resolve: { alias: sharedAlias },
   },
   preload: {
     plugins: [externalizeDepsPlugin()],
@@ -26,11 +23,7 @@ export default defineConfig({
     plugins: [react()],
     // the browser-preview mock (src/renderer/src/dev) is compiled out of the real app
     define: { __SANAS_WEB_PREVIEW__: 'false' },
-    resolve: {
-      alias: {
-        '@shared': resolve(__dirname, 'src/shared'),
-      },
-    },
+    resolve: { alias: sharedAlias },
     build: {
       rollupOptions: {
         input: {

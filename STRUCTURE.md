@@ -221,8 +221,9 @@ sanas/
 │   └── actions/                            # (container)
 │       └── node-setup/                     # shared local action (Node/download-cache setup)
 ├── docs/                                   # living docs and Docket items
+├── vite.alias.ts                           # the one @shared alias map for electron-vite, vite and vitest configs (root: bundler configs load it)
 ├── vite.renderer.config.ts                 # browser-only renderer preview
-├── vitest.config.ts                        # test runner; @shared alias only
+├── vitest.config.ts                        # test runner; @shared alias via vite.alias.ts
 └── STRUCTURE.md
 ```
 
@@ -377,6 +378,7 @@ handler (`system-audio.ts`); new main-process code belongs in a responsibility f
 - `scripts/rehearsal/trials/` — matched-profile and latency-summary owner tools: `compare.ps1`/`compare.mjs` (bundle and run `src/main/diagnostics/rehearsal/runner/comparison.ts`), `summarize.ps1`/`summarize.mjs` (copied-log stage percentiles) and `summarize.test.ts`, and `history-latency.ps1`/`history-latency.mjs` (live-history retrieval latency); each `.ps1` dot-sources `../owner-run.ps1` from `$PSScriptRoot` and runs from any cwd.
 - `scripts/rehearsal/fixtures/` — the rehearsal-only standup screen.
 - `scripts/owner/` — redacted logs and owner-only release operation dispatch.
+- `vite.alias.ts` — root config module exporting the `@shared` alias map for `electron.vite.config.ts`, `vite.renderer.config.ts` and `vitest.config.ts` (tsconfig `paths` stay separate, as TypeScript needs).
 - `.github/workflows/` — CI and manual release workflows.
 - `.github/actions/node-setup/` — shared local workflow action: Node/download-cache setup.
 
