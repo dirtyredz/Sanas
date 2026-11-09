@@ -11,6 +11,13 @@ export function isNoSuggestion(text: string): boolean {
   return t === '' || t === NO_SUGGESTION || /^\**none\**\.?$/.test(t)
 }
 
+/** While streaming: could this prefix still turn out to be the no-op? If so, nothing is
+ *  shown yet, so a declined suggestion never flashes on screen. */
+export function couldBeNoSuggestion(prefix: string): boolean {
+  const t = prefix.trim().toLowerCase()
+  return NO_SUGGESTION.startsWith(t) || 'none'.startsWith(t.replace(/^\*+/, ''))
+}
+
 /** True when broadcast text shows something a person can read: not the no-op, not only
  *  Markdown delimiters, filler markers or whitespace. */
 export function hasReadableText(text: string): boolean {

@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { hasReadableText, isNoSuggestion } from './readable-suggestion'
+import { couldBeNoSuggestion, hasReadableText, isNoSuggestion } from './readable-suggestion'
 
 describe('the no-op output', () => {
+  it('holds a streaming prefix only while it could still be the no-op', () => {
+    for (const p of ['', '<', '<no', '<none', '<none>', 'N', 'no', '**', '**NO']) {
+      expect(couldBeNoSuggestion(p)).toBe(true)
+    }
+    for (const p of ['**Use', 'No,', 'Yes', '<nonsense', '**Not']) {
+      expect(couldBeNoSuggestion(p)).toBe(false)
+    }
+  })
+
   it('recognises <none> (and a bare NONE) as no suggestion', () => {
     for (const t of ['', '  ', '<none>', ' <NONE>\n', 'NONE', 'none', '**NONE**', 'NONE.']) {
       expect(isNoSuggestion(t)).toBe(true)

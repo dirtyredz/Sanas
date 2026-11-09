@@ -1,21 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  couldBeNoSuggestion,
-  headlineOf,
-  recentSuggestionsBlock,
-  rememberHeadline,
-} from './compact-contract'
-
-describe('the no-op output', () => {
-  it('holds a streaming prefix only while it could still be the no-op', () => {
-    for (const p of ['', '<', '<no', '<none', '<none>', 'N', 'no', '**', '**NO']) {
-      expect(couldBeNoSuggestion(p)).toBe(true)
-    }
-    for (const p of ['**Use', 'No,', 'Yes', '<nonsense', '**Not']) {
-      expect(couldBeNoSuggestion(p)).toBe(false)
-    }
-  })
-})
+import { headlineOf, recentSuggestionsBlock, rememberHeadline } from './compact-contract'
 
 describe('recently shown suggestions', () => {
   it('takes the headline without bold markers', () => {

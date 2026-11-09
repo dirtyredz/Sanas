@@ -1,4 +1,4 @@
-import { couldBeNoSuggestion } from '../../assistant/compact-contract'
+import { couldBeNoSuggestion } from '@shared/live-controls/readable-suggestion'
 
 // What one suggestion run has made visible so far, and what it is still holding back. Owned
 // per run by SuggestionRunner (which keeps lane, deadline and persistence).

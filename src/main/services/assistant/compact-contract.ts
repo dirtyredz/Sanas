@@ -23,13 +23,6 @@ export const COMPACT_CONTRACT = `Format for a small live-meeting overlay (follow
 - Improvised filler stays wrapped in ${FILLER_OPEN} ${FILLER_CLOSE} inside the headline and lines; it counts toward the limits.
 - No headings, bullet walls, preamble, or praise such as "Great question".`
 
-/** While streaming: could this prefix still turn out to be the no-op? If so, nothing is
- *  shown yet, so a declined suggestion never flashes on screen. */
-export function couldBeNoSuggestion(prefix: string): boolean {
-  const t = prefix.trim().toLowerCase()
-  return NO_SUGGESTION.startsWith(t) || 'none'.startsWith(t.replace(/^\*+/, ''))
-}
-
 const HEADLINE_CHARS = 200
 /** How many shown headlines an automatic prompt carries — and so how many are kept. */
 const RECENT_SUGGESTIONS = 3
