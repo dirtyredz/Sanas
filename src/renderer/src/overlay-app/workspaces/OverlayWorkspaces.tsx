@@ -1,7 +1,7 @@
 import type { MeetingState } from '@shared/types'
 import type { TranscriptLine } from '../../lib/meeting/useTranscript'
 import type { CaptureStatusModel } from '../capture/useCaptureStatus'
-import type { Workspace } from '../shell/navigation/overlay-navigation'
+import type { Workspace } from '../../lib/overlay-workspaces'
 import type { ManualRequestsModel } from '../suggestions/useManualRequests'
 import { AskWorkspace } from './composer/AskWorkspace'
 import type { OverlayComposerModel } from './composer/useOverlayComposer'

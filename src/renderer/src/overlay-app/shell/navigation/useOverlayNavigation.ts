@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useReducer, useRef } from 'react'
+import type { Workspace } from '../../../lib/overlay-workspaces'
 import {
   escapeEffect,
   initialNavigation,
   navigationReducer,
   type NavigationState,
-  type Workspace,
 } from './overlay-navigation'
 import { overlayShortcut } from './overlay-shortcuts'
 

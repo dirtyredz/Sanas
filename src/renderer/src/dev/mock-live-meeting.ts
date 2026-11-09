@@ -6,7 +6,7 @@ import type { MeetingState, SuggestionEvent, TranscriptEvent } from '@shared/typ
 export type Listener<T> = (ev: T) => void
 export const transcriptListeners = new Set<Listener<TranscriptEvent>>()
 export const stateListeners = new Set<Listener<MeetingState>>()
-export const suggestionListeners = new Set<Listener<SuggestionEvent>>()
+const suggestionListeners = new Set<Listener<SuggestionEvent>>()
 let state: MeetingState = { meetingId: null, status: 'idle' }
 let liveTimer: ReturnType<typeof setTimeout> | null = null
 let liveChannels = 1
@@ -65,6 +65,11 @@ export function emit(ev: TranscriptEvent): void {
   transcriptListeners.forEach((l) => l(ev))
 }
 
+/** Broadcasts one suggestion event to every subscriber of the preview bridge. */
+export function emitSuggestion(ev: SuggestionEvent): void {
+  suggestionListeners.forEach((l) => l(ev))
+}
+
 function runScript(meetingId: number, i: number, t: number): void {
   if (state.status !== 'live') return
   scriptAt = i
@@ -102,8 +107,8 @@ export function streamSuggestion(
     const text =
       "**202 means accepted for processing; completion still needs confirmation.**\nNext, explain how we check the job's status."
     const ev = { suggestionId: id, meetingId, trigger, purpose }
-    suggestionListeners.forEach((l) => l({ ...ev, kind: 'start', text: '' }))
-    suggestionListeners.forEach((l) => l({ ...ev, kind: 'done', text }))
+    emitSuggestion({ ...ev, kind: 'start', text: '' })
+    emitSuggestion({ ...ev, kind: 'done', text })
     return
   }
   const text =
@@ -112,26 +117,20 @@ export function streamSuggestion(
       : 'Offer the printed fallback — a signed scan attaches to the same record.'
   const words = text.split(' ')
   let i = 0
-  suggestionListeners.forEach((l) =>
-    l({ suggestionId: id, meetingId, trigger, purpose, kind: 'start', text: '' }),
-  )
+  emitSuggestion({ suggestionId: id, meetingId, trigger, purpose, kind: 'start', text: '' })
   const tick = (): void => {
     if (i >= words.length) {
-      suggestionListeners.forEach((l) =>
-        l({ suggestionId: id, meetingId, trigger, purpose, kind: 'done', text }),
-      )
+      emitSuggestion({ suggestionId: id, meetingId, trigger, purpose, kind: 'done', text })
       return
     }
-    suggestionListeners.forEach((l) =>
-      l({
-        suggestionId: id,
-        meetingId,
-        trigger,
-        purpose,
-        kind: 'delta',
-        text: (i === 0 ? '' : ' ') + words[i],
-      }),
-    )
+    emitSuggestion({
+      suggestionId: id,
+      meetingId,
+      trigger,
+      purpose,
+      kind: 'delta',
+      text: (i === 0 ? '' : ' ') + words[i],
+    })
     i++
     setTimeout(tick, 60)
   }
@@ -145,6 +144,9 @@ export const on =
     set.add(cb)
     return () => set.delete(cb)
   }
+
+/** Subscribes to the preview's suggestion events (`assist.onSuggestion`). */
+export const onSuggestion = on(suggestionListeners)
 
 /** Starts the scripted meeting from the top. */
 export function startScript(meetingId: number, channels: number): MeetingState {

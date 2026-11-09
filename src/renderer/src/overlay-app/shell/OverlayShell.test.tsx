@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import type { SuggestionView } from '../../lib/suggestions/whisper-history'
-import type { Workspace } from './navigation/overlay-navigation'
+import type { Workspace } from '../../lib/overlay-workspaces'
 import type { OverlaySessionModel } from './OverlaySession'
 import { OverlayShell } from './OverlayShell'
 

@@ -1,6 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { Overlay } from './Overlay'
+import { OverlaySession } from './shell/OverlaySession'
 import './overlay.css'
 
 // Browser preview without Electron (npm run dev:web): stand in for the preload bridge.
@@ -13,6 +13,6 @@ if (__SANAS_WEB_PREVIEW__ && !('sanas' in window)) {
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <Overlay />
+    <OverlaySession />
   </React.StrictMode>,
 )

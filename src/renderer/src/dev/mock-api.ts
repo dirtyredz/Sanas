@@ -10,7 +10,6 @@ import type {
   SearchMatch,
   Settings,
   SettingsView,
-  SuggestionEvent,
   TranscriptEvent,
 } from '@shared/types'
 import {
@@ -38,7 +37,8 @@ import {
   stateListeners,
   stopScript,
   streamSuggestion,
-  suggestionListeners,
+  emitSuggestion,
+  onSuggestion,
   transcriptListeners,
   type Listener,
 } from './mock-live-meeting'
@@ -65,10 +65,7 @@ let dueRecordings = 2 // retention preview: cleaned up by run()
 const jobResumes = new Map<number, MeetingResume>()
 const meetingResumes = new Map<number, MeetingResume>()
 
-const controls = mockLiveControls(
-  () => getMeetingState().meetingId,
-  (event) => suggestionListeners.forEach((cb) => cb(event)),
-)
+const controls = mockLiveControls(() => getMeetingState().meetingId, emitSuggestion)
 const api: SanasApi = {
   mockInterview: {
     setup: async () => ({
@@ -101,10 +98,7 @@ const api: SanasApi = {
   meetingContext: controls.meetingContext,
   // Presentation mode is retired: no recorded slide history in the preview.
   presentation: { getHistory: async () => ({ events: [], versions: {} }) },
-  screenCapture: mockScreenCapture(
-    () => getMeetingState().meetingId,
-    (event) => suggestionListeners.forEach((cb) => cb(event)),
-  ),
+  screenCapture: mockScreenCapture(() => getMeetingState().meetingId, emitSuggestion),
   hotkeys: { getStatus: async () => [] },
   settings: {
     get: async () => settings,
@@ -162,7 +156,7 @@ const api: SanasApi = {
     acknowledgeVisibility: async () => undefined,
     ...controls.assist,
     now: async () => streamSuggestion('hotkey'),
-    onSuggestion: on(suggestionListeners),
+    onSuggestion,
   },
   jobs: {
     ...mockJobDeletion(jobResumes),
@@ -367,7 +361,7 @@ export const mockDriver = {
     setState(next)
   },
   transcript: (event: TranscriptEvent): void => emit(event),
-  suggestion: (event: SuggestionEvent): void => suggestionListeners.forEach((cb) => cb(event)),
+  suggestion: emitSuggestion,
   reset: (meetingId: number): void => controls.reset(meetingId, false),
 }
 

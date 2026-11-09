@@ -413,9 +413,9 @@ a separate check, rather than ordinary Vitest loading of `better-sqlite3`.
   it to opaque provider-tagged strings when a second `AssistantProvider` arrives; until then
   `claude.ts` computes one `wirePolicy()` per request for both the body and the event.
 - `services/assistant/` is broad (six loose files plus five subfolders): prompts/ and contracts/ groupings are tracked by dk-00f3ff65. `meetings/` is grouped (records/, postprocess/) and `meetings/assist/` is split into automatic/, manual/, coach/, suggestion/ and latency/ (dk-c0cd0363).
-- `shell/` and `workspaces/` are coupled through `OverlaySessionModel`: workspaces take the whole
-  session, and `OverlaySession` imports the composer hook. Narrow the props per workspace if the
-  session grows.
+- `shell/` and `workspaces/` still reference each other: `WorkspacePanel` reads `panelId`/`tabId`
+  from `shell/navigation/`, and `OverlaySession` imports the composer hook. Workspaces take explicit
+  slices, not the session model (dk-ac7c7c73).
 - `services/` has 10 children (platform integrations are grouped and transcript formatting lives in `turns/`); adding another sibling means nesting under an existing parent.
 - `src/shared/` has 8 domain folders plus three root contracts (`ipc.ts`, `types.ts`, `settings-limits.ts`) — the documented convention; a new domain becomes a folder, not a root file. `src/main/ipc/` is grouped by feature (jobs/, history/, live-controls/, mock-interview/, platform/, screen-capture/, shell/) with `index.ts` and `validate.ts` at the root.
 - `app/settings/sections/` now holds 13 code files (Applications joined); group related sections

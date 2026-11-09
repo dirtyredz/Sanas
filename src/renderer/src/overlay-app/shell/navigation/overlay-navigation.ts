@@ -3,10 +3,8 @@
 // changes the workspace: no context, transcript or answer event is an input here, and
 // every meeting opens on Answer.
 
-import { WORKSPACES, type Workspace } from '../../../lib/overlay-workspaces'
+import type { Workspace } from '../../../lib/overlay-workspaces'
 
-export { WORKSPACES }
-export type { Workspace }
 export type SecondaryWorkspace = Exclude<Workspace, 'answer'>
 
 export interface NavigationState {
