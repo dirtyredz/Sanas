@@ -34,12 +34,13 @@ it('validates edited approval text, then approves against the source fingerprint
   const review = { meetingId: 4, generation: 'g', revision: 0, text: 'owner edit' }
   expect(() => approveMemoryProposal(2, { ...review, text: 'x'.repeat(3001) })).toThrow()
   approveMemoryProposal(2, review)
-  expect(f.approve).toHaveBeenCalledWith(2, review, 'fp')
+  expect(f.approve).toHaveBeenCalledWith(2, review, expect.any(Function))
+  expect(f.approve.mock.calls[0][2]()).toBe('fp')
 })
 it('approves with no fingerprint when the source belongs to another job', () => {
   const review = { meetingId: 4, generation: 'g', revision: 0, text: 'owner edit' }
   approveMemoryProposal(3, review)
-  expect(f.approve).toHaveBeenCalledWith(3, review, null)
+  expect(f.approve.mock.calls[0][2]()).toBeNull()
 })
 it('rejects retry for a source belonging to a different job', () => {
   expect(() => retryMemoryProposal(3, 4)).toThrow('Source is no longer available')

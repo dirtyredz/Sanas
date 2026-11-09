@@ -1,7 +1,10 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import type { Database } from 'better-sqlite3'
 import { sqliteTestDatabase } from '../../../testing/sqlite-test-database'
-const mock = vi.hoisted(() => ({ db: null as unknown as Database }))
+const mock = vi.hoisted(() => ({
+  db: null as unknown as Database,
+  sqlite: null as unknown as { isTransaction: boolean },
+}))
 vi.mock('../../../index', () => ({ getDb: () => mock.db }))
 import { runMigrations } from '../../../migrations'
 import { getApprovedMemory, ordinaryJob, saveMemory } from './approved'
@@ -20,6 +23,7 @@ let close: () => void
 beforeEach(() => {
   const o = sqliteTestDatabase()
   mock.db = o.db
+  mock.sqlite = o.sqlite
   close = () => o.sqlite.close()
   runMigrations(mock.db)
   mock.db.exec(
@@ -51,14 +55,27 @@ it('enforces exact limits, revisions, replacement and clearing', () => {
   expect(ordinaryJob(1)).toBe(false)
   expect(ordinaryJob(99)).toBe(false)
 })
+it('evaluates the source fingerprint once, inside the approval transaction', () => {
+  proposal()
+  let inTransaction: boolean | undefined
+  let calls = 0
+  markApprovedIf(2, review(1), () => {
+    calls++
+    inTransaction = mock.sqlite.isTransaction
+    return fp(1)
+  })
+  expect(calls).toBe(1)
+  expect(inTransaction).toBe(true)
+  expect(getProposal(1)?.status).toBe('approved')
+})
 it('approves atomically and the new revision invalidates other open proposals', () => {
   proposal()
   proposal(2)
-  markApprovedIf(2, review(1, 0, 'Owner edited replacement'), fp(1))
+  markApprovedIf(2, review(1, 0, 'Owner edited replacement'), () => fp(1))
   expect(getApprovedMemory(2)).toMatchObject({ text: 'Owner edited replacement', revision: 1 })
   expect(getProposal(1)?.status).toBe('approved')
   expect(getProposal(2)?.status).toBe('stale')
-  expect(() => markApprovedIf(2, review(2), fp(2))).toThrow('Proposal changed')
+  expect(() => markApprovedIf(2, review(2), () => fp(2))).toThrow('Proposal changed')
   expect(openProposals(2).map((p) => p.meetingId)).toEqual([2])
   expect(countJobDependencies(2)).toMatchObject({ memories: 1, memoryProposals: 2 })
 })
@@ -71,16 +88,16 @@ it('compare-and-set rejects anything but the exact reviewed pending proposal', (
     [2, review(1), 'changed'], // source changed
     [2, review(1), null], // source gone or moved
   ]
-  for (const [job, r, f] of attempts) expect(() => markApprovedIf(job, r, f)).toThrow()
+  for (const [job, r, f] of attempts) expect(() => markApprovedIf(job, r, () => f)).toThrow()
   proposal(2, 'failed')
-  expect(() => markApprovedIf(2, review(2), fp(2))).toThrow()
+  expect(() => markApprovedIf(2, review(2), () => fp(2))).toThrow()
   expect(getApprovedMemory(2).revision).toBe(0)
   expect(getProposal(1)?.status).toBe('pending')
 })
 it('rolls back approval when the approved revision moved underneath', () => {
   proposal()
   saveMemory(2, 0, 'Keep me')
-  expect(() => markApprovedIf(2, review(1, 0), fp(1))).toThrow()
+  expect(() => markApprovedIf(2, review(1, 0), () => fp(1))).toThrow()
   expect(getApprovedMemory(2).text).toBe('Keep me')
 })
 it('settles only its own generation and dismissal is generation-checked', () => {

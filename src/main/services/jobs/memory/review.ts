@@ -37,8 +37,10 @@ export function saveApprovedMemory(jobId: number, revision: number, text: string
 }
 export function approveMemoryProposal(jobId: number, review: MemoryReview): JobMemoryView {
   validateMemory(review.text)
-  const source = memorySource(review.meetingId)
-  markApprovedIf(jobId, review, source?.jobId === jobId ? source.fingerprint : null)
+  markApprovedIf(jobId, review, () => {
+    const source = memorySource(review.meetingId)
+    return source?.jobId === jobId ? source.fingerprint : null
+  })
   return reviewMemory(jobId)
 }
 export function dismissMemoryProposal(

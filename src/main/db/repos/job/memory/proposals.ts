@@ -73,16 +73,19 @@ export function settleProposal(
     .run(text, status, meetingId, generation)
 }
 /** Approval as one transaction: the stored proposal must still be the reviewed pending one for
- *  this job, built on the reviewed revision, from a source whose current `sourceFingerprint`
- *  equals the stored one (null = source gone or moved); then the approved text is replaced
- *  (which re-checks the revision) and the proposal marked approved. */
+ *  this job, built on the reviewed revision, from a source whose current fingerprint equals the
+ *  stored one; then the approved text is replaced (which re-checks the revision) and the
+ *  proposal marked approved. `currentFingerprint` is evaluated INSIDE the transaction, after
+ *  the proposal is read, so the check and the write see one consistent state; it must be
+ *  synchronous and return null when the source is gone or moved. */
 export function markApprovedIf(
   jobId: number,
   review: MemoryReview,
-  sourceFingerprint: string | null,
+  currentFingerprint: () => string | null,
 ): void {
   getDb().transaction(() => {
     const p = getProposal(review.meetingId)
+    const sourceFingerprint = currentFingerprint()
     if (
       !p ||
       p.jobId !== jobId ||
