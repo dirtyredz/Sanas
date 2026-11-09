@@ -1,12 +1,12 @@
 import { afterEach, expect, it, vi } from 'vitest'
 import type { Database } from 'better-sqlite3'
 import type { DatabaseSync } from 'node:sqlite'
-import { sqliteTestDatabase } from '../../testing/sqlite-test-database'
+import { sqliteTestDatabase } from '../testing/sqlite-test-database'
 const mock = vi.hoisted(() => ({ db: null as unknown as Database }))
-vi.mock('../../index', () => ({ getDb: () => mock.db }))
-import { runMigrations, schemaVersion } from '../../migrations'
-import { createJob, ensureDefaultJob } from '../jobs'
-import { createMeeting } from '../meeting/meeting-create'
+vi.mock('../index', () => ({ getDb: () => mock.db }))
+import { runMigrations, schemaVersion } from './'
+import { createJob, ensureDefaultJob } from '../repos/jobs'
+import { createMeeting } from '../repos/meeting/meeting-create'
 
 let sqlite: DatabaseSync
 function database(): void {

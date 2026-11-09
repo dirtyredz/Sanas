@@ -1,19 +1,19 @@
 import { afterEach, expect, it, vi } from 'vitest'
 import type { Database } from 'better-sqlite3'
 import type { DatabaseSync } from 'node:sqlite'
-import { sqliteTestDatabase } from '../../testing/sqlite-test-database'
+import { sqliteTestDatabase } from '../testing/sqlite-test-database'
 const mock = vi.hoisted(() => ({ db: null as unknown as Database }))
-vi.mock('../../index', () => ({ getDb: () => mock.db }))
-import { runMigrations } from '../../migrations'
-import { ensureDefaultJob } from '../jobs'
-import { createMeeting } from './meeting-create'
-import { getMeetingGrounding } from './meeting-grounding'
-import { getMeeting, moveMeetingToJob } from './meetings'
-import { getMeetingContext } from './meeting-context'
-import { MeetingPrompts } from '../../../services/meetings/assist/meeting-prompts'
-import { answerRequest } from '../../../services/meetings/assist/suggestion/suggestion-requests'
-import { interviewProfileSnapshot } from '../../../services/meetings/context/profile'
-import { meetingKeyterms } from '../../../services/meetings/context/meeting-keyterms'
+vi.mock('../index', () => ({ getDb: () => mock.db }))
+import { runMigrations } from './'
+import { ensureDefaultJob } from '../repos/jobs'
+import { createMeeting } from '../repos/meeting/meeting-create'
+import { getMeetingGrounding } from '../repos/meeting/meeting-grounding'
+import { getMeeting, moveMeetingToJob } from '../repos/meeting/meetings'
+import { getMeetingContext } from '../repos/meeting/meeting-context'
+import { MeetingPrompts } from '../../services/meetings/assist/meeting-prompts'
+import { answerRequest } from '../../services/meetings/assist/suggestion/suggestion-requests'
+import { interviewProfileSnapshot } from '../../services/meetings/context/profile'
+import { meetingKeyterms } from '../../services/meetings/context/meeting-keyterms'
 let sqlite: DatabaseSync
 function database(): number {
   const opened = sqliteTestDatabase()
