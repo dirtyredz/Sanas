@@ -7,7 +7,6 @@ import { formatVerdict, isAcceptedVerdict } from '../../../assistant/classifier/
 import { TurnAssembler } from '../../../turns/turn-assembler'
 import {
   ANSWER_NOW_QUESTION_MS,
-  COACH_QUESTION_MS,
   couldBeQuestion,
   latestQuestion,
 } from '../../../turns/latest-question'
@@ -21,17 +20,17 @@ import type {
   ResponseKind,
 } from '../../../assistant/classifier/classifier'
 import { QuestionLedger } from './question-ledger'
-import { CoachPolicy } from '../../../assistant/coach/coach-policy'
 import { speakerLabel } from '../../../turns/transcript-format'
 import type { SuggestionHandle, SuggestionRunner } from '../suggestion/suggestion-runner'
 import { SpeculativeAnswer } from './speculative-answer'
 import { ClassifierBreaker } from './breaker/classifier-breaker'
+import { AnswerNow } from '../manual/answer-now'
+import { CoachCoordinator } from '../coach/coach-coordinator'
 import {
-  answerNowRequest,
   automaticAnswerRequest,
-  coachRequest,
   type AssistSettings,
   type AssistSnapshot,
+  type EvidenceHandle,
 } from '../suggestion/suggestion-requests'
 
 // Live assistance for one meeting at a time: turns resolved transcript events into
@@ -74,9 +73,6 @@ const TURN_DOWN_CATEGORY = {
   'addressee-or-cooldown': 'policy',
   'no-meeting': 'invalidated',
 } as const
-
-/** Frozen same-job evidence for one answer request; the history session implements it. */
-export type EvidenceHandle = { ready: Promise<string>; cancel(): void }
 
 export interface LiveAssistanceDeps {
   /** Monotonic receipt time, ms. */
@@ -130,14 +126,11 @@ export class LiveAssistance {
     return this.answerEveryQuestion
   }
   manualAdmitted(): void {
-    this.cancelCoach()
+    this.coach.cancel()
   }
-  private manualPending: EvidenceHandle | null = null
   private active = false
   private epoch = 0
   private assembler = new TurnAssembler()
-  private coach = new CoachPolicy()
-  private coachBoundary = 0
   private recentTurns: CompletedTurn[] = []
   /** The latest substantial other-speaker turn: what Answer now and next points anchor on. */
   private lastQuestion: CompletedTurn | null = null
@@ -152,15 +145,51 @@ export class LiveAssistance {
     return this.active && this.breaker.suspended()
   }
   private lastAnswerAt: number | null = null
-  private coachRun: SuggestionHandle | null = null
   private timers = new Map<TimerName, unknown>()
   private classifierAttempts = 0
 
   private speculation: SpeculativeAnswer
+  private coach: CoachCoordinator
+  private answerNowRequests: AnswerNow
 
   constructor(private deps: LiveAssistanceDeps) {
     this.speculation = new SpeculativeAnswer(deps.runner)
     this.breaker = new ClassifierBreaker(deps)
+    const guard = (fn: () => void): void => this.guard(fn)
+    this.coach = new CoachCoordinator({
+      now: () => deps.now(),
+      settings: () => deps.settings(),
+      snapshot: () => deps.snapshot(),
+      runner: deps.runner,
+      active: () => this.active,
+      epoch: () => this.epoch,
+      guard,
+      candidatePending: () => this.candidatePending(),
+      lastQuestion: () => this.lastQuestion,
+      schedule: (ms, fn) => this.setTimer('coach', ms, fn),
+      unschedule: () => this.clearTimer('coach'),
+      runEnded: () => this.tryGenerate(),
+    })
+    this.answerNowRequests = new AnswerNow({
+      settings: () => deps.settings(),
+      snapshot: () => deps.snapshot(),
+      runner: deps.runner,
+      retrieve: (meetingId, text, automatic) => deps.retrieve?.(meetingId, text, automatic) ?? null,
+      epoch: () => this.epoch,
+      guard,
+      question: () =>
+        latestQuestion(
+          this.lastQuestion,
+          this.assembler.openTurns(),
+          deps.now(),
+          ANSWER_NOW_QUESTION_MS,
+        ),
+      admitted: () => this.coach.cancel(),
+      started: (handle) => {
+        this.unanswered.clear()
+        this.afterRun(handle)
+      },
+    })
   }
 
   // ── lifecycle ──────────────────────────────────────────────────────────────────────
@@ -212,10 +241,7 @@ export class LiveAssistance {
 
   /** Assistance settings were saved. Disabling coaching cancels it at once. */
   settingsChanged(): void {
-    this.guard(() => {
-      if (!this.deps.settings().coachWhileTalking) this.stopCoaching()
-      else if (this.active) this.evaluateCoach(this.deps.now())
-    })
+    this.guard(() => this.coach.settingsChanged())
   }
 
   // ── transcript evidence ────────────────────────────────────────────────────────────
@@ -229,12 +255,9 @@ export class LiveAssistance {
       if (accepted) {
         this.dropOvertakenCandidates(f)
         if (f.role === 'user') {
-          if (f.tStartMs >= this.coachBoundary) this.coach.userFinal(f, now)
-        } else {
-          this.coach.endEpisode() // another voice took the floor, or we cannot tell
-          this.cancelCoach()
-        }
-        this.evaluateCoach(now)
+          this.coach.userFinal(f, now)
+        } else this.coach.otherFinal()
+        this.coach.evaluate(now)
       }
       this.scheduleTurnTimer(now)
     })
@@ -247,11 +270,8 @@ export class LiveAssistance {
       if (!this.active) return
       const now = this.deps.now()
       this.assembler.activity(channel, atMs, now)
-      if (role === 'user' && atMs >= this.coachBoundary) this.coach.userActivity(now)
-      else if (role === 'other') this.cancelCoach()
-      else this.coach.ambiguousActivity(now)
       this.scheduleTurnTimer(now)
-      this.scheduleCoachTimer(now)
+      this.coach.activity(role, atMs, now)
     })
   }
 
@@ -269,53 +289,7 @@ export class LiveAssistance {
   /** "Answer now" / the assist hotkey: bypasses the prefilter and the classifier, and
    *  takes priority over an unpublished next point. */
   answerNow(): void {
-    this.guard(() => {
-      if (this.manualPending || !this.deps.runner.canStart('hotkey')) return
-      const snap = this.deps.snapshot()
-      if (!snap || snap.window.length === 0) return
-      this.cancelCoach()
-      const question = latestQuestion(
-        this.lastQuestion,
-        this.assembler.openTurns(),
-        this.deps.now(),
-        ANSWER_NOW_QUESTION_MS,
-      )
-      const epoch = this.epoch
-      const dispatch = (evidence: string): void =>
-        this.guard(() => {
-          if (
-            epoch !== this.epoch ||
-            this.deps.snapshot()?.meetingId !== snap.meetingId ||
-            !this.deps.runner.canStart('hotkey')
-          )
-            return
-          const handle = this.deps.runner.start(
-            answerNowRequest(this.deps.snapshot()!, this.deps.settings(), question, evidence),
-          )
-          if (handle) {
-            this.unanswered.clear()
-            this.afterRun(handle)
-          }
-        })
-      const pending = this.deps.retrieve?.(
-        snap.meetingId,
-        question?.text ??
-          snap.window
-            .slice(-6)
-            .map((l) => l.text)
-            .join(' '),
-        false,
-      )
-      if (!pending) {
-        dispatch('')
-        return
-      }
-      this.manualPending = pending
-      void pending.ready.then((text) => {
-        if (this.manualPending === pending) this.manualPending = null
-        dispatch(text)
-      })
-    })
+    this.answerNowRequests.request()
   }
 
   // ── turns → candidates → classifier → answer ──────────────────────────────────────
@@ -327,7 +301,7 @@ export class LiveAssistance {
       this.recentTurns = [...this.recentTurns, turn].slice(-RECENT_TURNS)
       if (couldBeQuestion(turn)) this.lastQuestion = turn
       if (turn.role === 'user') {
-        if (turn.startMs >= this.coachBoundary) this.coach.userTurnCompleted(now)
+        this.coach.userTurnCompleted(turn.startMs, now)
         continue
       }
       if (looksLikeResponseCandidate(turn.text)) this.admit({ turn, previous, dropped: false })
@@ -342,7 +316,7 @@ export class LiveAssistance {
   }
 
   private admit(c: Candidate): void {
-    this.cancelCoach() // answer assistance has priority
+    this.coach.cancel() // answer assistance has priority
     for (const old of [this.ready, this.queued])
       if (old) this.observe({ event: 'superseded', turn: old.turn, turnedDown: 'superseded' })
     this.ready = null // a newer completed turn supersedes one still waiting for the lane
@@ -529,7 +503,7 @@ export class LiveAssistance {
       this.speculation.discard(c.turn, `verdict ${verdict}`)
     }
     this.tryClassify()
-    if (this.active) this.evaluateCoach(this.deps.now())
+    if (this.active) this.coach.evaluate(this.deps.now())
   }
 
   private tryGenerate(): void {
@@ -606,78 +580,15 @@ export class LiveAssistance {
     void handle.done.finally(() =>
       this.guard(() => {
         this.tryGenerate()
-        if (this.active) this.evaluateCoach(this.deps.now())
+        if (this.active) this.coach.evaluate(this.deps.now())
       }),
     )
-  }
-
-  // ── coaching ───────────────────────────────────────────────────────────────────────
-
-  private evaluateCoach(now: number): void {
-    const s = this.deps.settings()
-    if (!this.active || !s.coachWhileTalking) {
-      this.clearTimer('coach')
-      return
-    }
-    this.scheduleCoachTimer(now)
-    if (this.coachRun || this.candidatePending()) return
-    if (!this.deps.runner.canStart('hotkey') || !this.deps.runner.canStart('ambient')) return
-    if (!s.anthropicApiKey) return
-    const reason = this.coach.decide(now, true)
-    if (!reason) return
-    const snap = this.deps.snapshot()
-    if (!snap) return
-    this.coach.attempted(now) // the cooldown runs from dispatch, failures included
-    const epoch = this.epoch
-    let handle: SuggestionHandle | null = null
-    // the runner has already discarded the no-op; this is the "still current?" check
-    const accept = (): boolean => {
-      if (epoch !== this.epoch || this.coachRun !== handle || this.candidatePending()) return false
-      const current = this.deps.snapshot()
-      return !!current && current.contextRevision === snap.contextRevision
-    }
-    handle = this.deps.runner.start(
-      coachRequest(
-        snap,
-        s,
-        {
-          excerpt: this.coach.excerpt(),
-          reason,
-          question: latestQuestion(this.lastQuestion, [], now, COACH_QUESTION_MS),
-        },
-        accept,
-      ),
-    )
-    if (!handle) return
-    const mine = handle
-    this.coachRun = mine
-    void mine.done.then(() =>
-      this.guard(() => {
-        if (this.coachRun === mine) this.coachRun = null
-        this.tryGenerate()
-      }),
-    )
-  }
-
-  private cancelCoach(): void {
-    const run = this.coachRun
-    this.coachRun = null
-    run?.cancel()
   }
 
   /** Meeting context changed (or a new meeting began): a buffered next point built on the old
    *  context is cancelled and coaching restarts from `atMs`. Started answers are untouched. */
   contextChanged(atMs: number): void {
-    this.cancelCoach()
-    this.clearTimer('coach')
-    this.coach.reset()
-    this.coachBoundary = atMs
-  }
-
-  private stopCoaching(): void {
-    this.cancelCoach()
-    this.clearTimer('coach')
-    this.coach.resetEpisode()
+    this.coach.contextChanged(atMs)
   }
 
   // ── timers and invalidation ────────────────────────────────────────────────────────
@@ -691,19 +602,9 @@ export class LiveAssistance {
     this.setTimer('turn', Math.max(0, at - now), () => {
       const t = this.deps.now()
       this.handleCompleted(this.assembler.tick(t), t)
-      this.evaluateCoach(t)
+      this.coach.evaluate(t)
       this.scheduleTurnTimer(t)
     })
-  }
-
-  private scheduleCoachTimer(now: number): void {
-    const s = this.deps.settings()
-    const at = s.coachWhileTalking ? this.coach.nextCheckAt(now) : null
-    if (at === null) {
-      this.clearTimer('coach')
-      return
-    }
-    this.setTimer('coach', Math.max(0, at - now), () => this.evaluateCoach(this.deps.now()))
   }
 
   private setTimer(name: TimerName, ms: number, fn: () => void): void {
@@ -731,16 +632,14 @@ export class LiveAssistance {
   private invalidate(reason: InvalidationReason): void {
     this.observe({ event: 'invalidate', reason })
     this.epoch++
-    this.manualPending?.cancel()
-    this.manualPending = null
+    this.answerNowRequests.cancelPending()
     for (const name of this.timers.keys()) this.clearTimer(name)
     for (const c of [this.classifying, this.queued, this.ready])
       if (c) this.dropCandidate(c, reason)
     this.speculation.discard(null, reason) // already gone with its candidate; never leaked
     this.unanswered.clear()
-    this.cancelCoach()
     this.assembler.reset()
-    this.coach.resetEpisode()
+    this.coach.invalidated()
   }
 
   /** Observation with a source stamp; never a decision. */
