@@ -41,24 +41,14 @@ export function JobDetail({
       setSavedJob(found)
     })
 
+  const reloadMeetings = (): Promise<void> => window.sanas.meetings.list(jobId).then(setMeetings)
+
   useEffect(() => {
     load()
-    window.sanas.meetings.list(jobId).then(setMeetings)
+    reloadMeetings()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobId])
 
-  if (openMeeting) {
-    return (
-      <MeetingView
-        meeting={openMeeting}
-        onBack={() => {
-          setOpenMeeting(null)
-          // meeting may have been renamed/moved/deleted while open
-          window.sanas.meetings.list(jobId).then(setMeetings)
-        }}
-      />
-    )
-  }
   if (!job) return <p className="muted">Loading…</p>
 
   const jobDirty = !!savedJob && !sameJobFields(job, savedJob)
@@ -112,108 +102,121 @@ export function JobDetail({
       />
     )
 
+  // The job tabs stay mounted (just hidden) behind an open meeting, so unsaved drafts survive
+  // the drill-in and back.
   return (
-    <div className="job-detail">
-      <div className="detail-header">
-        <button className="btn btn-ghost" onClick={onBack}>
-          ← Jobs
-        </button>
-        <h2>
-          {job.name}
-          {job.archived && <span className="badge">Archived</span>}
-        </h2>
-        <div className="actions">
-          {saveError && <span className="warn">{saveError}</span>}
-          {saved && <span className="ok">Saved ✓</span>}
-          {job.applicationId && (
-            <button className="btn" onClick={startRefresh}>
-              Refresh from application
-            </button>
-          )}
-          <button className="btn btn-danger" onClick={() => setStep('delete')}>
-            Delete job…
+    <>
+      {openMeeting && (
+        <MeetingView
+          meeting={openMeeting}
+          onBack={() => {
+            setOpenMeeting(null)
+            // meeting may have been renamed/moved/deleted while open
+            reloadMeetings()
+          }}
+        />
+      )}
+      <div className="job-detail" style={openMeeting ? { display: 'none' } : undefined}>
+        <div className="detail-header">
+          <button className="btn btn-ghost" onClick={onBack}>
+            ← Jobs
           </button>
-          <button
-            className="btn btn-primary"
-            onClick={save}
-            disabled={!job.name.trim()}
-            title={job.name.trim() ? undefined : 'A job needs a name'}
-          >
-            Save
-          </button>
-        </div>
-      </div>
-
-      {step === 'unsaved' && (
-        <div className="notice warn" role="alertdialog" aria-label="Unsaved changes">
-          <p>
-            Save or discard your unsaved changes before reviewing the application.
-            {memoryDirty && ' Memory has its own Save memory button.'}
-            {resumeDirty && ' The Resume tab has its own Save resume button.'}
-          </p>
+          <h2>
+            {job.name}
+            {job.archived && <span className="badge">Archived</span>}
+          </h2>
           <div className="actions">
-            <button className="btn btn-sm" autoFocus onClick={() => setStep('idle')}>
-              Cancel
-            </button>
-            {jobDirty && !resumeDirty && !memoryDirty && (
-              <button
-                className="btn btn-sm"
-                onClick={async () => setStep((await save()) ? 'refresh' : 'idle')}
-              >
-                Save and review
+            {saveError && <span className="warn">{saveError}</span>}
+            {saved && <span className="ok">Saved ✓</span>}
+            {job.applicationId && (
+              <button className="btn" onClick={startRefresh}>
+                Refresh from application
               </button>
             )}
-            <button className="btn btn-sm" onClick={discardAndRefresh}>
-              Discard changes and review
+            <button className="btn btn-danger" onClick={() => setStep('delete')}>
+              Delete job…
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={save}
+              disabled={!job.name.trim()}
+              title={job.name.trim() ? undefined : 'A job needs a name'}
+            >
+              Save
             </button>
           </div>
         </div>
-      )}
 
-      {step === 'delete' && (
-        <JobDeleteDialog jobId={job.id} onClose={() => setStep('idle')} onDeleted={onBack} />
-      )}
+        {step === 'unsaved' && (
+          <div className="notice warn" role="alertdialog" aria-label="Unsaved changes">
+            <p>
+              Save or discard your unsaved changes before reviewing the application.
+              {memoryDirty && ' Memory has its own Save memory button.'}
+              {resumeDirty && ' The Resume tab has its own Save resume button.'}
+            </p>
+            <div className="actions">
+              <button className="btn btn-sm" autoFocus onClick={() => setStep('idle')}>
+                Cancel
+              </button>
+              {jobDirty && !resumeDirty && !memoryDirty && (
+                <button
+                  className="btn btn-sm"
+                  onClick={async () => setStep((await save()) ? 'refresh' : 'idle')}
+                >
+                  Save and review
+                </button>
+              )}
+              <button className="btn btn-sm" onClick={discardAndRefresh}>
+                Discard changes and review
+              </button>
+            </div>
+          </div>
+        )}
 
-      <JobTabs
-        active={tab}
-        onSelect={setTab}
-        tabs={[
-          {
-            name: 'Overview',
-            render: () => (
-              <JobOverview
-                key={`${jobId}-${contentVersion}`}
-                job={job}
-                setJob={setJob}
-                savedNotes={savedJob?.notes ?? job.notes}
-                onMemoryDirty={setMemoryDirty}
-              />
-            ),
-          },
-          {
-            name: 'Resume',
-            render: () => (
-              <JobResume
-                key={`${jobId}-${contentVersion}`}
-                jobId={jobId}
-                onDirtyChange={setResumeDirty}
-              />
-            ),
-          },
-          { name: 'Email', render: () => <JobEmail job={job} setJob={setJob} /> },
-          {
-            name: 'Meetings',
-            render: () => (
-              <JobMeetings
-                jobId={jobId}
-                meetings={meetings}
-                setMeetings={setMeetings}
-                setOpenMeeting={setOpenMeeting}
-              />
-            ),
-          },
-        ]}
-      />
-    </div>
+        {step === 'delete' && (
+          <JobDeleteDialog jobId={job.id} onClose={() => setStep('idle')} onDeleted={onBack} />
+        )}
+
+        <JobTabs
+          active={tab}
+          onSelect={setTab}
+          tabs={[
+            {
+              name: 'Overview',
+              render: () => (
+                <JobOverview
+                  key={`${jobId}-${contentVersion}`}
+                  job={job}
+                  setJob={setJob}
+                  savedNotes={savedJob?.notes ?? job.notes}
+                  onMemoryDirty={setMemoryDirty}
+                />
+              ),
+            },
+            {
+              name: 'Resume',
+              render: () => (
+                <JobResume
+                  key={`${jobId}-${contentVersion}`}
+                  jobId={jobId}
+                  onDirtyChange={setResumeDirty}
+                />
+              ),
+            },
+            { name: 'Email', render: () => <JobEmail job={job} setJob={setJob} /> },
+            {
+              name: 'Meetings',
+              render: () => (
+                <JobMeetings
+                  meetings={meetings}
+                  onMerged={reloadMeetings}
+                  setOpenMeeting={setOpenMeeting}
+                />
+              ),
+            },
+          ]}
+        />
+      </div>
+    </>
   )
 }

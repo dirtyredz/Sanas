@@ -3,14 +3,13 @@ import type { Meeting } from '@shared/types'
 import { formatWhen } from '../../lib/format-time'
 import { errorText } from '../../lib/ipc-error'
 export function JobMeetings({
-  jobId,
   meetings,
-  setMeetings,
+  onMerged,
   setOpenMeeting,
 }: {
-  jobId: number
   meetings: Meeting[]
-  setMeetings: (meetings: Meeting[]) => void
+  /** Called after a merge so the owner of the list reloads it. */
+  onMerged: () => Promise<void>
   setOpenMeeting: (meeting: Meeting) => void
 }): React.JSX.Element {
   // merging folds split recordings back into one meeting; it cannot be undone, so the
@@ -38,7 +37,7 @@ export function JobMeetings({
       const { meeting, recordingsLeftBehind } = await window.sanas.meetings.merge([...picked])
       setPicked(new Set())
       setConfirmMerge(false)
-      setMeetings(await window.sanas.meetings.list(jobId))
+      await onMerged()
       if (recordingsLeftBehind > 0) {
         // stay on the list so the warning is actually read; the merged meeting is one click away
         setMergeNotice(
@@ -56,7 +55,6 @@ export function JobMeetings({
 
   return (
     <div className="side">
-      {' '}
       <section>
         <span className="eyebrow">Meetings</span>
         {meetings.length === 0 && <p className="hint">None yet.</p>}

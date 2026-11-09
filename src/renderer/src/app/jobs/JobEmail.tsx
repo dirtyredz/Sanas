@@ -8,7 +8,6 @@ export function JobEmail({
 }): React.JSX.Element {
   return (
     <div className="side">
-      {' '}
       <section>
         <span className="eyebrow">Summary email</span>
         <label className="field">

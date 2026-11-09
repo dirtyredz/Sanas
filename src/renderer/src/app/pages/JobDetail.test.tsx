@@ -1,12 +1,14 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { isValidElement, type ReactElement, type ReactNode } from 'react'
-import type { Job } from '@shared/types'
+import type { Job, Meeting } from '@shared/types'
 import { jobs } from '../../dev/mock-fixtures'
 import { JobTabs } from '../jobs/JobTabs'
 import { JobDetail } from './JobDetail'
 import { JobOverview } from '../jobs/JobOverview'
 import { JobEmail } from '../jobs/JobEmail'
 import { JobResume } from '../jobs/JobResume'
+import { JobMeetings } from '../jobs/JobMeetings'
+import { MeetingView } from './MeetingView'
 import { JobDeleteDialog } from '../jobs/deletion/JobDeleteDialog'
 import { ApplicationPreview } from '../jobs/applications/ApplicationPreview'
 
@@ -36,11 +38,14 @@ type Props = {
   children?: ReactNode
   role?: string
   hidden?: boolean
+  className?: string
+  style?: unknown
   'aria-selected'?: boolean
   onClick: () => void | Promise<void>
   onKeyDown: (event: { key: string; preventDefault: () => void }) => void
   job: Job
   setJob: (job: Job) => void
+  setOpenMeeting: (meeting: Meeting) => void
 }
 
 function nodes(node: ReactNode): ReactElement<Props>[] {
@@ -190,4 +195,17 @@ it('opens the counted delete dialog for this job', () => {
   hooks.values[0] = linked()
   button(render(), 'Delete job…')!.props.onClick()
   expect(render().child(JobDeleteDialog).props).toMatchObject({ jobId: jobs[0].id })
+})
+
+it('keeps the job tabs mounted (hidden) while a meeting is open, so drafts survive', () => {
+  render().tab('Meetings').props.onClick()
+  render()
+    .child(JobMeetings)
+    .props.setOpenMeeting({ id: 9, jobId: 1, title: 'Open' } as Meeting)
+  const page = render()
+  expect(page.all.some((n) => n.type === MeetingView)).toBe(true)
+  expect(page.child(JobMeetings)).toBeDefined()
+  expect(page.all.find((n) => n.props.className === 'job-detail')!.props.style).toEqual({
+    display: 'none',
+  })
 })
