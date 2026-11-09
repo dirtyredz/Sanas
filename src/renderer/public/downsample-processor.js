@@ -15,12 +15,30 @@ class DownsampleProcessor extends AudioWorkletProcessor {
     this.queues = Array.from({ length: this.channels }, () => []) // Float32 at native rate
     this.out = new Int16Array(CHUNK_FRAMES * this.channels)
     this.outFrame = 0
+    this.outputFrame = 0
+    this.sourceFrame = 0
+    this.sequence = 0
+    this.generation = options.processorOptions.generation
+    this.probe = null
+    this.graphEnd = null
+    this.lost = false
+    this.port.onmessage = (event) => {
+      if (event.data.generation === this.generation) this.probe = event.data
+    }
   }
 
   process(inputs) {
     const input = inputs[0]
-    if (!input || !input[0]) return true
+    if (this.lost) return true
+    if ((!input || !input[0]) && this.graphEnd === null) return true
+    if (!input || !input[0] || (this.graphEnd !== null && currentFrame !== this.graphEnd)) {
+      this.lost = true
+      this.port.postMessage({ generation: this.generation, kind: 'lost' })
+      return true
+    }
     const frames = input[0].length
+    this.graphEnd = currentFrame + frames
+    this.sourceFrame += frames
 
     // queue each channel; a missing channel pads silence to stay frame-aligned
     for (let c = 0; c < this.channels; c++) {
@@ -41,8 +59,18 @@ class DownsampleProcessor extends AudioWorkletProcessor {
       }
       this.readPos += this.ratio
       this.outFrame++
+      this.outputFrame++
       if (this.outFrame === CHUNK_FRAMES) {
-        this.port.postMessage(this.out.buffer.slice(0))
+        this.port.postMessage({
+          generation: this.generation,
+          sequence: this.sequence++,
+          channels: this.channels,
+          startFrame: this.outputFrame - CHUNK_FRAMES,
+          endFrame: this.outputFrame,
+          sourceEndFrame: this.sourceFrame,
+          sourceRate: sampleRate,
+          pcm: this.out.buffer.slice(0),
+        })
         this.outFrame = 0
       }
     }
@@ -50,6 +78,17 @@ class DownsampleProcessor extends AudioWorkletProcessor {
     const consumed = Math.floor(this.readPos)
     for (let c = 0; c < this.channels; c++) this.queues[c] = this.queues[c].slice(consumed)
     this.readPos -= consumed
+    // Reply from a processing quantum, never from an idle/suspended port callback.
+    if (this.probe) {
+      this.port.postMessage({
+        ...this.probe,
+        outputFrame: this.outputFrame,
+        sourceFrame: this.sourceFrame,
+        sourceRate: sampleRate,
+        quantumFrames: frames,
+      })
+      this.probe = null
+    }
     return true
   }
 }

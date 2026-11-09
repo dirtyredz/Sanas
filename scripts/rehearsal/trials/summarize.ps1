@@ -4,7 +4,8 @@ Summarize answer-latency stage timings from copied Sanas app logs.
 .DESCRIPTION
 Reads the "[sanas] latency {...}" lines from the .log files in a folder you copied out of the
 app's log directory and prints stage distributions (median, p90, missing counts), delivery and
-discard tallies. The delivered-answer rule, medians and stage lists come from the in-app
+discard tallies. Calibrated question-end lower/upper distributions and interval widths appear
+beside final-receipt timing; unavailable mappings stay missing. The delivered-answer rule, medians and stage lists come from the in-app
 latency-summary rules, bundled by esbuild at run time, so this report matches the app.
 Local only: no network, no credentials, no downloads, nothing in the app is touched.
 The run is logged and redacted under <repo>\.tmp\owner-runs\ and ends with one OK or FAILED line.

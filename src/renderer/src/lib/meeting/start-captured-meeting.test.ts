@@ -31,7 +31,7 @@ it('adopts successful stereo and releases capture when main rejects setup', asyn
       settings: { set: async () => ({ audioDeviceId: '' }) },
     },
   })
-  mock.capture.mockResolvedValue({ channels: 2, stop })
+  mock.capture.mockResolvedValue({ channels: 2, activate: vi.fn(), stop })
   await expect(
     startCapturedMeeting(
       'this-pc',
@@ -63,7 +63,7 @@ it('refuses an existing meeting and simultaneous Start from the other mounted ta
   )
   expect(mock.capture).not.toHaveBeenCalled()
   getState.mockResolvedValue({ meetingId: null })
-  mock.capture.mockResolvedValue({ channels: 2, stop: vi.fn() })
+  mock.capture.mockResolvedValue({ channels: 2, activate: vi.fn(), stop: vi.fn() })
   let finish!: (value: string) => void
   const first = startCapturedMeeting(
     'this-pc',

@@ -11,7 +11,7 @@ import { registerScreenCaptureIpc } from './screen-capture/screen-capture'
 import { registerPresentationHistoryIpc } from './history/presentation-history'
 import { registerHotkeysIpc } from './platform/hotkeys'
 import { registerWindowsIpc } from './shell/windows'
-import { createAudioChunkListener } from './platform/audio-chunk'
+import { registerAudioIpc } from './audio/register-audio'
 import { IPC } from '@shared/ipc'
 import { loadSettings, saveSettings, toView } from '../config/settings'
 import { applyOverlayOpacity } from '../windows/overlay-window'
@@ -20,7 +20,6 @@ import {
   pauseMeeting,
   resumeMeeting,
   stopMeeting,
-  sendAudioChunk,
   pinSpeaker,
   answerNow,
   assistanceSettingsChanged,
@@ -99,7 +98,7 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.AssistNow, () => answerNow())
 
   // fire-and-forget audio stream — .on, not .handle (no reply per chunk)
-  ipcMain.on(IPC.AudioChunk, createAudioChunkListener(sendAudioChunk))
+  registerAudioIpc()
 
   // meeting history
   ipcMain.handle(IPC.MeetingsList, (_e, jobId: unknown) => listMeetings(requireId(jobId, 'job id')))

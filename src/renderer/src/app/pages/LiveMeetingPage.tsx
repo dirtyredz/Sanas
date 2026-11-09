@@ -189,6 +189,7 @@ export function LiveMeetingPage({ visible = true }: { visible?: boolean }): Reac
       // independently on any attempt), so tell it what we actually got
       const st = await window.sanas.meeting.resume(mic.channels)
       if (st.status === 'live') {
+        await mic.activate()
         micRef.current = mic
         mic = null // adopted
         setSysAudio(micRef.current.channels === 2)

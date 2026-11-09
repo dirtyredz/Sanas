@@ -1,5 +1,6 @@
 import type { AnswerSelection } from '../shared/live-controls/types'
 import type { JobMemoryApi } from '../shared/jobs/memory'
+import type { CaptureFrame, CaptureProbe, CaptureReply } from '../shared/meeting/audio-capture'
 import type { MeetingResume } from '../shared/meeting/meeting-resume'
 import type { SuggestionVisibility } from '../shared/live-controls/visibility'
 import type {
@@ -157,7 +158,18 @@ const api = {
     stop: (): Promise<MeetingState> => ipcRenderer.invoke(IPC.MeetingStop),
     pinSpeaker: (speaker: number, isUser: boolean): Promise<void> =>
       ipcRenderer.invoke(IPC.MeetingPinSpeaker, speaker, isUser),
-    sendAudio: (chunk: ArrayBuffer): void => ipcRenderer.send(IPC.AudioChunk, chunk),
+    bindCapture: (meetingId: number, generation: string): Promise<boolean> =>
+      ipcRenderer.invoke(IPC.CaptureBind, meetingId, generation),
+    onCaptureProbe: (cb: (probe: CaptureProbe) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, probe: CaptureProbe): void => cb(probe)
+      ipcRenderer.on(IPC.CaptureProbe, listener)
+      return () => {
+        ipcRenderer.removeListener(IPC.CaptureProbe, listener)
+      }
+    },
+    captureReply: (reply: CaptureReply): void => ipcRenderer.send(IPC.CaptureReply, reply),
+    stopCapture: (generation: string): void => ipcRenderer.send(IPC.CaptureStop, generation),
+    sendAudio: (chunk: CaptureFrame): void => ipcRenderer.send(IPC.AudioChunk, chunk),
     onTranscript: (cb: (ev: TranscriptEvent) => void): (() => void) => {
       const listener = (_e: unknown, ev: TranscriptEvent): void => cb(ev)
       ipcRenderer.on(IPC.TranscriptEvent, listener)

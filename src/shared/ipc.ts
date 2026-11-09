@@ -56,6 +56,10 @@ export const IPC = {
   MeetingStop: 'meeting:stop',
   MeetingPinSpeaker: 'meeting:pin-speaker',
   // audio stream (renderer → main, fire-and-forget)
+  CaptureBind: 'audio:bind',
+  CaptureProbe: 'audio:probe',
+  CaptureReply: 'audio:reply',
+  CaptureStop: 'audio:stop',
   AudioChunk: 'audio:chunk',
   // live events (main → all windows)
   TranscriptEvent: 'transcript:event',

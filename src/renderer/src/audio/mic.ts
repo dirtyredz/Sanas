@@ -9,9 +9,12 @@
 // The worklet lives in public/downsample-processor.js — a static file, because
 // the renderer CSP (script-src 'self') rightly refuses blob: module URLs.
 
+import { bridgeCapture } from './capture-clock'
+
 export interface CaptureSession {
   /** 1 = mic only; 2 = mic + system loopback (interleaved). */
   channels: number
+  activate(): Promise<void>
   stop(): Promise<void>
 }
 
@@ -45,6 +48,7 @@ export async function startCapture(
   }
   const channels = loopbackStream ? 2 : 1
 
+  const generation = crypto.randomUUID()
   const ctx = new AudioContext()
   // relative path resolves under both the dev server and packaged file:// loads
   await ctx.audioWorklet.addModule('./downsample-processor.js')
@@ -54,10 +58,14 @@ export async function startCapture(
     channelCount: channels,
     channelCountMode: 'explicit',
     channelInterpretation: 'discrete', // never downmix — ch 0 stays mic, ch 1 loopback
-    processorOptions: { channels },
+    processorOptions: { channels, generation },
   })
-  node.port.onmessage = (ev: MessageEvent<ArrayBuffer>) => {
-    window.sanas.meeting.sendAudio(ev.data)
+  const bridge = bridgeCapture(node.port, generation)
+  const lost = (): void => bridge.stop()
+  micStream.getAudioTracks().forEach((track) => track.addEventListener('ended', lost))
+  loopbackStream?.getAudioTracks().forEach((track) => track.addEventListener('ended', lost))
+  ctx.onstatechange = () => {
+    if (ctx.state !== 'running') lost()
   }
 
   const micSource = ctx.createMediaStreamSource(micStream)
@@ -73,8 +81,10 @@ export async function startCapture(
 
   return {
     channels,
+    activate: bridge.activate,
     async stop(): Promise<void> {
-      node.port.onmessage = null
+      bridge.stop()
+      ctx.onstatechange = null
       node.disconnect()
       micStream.getTracks().forEach((t) => t.stop())
       loopbackStream?.getTracks().forEach((t) => t.stop())

@@ -76,6 +76,7 @@ export function collectEvidence(scenario: Scenario, model: RehearsalAssistant, n
       return interimCount
     },
     latency: () => ({
+      captureReference: 'synthetic 20 ms graph; not physical sound',
       summary: latency.summary(),
       records: latency.tracker.records(),
     }),

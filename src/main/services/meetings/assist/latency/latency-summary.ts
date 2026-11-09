@@ -40,6 +40,9 @@ export const STAGE_FIELDS = [
   'requestToFirstReadableMs',
   'closeToFirstReadableMs',
   'lastFinalToFirstReadableMs',
+  'questionEndToFirstReadableLowerMs',
+  'questionEndToFirstReadableUpperMs',
+  'captureIntervalWidthMs',
 ] as const satisfies readonly (keyof LatencyRecord)[]
 
 /** The turn-assembly durations a trial report distributes (field names of `TurnAssemblyTiming`). */
@@ -86,6 +89,16 @@ export function summarizeLatency(records: readonly LatencyRecord[], overflow = 0
   }
   const speculative = automatic.filter((r) => r.path === 'speculative')
   return {
+    captureTiming: {
+      delivered: delivered.length,
+      valid: delivered.filter((r) => r.captureTiming === 'valid').length,
+      unavailable: delivered.filter((r) => r.captureTiming !== 'valid').length,
+      reasons: tally(
+        delivered
+          .filter((r) => r.captureTiming !== 'valid')
+          .map((r) => r.captureTimingReason ?? 'missing-metadata'),
+      ),
+    },
     records: records.length,
     overflow,
     classifier: tally(

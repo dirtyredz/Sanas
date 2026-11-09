@@ -2,15 +2,23 @@
  *  out of an `.on` listener is an uncaught main-process exception, so a failing sink (a
  *  transport that throws from send()) is contained here: the chunk is dropped and the first
  *  failure of a run is logged. */
+import type { CaptureFrame } from '@shared/meeting/audio-capture'
+import { isCaptureFrame } from './audio-validation'
+
 export function createAudioChunkListener(
-  sink: (chunk: Buffer) => void,
+  sink: (chunk: CaptureFrame, receipt: number) => void,
   warn: (message: string, error: unknown) => void = console.warn,
+  invalid: (chunk: unknown) => void = () => {},
 ): (_event: unknown, chunk: unknown) => void {
   let failing = false
   return (_event, chunk) => {
-    if (!(chunk instanceof ArrayBuffer)) return // anything else is dropped
+    const receipt = performance.now()
+    if (!isCaptureFrame(chunk)) {
+      invalid(chunk)
+      return
+    }
     try {
-      sink(Buffer.from(chunk))
+      sink(chunk, receipt)
       failing = false
     } catch (error) {
       if (!failing) warn('[sanas] audio chunk dropped:', error)

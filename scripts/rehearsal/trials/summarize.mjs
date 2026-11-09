@@ -32,8 +32,14 @@ export async function loadLatencyRules() {
 }
 
 export async function summarizeLogs(text) {
-  const { distribution, isDeliveredAutomatic, tally, STAGE_FIELDS, ASSEMBLY_FIELDS } =
-    await loadLatencyRules()
+  const {
+    distribution,
+    isDeliveredAutomatic,
+    tally,
+    STAGE_FIELDS,
+    ASSEMBLY_FIELDS,
+    summarizeLatency,
+  } = await loadLatencyRules()
   const records = []
   let malformed = 0
   for (const line of text.split(/\r?\n/)) {
@@ -64,6 +70,7 @@ export async function summarizeLogs(text) {
     terminalCandidates: records.filter((r) => r.candidateTerminal).length,
     legacyCorrelationWarning: records.some((r) => !r.sessionId),
     deliveredAutomatic: delivered.length,
+    captureTiming: summarizeLatency(records).captureTiming,
     missingCandidate: runs.filter(
       (r) => r.classification === 'applies' && r.candidateId === undefined,
     ).length,

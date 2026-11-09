@@ -31,3 +31,56 @@ it('the trial report and the in-app summary share one delivered rule', async () 
   const text = `[sanas] latency ${JSON.stringify({ kind: 'run', classification: 'n/a', outcome: 'done' })}`
   expect(await summarizeLogs(text)).toMatchObject({ deliveredAutomatic: 0 })
 })
+
+it('prints calibrated bounds beside final receipt and separates delivered missing from failed/discarded', async () => {
+  const records = [
+    {
+      kind: 'run',
+      classification: 'applies',
+      outcome: 'done',
+      captureTiming: 'valid',
+      captureIntervalWidthMs: 250,
+      questionEndToFirstReadableLowerMs: 1500,
+      questionEndToFirstReadableUpperMs: 1750,
+      lastFinalToFirstReadableMs: 900,
+    },
+    {
+      kind: 'run',
+      classification: 'applies',
+      outcome: 'done',
+      captureTiming: 'unavailable',
+      captureTimingReason: 'reset',
+    },
+    {
+      kind: 'run',
+      classification: 'applies',
+      outcome: 'error',
+      captureTiming: 'valid',
+      questionEndToFirstReadableLowerMs: 9999,
+    },
+    {
+      kind: 'run',
+      classification: 'applies',
+      outcome: 'discarded',
+      captureTiming: 'valid',
+      questionEndToFirstReadableLowerMs: 9999,
+    },
+  ]
+  const result = await summarizeLogs(
+    records.map((r) => '[sanas] latency ' + JSON.stringify(r)).join('\n'),
+  )
+  expect(result.captureTiming).toEqual({
+    delivered: 2,
+    valid: 1,
+    unavailable: 1,
+    reasons: { reset: 1 },
+  })
+  expect(result.stages.questionEndToFirstReadableLowerMs).toEqual({
+    n: 1,
+    median: 1500,
+    p90: 1500,
+    missing: 1,
+  })
+  expect(result.stages.questionEndToFirstReadableUpperMs.median).toBe(1750)
+  expect(result.stages.lastFinalToFirstReadableMs.median).toBe(900)
+})

@@ -129,6 +129,10 @@ vi.mock('../../windows/overlay-window', () => ({
 }))
 
 import {
+  bindAudioCapture,
+  sendCapturedAudio,
+  receiveCaptureReply,
+  stopAudioCapture,
   currentState,
   pinSpeaker,
   meetingAudioMs,
@@ -191,13 +195,43 @@ describe('meeting capture health', () => {
     try {
       await startMeeting(5, 1)
       const first = FakeSocket.instances[0]
-      sendAudioChunk(Buffer.alloc(32000, 1))
+      const probes: import('@shared/meeting/audio-capture').CaptureProbe[] = []
+      expect(bindAudioCapture(7, 'replay-capture', (p) => probes.push(p))).toBe(true)
+      const captured = (sequence: number, startFrame: number, frames: number, value: number) => ({
+        generation: 'replay-capture',
+        sequence,
+        startFrame,
+        endFrame: startFrame + frames,
+        sourceEndFrame: startFrame + frames,
+        sourceRate: 16000,
+        channels: 1 as const,
+        pcm: Uint8Array.from(Buffer.alloc(frames * 2, value)).buffer,
+      })
+      sendCapturedAudio(captured(0, 0, 8000, 1))
+      await vi.advanceTimersByTimeAsync(250)
+      receiveCaptureReply({
+        ...probes.at(-1)!,
+        outputFrame: 8000,
+        sourceFrame: 8000,
+        sourceRate: 16000,
+        quantumFrames: 128,
+      })
+      sendCapturedAudio(captured(1, 8000, 8000, 1))
+      await vi.advanceTimersByTimeAsync(250)
+      receiveCaptureReply({
+        ...probes.at(-1)!,
+        outputFrame: 16000,
+        sourceFrame: 16000,
+        sourceRate: 16000,
+        quantumFrames: 128,
+      })
       first.message(result('Before'))
+      expect(fakes.liveFinal.mock.calls.at(-1)![1].captureEndpoint.status).toBe('valid')
       pinSpeaker(0, true)
       const history = { ...rows[0] }
       first.emit('close', { code: 1006 })
       expect(currentState().speakerIdentity?.identityNeedsConfirmation).toBe(true)
-      sendAudioChunk(Buffer.alloc(32000, 2))
+      sendCapturedAudio(captured(2, 16000, 16000, 2))
       expect(meetingAudioMs()).toBe(2000)
       await vi.advanceTimersByTimeAsync(1000)
       const second = FakeSocket.instances[1]
@@ -206,6 +240,10 @@ describe('meeting capture health', () => {
       expect(second.sent.filter(Buffer.isBuffer)).toEqual([Buffer.alloc(32000, 2)])
       first.message(result('Retired'))
       second.message(result('Buffered'))
+      expect(fakes.liveFinal.mock.calls.at(-1)![1].captureEndpoint).toEqual({
+        status: 'unavailable',
+        reason: 'reset',
+      })
       expect(rows).toHaveLength(2)
       expect(rows[1]).toMatchObject({ speaker: 1, isUser: false, tStartMs: 1000 })
       expect(fakes.liveFinal.mock.calls.at(-1)![1].role).toBe('unknown')
@@ -222,7 +260,7 @@ describe('meeting capture health', () => {
       expect(rows[0]).toEqual(history)
       expect(rows[1].isUser).toBe(true)
       expect(meetingAudioMs()).toBe(2000)
-      expect(writeAudio).toHaveBeenCalledTimes(2)
+      expect(writeAudio).toHaveBeenCalledTimes(3)
       await pauseMeeting()
       await resumeMeeting(1)
       expect(currentState().speakerIdentity?.identityNeedsConfirmation).toBe(true)
@@ -405,3 +443,81 @@ it.each([
     }
   },
 )
+
+it('calibrates accepted capture, invalidates reset/pin/loss, and rejects retired generations after resume', async () => {
+  vi.useFakeTimers({
+    toFake: ['setInterval', 'clearInterval', 'setTimeout', 'clearTimeout', 'performance'],
+  })
+  const probes: import('@shared/meeting/audio-capture').CaptureProbe[] = []
+  const frame = (sequence: number, generation = 'capture') => ({
+    generation,
+    sequence,
+    startFrame: sequence * 1600,
+    endFrame: (sequence + 1) * 1600,
+    sourceEndFrame: (sequence + 1) * 4800,
+    sourceRate: 48000,
+    channels: 1 as const,
+    pcm: new ArrayBuffer(3200),
+  })
+  try {
+    sendCapturedAudio(frame(0))
+    await startMeeting(5, 1)
+    expect(bindAudioCapture(7, 'capture', (p) => probes.push(p))).toBe(true)
+    sendCapturedAudio(frame(5)) // earlier worklet frames were never accepted
+    expect(meetingAudioMs()).toBe(100)
+    await vi.advanceTimersByTimeAsync(250)
+    receiveCaptureReply({
+      ...probes.at(-1)!,
+      outputFrame: 9600,
+      sourceFrame: 28800,
+      sourceRate: 48000,
+      quantumFrames: 128,
+    })
+    sendCapturedAudio(frame(6))
+    await vi.advanceTimersByTimeAsync(250)
+    receiveCaptureReply({
+      ...probes.at(-1)!,
+      outputFrame: 11200,
+      sourceFrame: 33600,
+      sourceRate: 48000,
+      quantumFrames: 128,
+    })
+    const transcript = {
+      channel: 0,
+      speaker: 0,
+      isFinal: true,
+      text: 'Question?',
+      tStartMs: 0,
+      tEndMs: 150,
+    }
+    fakes.onTranscript!(transcript)
+    expect(fakes.liveFinal.mock.calls.at(-1)![1].captureEndpoint.status).toBe('valid')
+    pinSpeaker(0, true)
+    fakes.onTranscript!(transcript)
+    expect(fakes.liveFinal.mock.calls.at(-1)![1].captureEndpoint).toEqual({
+      status: 'unavailable',
+      reason: 'reset',
+    })
+    const options = vi.mocked(sttProvider.start).mock.calls.at(-1)![0]
+    options.onSignal?.({ kind: 'reset' })
+    fakes.onTranscript!(transcript)
+    expect(fakes.liveFinal.mock.calls.at(-1)![1].captureEndpoint.status).toBe('unavailable')
+    await pauseMeeting()
+    await resumeMeeting(1)
+    expect(bindAudioCapture(7, 'resumed', () => {})).toBe(true)
+    sendCapturedAudio(frame(7))
+    expect(meetingAudioMs()).toBe(200)
+    sendCapturedAudio(frame(0, 'resumed'))
+    expect(meetingAudioMs()).toBe(300)
+    stopAudioCapture('capture') // late old stop cannot retire the successor
+    sendCapturedAudio(frame(1, 'resumed'))
+    expect(meetingAudioMs()).toBe(400)
+    stopAudioCapture('resumed')
+    sendCapturedAudio(frame(2, 'resumed'))
+    expect(meetingAudioMs()).toBe(400)
+    expect(vi.getTimerCount()).toBe(0)
+  } finally {
+    await stopMeeting()
+    vi.useRealTimers()
+  }
+})

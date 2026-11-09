@@ -1,3 +1,10 @@
+import {
+  CAPTURE_PROBE_MS,
+  type CaptureFrame,
+  type CaptureProbe,
+  type CaptureReply,
+} from '@shared/meeting/audio-capture'
+import { CaptureTimingSession } from './capture/timing/capture-session'
 import { resolveStartGrounding } from './context/start-grounding'
 import type { StartRequest } from './context/start-request'
 import { meetingKeyterms } from './context/meeting-keyterms'
@@ -72,6 +79,59 @@ const speakers = new SpeakerSession()
 const lostRecordings = new Set<number>() // meetings whose WAV died while they were running
 let persistFailed = false // one warning per meeting, not one per line
 const captureHealth = new CaptureHealth()
+const captureTiming = new CaptureTimingSession()
+let captureTimer: ReturnType<typeof setInterval> | undefined
+function retireCapture(): void {
+  if (captureTimer) clearInterval(captureTimer)
+  captureTimer = undefined
+  captureTiming.stop()
+}
+export function bindAudioCapture(
+  id: number,
+  generation: string,
+  probe: (p: CaptureProbe) => void,
+): boolean {
+  if (
+    !session ||
+    id !== liveMeetingId() ||
+    !captureTiming.bind(generation, meetingChannels, audioMsReceived)
+  )
+    return false
+  captureTimer = setInterval(() => {
+    const p = captureTiming.probe(performance.now())
+    if (p) {
+      try {
+        probe(p)
+      } catch {
+        captureTiming.invalidate('probe-timeout')
+      }
+    }
+  }, CAPTURE_PROBE_MS)
+  return true
+}
+export function receiveCaptureReply(reply: CaptureReply, receipt = performance.now()): void {
+  captureTiming.reply(reply, receipt)
+}
+export function invalidCaptureMetadata(generation: string): void {
+  if (captureTiming.matches(generation)) {
+    captureTiming.invalidate('missing-metadata')
+    assistance.connectionReset()
+  }
+}
+export function stopAudioCapture(generation: string): void {
+  if (!captureTiming.matches(generation)) return
+  retireCapture()
+  assistance.connectionReset()
+}
+export function sendCapturedAudio(frame: CaptureFrame, receipt = performance.now()): void {
+  if (!session) return
+  const result = captureTiming.accept(frame, receipt)
+  if (result === 'discontinuity') {
+    assistance.connectionReset()
+    void pauseMeeting('Audio capture was interrupted. Resume to reconnect capture.')
+  }
+  if (result === 'accepted') sendAudioChunk(Buffer.from(frame.pcm), true)
+}
 let lastError: string | undefined // the error shown now, kept when only capture health changes
 
 const live = new LiveSession(
@@ -184,6 +244,7 @@ function reportPersistFailure(e: unknown): void {
 
 /** Closes the current session and invalidates its callbacks. */
 async function discardSession(): Promise<void> {
+  retireCapture()
   const dying = session
   session = null
   sessionGen++ // anything still in flight from it is now stale
@@ -253,6 +314,7 @@ function handleTranscript(t: SttTranscript): void {
         text: t.text,
         ingressAt,
         audioCursorMs,
+        captureEndpoint: captureTiming.endpoint(t.tEndMs, ingressAt),
       },
     )
   } else {
@@ -268,6 +330,7 @@ function handleSignal(s: SttSignal): void {
   if (liveMeetingId() === null) return
   observeMeeting({ kind: 'signal', value: s })
   if (s.kind === 'reset') {
+    captureTiming.invalidate('reset')
     resetSpeakerConnection()
     assistance.connectionReset()
   } else if (s.kind === 'boundary') assistance.boundary(s.channel, s.atMs, s.source)
@@ -550,10 +613,11 @@ export function assistanceSettingsChanged(patch: Partial<Settings>): void {
   if ('coachWhileTalking' in patch) assistance.settingsChanged()
 }
 
-export function sendAudioChunk(chunk: Buffer): void {
+export function sendAudioChunk(chunk: Buffer, calibrated = false): void {
   // no session means paused, ended, or still connecting: dropping the chunk keeps the
   // recording, the clock and the provider's timeline describing the same audio
   if (session === null) return
+  if (!calibrated) captureTiming.invalidate('missing-metadata')
   audioMsReceived += (chunk.length / (BYTES_PER_SAMPLE * meetingChannels) / SAMPLE_RATE) * 1000
   // the same buffer the provider and the WAV receive, inspected before either
   const health = captureHealth.push(chunk, meetingChannels)
@@ -577,6 +641,7 @@ export function pinSpeaker(speaker: number, isUser: boolean): void {
   speakers.validate(speaker)
   setSpeakerIsUser(meetingId, speaker, isUser)
   speakers.pin(speaker, isUser)
+  captureTiming.invalidate('reset')
   live.relabel(speaker, isUser) // the prompt window and pending work follow the new identity
   assistance.setIdentityNeedsConfirmation(speakers.status().identityNeedsConfirmation)
   setState({ ...currentState(), ...(lastError ? { error: lastError } : {}) })

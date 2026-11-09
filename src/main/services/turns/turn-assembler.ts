@@ -39,6 +39,7 @@ const SEEN_LIMIT = 400
 const COUNTER_CAP = 999
 
 interface OpenTurn {
+  captureEndpoint?: TurnFinal['captureEndpoint']
   id: number
   channel: number
   speaker: number
@@ -148,6 +149,7 @@ export class TurnAssembler {
     ch.open = null
     return {
       assembly: assemblyTiming(t, reason, now),
+      captureEndpoint: t.captureEndpoint,
       id: t.id,
       channel: t.channel,
       speaker: t.speaker,
@@ -208,6 +210,7 @@ export class TurnAssembler {
     const turn = ch.open
     appendText(turn, text)
     turn.startMs = Math.min(turn.startMs, f.tStartMs)
+    if (f.tEndMs >= turn.endMs) turn.captureEndpoint = f.captureEndpoint
     turn.endMs = Math.max(turn.endMs, f.tEndMs)
     turn.words += wordCount(text)
     turn.fragments++

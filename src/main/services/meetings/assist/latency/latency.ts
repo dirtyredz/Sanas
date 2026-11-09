@@ -1,3 +1,4 @@
+import type { CaptureEndpoint, CaptureUnavailable } from '@shared/meeting/audio-capture'
 import type { SuggestionPurpose } from '@shared/types'
 import type { SuggestionVisibilityState } from '@shared/live-controls/visibility'
 import { randomUUID } from 'node:crypto'
@@ -40,6 +41,11 @@ export type RunPath = 'speculative' | 'ordinary' | 'fallback' | 'manual' | 'next
 /** One finished record: an answer run (with its candidate's stages when it had one), or a
  *  candidate the classifier did not accept. */
 export interface LatencyRecord {
+  captureTiming?: 'valid' | 'unavailable'
+  captureTimingReason?: CaptureUnavailable
+  captureIntervalWidthMs?: number
+  questionEndToFirstReadableLowerMs?: number
+  questionEndToFirstReadableUpperMs?: number
   providerPolicy?: Pick<Extract<ProviderTiming, { kind: 'policy' }>, 'effort' | 'thinking'>
   overflow?: number
   correlation?: 'linked' | 'missing' | 'not-applicable'
@@ -94,6 +100,7 @@ export interface LatencyRecord {
 }
 
 interface Candidate {
+  captureEndpoint?: CaptureEndpoint
   id: number
   closedAt?: number
   completion?: TurnCompletion
@@ -173,11 +180,17 @@ export class LatencyTracker {
   }
 
   assist(e: AssistDiagnostic): void {
+    if (e.event === 'invalidate') {
+      for (const candidate of this.candidates.values())
+        candidate.captureEndpoint = { status: 'unavailable', reason: 'reset' }
+      return
+    }
     const turn = e.turn
     if (e.event === 'turn-completed' && turn) {
       if (turn.role === 'user') return // only other speakers' turns become candidates
       this.overflow += capSet(this.candidates, turn.id, {
         id: turn.id,
+        captureEndpoint: turn.captureEndpoint,
         closedAt: turn.completedAt,
         completion: turn.reason,
         assembly: turn.assembly ? rounded(turn.assembly) : undefined,
@@ -296,6 +309,15 @@ export class LatencyTracker {
 
   private candidateFields(c: Candidate): Partial<LatencyRecord> {
     return {
+      captureTiming: c.captureEndpoint?.status ?? 'unavailable',
+      captureTimingReason:
+        c.captureEndpoint?.status === 'valid'
+          ? undefined
+          : (c.captureEndpoint?.reason ?? 'missing-metadata'),
+      captureIntervalWidthMs:
+        c.captureEndpoint?.status === 'valid'
+          ? c.captureEndpoint.upperMs - c.captureEndpoint.lowerMs
+          : undefined,
       candidateId: c.id,
       attemptId: c.attemptId,
       verdict: c.verdict,
@@ -377,6 +399,14 @@ export class LatencyTracker {
       closeToFirstReadableMs: diff(r.firstReadableAt, closedAt),
       requestToFirstReadableMs: diff(r.firstReadableAt, r.startAt),
       lastFinalToFirstReadableMs: diff(r.firstReadableAt, lastFinalAt),
+      questionEndToFirstReadableLowerMs:
+        c?.captureEndpoint?.status === 'valid' && r.firstReadableAt !== undefined
+          ? Math.floor(r.firstReadableAt - c.captureEndpoint.upperMs)
+          : undefined,
+      questionEndToFirstReadableUpperMs:
+        c?.captureEndpoint?.status === 'valid' && r.firstReadableAt !== undefined
+          ? Math.ceil(r.firstReadableAt - c.captureEndpoint.lowerMs)
+          : undefined,
       usage: r.usage,
     }
   }

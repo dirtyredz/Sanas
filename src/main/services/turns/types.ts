@@ -5,10 +5,13 @@
 
 /** How sure an identity is. 'unknown' never initiates coaching, and in stereo it is what a
  *  provider message without a usable channel becomes, instead of implicit user speech. */
+import type { CaptureEndpoint } from '@shared/meeting/audio-capture'
+
 export type IdentityRole = 'user' | 'other' | 'unknown'
 
 /** One finalized transcript fragment, already resolved to an identity. */
 export interface TurnFinal {
+  captureEndpoint?: CaptureEndpoint
   channel: number
   /** Diarized index (-1 for the stereo user or an unknown voice). */
   speaker: number
@@ -26,6 +29,7 @@ export interface TurnFinal {
 export type TurnCompletion = 'endpoint' | 'utterance-end' | 'silence' | 'speaker-change'
 
 export interface CompletedTurn {
+  captureEndpoint?: CaptureEndpoint
   /** Unique within one assembler lifetime (survives reset, so stale ids never collide). */
   id: number
   channel: number

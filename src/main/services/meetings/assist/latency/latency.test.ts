@@ -339,3 +339,79 @@ describe('turned-down candidates', () => {
     expect(t.overflow).toBe(0)
   })
 })
+
+it('derives conservative endpoint bounds separately from final-receipt timing', () => {
+  const tracker = new LatencyTracker(() => {
+    throw new Error('observer failed')
+  })
+  const c = {
+    ...turn(1, 10000),
+    captureEndpoint: { status: 'valid' as const, lowerMs: 8900, upperMs: 9200 },
+  }
+  tracker.assist({ event: 'turn-completed', turn: c, at: 10000 })
+  tracker.run({
+    kind: 'begin',
+    id: 1,
+    meetingId: 1,
+    purpose: 'answer',
+    trigger: 'ambient',
+    spans: [c],
+    speculative: false,
+    at: 10100,
+  })
+  tracker.assist({
+    event: 'answer-started',
+    turn: c,
+    suggestionId: 1,
+    reason: 'ordinary',
+    at: 10100,
+  })
+  tracker.run({ kind: 'first-readable', id: 1, meetingId: 1, at: 11000.5 })
+  tracker.run({ kind: 'settled', id: 1, meetingId: 1, outcome: 'done', at: 12000 })
+  expect(tracker.records()[0]).toMatchObject({
+    captureTiming: 'valid',
+    captureIntervalWidthMs: 300,
+    questionEndToFirstReadableLowerMs: 1800,
+    questionEndToFirstReadableUpperMs: 2101,
+    lastFinalToFirstReadableMs: 1751,
+    assembly: { audioCursorGapMs: 640 },
+  })
+  const missing = new LatencyTracker()
+  answer(missing, 2, 10000)
+  expect(missing.records()[0].questionEndToFirstReadableLowerMs).toBeUndefined()
+  expect(missing.records()[0].captureTimingReason).toBe('missing-metadata')
+})
+
+it('invalidates pending calibrated evidence before an already-running answer settles', () => {
+  const tracker = new LatencyTracker()
+  const c = {
+    ...turn(1, 10000),
+    captureEndpoint: { status: 'valid' as const, lowerMs: 8900, upperMs: 9200 },
+  }
+  tracker.assist({ event: 'turn-completed', turn: c, at: 10000 })
+  tracker.run({
+    kind: 'begin',
+    id: 1,
+    meetingId: 1,
+    purpose: 'answer',
+    trigger: 'ambient',
+    spans: [c],
+    speculative: false,
+    at: 10100,
+  })
+  tracker.assist({
+    event: 'answer-started',
+    turn: c,
+    suggestionId: 1,
+    reason: 'ordinary',
+    at: 10100,
+  })
+  tracker.assist({ event: 'invalidate', reason: 'connection-reset', at: 10500 })
+  tracker.run({ kind: 'first-readable', id: 1, meetingId: 1, at: 11000 })
+  tracker.run({ kind: 'settled', id: 1, meetingId: 1, outcome: 'done', at: 12000 })
+  expect(tracker.records()[0]).toMatchObject({
+    captureTiming: 'unavailable',
+    captureTimingReason: 'reset',
+  })
+  expect(tracker.records()[0].questionEndToFirstReadableLowerMs).toBeUndefined()
+})

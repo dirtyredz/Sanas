@@ -28,6 +28,7 @@ export async function startCapturedMeeting<T>(
     const result = await open(channels)
     if (!accepted(result))
       throw new Error('The meeting could not start. Check Settings and your audio devices.')
+    await capture.activate()
     return { capture, result }
   } catch (e) {
     await capture?.stop()

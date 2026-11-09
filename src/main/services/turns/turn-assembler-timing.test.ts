@@ -99,3 +99,20 @@ describe('turn assembly timing evidence', () => {
     })
   })
 })
+
+it('keeps calibration on the latest audio endpoint, not the last overlapping final received', () => {
+  const a = new TurnAssembler()
+  const endpoint = { status: 'valid' as const, lowerMs: 900, upperMs: 1100 }
+  a.final(them('How would you deploy?', 100, 1000, { captureEndpoint: endpoint }), 1600)
+  a.final(
+    them('Earlier fragment', 0, 700, {
+      captureEndpoint: { status: 'unavailable', reason: 'reset' },
+    }),
+    1700,
+  )
+  a.boundary(0, 1000, 'endpoint', 1800)
+  expect(a.tick(2000)[0]).toMatchObject({ endMs: 1000, captureEndpoint: endpoint })
+  a.final(them('Expanded question', 2000, 3000, { captureEndpoint: endpoint }), 4000)
+  a.final(them('Later endpoint without mapping', 2500, 3500), 4100)
+  expect(a.tick(6000)[0].captureEndpoint).toBeUndefined()
+})
