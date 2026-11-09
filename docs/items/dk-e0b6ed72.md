@@ -2,8 +2,8 @@
 id: dk-e0b6ed72
 type: task
 created: 2026-11-04
-status: todo
-since: 2026-11-04
+status: done
+since: 2026-11-09
 area: mock-interview
 priority: P3
 rank: zzzzzzzzzzzzzn

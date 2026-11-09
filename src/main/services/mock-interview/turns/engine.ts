@@ -47,11 +47,11 @@ export class LiveEngine {
   }
   /** Raw candidate-mic activity: extends an answer already begun, never starts one. */
   activity(): void {
-    if (this.state === 'waiting') this.wait.heard(this.effects.now(), false)
+    if (this.state === 'waiting') this.wait.extend(this.effects.now())
   }
   /** Candidate interim or final text: the answer has begun. */
   candidateSpeech(): void {
-    if (this.state === 'waiting') this.wait.heard(this.effects.now(), true)
+    if (this.state === 'waiting') this.wait.begin(this.effects.now())
   }
   final(role: 'owner' | 'interviewer', text: string, startMs: number, endMs: number): void {
     if (!text.trim()) return
@@ -82,7 +82,7 @@ export class LiveEngine {
     if (this.state !== 'waiting') return
     const now = this.effects.now()
     if (this.wait.advanceDue(now, this.plan.silenceMs)) this.launch(false)
-    else if (this.wait.promptDue(now)) this.prompt(now)
+    else if (this.wait.promptDue(now)) this.prompt()
   }
   skip(): void {
     if (this.state === 'ended' || this.state === 'idle') return
@@ -105,17 +105,21 @@ export class LiveEngine {
     this.run(this.advance(forceNext))
   }
   /** Gentle one-off nudge when the candidate never starts; not a turn, not in the transcript. */
-  private prompt(now: number): void {
+  private prompt(): void {
     if (this.task || this.state === 'ended') return
-    this.wait.markPrompted(now)
+    this.wait.markPrompted()
     this.run(this.nudge())
   }
   private async nudge(): Promise<void> {
     const controller = (this.controller = new AbortController())
-    this.state = 'speaking'
-    await this.effects.speak(IDLE_PROMPT_TEXT, controller.signal)
-    if (controller.signal.aborted) return
+    if (!(await this.say(IDLE_PROMPT_TEXT, controller))) return
     this.state = 'waiting'
+  }
+  /** Speak under `controller`; false when it was aborted (skip/end) while speaking. */
+  private async say(text: string, controller: AbortController): Promise<boolean> {
+    this.state = 'speaking'
+    await this.effects.speak(text, controller.signal)
+    return !controller.signal.aborted
   }
   private run(work: Promise<void>): void {
     this.task = work
@@ -193,9 +197,7 @@ export class LiveEngine {
       spans: [],
     }
     this.turns.push(turn)
-    this.state = 'speaking'
-    await this.effects.speak(turn.text, controller.signal)
-    if (controller.signal.aborted) return
+    if (!(await this.say(turn.text, controller))) return
     turn.spokenMs = this.effects.now()
     this.wait.open(this.effects.now())
     this.state = 'waiting'

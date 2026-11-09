@@ -2,6 +2,12 @@
 
 _Design/architecture decisions, newest first. Why we chose what we chose, and what we rejected._
 
+## 2026-11-09 — Mock interviewer idle prompt timing is a global, not plan data
+
+`IDLE_PROMPT_MS` (30 s) and `IDLE_PROMPT_TEXT` in `mock-interview/turns/answer-wait.ts` stay module constants:
+every plan wants the same gentle once-per-question nudge, while `silenceMs` really differs per plan. Add optional
+`idlePromptMs`/`idlePromptText` to `LivePlan` only when a second plan needs different values.
+
 ## 2026-11-09 — Pre-commit typecheck: refuse a dirty TypeScript tree, then check the working tree
 
 The hook must typecheck what is committed (915bd31 landed a broken import masked by an unstaged fix). Rule: when
