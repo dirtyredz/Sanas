@@ -8,6 +8,10 @@ import { problemFor, type SettingsProblem } from '../frame/settings-draft'
 
 const MODELS = ['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-5-5'] as const
 
+const { min: COOLDOWN_MIN, max: COOLDOWN_MAX } = SETTINGS_LIMITS.nudgeCooldownSec
+// The "0 means no cooldown" sentence is only true while the shared minimum is 0.
+const cooldownHelp = `Seconds between automatic answers to the room (${COOLDOWN_MIN}–${COOLDOWN_MAX}).${COOLDOWN_MIN === 0 ? ' 0 means no cooldown.' : ''}`
+
 function isListedModel(model: string): boolean {
   return MODELS.some((choice) => choice === model)
 }
@@ -137,7 +141,7 @@ export function AssistantSection({
       </FieldRow>
       <FieldRow
         label="Answer cooldown"
-        help={`Seconds between automatic answers to the room (${SETTINGS_LIMITS.nudgeCooldownSec.min}–${SETTINGS_LIMITS.nudgeCooldownSec.max}). 0 means no cooldown.`}
+        help={cooldownHelp}
         error={problemFor(problems, 'nudgeCooldownSec')}
       >
         <input
