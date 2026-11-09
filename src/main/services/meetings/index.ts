@@ -18,6 +18,7 @@ import { assistReady } from './assist/suggestion/suggestion-requests'
 import type { SttSession, SttSignal, SttTranscript } from '../stt/types'
 import {
   clearMeetingAudioPath,
+  deleteMeeting,
   endMeeting,
   getMeeting,
   updateMeetingAudioPath,
@@ -397,9 +398,10 @@ export function startMeeting(
     try {
       opened = await openSession(id, settings.deepgramApiKey, 0)
     } catch (e) {
-      // never leave a meeting row open with no way back to it
+      // a Start that never connected recorded nothing (no segments, no audio yet): drop the
+      // row rather than keep an empty ended meeting whose typed context would block a merge
       assistance.halt()
-      endMeeting(id)
+      deleteMeeting(id)
       setLiveMeeting(null)
       return setState({
         meetingId: null,

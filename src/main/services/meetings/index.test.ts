@@ -3,6 +3,7 @@ import { insertSegment, setSpeakerIsUser } from '../../db/repos/transcript/segme
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { CAPTURE_WARNING } from './capture/capture-health'
 import { sttProvider } from '../stt'
+import { deleteMeeting, endMeeting } from '../../db/repos/meeting/meetings'
 
 const created = vi.hoisted(() => ({
   input: {} as {
@@ -58,6 +59,7 @@ vi.mock('../../db/repos/job/job-resume', () => ({
 }))
 vi.mock('../../db/repos/meeting/meetings', () => ({
   clearMeetingAudioPath: vi.fn(),
+  deleteMeeting: vi.fn(),
   endMeeting: vi.fn(),
   getMeeting: () => ({ practice: !!created.input.practice }),
   updateMeetingAudioPath: vi.fn(),
@@ -338,6 +340,16 @@ describe('meeting capture health', () => {
     await startMeeting(undefined, 1, { practice: true }) // Mock: empty context by default
     expect(created.input.meetingContext).toBeUndefined()
     await stopMeeting()
+  })
+
+  it('deletes the empty meeting (and its typed context) when Start cannot connect', async () => {
+    vi.mocked(deleteMeeting).mockClear()
+    vi.mocked(endMeeting).mockClear()
+    vi.mocked(sttProvider.start).mockRejectedValueOnce(new Error('STT unreachable'))
+    const state = await startMeeting(undefined, 1, { meetingContext: 'Agenda: pilot scope' })
+    expect(state).toMatchObject({ meetingId: null, status: 'error', error: 'STT unreachable' })
+    expect(deleteMeeting).toHaveBeenCalledWith(7)
+    expect(endMeeting).not.toHaveBeenCalled()
   })
 
   it('keeps coaching fed while the capture warning is active', async () => {
