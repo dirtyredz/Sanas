@@ -19,7 +19,7 @@
     "lint:fix": "oxlint --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "node scripts/install-git-hooks.mjs",
+    "prepare": "node scripts/git-hooks/install.mjs",
     "test": "vitest run",
     "dev:web": "vite -c vite.renderer.config.ts"
   },

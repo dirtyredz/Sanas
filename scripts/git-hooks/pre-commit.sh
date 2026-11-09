@@ -1,5 +1,5 @@
 #!/bin/sh
-# Gate for commits, installed into .git/hooks/pre-commit by scripts/install-git-hooks.mjs (run via `npm run prepare`):
+# Gate for commits, installed into .git/hooks/pre-commit by scripts/git-hooks/install.mjs (run via `npm run prepare`):
 #   1. format + lint whatever is STAGED (lint-staged);
 #   2. when any TypeScript is staged, the FULL typecheck (`npm run typecheck`, both tsconfigs) of the working tree, after refusing
 #      any unstaged/untracked .ts/.tsx so that tree equals the commit.

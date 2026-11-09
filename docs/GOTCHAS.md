@@ -735,4 +735,4 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
 - The pre-commit typecheck is the fast working-tree `npm run typecheck` (~typecheck time), so the hook first refuses the
   commit when any tracked `.ts`/`.tsx` has unstaged changes or any untracked `.ts`/`.tsx` exists: otherwise an unstaged import
   fix masks a broken index (915bd31 landed that way). Stage or stash them. Hooks are copies in the shared `.git/hooks`; after
-  editing `scripts/pre-commit.sh`, re-run `npm run prepare`.
+  editing `scripts/git-hooks/pre-commit.sh`, re-run `npm run prepare`.

@@ -46,7 +46,7 @@ Before your first item write in a session, run `docket guide` and follow it.
 
 ## Fast gate
 
-`npm run gate` = full typecheck (both tsconfigs) + oxlint. The pre-commit hook (`scripts/pre-commit.sh`,
+`npm run gate` = full typecheck (both tsconfigs) + oxlint. The pre-commit hook (`scripts/git-hooks/pre-commit.sh`,
 installed by `npm run prepare`) runs lint-staged and, when TypeScript is staged, the full typecheck (it first refuses unstaged or untracked
 .ts/.tsx, so the checked tree equals the commit), because
 vitest strips types and a type-only error otherwise reaches release CI. `SANAS_SKIP_TYPECHECK=1` skips it for a

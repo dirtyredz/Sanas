@@ -2,7 +2,7 @@ import { afterEach, expect, it, vi } from 'vitest'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { installGitHooks } from './git-hooks.mjs'
+import { installGitHooks } from './install.mjs'
 
 const dirs: string[] = []
 function tempRepo(): string {
@@ -24,8 +24,8 @@ it('installs into the hooks directory resolved by Git for a linked worktree', ()
   const repo = tempRepo()
   const hooks = join(tempRepo(), 'hooks')
   writeFileSync(join(repo, '.git'), 'gitdir: C:/shared/worktrees/test')
-  const scripts = join(repo, 'scripts')
-  mkdirSync(scripts)
+  const scripts = join(repo, 'scripts', 'git-hooks')
+  mkdirSync(scripts, { recursive: true })
   writeFileSync(join(scripts, 'pre-commit.sh'), '#!/bin/sh\nnpx lint-staged\n')
   expect(installGitHooks(repo, () => hooks, vi.fn())).toBe(true)
   expect(existsSync(join(hooks, 'pre-commit'))).toBe(true)

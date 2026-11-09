@@ -1,6 +1,12 @@
+// Installs this repo's git hooks into Git's resolved hooks directory. Wired to `prepare`, so a fresh clone sets itself up
+// on `npm install` with nothing to remember. No-ops outside a git checkout (CI tarballs, npx installs).
+//
+// Copies rather than symlinks: Windows needs a privilege or developer mode for symlinks, and a copy
+// is what git actually executes anyway. Re-run `npm run prepare` after editing a hook source.
 import { execFileSync } from 'node:child_process'
 import { copyFileSync, chmodSync, existsSync, mkdirSync, readFileSync } from 'node:fs'
-import { isAbsolute, join, resolve } from 'node:path'
+import { dirname, isAbsolute, join, resolve } from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 export function gitHooksDir(repo) {
   const value = execFileSync('git', ['rev-parse', '--git-path', 'hooks'], {
@@ -28,7 +34,7 @@ export function installGitHooks(repo, resolveHooks = gitHooksDir, log = console.
   mkdirSync(hooksDir, { recursive: true })
 
   for (const name of ['pre-commit']) {
-    const src = join(repo, 'scripts', `${name}.sh`)
+    const src = join(repo, 'scripts', 'git-hooks', `${name}.sh`)
     const dest = join(hooksDir, name)
     if (!existsSync(src)) continue
     // Don't clobber an unrelated hook someone installed by hand.
@@ -42,3 +48,6 @@ export function installGitHooks(repo, resolveHooks = gitHooksDir, log = console.
   }
   return true
 }
+
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href)
+  installGitHooks(dirname(dirname(dirname(fileURLToPath(import.meta.url)))))
