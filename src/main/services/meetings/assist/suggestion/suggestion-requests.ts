@@ -59,6 +59,18 @@ export type AssistSettings = Pick<
   | 'coachWhileTalking'
 >
 
+/** Whether a request can be made at all. The one place the coordinators ask "is the provider
+ *  configured"; a second provider changes this and `providerCredentials`, not the callers. */
+export function assistReady(s: AssistSettings): boolean {
+  return s.anthropicApiKey.length > 0
+}
+
+/** The credential fields every provider request carries (SuggestionRequest and ClassifyRequest
+ *  share them). Anthropic-shaped today (key + optional workspace). */
+export function providerCredentials(s: AssistSettings): { apiKey: string; workspaceId?: string } {
+  return { apiKey: s.anthropicApiKey, workspaceId: s.anthropicWorkspaceId || undefined }
+}
+
 /** The meeting's owner-supplied context as a prompt block (empty when there is none).
  *  `coach` selects the next-point framing. The one place the snapshot's text becomes a block. */
 export function meetingContext(snap: AssistSnapshot, coach = false): string {
@@ -82,8 +94,7 @@ export function answerBase(
     purpose: 'answer',
     profile: profile.kind,
     atMs: snap.atMs,
-    apiKey: s.anthropicApiKey,
-    workspaceId: s.anthropicWorkspaceId || undefined,
+    ...providerCredentials(s),
     model: profile.useAnswerModel ? s.answerModel : s.nudgeModel,
     system: snap.system,
     groundingContextId: snap.groundingContextId,
@@ -249,8 +260,7 @@ export function coachRequest(
     trigger: 'ambient',
     purpose: 'next-point',
     atMs: snap.atMs,
-    apiKey: s.anthropicApiKey,
-    workspaceId: s.anthropicWorkspaceId || undefined,
+    ...providerCredentials(s),
     model: s.nudgeModel,
     system: snap.system,
     contextRevision: snap.contextRevision,

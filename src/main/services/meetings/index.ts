@@ -14,6 +14,7 @@ import type { CaptureAttachResult, CaptureStatus } from '@shared/live-controls/c
 import type { ChannelCount, MeetingState, Settings, TranscriptEvent } from '@shared/types'
 import { loadSettings } from '../../config/settings'
 import { sttProvider } from '../stt'
+import { assistReady } from './assist/suggestion/suggestion-requests'
 import type { SttSession, SttSignal, SttTranscript } from '../stt/types'
 import {
   clearMeetingAudioPath,
@@ -123,7 +124,7 @@ const captures = new CaptureRequests({
   serialize: serialized,
   liveMeetingId,
   canRequest: () => live.canRequest(),
-  apiKeySet: () => loadSettings().anthropicApiKey.length > 0,
+  apiKeySet: () => assistReady(loadSettings()),
   target: screenCapture.target,
   acquire: screenCapture.acquire,
   request: (input) => live.request(input),

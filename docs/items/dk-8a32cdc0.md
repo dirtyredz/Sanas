@@ -2,8 +2,8 @@
 id: dk-8a32cdc0
 type: task
 created: 2026-10-29
-status: todo
-since: 2026-10-29
+status: done
+since: 2026-11-09
 area: assistant
 priority: P3
 rank: zzw

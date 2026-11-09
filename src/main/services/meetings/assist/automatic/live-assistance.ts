@@ -28,7 +28,9 @@ import { AnswerCoverage, type AnswerReservation } from '../suggestion/answers/an
 import { AnswerNow } from '../manual/answer-now'
 import { CoachCoordinator } from '../coach/coach-coordinator'
 import {
+  assistReady,
   automaticAnswerRequest,
+  providerCredentials,
   type AssistSettings,
   type AssistSnapshot,
   type EvidenceHandle,
@@ -388,14 +390,14 @@ export class LiveAssistance {
     if (
       this.expired(c, now) ||
       this.breaker.suspended() ||
-      !s.anthropicApiKey ||
+      !assistReady(s) ||
       !answerCooldownAllows(this.lastAnswerAt, now, s.nudgeCooldownSec)
     ) {
       const reason = this.expired(c, now)
         ? 'expired'
         : this.breaker.suspended()
           ? 'suspended'
-          : !s.anthropicApiKey
+          : !assistReady(s)
             ? 'no-key'
             : 'cooldown'
       this.observe({
@@ -473,8 +475,7 @@ export class LiveAssistance {
     void this.deps
       .classify({
         diagnosticTurn: c.turn,
-        apiKey: s.anthropicApiKey,
-        workspaceId: s.anthropicWorkspaceId || undefined,
+        ...providerCredentials(s),
         model: s.classifierModel,
         current: label(c.turn),
         previous: c.previous.map(label),

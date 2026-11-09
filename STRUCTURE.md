@@ -412,7 +412,12 @@ a separate check, rather than ordinary Vitest loading of `better-sqlite3`.
 - The provider-neutral seam still carries Anthropic vocabulary: `ProviderTiming`'s `'policy'` variant
   (`assistant/types.ts`) names Anthropic's `effort` levels and `thinking` modes (`between_tools`). Widen
   it to opaque provider-tagged strings when a second `AssistantProvider` arrives; until then
-  `claude.ts` computes one `wirePolicy()` per request for both the body and the event.
+  `claude.ts` computes one `wirePolicy()` per request (from one per-family `FamilyCapabilities` row)
+  for both the body and the event.
+- `AssistSettings` (`meetings/assist/suggestion/suggestion-requests.ts`) is still a `Pick` of the
+  Anthropic settings fields. Callers ask `assistReady(s)` and spread `providerCredentials(s)` rather
+  than reading `anthropicApiKey`/`anthropicWorkspaceId`, but model names (`nudgeModel`, `answerModel`,
+  `classifierModel`) are still Anthropic ids; a second provider widens `AssistSettings`, not the coordinators.
 - `services/assistant/` is broad (six loose files plus five subfolders): prompts/ and contracts/ groupings are tracked by dk-00f3ff65. `meetings/` is grouped (records/, postprocess/) and `meetings/assist/` is split into automatic/, manual/, coach/, suggestion/ and latency/ (dk-c0cd0363).
 - `shell/` and `workspaces/` still reference each other: `WorkspacePanel` reads `panelId`/`tabId`
   from `shell/navigation/`, and `OverlaySession` imports the composer hook. Workspaces take explicit

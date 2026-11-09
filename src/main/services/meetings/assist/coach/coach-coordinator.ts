@@ -3,6 +3,7 @@ import { COACH_QUESTION_MS, latestQuestion } from '../../../turns/latest-questio
 import type { CompletedTurn, IdentityRole, TurnFinal } from '../../../turns/types'
 import type { SuggestionHandle, SuggestionRunner } from '../suggestion/suggestion-runner'
 import {
+  assistReady,
   coachRequest,
   type AssistSettings,
   type AssistSnapshot,
@@ -107,7 +108,7 @@ export class CoachCoordinator {
     if (this.run || this.host.candidatePending()) return
     const runner = this.host.runner
     if (!runner.canStart('hotkey') || !runner.canStart('ambient')) return
-    if (!s.anthropicApiKey) return
+    if (!assistReady(s)) return
     const reason = this.policy.decide(now, true)
     if (!reason) return
     const snap = this.host.snapshot()
