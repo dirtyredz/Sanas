@@ -26,6 +26,8 @@ describe('latest question for Answer now', () => {
   it('uses the last completed other-speaker question while it is recent', () => {
     const q = done('Other than Lambda, what services have you used?', 1_000, 3_000, 10_000)
     expect(latestQuestion(q, [], 20_000, ANSWER_NOW_QUESTION_MS)).toEqual({
+      id: 1,
+      channel: 1,
       speaker: 0,
       text: q.text,
       startMs: 1_000,
@@ -56,6 +58,8 @@ describe('latest question for Answer now', () => {
     )
     const older = done('What is your level of experience with AWS?', 1_000, 3_000, 0)
     expect(latestQuestion(older, asm.openTurns(), 1, ANSWER_NOW_QUESTION_MS)).toEqual({
+      id: 1,
+      channel: 1,
       speaker: 0,
       text: 'Talk to me about some of the Node',
       startMs: 5_000,

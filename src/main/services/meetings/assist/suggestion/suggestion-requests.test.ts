@@ -1,3 +1,5 @@
+import { CoverageLedger } from '../../../assistant/coach/coverage/ledger'
+import { buildCoverageCatalog } from '../../../assistant/coach/coverage/catalog'
 import { describe, expect, it } from 'vitest'
 import {
   answerRequest,
@@ -166,4 +168,37 @@ describe('prompt matching', () => {
       ),
     ).toBe(false)
   })
+})
+
+it('keeps meeting coverage exclusively in coach prompts and leaves speculative equality exact', () => {
+  const ledger = new CoverageLedger(buildCoverageCatalog({ notes: 'Database migration rollback' }))
+  ledger.final({
+    channel: 0,
+    speaker: 1,
+    role: 'user',
+    tStartMs: 0,
+    tEndMs: 100,
+    text: 'Database migration rollback worked.',
+  })
+  const snap = snapshot()
+  const covered = { ...snap, coverage: ledger.snapshot() }
+  const turn = {
+    id: 1,
+    channel: 1,
+    text: 'How did the migration work?',
+    speaker: 2,
+    startMs: 0,
+  } as CompletedTurn
+  const before = automaticAnswerRequest(snap, settings, turn, [turn])
+  const after = automaticAnswerRequest(covered, settings, turn, [turn])
+  expect(after).toEqual(before)
+  expect(promptMismatchCategories(before, after)).toEqual([])
+  expect(answerRequest(covered, settings, 'hotkey')).toEqual(
+    answerRequest(snap, settings, 'hotkey'),
+  )
+  const coach = coachRequest(covered, settings, { excerpt: 'database', reason: 'long' }, () => true)
+  ledger.retract(1)
+  expect(coach.userContent).toContain('Database migration rollback worked.')
+  expect(coach.userContent).toContain('Never introduce a technology')
+  expect(coach.userContent).toContain('Shown suggestions are not spoken evidence')
 })

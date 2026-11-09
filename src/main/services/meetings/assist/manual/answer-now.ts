@@ -1,3 +1,5 @@
+import { observeAssistance } from '../../observation/diagnostics'
+import { AnswerCoverage, type AnswerReservation } from '../suggestion/answers/answer-coverage'
 import type { QuestionTurn } from '../../../turns/latest-question'
 import type { SuggestionHandle, SuggestionRunner } from '../suggestion/suggestion-runner'
 import {
@@ -12,6 +14,7 @@ import {
 // and starts one hotkey-lane answer; the live-assistance coordinator injects the rest.
 
 export interface AnswerNowHost {
+  coverage: AnswerCoverage
   settings(): AssistSettings
   snapshot(): AssistSnapshot | null
   runner: Pick<SuggestionRunner, 'canStart' | 'start'>
@@ -24,11 +27,12 @@ export interface AnswerNowHost {
   question(): QuestionTurn | null
   /** An answer is about to be requested: answer assistance outranks a next point. */
   admitted(): void
-  /** The answer started: stacked questions are covered and its end is watched. */
+  /** The answer started: its end is watched for waiting automatic work. */
   started(handle: SuggestionHandle): void
 }
 
 export class AnswerNow {
+  private reservation: AnswerReservation | null = null
   private pending: EvidenceHandle | null = null
 
   constructor(private readonly host: AnswerNowHost) {}
@@ -36,24 +40,45 @@ export class AnswerNow {
   request(): void {
     this.host.guard(() => {
       const host = this.host
-      if (this.pending || !host.runner.canStart('hotkey')) return
+      if (this.pending) return
       const snap = host.snapshot()
       if (!snap || snap.window.length === 0) return
-      host.admitted()
       const question = host.question()
+      const existing = question && host.coverage.find(snap.meetingId, question)
+      if (existing && host.coverage.reuse(existing)) {
+        observeAssistance({
+          event: 'answer-reused',
+          suggestionId: existing.card!.suggestionId,
+          reason: 'existing-answer',
+        })
+        return
+      }
+      if (!host.runner.canStart('hotkey')) return
+      const reservation = question
+        ? host.coverage.reserve(snap.meetingId, [question], 'manual', () => this.cancelPending())
+        : null
+      if (question && !reservation) return
+      this.reservation = reservation
+      host.admitted()
       const epoch = host.epoch()
       const dispatch = (evidence: string): void =>
         host.guard(() => {
           if (
+            (reservation && !host.coverage.owns(reservation)) ||
             epoch !== host.epoch() ||
             host.snapshot()?.meetingId !== snap.meetingId ||
             !host.runner.canStart('hotkey')
-          )
+          ) {
+            if (reservation) host.coverage.release(reservation)
             return
+          }
           const handle = host.runner.start(
             answerNowRequest(host.snapshot()!, host.settings(), question, evidence),
+            reservation ? host.coverage.lifecycle(reservation) : undefined,
           )
+          this.reservation = null
           if (handle) host.started(handle)
+          else if (reservation) host.coverage.release(reservation)
         })
       const pending = host.retrieve(
         snap.meetingId,
@@ -78,6 +103,8 @@ export class AnswerNow {
 
   /** An invalidation: a retrieval still in flight is cancelled and its answer never starts. */
   cancelPending(): void {
+    if (this.reservation) this.host.coverage.release(this.reservation)
+    this.reservation = null
     this.pending?.cancel()
     this.pending = null
   }

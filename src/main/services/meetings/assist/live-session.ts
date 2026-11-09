@@ -1,3 +1,5 @@
+import { CoverageLedger } from '../../assistant/coach/coverage/ledger'
+import { AnswerCoverage } from './suggestion/answers/answer-coverage'
 import { isUnsortedJob } from '@shared/jobs/unsorted'
 import { getDb } from '../../../db'
 import { getMeeting } from '../../../db/repos/meeting/meetings'
@@ -39,7 +41,13 @@ import { observeLatency } from './latency/latency'
 const WINDOW_LINES = 200 // rolling finals kept for prompt assembly
 
 export class LiveSession {
+  private readonly answers = new AnswerCoverage(
+    () => performance.now(),
+    (card) => broadcast(IPC.AnswerSelected, card),
+  )
   readonly assistance: LiveAssistance
+  private coverage: CoverageLedger | null = null
+  private readonly finals: TurnFinal[] = []
   private readonly window: TranscriptLine[] = []
   private readonly shown = new ShownLedger()
   private readonly runner: SuggestionRunner
@@ -68,6 +76,7 @@ export class LiveSession {
     }))
     observeLatency((record) => console.warn(`[sanas] latency ${JSON.stringify(record)}`))
     this.assistance = new LiveAssistance({
+      coverage: this.answers,
       now: () => performance.now(),
       setTimer: (fn, ms) => setTimeout(fn, ms),
       clearTimer: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
@@ -102,6 +111,7 @@ export class LiveSession {
         }
         return {
           ...this.prompts.snapshot(),
+          coverage: this.coverage?.snapshot(),
           meetingId,
           atMs: Math.round(clockMs()),
           window: [...this.window],
@@ -130,11 +140,14 @@ export class LiveSession {
       }
       historyWorker(getDb().name).start()
     }
+    this.answers.reset()
+    this.finals.length = 0
     this.window.length = 0
     this.shown.reset()
     this.assistance.contextChanged(0)
     this.assistance.start()
     this.prompts.begin(jobId, getMeetingContext(liveMeetingId()!))
+    this.coverage = new CoverageLedger(this.prompts.coverageCatalog)
     this.assistance.setAnswerEveryQuestion(loadSettings().answerEveryQuestion)
   }
 
@@ -167,6 +180,9 @@ export class LiveSession {
 
   /** One persisted-or-not final: into the prompt window, then to live assistance. */
   final(line: TranscriptLine, turn: TurnFinal): void {
+    this.coverage?.final(turn)
+    this.finals.push({ ...turn })
+    if (this.finals.length > WINDOW_LINES) this.finals.shift()
     this.window.push(line)
     if (this.window.length > WINDOW_LINES) this.window.shift()
     this.assistance.final(turn)
@@ -176,6 +192,12 @@ export class LiveSession {
    *  drop pending work built on the old identity (old turns stay old). */
   relabel(speaker: number, isUser: boolean): void {
     for (const line of this.window) if (line.speaker === speaker) line.isUser = isUser
+    if (!isUser) this.coverage?.retract(speaker)
+    for (const final of this.finals)
+      if (final.speaker === speaker) {
+        final.role = isUser ? 'user' : 'other'
+        if (isUser) this.coverage?.final(final)
+      }
     this.assistance.identityChanged()
   }
 

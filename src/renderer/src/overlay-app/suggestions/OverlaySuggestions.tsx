@@ -69,8 +69,7 @@ export function OverlaySuggestions({
             variant="primary"
             size="sm"
             className="answer-now"
-            disabled={!live || requestBusy}
-            busy={model.requestedInFlight}
+            disabled={!live}
             onClick={() => void window.sanas.assist.now()}
           >
             Answer now

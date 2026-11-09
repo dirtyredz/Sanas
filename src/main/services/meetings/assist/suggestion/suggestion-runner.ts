@@ -61,6 +61,12 @@ export interface SuggestionRequest extends SuggestionMetadata {
  *  superseded). Nothing was shown or stored for it. */
 export type SuggestionOutcome = 'done' | 'noop' | 'cancelled' | 'timeout' | 'error' | 'discarded'
 
+export interface SuggestionLifecycle {
+  valid(): boolean
+  event(event: SuggestionEvent): void
+  settled(outcome: SuggestionOutcome): void
+}
+
 export interface SuggestionHandle {
   /** The suggestion id its events carry; correlates diagnostics with the run. */
   readonly id: number
@@ -119,21 +125,25 @@ export class SuggestionRunner {
   }
 
   /** Starts a request, or returns null when its lane is taken or there is no API key. */
-  start(request: SuggestionRequest): SuggestionHandle | null {
-    return this.launch(request, false)
+  start(request: SuggestionRequest, lifecycle?: SuggestionLifecycle): SuggestionHandle | null {
+    return this.launch(request, false, lifecycle)
   }
 
   /** Starts a streamed automatic answer unpublished, or returns null when the ambient lane is
    *  taken or there is no API key (silently: a speculation never shows an error). */
-  speculate(request: SuggestionRequest): SpeculativeHandle | null {
+  speculate(request: SuggestionRequest, lifecycle?: SuggestionLifecycle): SpeculativeHandle | null {
     if (request.trigger !== 'ambient' || request.delivery !== 'stream' || !request.apiKey)
       return null
-    return this.launch(request, true)
+    return this.launch(request, true, lifecycle)
   }
 
-  private launch(request: SuggestionRequest, speculative: boolean): SpeculativeHandle | null {
+  private launch(
+    request: SuggestionRequest,
+    speculative: boolean,
+    lifecycle?: SuggestionLifecycle,
+  ): SpeculativeHandle | null {
     const req = { ...request } // the snapshot this run uses, whatever the caller does next
-    if (!this.canStart(req.trigger)) return null
+    if (!this.canStart(req.trigger) || (lifecycle && !lifecycle.valid())) return null
     const sid = ++this.seq
     let storedSuggestionId: number | undefined
     const metadata = {
@@ -172,6 +182,7 @@ export class SuggestionRunner {
         kind,
         text,
       }
+      lifecycle?.event(event)
       this.deps.emit(event)
       if (kind === 'delta') markReadable((shownText += text))
       else if (kind === 'done') markReadable(text)
@@ -255,6 +266,10 @@ export class SuggestionRunner {
         // declined: nothing displayed, nothing persisted; the lane frees in `finally`
         if (req.allowNoop && !gate.shown && isNoSuggestion(text)) return 'noop'
         if (!streamed && !(req.accept?.(text) ?? true)) return 'noop'
+        if (!text.trim()) {
+          if (gate.shown) emit('error', 'No answer returned. Try again.')
+          return 'noop'
+        }
         const stored = this.deps.persist({
           ...metadata,
           meetingId: req.meetingId,
@@ -295,6 +310,7 @@ export class SuggestionRunner {
     }
 
     const done = run().then((outcome) => {
+      lifecycle?.settled(outcome)
       observeRun({
         kind: 'settled',
         id: sid,
@@ -309,6 +325,7 @@ export class SuggestionRunner {
       id: sid,
       done,
       promote: () => {
+        if (lifecycle && !lifecycle.valid()) return false
         if (gate.published) return !cancelled
         if (cancelled || !gate.publish()) return false
         observeRun({ kind: 'promoted', id: sid, meetingId: req.meetingId, at: this.now() })
@@ -317,7 +334,7 @@ export class SuggestionRunner {
       },
       cancel: () => {
         // answers are never withdrawn once published; next points and speculations are
-        if ((streamed && gate.published) || cancelled) return
+        if ((streamed && gate.shown) || cancelled) return
         cancelled = true
         releaseLane()
         controller.abort()

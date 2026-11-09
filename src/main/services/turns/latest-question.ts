@@ -15,6 +15,8 @@ export const COACH_QUESTION_MS = 300_000
 const MIN_QUESTION_WORDS = 3
 
 export interface QuestionTurn {
+  id: number
+  channel: number
   speaker: number
   text: string
   startMs: number
@@ -42,9 +44,18 @@ export function latestQuestion(
     .filter((t) => couldBeQuestion(t) && (!lastCompleted || t.startMs >= lastCompleted.endMs))
     .sort((a, b) => b.startMs - a.startMs)[0]
   if (speaking)
-    return { speaker: speaking.speaker, text: speaking.text, startMs: speaking.startMs, open: true }
+    return {
+      id: speaking.id,
+      channel: speaking.channel,
+      speaker: speaking.speaker,
+      text: speaking.text,
+      startMs: speaking.startMs,
+      open: true,
+    }
   if (!lastCompleted || now - lastCompleted.completedAt > maxAgeMs) return null
   return {
+    id: lastCompleted.id,
+    channel: lastCompleted.channel,
     speaker: lastCompleted.speaker,
     text: lastCompleted.text,
     startMs: lastCompleted.startMs,

@@ -24,6 +24,7 @@ import { speakerLabel } from '../../../turns/transcript-format'
 import type { SuggestionHandle, SuggestionRunner } from '../suggestion/suggestion-runner'
 import { SpeculativeAnswer } from './speculative-answer'
 import { ClassifierBreaker } from './breaker/classifier-breaker'
+import { AnswerCoverage, type AnswerReservation } from '../suggestion/answers/answer-coverage'
 import { AnswerNow } from '../manual/answer-now'
 import { CoachCoordinator } from '../coach/coach-coordinator'
 import {
@@ -91,6 +92,7 @@ export interface LiveAssistanceDeps {
     signal?: AbortSignal,
     correlation?: number,
   ): EvidenceHandle | null
+  coverage?: AnswerCoverage
   availabilityChanged?(): void
   log(message: string): void
 }
@@ -106,6 +108,8 @@ interface Candidate {
   evidence?: string
   retrieval?: EvidenceHandle
   retrievalPending?: boolean
+  reservation?: AnswerReservation
+  asked?: CompletedTurn[]
   dropped: boolean
 }
 
@@ -117,6 +121,7 @@ function words(text: string): number {
 }
 
 export class LiveAssistance {
+  private readonly coverage: AnswerCoverage
   private answerEveryQuestion = false
   setAnswerEveryQuestion(on: boolean): void {
     this.answerEveryQuestion = on
@@ -159,6 +164,7 @@ export class LiveAssistance {
   private answerNowRequests: AnswerNow
 
   constructor(private deps: LiveAssistanceDeps) {
+    this.coverage = deps.coverage ?? new AnswerCoverage(deps.now)
     this.speculation = new SpeculativeAnswer(deps.runner)
     this.breaker = new ClassifierBreaker(deps)
     const guard = (fn: () => void): void => this.guard(fn)
@@ -177,6 +183,7 @@ export class LiveAssistance {
       runEnded: () => this.tryGenerate(),
     })
     this.answerNowRequests = new AnswerNow({
+      coverage: this.coverage,
       settings: () => deps.settings(),
       snapshot: () => deps.snapshot(),
       runner: deps.runner,
@@ -192,7 +199,6 @@ export class LiveAssistance {
         ),
       admitted: () => this.coach.cancel(),
       started: (handle) => {
-        this.unanswered.clear()
         this.afterRun(handle)
       },
     })
@@ -349,10 +355,16 @@ export class LiveAssistance {
 
   private dropCandidate(
     c: Candidate,
-    reason: 'new-final' | 'user-final' | InvalidationReason,
+    reason: 'new-final' | 'user-final' | 'answer-now' | InvalidationReason,
   ): void {
-    this.observe({ event: 'invalidated', turn: c.turn, reason, turnedDown: 'invalidated' })
+    this.observe({
+      event: 'invalidated',
+      turn: c.turn,
+      reason,
+      turnedDown: reason === 'answer-now' ? 'duplicate' : 'invalidated',
+    })
     c.dropped = true
+    if (c.reservation && !c.reservation.card) this.coverage.release(c.reservation)
     c.abort?.abort()
     c.retrieval?.cancel()
     this.speculation.discard(c.turn, reason)
@@ -415,6 +427,23 @@ export class LiveAssistance {
       this.queued = null
       return
     }
+    const asked = this.unanswered.select(now).filter((t) => !this.coverage.find(snap.meetingId, t))
+    if (!asked.some((t) => t.id === c.turn.id)) {
+      this.observe({
+        event: 'not-classified',
+        turn: c.turn,
+        reason: 'covered',
+        turnedDown: 'duplicate',
+      })
+      this.queued = null
+      return
+    }
+    c.asked = asked
+    c.reservation =
+      this.coverage.reserve(snap.meetingId, asked, 'automatic', () =>
+        this.dropCandidate(c, 'answer-now'),
+      ) ?? undefined
+    if (!c.reservation) return
     this.queued = null
     this.classifying = c
     this.lastClassifierStartAt = now
@@ -460,12 +489,14 @@ export class LiveAssistance {
   /** Starts the neutral automatic answer alongside the classifier when the ambient lane is free.
    *  Expiry, suspension, key and cooldown checks have already passed; nothing here consumes
    *  the cooldown or the ledger — only a promotion does. */
-  private speculate(c: Candidate, snap: AssistSnapshot, s: AssistSettings, now: number): void {
+  private speculate(c: Candidate, snap: AssistSnapshot, s: AssistSettings, _now: number): void {
     if (!this.deps.runner.canStart('ambient')) return
-    const asked = this.unanswered.select(now)
+    const asked = c.asked ?? []
+    if (!c.reservation || !this.coverage.owns(c.reservation)) return
     const handle = this.speculation.begin(
       c.turn,
       automaticAnswerRequest(snap, s, c.turn, asked, 'automatic', c.evidence),
+      this.coverage.lifecycle(c.reservation, () => this.unanswered.cover(asked)),
     )
     if (handle) this.afterRun(handle) // when it ends, a waiting candidate or next point may go
   }
@@ -505,6 +536,7 @@ export class LiveAssistance {
     if (accepted) this.tryGenerate()
     else {
       c.dropped = true
+      if (c.reservation && !c.reservation.card) this.coverage.release(c.reservation)
       c.retrieval?.cancel()
       this.speculation.discard(c.turn, `verdict ${verdict}`)
     }
@@ -530,11 +562,22 @@ export class LiveAssistance {
         turnedDown: TURN_DOWN_CATEGORY[reason],
       })
       this.ready = null
+      if (c.reservation && !c.reservation.card) this.coverage.release(c.reservation)
       this.speculation.discard(c.turn, 'not-generated')
       return
     }
     const snap = this.deps.snapshot()
-    const asked = this.unanswered.select(now)
+    const asked = c.asked ?? []
+    if (snap && (!c.reservation || !this.coverage.owns(c.reservation))) {
+      c.reservation =
+        this.coverage.reserve(snap.meetingId, asked, 'automatic', () =>
+          this.dropCandidate(c, 'answer-now'),
+        ) ?? undefined
+      if (!c.reservation) {
+        this.dropCandidate(c, 'answer-now')
+        return
+      }
+    }
     // the same neutral prompt the speculation used, except a reference answer for a turn put
     // to another participant (Answer every question), which is never published from one
     const request =
@@ -556,6 +599,7 @@ export class LiveAssistance {
     }
     this.ready = null
     if (!request) {
+      if (c.reservation) this.coverage.release(c.reservation)
       this.observe({
         event: 'not-generated',
         turn: c.turn,
@@ -566,15 +610,31 @@ export class LiveAssistance {
     }
     const promoted = admission.lane === 'promoted'
     const handle =
-      admission.lane === 'promoted' ? admission.handle : this.deps.runner.start(request)
-    if (!handle) return
+      admission.lane === 'promoted'
+        ? admission.handle
+        : this.deps.runner.start(
+            request,
+            c.reservation
+              ? this.coverage.lifecycle(c.reservation, () => this.unanswered.cover(asked))
+              : undefined,
+          )
+    if (!handle) {
+      if (c.reservation) this.coverage.release(c.reservation)
+      return
+    }
+    if (c.reservation) {
+      const cancelCandidate = c.reservation.cancel
+      c.reservation.cancel = () => {
+        cancelCandidate()
+        handle.cancel()
+      }
+    }
     this.observe({
       event: 'answer-started',
       turn: c.turn,
       suggestionId: handle.id,
       reason: promoted ? 'speculative' : 'ordinary',
     })
-    this.unanswered.cover(asked) // started: answered, or deliberately declined — never re-asked
     // consumed when an answer starts — and kept even if it declines with the no-op, so a
     // model with nothing new to say cannot be asked again and again
     this.lastAnswerAt = now

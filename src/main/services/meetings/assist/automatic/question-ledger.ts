@@ -25,12 +25,10 @@ export class QuestionLedger {
     return this.pending.slice(-QUESTION_CARRY_CAP)
   }
 
-  /** A request started for these: they are answered (or deliberately declined) and never re-asked.
-   *  Anything older than the covered set was beyond the cap and is dropped with it. */
+  /** A published request covers exactly these members; unrelated questions remain pending. */
   cover(turns: readonly CompletedTurn[]): void {
     if (turns.length === 0) return
-    const newest = this.pending.indexOf(turns[turns.length - 1])
-    this.pending = newest < 0 ? this.pending : this.pending.slice(newest + 1)
+    this.pending = this.pending.filter((t) => !turns.some((q) => q.id === t.id))
   }
 
   clear(): void {

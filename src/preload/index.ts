@@ -1,3 +1,4 @@
+import type { AnswerSelection } from '../shared/live-controls/types'
 import type { JobMemoryApi } from '../shared/jobs/memory'
 import type { MeetingResume } from '../shared/meeting/meeting-resume'
 import type { SuggestionVisibility } from '../shared/live-controls/visibility'
@@ -171,6 +172,11 @@ const api = {
     onResumeRequest: (cb: () => void): (() => void) => subscribe(IPC.MeetingResumeRequest, cb),
   },
   assist: {
+    onAnswerSelected: (cb: (card: AnswerSelection) => void): (() => void) => {
+      const listener = (_e: unknown, card: AnswerSelection): void => cb(card)
+      ipcRenderer.on(IPC.AnswerSelected, listener)
+      return () => ipcRenderer.removeListener(IPC.AnswerSelected, listener)
+    },
     acknowledgeVisibility: (value: SuggestionVisibility): Promise<void> =>
       ipcRenderer.invoke(IPC.SuggestionVisibility, value),
     request: (request: ManualRequest): Promise<Admission> =>

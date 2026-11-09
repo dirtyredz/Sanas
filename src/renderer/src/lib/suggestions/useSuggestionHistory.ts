@@ -72,5 +72,15 @@ export function useSuggestionHistory(
     [readingRef],
   )
 
+  useEffect(
+    () =>
+      window.sanas.assist.onAnswerSelected((card) => {
+        if (card.meetingId !== meetingIdRef.current) return
+        readingRef.current.scrolled = false
+        dispatch({ type: 'reuse', card, now: Date.now() })
+      }),
+    [readingRef],
+  )
+
   return [state, (suggestionId) => dispatch({ type: 'select', suggestionId })]
 }

@@ -49,3 +49,20 @@ it.each(['', 'Agenda: platform review'])(
     )
   },
 )
+
+it('freezes the coverage catalog from actual Start values across job edits and context Apply', () => {
+  data.notes = 'Database migration rollback'
+  const prompts = new MeetingPrompts()
+  prompts.begin(1, { meetingId: 1, revision: 0, text: '' })
+  const catalog = prompts.coverageCatalog
+  data.notes = 'Completely different notes'
+  prompts.applyContext({ meetingId: 1, revision: 1, text: 'Context changed' })
+  expect(prompts.coverageCatalog).toBe(catalog)
+  expect(catalog.points.map((p) => p.text)).toEqual([
+    'OPTIONAL_PRIORITY',
+    'Database migration rollback',
+  ])
+  expect(catalog.points.map((p) => p.source)).toEqual(['talkingPoints', 'notes'])
+  expect(catalog.points.map((p) => p.text)).not.toContain(data.memory)
+  data.notes = ''
+})

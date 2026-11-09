@@ -94,7 +94,7 @@ export function setup(
       ? runner
       : {
           canStart: (t) => runner.canStart(t),
-          start: (r) => runner.start(r),
+          start: (r, lifecycle) => runner.start(r, lifecycle),
           speculate: () => null,
         },
     snapshot: () =>

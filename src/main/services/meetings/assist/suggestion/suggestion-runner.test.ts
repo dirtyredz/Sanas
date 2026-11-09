@@ -1,3 +1,4 @@
+import { AnswerCoverage } from './answers/answer-coverage'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SuggestionEvent } from '@shared/types'
 import type { AssistRequest } from '../../../assistant/types'
@@ -399,4 +400,16 @@ describe('suggestion runner: speculative answers', () => {
     expect(runner.speculate(auto())).toBeNull()
     expect(holds.get(7)).toBe(1)
   })
+})
+
+it('a new meeting clears reuse but a published old answer still persists to its original meeting', async () => {
+  const t = harness()
+  const coverage = new AnswerCoverage(() => 0)
+  const entry = coverage.reserve(1, [{ id: 1, channel: 0, text: 'Why?' }], 'manual', () => {})!
+  const run = t.runner.start(answer({ trigger: 'hotkey' }), coverage.lifecycle(entry))!
+  coverage.reset()
+  t.pending[0].resolve('Old meeting answer')
+  await expect(run.done).resolves.toBe('done')
+  expect(t.stored).toHaveLength(1)
+  expect(coverage.find(1, { id: 1, channel: 0, text: 'Why?' })).toBeUndefined()
 })

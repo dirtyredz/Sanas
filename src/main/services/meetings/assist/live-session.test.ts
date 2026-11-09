@@ -10,14 +10,29 @@ const f = vi.hoisted(() => ({
   answers: [] as string[],
   saveMeetingGrounding: vi.fn(() => 1),
   initialContext: '',
+  coaching: false,
+  notes: '',
 }))
 vi.mock('../../../config/settings', () => ({
-  loadSettings: () => ({ anthropicApiKey: 'key', whisperMode: 'smart', coachWhileTalking: false }),
+  loadSettings: () => ({
+    anthropicApiKey: 'key',
+    whisperMode: 'smart',
+    coachWhileTalking: f.coaching,
+  }),
 }))
 vi.mock('../../../db/repos/meeting/meeting-grounding', () => ({
   getMeetingGrounding: () => ({ resume: null, interviewProfile: '', hasBiography: false }),
 }))
-vi.mock('../../../db/repos/job/jobs', () => ({ getJob: () => null }))
+vi.mock('../../../db/repos/job/jobs', () => ({
+  getJob: () => ({
+    name: 'Example',
+    notes: f.notes,
+    talkingPoints: '',
+    persona: '',
+    companyInfo: '',
+    projectScope: '',
+  }),
+}))
 vi.mock('../../../db/repos/job/glossary', () => ({ listGlossary: () => [] }))
 vi.mock('../../../db/repos/meeting/meeting-context', () => ({
   getMeetingContext: () => ({ meetingId: 1, revision: 0, text: f.initialContext }),
@@ -51,6 +66,9 @@ afterEach(() => {
   f.answers.length = 0
   f.saveMeetingGrounding.mockClear()
   f.initialContext = ''
+  f.coaching = false
+  f.notes = ''
+  vi.useRealTimers()
 })
 it('remembers told stories across Answer now and typed lanes and shows them to the next answer', async () => {
   const session = new LiveSession(() => 100)
@@ -74,6 +92,17 @@ it('remembers told stories across Answer now and typed lanes and shows them to t
     accepted: true,
   })
   await new Promise((resolve) => setTimeout(resolve, 0))
+  session.final(
+    { speaker: 1, isUser: false, text: 'What else did you build?', tStartMs: 1000, tEndMs: 2000 },
+    {
+      channel: 0,
+      speaker: 1,
+      role: 'other',
+      text: 'What else did you build?',
+      tStartMs: 1000,
+      tEndMs: 2000,
+    },
+  )
   session.assistance.answerNow()
   await new Promise((resolve) => setTimeout(resolve, 0))
   expect(f.requests).toHaveLength(3)
@@ -153,4 +182,45 @@ it('saves grounding once at Start; context changes and snapshots only read the c
     accepted: true,
   })
   expect(f.saveMeetingGrounding).toHaveBeenCalledTimes(1)
+})
+
+it('keeps early user evidence through rolling-window eviction, coaching-off, resume, reconnect and Apply; retracts corrections', async () => {
+  vi.useFakeTimers()
+  f.notes = 'Database migration rollback'
+  const session = new LiveSession(() => 0)
+  session.begin(1)
+  const feed = (text: string, speaker: number, start: number, end: number): void =>
+    session.final(
+      { speaker, isUser: true, text, tStartMs: start, tEndMs: end },
+      { channel: 0, speaker, role: 'user', text, tStartMs: start, tEndMs: end },
+    )
+  feed('Database migration rollback worked.', 1, 0, 1000)
+  for (let i = 0; i < 250; i++)
+    feed(
+      'Unrelated lengthy discussion on a different project and its daily status report.',
+      2,
+      1000 + i * 100,
+      1100 + i * 100,
+    )
+  expect(f.requests).toHaveLength(0)
+  session.assistance.halt()
+  session.assistance.start()
+  session.assistance.connectionReset()
+  session.assistance.setIdentityNeedsConfirmation(true)
+  session.applyContext({ meetingId: 1, revision: 1, text: 'Revised context' })
+  f.coaching = true
+  const explanation = 'Database migration ' + Array(45).fill('explanation').join(' ')
+  feed(explanation, 2, 30000, 55000)
+  expect(f.requests).toHaveLength(0) // identity reconfirmation still gates the coach
+  session.assistance.setIdentityNeedsConfirmation(false)
+  feed(explanation, 2, 60000, 85000)
+  await vi.advanceTimersByTimeAsync(0)
+  expect(f.requests.at(-1)?.userContent).toContain('Database migration rollback worked.')
+  session.relabel(1, false)
+  session.assistance.halt()
+  session.assistance.start()
+  feed(explanation, 2, 90000, 115000)
+  await vi.advanceTimersByTimeAsync(0)
+  expect(f.requests.at(-1)?.userContent).not.toContain('Database migration rollback worked.')
+  session.assistance.halt()
 })

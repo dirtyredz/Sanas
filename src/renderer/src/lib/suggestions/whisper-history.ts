@@ -1,4 +1,4 @@
-import type { SuggestionMetadata } from '@shared/live-controls/types'
+import type { AnswerSelection, SuggestionMetadata } from '@shared/live-controls/types'
 import type { SuggestionEvent, SuggestionPurpose } from '@shared/types'
 
 export interface SuggestionView extends SuggestionMetadata {
@@ -19,6 +19,7 @@ export interface WhisperHistoryState {
 }
 
 export type WhisperHistoryAction =
+  | { type: 'reuse'; card: AnswerSelection; now: number }
   | { type: 'context-changed' }
   | { type: 'meeting'; meetingId: number | null }
   | { type: 'event'; event: SuggestionEvent; followNewest: boolean; now: number }
@@ -46,6 +47,22 @@ export function whisperHistoryReducer(
   state: WhisperHistoryState,
   action: WhisperHistoryAction,
 ): WhisperHistoryState {
+  if (action.type === 'reuse') {
+    if (state.meetingId !== action.card.meetingId) return state
+    const item: SuggestionView = {
+      ...action.card,
+      error: null,
+      finishedAt: action.card.streaming ? null : action.now,
+    }
+    const found = state.items.some((i) => i.suggestionId === item.suggestionId)
+    return {
+      ...state,
+      items: found
+        ? state.items.map((i) => (i.suggestionId === item.suggestionId ? item : i))
+        : [...state.items, item],
+      selectedId: item.suggestionId,
+    }
+  }
   if (action.type === 'context-changed') {
     const items = state.items.filter((item) => item.purpose !== 'next-point')
     return {

@@ -93,7 +93,10 @@ function assemblyTiming(t: OpenTurn, reason: TurnCompletion, now: number): TurnA
 }
 
 /** An unfinished turn as seen from outside: no completion state. */
-export type OpenTurnView = Pick<CompletedTurn, 'speaker' | 'role' | 'text' | 'startMs' | 'endMs'>
+export type OpenTurnView = Pick<
+  CompletedTurn,
+  'id' | 'channel' | 'speaker' | 'role' | 'text' | 'startMs' | 'endMs'
+>
 
 interface ChannelState {
   open: OpenTurn | null
@@ -288,6 +291,8 @@ export class TurnAssembler {
       const t = ch.open
       if (t)
         out.push({
+          id: t.id,
+          channel: t.channel,
           speaker: t.speaker,
           role: t.role,
           text: turnText(t),

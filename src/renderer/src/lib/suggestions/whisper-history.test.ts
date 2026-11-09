@@ -221,3 +221,27 @@ it('preserves persisted sources and linked detail metadata across selection and 
   expect(state.selectedId).toBe(1)
   expect(state.items).toHaveLength(2)
 })
+
+it('selects an existing answer without appending and restores a missing card from main', () => {
+  const card = {
+    ...event(1, 'done', 'Remembered answer'),
+    streaming: false,
+    storedSuggestionId: 42,
+  }
+  let state = whisperHistoryReducer(EMPTY_WHISPER_HISTORY, { type: 'meeting', meetingId: 7 })
+  state = whisperHistoryReducer(state, { type: 'reuse', card, now: 1 })
+  state = whisperHistoryReducer(state, {
+    type: 'event',
+    event: event(2, 'done', 'Newer'),
+    now: 2,
+    followNewest: true,
+  })
+  expect(state.selectedId).toBe(2)
+  state = whisperHistoryReducer(state, { type: 'reuse', card, now: 3 })
+  expect(state.items).toHaveLength(2)
+  expect(state.selectedId).toBe(1)
+  expect(state.items[0].storedSuggestionId).toBe(42)
+  expect(
+    whisperHistoryReducer(state, { type: 'reuse', card: { ...card, meetingId: 8 }, now: 4 }),
+  ).toBe(state)
+})

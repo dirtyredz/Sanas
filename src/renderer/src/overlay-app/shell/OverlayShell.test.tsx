@@ -190,3 +190,12 @@ describe('overlay shell, focused workspaces', () => {
     expect(status).toContain('Open Sanas')
   })
 })
+
+it('keeps Answer now enabled during a requested stream so main can reselect its existing card', () => {
+  const model = session('answer')
+  model.suggestions.requestedInFlight = true
+  const html = renderToStaticMarkup(<OverlayShell session={model} />)
+  const button = html.match(/<button[^>]*class="[^"]*answer-now[^>]*>/)?.[0]
+  expect(button).toBeDefined()
+  expect(button).not.toContain('disabled')
+})

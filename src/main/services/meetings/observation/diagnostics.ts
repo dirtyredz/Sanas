@@ -10,6 +10,7 @@ import { createObserverBus } from './observer-bus'
 
 /** Why a speculation was discarded: the source's own reason (also the event's `reason`). */
 export type DiscardReason =
+  | 'answer-now'
   | 'prompt-changed'
   | 'ended-before-verdict'
   | 'not-generated'
@@ -24,6 +25,7 @@ export type InvalidationReason = 'start' | 'stop-or-pause' | 'connection-reset' 
 
 /** A discarded speculation's reason as a bounded category (latency evidence). */
 export type DiscardCategory =
+  | 'answer-now'
   | 'prompt-changed'
   | 'rejected'
   | 'classifier-failed'
@@ -38,7 +40,7 @@ export type DiscardCategory =
 /** Why a candidate ended without an answer, as a bounded category (latency evidence):
  *  `policy` = the coordinator turned it down (addressee, cooldown, no key, suspended). */
 export type TurnedDownCategory =
-  'policy' | 'expired' | 'prefilter' | 'superseded' | 'invalidated' | 'unknown'
+  'duplicate' | 'policy' | 'expired' | 'prefilter' | 'superseded' | 'invalidated' | 'unknown'
 
 /** Optional local observation only. No decisions, timers, IPC, keys or persistence. The turn
  *  carries transcript text: consumers copy allowlisted fields, never the event wholesale. */

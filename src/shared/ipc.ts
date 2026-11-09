@@ -62,6 +62,7 @@ export const IPC = {
   MeetingState: 'meeting:state',
   /** The pause hotkey fired while paused: only the renderer can reopen the mic, so it resumes. */
   MeetingResumeRequest: 'meeting:resume-request',
+  AnswerSelected: 'assist:answer-selected',
   SuggestionEvent: 'suggestion:event',
   SuggestionVisibility: 'suggestion:visibility',
   /** A meeting's stored record changed post-hoc (re-diarization) — reload views. */

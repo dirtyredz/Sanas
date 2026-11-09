@@ -12,6 +12,7 @@ import {
 import type {
   SpeculativeHandle,
   SuggestionRequest,
+  SuggestionLifecycle,
   SuggestionRunner,
 } from '../suggestion/suggestion-runner'
 
@@ -36,6 +37,7 @@ import type {
  *  re-parses the reason string. */
 export function discardCategory(reason: DiscardReason): DiscardCategory {
   switch (reason) {
+    case 'answer-now':
     case 'prompt-changed':
     case 'ended-before-verdict':
     case 'not-generated':
@@ -75,9 +77,13 @@ export class SpeculativeAnswer {
 
   /** Starts the speculation for `turn`, or returns null when speculation is unavailable, one
    *  is already pending, or the ambient lane is taken. */
-  begin(turn: CompletedTurn, request: SuggestionRequest): SpeculativeHandle | null {
+  begin(
+    turn: CompletedTurn,
+    request: SuggestionRequest,
+    lifecycle?: SuggestionLifecycle,
+  ): SpeculativeHandle | null {
     if (this.pending) return null
-    const handle = this.runner.speculate(request)
+    const handle = this.runner.speculate(request, lifecycle)
     if (!handle) return null
     this.pending = { turn, request, handle }
     this.started++

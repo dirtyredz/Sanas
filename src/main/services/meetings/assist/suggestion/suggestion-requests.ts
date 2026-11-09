@@ -1,3 +1,4 @@
+import type { CoverageSnapshot } from '../../../assistant/coach/coverage/ledger'
 import { meetingContextBlock } from '../../../assistant/live-controls/prompts'
 import type { Settings } from '@shared/types'
 import { speakerLabel, type SpeakerNames } from '../../../turns/transcript-format'
@@ -28,6 +29,7 @@ export type EvidenceHandle = { ready: Promise<string>; cancel(): void }
 
 /** The live meeting at the moment a request is built. */
 export interface AssistSnapshot {
+  coverage?: CoverageSnapshot
   /** The meeting's current context text (owner-supplied, per meeting). */
   meetingText?: string
   contextRevision?: number
@@ -234,6 +236,7 @@ export function coachRequest(
     userContent:
       meetingContextBlock(snap.meetingText ?? '', true) +
       buildCoachUserContent({
+        coverage: snap.coverage,
         excerpt: input.excerpt,
         reason: input.reason,
         window: snap.window,

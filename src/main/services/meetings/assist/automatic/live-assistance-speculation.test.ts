@@ -396,17 +396,16 @@ describe('speculative answer: invalidation and lanes', () => {
     expect(t.generations[1].req.userContent).toContain('S3: Second?')
   })
 
-  it('leaves the hotkey lane alone, and Answer now leaves it running', async () => {
+  it('supersedes matching unpublished speculation with the Full hotkey answer', async () => {
     const t = speculating()
     t.window.push({ speaker: 1, isUser: false, text: 'Can you explain it?' })
     await otherTurn(t.assist, 'Can you explain it?', 0, 800)
     t.assist.answerNow()
     expect(t.generations).toHaveLength(2)
     expect(t.generations[1].req.maxTokens).toBe(1200) // the requested answer
-    expect(t.generations[0].req.signal?.aborted).toBe(false)
+    expect(t.generations[0].req.signal?.aborted).toBe(true)
     expect(t.events[0]).toMatchObject({ trigger: 'hotkey' })
-    // Answer now covered the whole window, so the ledger changed: the speculation is not
-    // the ordinary request any more and is replaced by it (as without speculation)
+    // A stale verdict cannot resurrect the superseded answer.
     await t.classify(0, t.question)
     expect(t.generations[0].req.signal?.aborted).toBe(true)
     expect(t.events.filter((e) => e.trigger === 'ambient')).toEqual([])

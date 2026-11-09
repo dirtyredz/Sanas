@@ -36,3 +36,13 @@ export interface SuggestionMetadata {
   manualKind?: ManualKind | null
   storedSuggestionId?: number
 }
+
+/** Main-originated reselection, including a snapshot for history restoration. */
+export interface AnswerSelection extends SuggestionMetadata {
+  suggestionId: number
+  meetingId: number
+  trigger: 'ambient' | 'hotkey'
+  purpose: 'answer' | 'next-point'
+  text: string
+  streaming: boolean
+}

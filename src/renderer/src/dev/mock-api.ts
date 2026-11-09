@@ -154,6 +154,7 @@ const api: SanasApi = {
     onResumeRequest: () => () => {},
   },
   assist: {
+    onAnswerSelected: () => () => {},
     acknowledgeVisibility: async () => undefined,
     ...controls.assist,
     now: async () => streamSuggestion('hotkey'),

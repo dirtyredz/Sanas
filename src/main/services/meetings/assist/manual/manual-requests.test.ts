@@ -54,6 +54,8 @@ it('Answer now carries the latest question and told stories; typed and capture a
   const told = [{ headline: 'At Acme I ran the federation.', detail: 'Invoicing was mine.' }]
   const live = { ...snap, window, told }
   const now = answerNowRequest(live, settings, {
+    id: 1,
+    channel: 0,
     speaker: 0,
     text: TOPIC_SWITCH_EXCHANGES[3].question,
     startMs: question.startMs,

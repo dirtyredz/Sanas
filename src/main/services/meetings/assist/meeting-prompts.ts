@@ -1,3 +1,4 @@
+import { buildCoverageCatalog } from '../../assistant/coach/coverage/catalog'
 import { getApprovedMemory, ordinaryJob } from '../../../db/repos/job/memory/approved'
 import { getMeetingGrounding } from '../../../db/repos/meeting/meeting-grounding'
 import { meetingCandidateFacts } from '../context/meeting-facts'
@@ -11,12 +12,14 @@ import { buildSystemPrompt } from '../../assistant/prompts'
  *  glossary, candidate facts) frozen at Start with its immutable grounding row, plus the
  *  current meeting-context revision that requests carry in their user content. */
 export class MeetingPrompts {
+  coverageCatalog = buildCoverageCatalog(null)
   private system = ''
   private groundingContextId: number | undefined
   private context: MeetingContext | null = null
 
   begin(jobId: number, context: MeetingContext): void {
     const job = getJob(jobId)
+    this.coverageCatalog = buildCoverageCatalog(job)
     const glossary = listGlossary(jobId)
     const grounding = getMeetingGrounding(context.meetingId)
     const facts = grounding.hasBiography
