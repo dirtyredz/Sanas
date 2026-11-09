@@ -1,4 +1,4 @@
-/** v10: independent of the mutable Settings profile; old meetings have no profile.
+/** v10: independent of the mutable Settings profile; old meetings have no profile. Its immutability trigger is superseded by v12 (meeting-snapshot-clear-schema.ts).
  *  Reads go through `getMeetingGrounding`. */
 export const meetingInterviewProfileSchema = `
   ALTER TABLE meetings ADD COLUMN interview_profile TEXT NOT NULL DEFAULT ''

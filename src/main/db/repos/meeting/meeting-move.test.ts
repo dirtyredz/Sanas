@@ -56,3 +56,17 @@ it('keeps the immutability triggers closed to direct edits, before and after a m
   const rewrite = () => sqlite.prepare("UPDATE meetings SET resume_text = 'x' WHERE id = ?").run(id)
   expect(rewrite).toThrow('immutable')
 })
+
+it('with a guard row present, only a clear of the whole snapshot is allowed', () => {
+  const { id } = setup()
+  sqlite.prepare('INSERT INTO meeting_snapshot_clear (meeting_id) VALUES (?)').run(id)
+  const run = (sql: string) => () => sqlite.prepare(sql).run(id)
+  expect(run("UPDATE meetings SET resume_text = 'x' WHERE id = ?")).toThrow('immutable')
+  expect(run("UPDATE meetings SET resume_name = '' WHERE id = ?")).toThrow('immutable')
+  expect(run("UPDATE meetings SET resume_text = '' WHERE id = ?")).toThrow('immutable')
+  expect(run("UPDATE meetings SET interview_profile = 'x' WHERE id = ?")).toThrow('immutable')
+  run(
+    "UPDATE meetings SET resume_name = '', resume_text = '', interview_profile = '' WHERE id = ?",
+  )()
+  expect(getMeetingGrounding(id).hasBiography).toBe(false)
+})
