@@ -4,6 +4,14 @@ import { resolve } from 'path'
 
 export default defineConfig({
   main: {
+    build: {
+      rollupOptions: {
+        input: {
+          index: resolve(__dirname, 'src/main/index.ts'),
+          'history-worker': resolve(__dirname, 'src/main/services/history/live/worker.ts'),
+        },
+      },
+    },
     plugins: [externalizeDepsPlugin()],
     resolve: {
       alias: {

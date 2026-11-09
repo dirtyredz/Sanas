@@ -56,7 +56,7 @@ it('upgrades a v7 database without changing existing transcript or meeting data'
   runMigrations(mock.db)
   // Recreate the pre-v8 shape using SQLite's supported DROP COLUMN on a disposable DB.
   sqlite.exec(
-    'DROP TRIGGER jobs_delete_guard; DROP TABLE job_applications; DROP TABLE job_resumes; DROP TRIGGER meetings_interview_profile_immutable; ALTER TABLE meetings DROP COLUMN interview_profile; DROP TRIGGER meetings_resume_immutable; ALTER TABLE meetings DROP COLUMN resume_name; ALTER TABLE meetings DROP COLUMN resume_text; DROP TABLE mock_results; DROP INDEX idx_meetings_practice; ALTER TABLE meetings DROP COLUMN practice; PRAGMA user_version = 7',
+    'DROP TRIGGER summaries_fts_ai; DROP TRIGGER summaries_fts_ad; DROP TRIGGER summaries_fts_au; DROP TABLE summaries_fts; DROP TABLE job_memory_proposals; DROP TABLE job_memory; DROP TRIGGER jobs_delete_guard; DROP TABLE job_applications; DROP TABLE job_resumes; DROP TRIGGER meetings_interview_profile_immutable; ALTER TABLE meetings DROP COLUMN interview_profile; DROP TRIGGER meetings_resume_immutable; ALTER TABLE meetings DROP COLUMN resume_name; ALTER TABLE meetings DROP COLUMN resume_text; DROP TABLE mock_results; DROP INDEX idx_meetings_practice; ALTER TABLE meetings DROP COLUMN practice; PRAGMA user_version = 7',
   )
   const job = createJob('Legacy')
   sqlite.prepare('INSERT INTO meetings (job_id, title) VALUES (?, ?)').run(job.id, 'Keep me')

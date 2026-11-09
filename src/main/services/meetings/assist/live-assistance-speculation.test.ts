@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ClassifierOutcome } from '../../assistant/classifier'
 import { CONTINUATION_GRACE_MS } from '../../turns/turn-assembler'
 import { me, otherTurn, setup, them } from './testing/live-assistance-harness'
+import { freezeEvidence } from '../../history/live/session'
 
 const diagnostics = vi.hoisted(() => vi.fn())
 vi.mock('./diagnostics', () => ({ observeAssistance: diagnostics }))
@@ -37,6 +38,88 @@ beforeEach(() => {
   vi.setSystemTime(T0)
 })
 afterEach(() => vi.useRealTimers())
+
+describe('frozen historical evidence', () => {
+  it('promotes with identical evidence and does not wait for late retrieval', async () => {
+    const t = setup(
+      {},
+      {
+        speculate: true,
+        retrieve: () =>
+          freezeEvidence(
+            () =>
+              new Promise((resolve) =>
+                setTimeout(
+                  () =>
+                    resolve({ id: 1, text: 'Historical Atlas budget 42', snippets: 1, queryMs: 2 }),
+                  2,
+                ),
+              ),
+            10,
+          ),
+      },
+    )
+    await otherTurn(t.assist, 'What is the Atlas budget?', 0, 1000)
+    expect(t.generations).toHaveLength(0)
+    await vi.advanceTimersByTimeAsync(2)
+    expect(t.generations[0].req.userContent).toContain('Historical Atlas budget 42')
+    await t.classify(0, t.question)
+    expect(t.generations).toHaveLength(1)
+    expect(events('speculation-promoted')).toHaveLength(1)
+    t.assist.halt()
+  })
+  it('fast rejection cancels retrieval before any answer starts', async () => {
+    const t = setup(
+      {},
+      { speculate: true, retrieve: () => freezeEvidence(() => new Promise(() => {}), 10) },
+    )
+    await otherTurn(t.assist, 'What is the Atlas budget?', 0, 1000)
+    await t.classify(0, t.none)
+    await vi.advanceTimersByTimeAsync(25)
+    expect(t.generations).toHaveLength(0)
+    t.assist.halt()
+  })
+  it('acceptance waits only the remainder and late hits never force fallback', async () => {
+    const t = setup(
+      {},
+      {
+        speculate: true,
+        retrieve: () =>
+          freezeEvidence(
+            () =>
+              new Promise((resolve) =>
+                setTimeout(
+                  () => resolve({ id: 1, text: 'TOO_LATE', snippets: 1, queryMs: 30 }),
+                  30,
+                ),
+              ),
+            10,
+          ),
+      },
+    )
+    await otherTurn(t.assist, 'What is the Atlas budget?', 0, 1000)
+    await vi.advanceTimersByTimeAsync(3)
+    await t.classify(0, t.question)
+    expect(t.generations).toHaveLength(0)
+    await vi.advanceTimersByTimeAsync(7)
+    expect(t.generations).toHaveLength(1)
+    await vi.advanceTimersByTimeAsync(30)
+    expect(t.generations).toHaveLength(1)
+    expect(t.generations[0].req.userContent).not.toContain('TOO_LATE')
+    t.assist.halt()
+  })
+  it('coalesces pending Answer now and invalidates it on pause', async () => {
+    const retrieve = vi.fn(() => freezeEvidence(() => new Promise(() => {}), 25))
+    const t = setup({}, { retrieve })
+    t.window.push({ speaker: 1, isUser: false, text: 'Atlas budget?' })
+    t.assist.answerNow()
+    t.assist.answerNow()
+    expect(retrieve).toHaveBeenCalledTimes(1)
+    t.assist.halt()
+    await vi.advanceTimersByTimeAsync(30)
+    expect(t.generations).toHaveLength(0)
+  })
+})
 
 describe('speculative answer: timing (injected provider times, not live)', () => {
   /** Speech ends at 0 and its final arrives at once; the endpoint arrives at 600; the

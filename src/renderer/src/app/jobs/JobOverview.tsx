@@ -1,3 +1,4 @@
+import { JobMemory } from './memory/JobMemory'
 import { useEffect, useState } from 'react'
 import type { GlossaryTerm, Job } from '@shared/types'
 import { parseGlossaryInput } from '../../lib/glossary-input'
@@ -21,7 +22,11 @@ const PACK_FIELDS = [
 export function JobOverview({
   job,
   setJob,
+  savedNotes,
+  onMemoryDirty,
 }: {
+  savedNotes: string
+  onMemoryDirty: (dirty: boolean) => void
   job: Job
   setJob: (job: Job) => void
 }): React.JSX.Element {
@@ -112,6 +117,13 @@ export function JobOverview({
         </section>
       </div>
       <aside className="side">
+        <JobMemory
+          jobId={jobId}
+          notes={savedNotes}
+          draftNotes={job.notes}
+          terms={terms}
+          onDirtyChange={onMemoryDirty}
+        />
         <section>
           <span className="eyebrow">Glossary</span>
           <p className="hint">Jargon, product names, acronyms — these also boost transcription.</p>

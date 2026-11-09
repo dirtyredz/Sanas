@@ -4,7 +4,7 @@ import type { AssistRequest } from '../../../assistant/types'
 import type { ClassifierOutcome, ClassifyRequest } from '../../../assistant/classifier'
 import type { TurnFinal } from '../../../turns/types'
 import { CONTINUATION_GRACE_MS } from '../../../turns/turn-assembler'
-import { LiveAssistance } from '../live-assistance'
+import { LiveAssistance, type LiveAssistanceDeps } from '../live-assistance'
 import { SuggestionRunner } from '../suggestion-runner'
 import type { AssistSettings } from '../suggestion-requests'
 import type { ToldStory } from '../../../assistant/answer-context/told-stories'
@@ -30,7 +30,10 @@ export function deferred<T>(): Deferred<T> {
 
 /** `speculate` off pins the ordinary post-verdict path these suites were written for; the
  *  speculation suite (live-assistance-speculation.test.ts) turns it on. */
-export function setup(over: Partial<AssistSettings> = {}, opts: { speculate?: boolean } = {}) {
+export function setup(
+  over: Partial<AssistSettings> = {},
+  opts: { speculate?: boolean; retrieve?: LiveAssistanceDeps['retrieve'] } = {},
+) {
   const settings: AssistSettings = {
     anthropicApiKey: 'sk',
     anthropicWorkspaceId: '',
@@ -81,6 +84,7 @@ export function setup(over: Partial<AssistSettings> = {}, opts: { speculate?: bo
     setTimer: (fn, ms) => setTimeout(fn, ms),
     clearTimer: (h) => clearTimeout(h as ReturnType<typeof setTimeout>),
     settings: () => settings,
+    retrieve: opts.retrieve,
     classify: (req) => {
       const d = deferred<ClassifierOutcome>()
       classifications.push({ req, d })

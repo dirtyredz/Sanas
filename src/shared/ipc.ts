@@ -2,6 +2,11 @@
 // Keep this the single source of truth for channel strings.
 
 export const IPC = {
+  MemoryGet: 'memory:get',
+  MemorySave: 'memory:save',
+  MemoryApprove: 'memory:approve',
+  MemoryDismiss: 'memory:dismiss',
+  MemoryRetry: 'memory:retry',
   MockSetup: 'mock:setup',
   MockStart: 'mock:start',
   MockEnd: 'mock:end',

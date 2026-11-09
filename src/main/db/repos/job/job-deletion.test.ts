@@ -54,6 +54,8 @@ it('counts every dependent table, practice included, and deletes an empty job wi
     glossaryTerms: 2,
     resumes: 1,
     applicationLinks: 1,
+    memories: 0,
+    memoryProposals: 0,
     legacySlides: 1,
   })
   deleteJobRow(job)

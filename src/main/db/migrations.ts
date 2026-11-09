@@ -1,3 +1,5 @@
+import { summarySearchSchema } from './repos/history/summary-schema'
+import { jobMemorySchema } from './repos/job/memory/schema'
 import { meetingInterviewProfileSchema } from './repos/meeting/meeting-interview-profile-schema'
 import { meetingSnapshotClearSchema } from './repos/meeting/meeting-snapshot-clear-schema'
 import { meetingResumeSchema } from './repos/meeting/meeting-resume-schema'
@@ -99,6 +101,8 @@ const migrations: string[] = [
   jobResumeSchema,
   meetingSnapshotClearSchema,
   applicationSchema,
+  jobMemorySchema,
+  summarySearchSchema,
 ]
 
 export const schemaVersion = migrations.length

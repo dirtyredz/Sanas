@@ -22,6 +22,8 @@ export function deletionLines(counts: JobDeletionCounts): string[] {
   if (counts.transcriptSegments) lines.push(plural(counts.transcriptSegments, 'transcript line'))
   if (counts.summaries) lines.push(plural(counts.summaries, 'meeting summary', 'meeting summaries'))
   if (counts.suggestions) lines.push(plural(counts.suggestions, 'saved suggestion'))
+  if (counts.memories) lines.push(plural(counts.memories, 'saved memory'))
+  if (counts.memoryProposals) lines.push(plural(counts.memoryProposals, 'memory proposal'))
   if (counts.legacySlides) lines.push(plural(counts.legacySlides, 'legacy slide'))
   return lines
 }

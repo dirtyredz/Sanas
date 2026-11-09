@@ -109,6 +109,8 @@ const counts: JobDeletionCounts = {
   glossaryTerms: 5,
   resumes: 1,
   applicationLinks: 1,
+  memories: 0,
+  memoryProposals: 0,
   legacySlides: 0,
 }
 const okPreview: JobDeletionPreview = {

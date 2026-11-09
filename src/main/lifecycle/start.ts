@@ -1,3 +1,4 @@
+import { stopHistoryWorker } from '../services/history/live/worker-client'
 import { startUpdates, stopUpdates } from '../services/platform/updates/service'
 import { endMock, mockState } from '../services/mock-interview'
 import { app, globalShortcut, dialog } from 'electron'
@@ -80,6 +81,7 @@ app.on('before-quit', (event) => {
 
 app.on('will-quit', () => {
   stopUpdates()
+  stopHistoryWorker()
   closeDb()
   globalShortcut.unregisterAll()
 })

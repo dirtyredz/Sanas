@@ -1,3 +1,10 @@
+import { getDb } from '../../../db'
+import { getMeeting } from '../../../db/repos/meeting/meetings'
+import { listGlossary } from '../../../db/repos/job/glossary'
+import { getJob } from '../../../db/repos/jobs'
+import { historyWorker } from '../../history/live/worker-client'
+import { liveQuery } from '../../history/live/policy'
+import { freezeEvidence } from '../../history/live/session'
 import type { Admission, MeetingContext } from '@shared/live-controls/types'
 import type { AssistSnapshot } from './suggestion-requests'
 import { admitManual, type AssistInput } from './manual-requests'
@@ -37,6 +44,7 @@ export class LiveSession {
   private readonly runner: SuggestionRunner
   private snapshot: () => AssistSnapshot | null = () => null
   private readonly prompts = new MeetingPrompts()
+  private historyScope: { meetingId: number; jobId: number; terms: string[] } | null = null
 
   /** `clockMs` is the meeting's audio clock, so suggestions line up with the transcript. */
   constructor(
@@ -63,6 +71,22 @@ export class LiveSession {
       setTimer: (fn, ms) => setTimeout(fn, ms),
       clearTimer: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
       settings: loadSettings,
+      retrieve: (meetingId, text, automatic, signal, candidateId) => {
+        const scope = this.historyScope
+        if (!scope || scope.meetingId !== meetingId) return null
+        const query = liveQuery(text, automatic, scope.terms)
+        if (!query) return null
+        return freezeEvidence(
+          () => historyWorker(getDb().name).query({ meetingId, jobId: scope.jobId, query }),
+          automatic ? 10 : 25,
+          signal,
+          (e) =>
+            console.warn(
+              '[sanas] retrieval',
+              JSON.stringify({ meetingId, candidateId, automatic, ...e }),
+            ),
+        )
+      },
       availabilityChanged,
       classify: (req) => classifyTurn(assistantProvider, req),
       runner,
@@ -91,6 +115,17 @@ export class LiveSession {
   /** A new meeting (not a resume): empty window and headlines, the job's prompt, and
    *  assistance started. A resume keeps all of it and only restarts assistance. */
   begin(jobId: number): void {
+    this.historyScope = null
+    if (getJob(jobId)?.name !== 'Unsorted' && !getMeeting(liveMeetingId()!)?.practice) {
+      this.historyScope = {
+        meetingId: liveMeetingId()!,
+        jobId,
+        terms: listGlossary(jobId)
+          .slice(0, 100)
+          .map((t) => t.term.slice(0, 100)),
+      }
+      historyWorker(getDb().name).start()
+    }
     this.window.length = 0
     this.shown.reset()
     this.assistance.contextChanged(0)

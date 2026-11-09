@@ -62,6 +62,7 @@ export function answerRequest(
   s: AssistSettings,
   trigger: SuggestionTrigger,
   focus?: AnswerFocus,
+  evidence = '',
 ): SuggestionRequest {
   const profile = assistProfile(trigger, s.whisperMode)
   const automatic = trigger === 'ambient'
@@ -82,7 +83,9 @@ export function answerRequest(
         names: snap.names,
         focus,
         told: snap.told,
-      }) + meetingContextBlock(snap.meetingText ?? ''),
+      }) +
+      meetingContextBlock(snap.meetingText ?? '') +
+      evidence,
     // points/smart ambient output stays terse; full mode and hotkey answers get code room
     maxTokens: profile.maxTokens,
     effort: profile.effort,
@@ -104,23 +107,30 @@ export function automaticAnswerRequest(
   turn: CompletedTurn,
   asked: CompletedTurn[],
   audience: 'automatic' | 'reference' = 'automatic',
+  evidence = '',
 ): SuggestionRequest {
   const label = (t: CompletedTurn): string =>
     speakerLabel({ speaker: t.speaker, isUser: false }, snap.names)
   const earlier = asked.filter((t) => t !== turn)
   return {
-    ...answerRequest(snap, s, 'ambient', {
-      kind: 'turn',
-      turn: {
-        speaker: label(turn),
-        text: turn.text,
-        ...(audience === 'reference' ? { reference: true } : {}),
-        earlier: earlier.length
-          ? earlier.map((t) => ({ speaker: label(t), text: t.text }))
-          : undefined,
-        startMs: Math.min(turn.startMs, ...earlier.map((t) => t.startMs)),
+    ...answerRequest(
+      snap,
+      s,
+      'ambient',
+      {
+        kind: 'turn',
+        turn: {
+          speaker: label(turn),
+          text: turn.text,
+          ...(audience === 'reference' ? { reference: true } : {}),
+          earlier: earlier.length
+            ? earlier.map((t) => ({ speaker: label(t), text: t.text }))
+            : undefined,
+          startMs: Math.min(turn.startMs, ...earlier.map((t) => t.startMs)),
+        },
       },
-    }),
+      evidence,
+    ),
     diagnosticTurns: asked,
   }
 }
@@ -143,12 +153,14 @@ export function answerNowRequest(
   snap: AssistSnapshot,
   s: AssistSettings,
   question: QuestionTurn | null,
+  evidence = '',
 ): SuggestionRequest {
   return answerRequest(
     snap,
     s,
     'hotkey',
     question ? { kind: 'latest', question: promptQuestion(snap, question) } : undefined,
+    evidence,
   )
 }
 

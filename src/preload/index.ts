@@ -1,3 +1,4 @@
+import type { JobMemoryApi } from '../shared/jobs/memory'
 import type { MeetingResume } from '../shared/meeting-resume'
 import type { SuggestionVisibility } from '../shared/live-controls/visibility'
 import type {
@@ -52,7 +53,15 @@ function subscribe<T>(channel: string, cb: (value: T) => void): () => void {
   ipcRenderer.on(channel, listener)
   return () => ipcRenderer.removeListener(channel, listener)
 }
+const memory: JobMemoryApi = {
+  get: (id) => ipcRenderer.invoke(IPC.MemoryGet, id),
+  save: (id, rev, text) => ipcRenderer.invoke(IPC.MemorySave, id, rev, text),
+  approve: (id, review) => ipcRenderer.invoke(IPC.MemoryApprove, id, review),
+  dismiss: (id, meeting, gen) => ipcRenderer.invoke(IPC.MemoryDismiss, id, meeting, gen),
+  retry: (id, meeting) => ipcRenderer.invoke(IPC.MemoryRetry, id, meeting),
+}
 const api = {
+  memory,
   mockInterview: {
     setup: (): Promise<MockSetup> => ipcRenderer.invoke(IPC.MockSetup),
     /** The meeting snapshots the job's saved resume; there is no per-session attachment. */

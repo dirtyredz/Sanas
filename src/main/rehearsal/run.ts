@@ -1,3 +1,4 @@
+import { stopHistoryWorker } from '../services/history/live/worker-client'
 import { app, BrowserWindow } from 'electron'
 import { writeFileSync } from 'node:fs'
 import { ScriptedSttProvider, RehearsalAssistant } from './outcomes/providers'
@@ -83,6 +84,7 @@ export async function runRehearsal(): Promise<void> {
       sockets?.close()
       collected.close()
       for (const window of BrowserWindow.getAllWindows()) window.destroy()
+      stopHistoryWorker()
       closeDb()
     }
     if (

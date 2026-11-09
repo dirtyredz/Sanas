@@ -28,6 +28,7 @@ export function JobDetail({
   const [saveError, setSaveError] = useState('')
   const [openMeeting, setOpenMeeting] = useState<Meeting | null>(null)
   const [savedJob, setSavedJob] = useState<Job | null>(null)
+  const [memoryDirty, setMemoryDirty] = useState(false)
   const [resumeDirty, setResumeDirty] = useState(false)
   const [step, setStep] = useState<Step>('idle')
   /** Bumped after an application refresh so the editors reload what was saved. */
@@ -88,10 +89,12 @@ export function JobDetail({
   }
 
   // Never review an application refresh over unsaved edits: save or discard them first.
-  const startRefresh = (): void => setStep(jobDirty || resumeDirty ? 'unsaved' : 'refresh')
+  const startRefresh = (): void =>
+    setStep(jobDirty || resumeDirty || memoryDirty ? 'unsaved' : 'refresh')
   const discardAndRefresh = (): void => {
     if (savedJob) setJob(savedJob)
     setResumeDirty(false)
+    setMemoryDirty(false)
     setContentVersion((v) => v + 1)
     setStep('refresh')
   }
@@ -145,13 +148,14 @@ export function JobDetail({
         <div className="notice warn" role="alertdialog" aria-label="Unsaved changes">
           <p>
             Save or discard your unsaved changes before reviewing the application.
+            {memoryDirty && ' Memory has its own Save memory button.'}
             {resumeDirty && ' The Resume tab has its own Save resume button.'}
           </p>
           <div className="actions">
             <button className="btn btn-sm" autoFocus onClick={() => setStep('idle')}>
               Cancel
             </button>
-            {jobDirty && !resumeDirty && (
+            {jobDirty && !resumeDirty && !memoryDirty && (
               <button
                 className="btn btn-sm"
                 onClick={async () => setStep((await save()) ? 'refresh' : 'idle')}
@@ -177,7 +181,13 @@ export function JobDetail({
           {
             name: 'Overview',
             render: () => (
-              <JobOverview key={`${jobId}-${contentVersion}`} job={job} setJob={setJob} />
+              <JobOverview
+                key={`${jobId}-${contentVersion}`}
+                job={job}
+                setJob={setJob}
+                savedNotes={savedJob?.notes ?? job.notes}
+                onMemoryDirty={setMemoryDirty}
+              />
             ),
           },
           {

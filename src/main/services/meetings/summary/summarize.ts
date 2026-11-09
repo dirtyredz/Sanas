@@ -1,3 +1,4 @@
+import { enqueueMemory } from '../../jobs/memory/generate'
 import { getMeetingGrounding } from '../../../db/repos/meeting/meeting-grounding'
 import { meetingCandidateFacts } from '../context/meeting-facts'
 import { getMeetingContext } from '../../../db/repos/meeting/meeting-context'
@@ -66,6 +67,7 @@ export async function summarizeLines(
   })
   const { summary, actions } = splitSummaryOutput(text)
   updateMeetingSummary(meetingId, summary, actions)
+  enqueueMemory(meetingId)
   return true
 }
 

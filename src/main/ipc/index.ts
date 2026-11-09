@@ -1,3 +1,4 @@
+import { registerMemoryIpc } from './jobs/memory'
 import { registerJobResumeIpc } from './job-resume/job-resume'
 import { registerJobsIpc } from './jobs/jobs'
 import { registerJobApplicationsIpc } from './jobs/applications'
@@ -54,6 +55,7 @@ import { broadcast } from '../windows/broadcast'
 
 export function registerIpcHandlers(): void {
   registerJobsIpc()
+  registerMemoryIpc()
   registerJobDeletionIpc()
   registerJobApplicationsIpc()
   registerJobResumeIpc()

@@ -1,3 +1,4 @@
+import { mockMemory } from './memory/mock-memory'
 import { MATCH_CLOSE, MATCH_OPEN } from '@shared/search-markers'
 import type { MeetingResume } from '@shared/meeting-resume'
 import type {
@@ -185,6 +186,7 @@ const api: SanasApi = {
       throw new Error('Resume import needs the desktop app; paste the text instead.')
     },
   },
+  memory: mockMemory,
   jobApplications: mockJobApplications(jobResumes),
   glossary: {
     list: async (jobId) => glossary.filter((g) => g.jobId === jobId),

@@ -1,3 +1,4 @@
+import { jobMemoryBlock } from './answer-context/job-memory'
 import { FILLER_CLOSE, FILLER_OPEN } from '@shared/filler-marker'
 import type { GlossaryTerm, Job, WhisperMode } from '@shared/types'
 import {
@@ -39,7 +40,11 @@ export function assistProfile(trigger: 'ambient' | 'hotkey', mode: WhisperMode):
   return { kind: 'smart', maxTokens: 500, effort: 'low', useAnswerModel: false }
 }
 
-export function buildSystemPrompt(job: Job | null, glossary: GlossaryTerm[]): string {
+export function buildSystemPrompt(
+  job: Job | null,
+  glossary: GlossaryTerm[],
+  approvedMemory = '',
+): string {
   const parts: string[] = [
     `You are Sanas, a discreet real-time meeting copilot. The user is in a live work
 meeting; you see a rolling transcript captured by their laptop microphone ("Me" lines
@@ -114,6 +119,7 @@ question — never a default topic to steer back to, and never a reason to repea
     )
   }
 
+  if (approvedMemory) parts.push(jobMemoryBlock(approvedMemory))
   return parts.join('\n\n')
 }
 /** What an answer prompt is anchored on: an automatic answer's classified turn, or Answer

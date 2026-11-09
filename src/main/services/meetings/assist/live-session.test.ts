@@ -1,3 +1,8 @@
+vi.mock('../../../db/repos/job/memory/approved', () => ({
+  getApprovedMemory: () => ({ text: '' }),
+  ordinaryJob: () => false,
+}))
+vi.mock('../../../db/repos/meeting/meetings', () => ({ getMeeting: () => ({ practice: true }) }))
 import { afterEach, expect, it, vi } from 'vitest'
 import type { AssistRequest } from '../../assistant/types'
 const f = vi.hoisted(() => ({

@@ -1,3 +1,4 @@
+import { mockMemoryCounts, removeMockMemory } from './memory/mock-memory'
 // Browser-preview mocks for job deletion and New job from application.
 import type { MeetingResume } from '@shared/meeting-resume'
 import {
@@ -67,6 +68,7 @@ function countJobDeletion(
     glossaryTerms: glossary.filter((g) => g.jobId === jobId).length,
     resumes: jobResumes.has(jobId) ? 1 : 0,
     applicationLinks: jobs.find((j) => j.id === jobId)?.applicationId ? 1 : 0,
+    ...mockMemoryCounts(jobId),
     legacySlides: 0,
   }
 }
@@ -136,6 +138,7 @@ export function mockJobDeletion(
       removeFrom(meetings, (m) => m.jobId === jobId)
       removeFrom(glossary, (g) => g.jobId === jobId)
       jobResumes.delete(jobId)
+      removeMockMemory(jobId)
       return {
         status: 'deleted',
         backupPath:

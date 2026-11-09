@@ -1,3 +1,4 @@
+import type { EvidenceHandle } from '../../history/live/session'
 import { observeAssistance, type AssistDiagnostic, type InvalidationReason } from './diagnostics'
 import { formatVerdict, isAcceptedVerdict } from '../../assistant/classifier-verdict'
 import { TurnAssembler } from '../../turns/turn-assembler'
@@ -83,6 +84,13 @@ export interface LiveAssistanceDeps {
   runner: Pick<SuggestionRunner, 'canStart' | 'start' | 'speculate'>
   /** The live meeting right now, or null when there is none. */
   snapshot(): AssistSnapshot | null
+  retrieve?(
+    meetingId: number,
+    text: string,
+    automatic: boolean,
+    signal?: AbortSignal,
+    correlation?: number,
+  ): EvidenceHandle | null
   availabilityChanged?(): void
   log(message: string): void
 }
@@ -95,6 +103,9 @@ interface Candidate {
   abort?: AbortController
   /** The classifier attempt for this candidate (evidence correlation). */
   attempt?: number
+  evidence?: string
+  retrieval?: EvidenceHandle
+  retrievalPending?: boolean
   dropped: boolean
 }
 
@@ -117,6 +128,7 @@ export class LiveAssistance {
   manualAdmitted(): void {
     this.cancelCoach()
   }
+  private manualPending: EvidenceHandle | null = null
   private active = false
   private epoch = 0
   private assembler = new TurnAssembler()
@@ -264,7 +276,7 @@ export class LiveAssistance {
    *  takes priority over an unpublished next point. */
   answerNow(): void {
     this.guard(() => {
-      if (!this.deps.runner.canStart('hotkey')) return
+      if (this.manualPending || !this.deps.runner.canStart('hotkey')) return
       const snap = this.deps.snapshot()
       if (!snap || snap.window.length === 0) return
       this.cancelCoach()
@@ -274,11 +286,41 @@ export class LiveAssistance {
         this.deps.now(),
         ANSWER_NOW_QUESTION_MS,
       )
-      const handle = this.deps.runner.start(answerNowRequest(snap, this.deps.settings(), question))
-      if (handle) {
-        this.unanswered.clear() // it answers the latest question; nothing earlier is left to carry
-        this.afterRun(handle)
+      const epoch = this.epoch
+      const dispatch = (evidence: string): void =>
+        this.guard(() => {
+          if (
+            epoch !== this.epoch ||
+            this.deps.snapshot()?.meetingId !== snap.meetingId ||
+            !this.deps.runner.canStart('hotkey')
+          )
+            return
+          const handle = this.deps.runner.start(
+            answerNowRequest(this.deps.snapshot()!, this.deps.settings(), question, evidence),
+          )
+          if (handle) {
+            this.unanswered.clear()
+            this.afterRun(handle)
+          }
+        })
+      const pending = this.deps.retrieve?.(
+        snap.meetingId,
+        question?.text ??
+          snap.window
+            .slice(-6)
+            .map((l) => l.text)
+            .join(' '),
+        false,
+      )
+      if (!pending) {
+        dispatch('')
+        return
       }
+      this.manualPending = pending
+      void pending.ready.then((text) => {
+        if (this.manualPending === pending) this.manualPending = null
+        dispatch(text)
+      })
     })
   }
 
@@ -338,6 +380,7 @@ export class LiveAssistance {
     this.observe({ event: 'invalidated', turn: c.turn, reason, turnedDown: 'invalidated' })
     c.dropped = true
     c.abort?.abort()
+    c.retrieval?.cancel()
     this.speculation.discard(c.turn, reason)
     if (this.queued === c) this.queued = null
     if (this.ready === c) this.ready = null
@@ -409,7 +452,21 @@ export class LiveAssistance {
     const epoch = this.epoch
     const attempt = (c.attempt = ++this.classifierAttempts)
     this.observe({ event: 'classifier-started', turn: c.turn, attempt })
-    this.speculate(c, snap, s, now)
+    c.retrieval =
+      this.deps.retrieve?.(snap.meetingId, c.turn.text, true, c.abort.signal, c.turn.id) ??
+      undefined
+    c.retrievalPending = !!c.retrieval
+    if (c.retrieval)
+      void c.retrieval.ready.then((text) =>
+        this.guard(() => {
+          c.retrievalPending = false
+          c.evidence = text
+          if (epoch !== this.epoch || c.dropped) return
+          if (this.classifying === c) this.speculate(c, snap, s, this.deps.now())
+          if (this.ready === c) this.tryGenerate()
+        }),
+      )
+    else this.speculate(c, snap, s, now)
     void this.deps
       .classify({
         diagnosticTurn: c.turn,
@@ -432,7 +489,10 @@ export class LiveAssistance {
   private speculate(c: Candidate, snap: AssistSnapshot, s: AssistSettings, now: number): void {
     if (!this.deps.runner.canStart('ambient')) return
     const asked = this.unanswered.select(now)
-    const handle = this.speculation.begin(c.turn, automaticAnswerRequest(snap, s, c.turn, asked))
+    const handle = this.speculation.begin(
+      c.turn,
+      automaticAnswerRequest(snap, s, c.turn, asked, 'automatic', c.evidence),
+    )
     if (handle) this.afterRun(handle) // when it ends, a waiting candidate or next point may go
   }
 
@@ -489,14 +549,18 @@ export class LiveAssistance {
     // a rejected, failed or stale verdict ends the speculation silently; an accepted one
     // promotes or discards it in tryGenerate
     if (accepted) this.tryGenerate()
-    else this.speculation.discard(c.turn, `verdict ${verdict}`)
+    else {
+      c.dropped = true
+      c.retrieval?.cancel()
+      this.speculation.discard(c.turn, `verdict ${verdict}`)
+    }
     this.tryClassify()
     if (this.active) this.evaluateCoach(this.deps.now())
   }
 
   private tryGenerate(): void {
     const c = this.ready
-    if (!c || !c.kind || !c.addressee) return
+    if (!c || !c.kind || !c.addressee || c.retrievalPending) return
     const now = this.deps.now()
     const s = this.deps.settings()
     if (
@@ -534,6 +598,7 @@ export class LiveAssistance {
         c.turn,
         asked,
         c.addressee === 'other' ? 'reference' : 'automatic',
+        c.evidence,
       )
     // a speculation is published only when it is exactly this request; otherwise it is
     // discarded here (freeing the lane) and this request starts in its place
@@ -697,6 +762,8 @@ export class LiveAssistance {
   private invalidate(reason: InvalidationReason): void {
     this.observe({ event: 'invalidate', reason })
     this.epoch++
+    this.manualPending?.cancel()
+    this.manualPending = null
     for (const name of this.timers.keys()) this.clearTimer(name)
     for (const c of [this.classifying, this.queued, this.ready])
       if (c) this.dropCandidate(c, reason)

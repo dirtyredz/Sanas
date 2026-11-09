@@ -19,6 +19,8 @@ export interface JobDeletionCounts {
   resumes: number
   applicationLinks: number
   legacySlides: number
+  memories: number
+  memoryProposals: number
 }
 
 /** Why a job cannot be deleted right now. */

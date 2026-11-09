@@ -1,3 +1,4 @@
+import { getApprovedMemory, ordinaryJob } from '../../../db/repos/job/memory/approved'
 import { getMeetingGrounding } from '../../../db/repos/meeting/meeting-grounding'
 import { meetingCandidateFacts } from '../context/meeting-facts'
 import type { MeetingContext } from '@shared/live-controls/types'
@@ -21,7 +22,9 @@ export class MeetingPrompts {
     const facts = grounding.hasBiography
       ? meetingCandidateFacts(grounding)
       : '\n\nNo resume or interview profile is attached to this meeting. Use any explicitly supplied candidate biography; otherwise answer with plausible, marked filler and do not treat job or practice context as biography.'
-    this.system = buildSystemPrompt(job, glossary) + facts
+    this.system =
+      buildSystemPrompt(job, glossary, ordinaryJob(jobId) ? getApprovedMemory(jobId).text : '') +
+      facts
     // version 0 is the meeting's bookkeeping row; there is no deck context any more
     this.groundingContextId = saveGrounding(context.meetingId, 0, this.system, '')
     this.context = context

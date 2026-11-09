@@ -12,6 +12,8 @@ const zero: JobDeletionCounts = {
   glossaryTerms: 0,
   resumes: 0,
   applicationLinks: 0,
+  memories: 0,
+  memoryProposals: 0,
   legacySlides: 0,
 }
 

@@ -28,8 +28,8 @@ function link(jobId: number, applicationId: string): void {
 
 it('creates v13 on a fresh database', () => {
   database()
-  expect(schemaVersion).toBe(13)
-  expect(mock.db.pragma('user_version', { simple: true })).toBe(13)
+  expect(schemaVersion).toBe(15)
+  expect(mock.db.pragma('user_version', { simple: true })).toBe(15)
   const job = createJob('Acme').id
   link(job, 'acme-1')
   expect(sqlite.prepare('SELECT COUNT(*) AS n FROM job_applications').get()).toEqual({ n: 1 })
@@ -38,12 +38,12 @@ it('creates v13 on a fresh database', () => {
 it('upgrades v12 without touching jobs or meetings', () => {
   database()
   sqlite.exec(
-    'DROP TRIGGER jobs_delete_guard; DROP TABLE job_applications; PRAGMA user_version = 12',
+    'DROP TRIGGER summaries_fts_ai; DROP TRIGGER summaries_fts_ad; DROP TRIGGER summaries_fts_au; DROP TABLE summaries_fts; DROP TABLE job_memory_proposals; DROP TABLE job_memory; DROP TRIGGER jobs_delete_guard; DROP TABLE job_applications; PRAGMA user_version = 12',
   )
   const job = createJob('Acme').id
   createMeeting(job, 'Old', {})
   runMigrations(mock.db)
-  expect(mock.db.pragma('user_version', { simple: true })).toBe(13)
+  expect(mock.db.pragma('user_version', { simple: true })).toBe(15)
   expect(sqlite.prepare('SELECT COUNT(*) AS n FROM meetings').get()).toEqual({ n: 1 })
   expect(sqlite.prepare('SELECT COUNT(*) AS n FROM job_applications').get()).toEqual({ n: 0 })
 })

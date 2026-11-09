@@ -56,6 +56,11 @@ export function countJobDependencies(jobId: number): JobDeletionCounts {
     glossaryTerms: count('SELECT COUNT(*) AS n FROM glossary WHERE job_id = ?', jobId),
     resumes: count('SELECT COUNT(*) AS n FROM job_resumes WHERE job_id = ?', jobId),
     applicationLinks: count('SELECT COUNT(*) AS n FROM job_applications WHERE job_id = ?', jobId),
+    memories: count('SELECT COUNT(*) AS n FROM job_memory WHERE job_id = ?', jobId),
+    memoryProposals: count(
+      'SELECT COUNT(*) AS n FROM job_memory_proposals WHERE job_id = ?',
+      jobId,
+    ),
     legacySlides: count('SELECT COUNT(*) AS n FROM job_slides WHERE job_id = ?', jobId),
   }
 }
