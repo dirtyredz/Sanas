@@ -1,12 +1,12 @@
 import { expect, it } from 'vitest'
-import { splitFiller, stripFillerMarkers } from './filler-marker'
+import { splitFiller, suggestionPlainText } from './filler-marker'
 
 it('strips markers to plain speakable text', () => {
-  expect(stripFillerMarkers('I led ⟨a payments integration⟩ where ⟨I owned the API⟩.')).toBe(
-    'I led a payments integration where I owned the API.',
-  )
-  expect(stripFillerMarkers('no markers')).toBe('no markers')
-  expect(stripFillerMarkers('stray ⟩ and ⟨ open')).toBe('stray  and  open')
+  expect(
+    suggestionPlainText({ text: 'I led ⟨a payments integration⟩ where ⟨I owned the API⟩.' }),
+  ).toBe('I led a payments integration where I owned the API.')
+  expect(suggestionPlainText({ text: 'no markers' })).toBe('no markers')
+  expect(suggestionPlainText({ text: 'stray ⟩ and ⟨ open' })).toBe('stray  and  open')
 })
 
 it('splits plain and filler runs, tolerating unbalanced markers', () => {

@@ -1,6 +1,6 @@
 import { getMeetingContext } from '../../../db/repos/meeting/meeting-context'
 import { dialog } from 'electron'
-import { stripFillerMarkers } from '@shared/suggestion/filler-marker'
+import { suggestionPlainText } from '@shared/suggestion/filler-marker'
 import { suggestionLabel } from '@shared/suggestion/suggestion-label'
 import { writeFileSync } from 'fs'
 import { getMeeting } from '../../../db/repos/meeting/meetings'
@@ -65,7 +65,7 @@ export async function exportMeetingMarkdown(meetingId: number): Promise<string |
         lines.push(`[Back to source](#suggestion-${s.sourceSuggestionId})`, '')
       for (const child of suggestions.filter((child) => child.sourceSuggestionId === s.id))
         lines.push(`[More detail](#suggestion-${child.id})`, '')
-      lines.push(`### ${fmt(s.tMs)} — ${suggestionLabel(s)}`, '', stripFillerMarkers(s.text), '')
+      lines.push(`### ${fmt(s.tMs)} — ${suggestionLabel(s)}`, '', suggestionPlainText(s), '')
     }
   }
 

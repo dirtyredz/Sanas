@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { CompactSuggestion, parseCompactSuggestion } from './CompactSuggestion'
-import { stripFillerMarkers } from '@shared/suggestion/filler-marker'
+import { suggestionPlainText } from '@shared/suggestion/filler-marker'
 
 describe('compact suggestion renderer', () => {
   it('parses a headline, one fenced code block, and two follow-up lines', () => {
@@ -49,7 +49,7 @@ describe('filler marker rendering', () => {
     expect(html).not.toMatch(/[⟨⟩]/)
   })
   it('degrades to speakable plain text with the markers stripped', () => {
-    expect(stripFillerMarkers(parseCompactSuggestion(text).headline)).toBe(
+    expect(suggestionPlainText({ text: parseCompactSuggestion(text).headline })).toBe(
       'I led a payments integration where I owned the API.',
     )
   })

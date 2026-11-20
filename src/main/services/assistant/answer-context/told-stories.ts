@@ -5,7 +5,6 @@
 
 import type { SuggestionPurpose } from '@shared/types'
 import type { ManualKind } from '@shared/live-controls/types'
-import { stripFillerMarkers } from '@shared/suggestion/filler-marker'
 import { NO_SUGGESTION } from '@shared/live-controls/readable-suggestion'
 import { headlineOf } from '../contracts/compact-contract'
 
@@ -27,7 +26,8 @@ export function tellsStory(purpose: SuggestionPurpose, manualKind?: ManualKind |
 }
 
 function clean(line: string): string {
-  return stripFillerMarkers(line.replace(/\*\*/g, ''))
+  return line
+    .replace(/\*\*/g, '')
     .replace(/^\s*(?:[-*•]|\d+[.)])\s+/, '')
     .trim()
 }

@@ -1,3 +1,4 @@
+import { suggestionPlainText } from '@shared/suggestion/filler-marker'
 import { describe, expect, it } from 'vitest'
 import {
   TOLD_STORIES,

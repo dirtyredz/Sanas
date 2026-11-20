@@ -3,6 +3,7 @@
 //   recent  headlines of every suggestion: what a next point (coach) must not repeat
 //   told    stories the user may have said aloud: what an answer must not re-tell
 
+import { suggestionPlainText } from '@shared/suggestion/filler-marker'
 import type { SuggestionPurpose } from '@shared/types'
 import type { ManualKind } from '@shared/live-controls/types'
 import { rememberHeadline } from '../contracts/compact-contract'
@@ -25,8 +26,9 @@ export class ShownLedger {
 
   /** Routes one shown suggestion into every memory it belongs to. */
   record(s: ShownSuggestion): void {
-    rememberHeadline(this.recent, s.text)
-    if (tellsStory(s.purpose, s.manualKind)) rememberStory(this.told, s.text)
+    const plain = suggestionPlainText(s)
+    rememberHeadline(this.recent, plain)
+    if (tellsStory(s.purpose, s.manualKind)) rememberStory(this.told, plain)
   }
 
   /** Copies, so a request built from them cannot see later records. */

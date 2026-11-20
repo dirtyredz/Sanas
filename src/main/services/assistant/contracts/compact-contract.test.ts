@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { suggestionPlainText } from '@shared/suggestion/filler-marker'
 import { headlineOf, recentSuggestionsBlock, rememberHeadline } from './compact-contract'
 
 describe('recently shown suggestions', () => {
@@ -9,7 +10,9 @@ describe('recently shown suggestions', () => {
   })
 
   it('strips filler markers from remembered headlines', () => {
-    expect(headlineOf('**I led ⟨a payments job⟩.**')).toBe('I led a payments job.')
+    expect(headlineOf(suggestionPlainText({ text: '**I led ⟨a payments job⟩.**' }))).toBe(
+      'I led a payments job.',
+    )
   })
 
   it('remembers only as many headlines as the prompt carries', () => {
