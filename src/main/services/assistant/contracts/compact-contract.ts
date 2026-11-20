@@ -27,13 +27,15 @@ const HEADLINE_CHARS = 200
 /** How many shown headlines an automatic prompt carries — and so how many are kept. */
 const RECENT_SUGGESTIONS = 3
 
-/** The headline of a compact suggestion: its first non-empty line, without bold markers. */
+/** The headline of a compact suggestion: its first non-empty line, without bold markers.
+ *  Expects suggestionPlainText output (filler markers already stripped). */
 export function headlineOf(text: string): string {
   const line = text.split('\n').find((l) => l.trim()) ?? ''
   return line.replace(/\*\*/g, '').trim().slice(0, HEADLINE_CHARS)
 }
 
-/** Records a shown suggestion's headline, keeping only as many as the prompt uses. */
+/** Records a shown suggestion's headline, keeping only as many as the prompt uses.
+ *  Expects suggestionPlainText output (filler markers already stripped). */
 export function rememberHeadline(headlines: string[], text: string): void {
   headlines.push(headlineOf(text))
   if (headlines.length > RECENT_SUGGESTIONS)

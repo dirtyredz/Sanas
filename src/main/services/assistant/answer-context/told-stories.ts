@@ -32,7 +32,8 @@ function clean(line: string): string {
     .trim()
 }
 
-/** Headline plus the first supporting prose line of a compact answer. */
+/** Headline plus the first supporting prose line of a compact answer.
+ *  Expects suggestionPlainText output (filler markers already stripped). */
 export function storyOf(text: string): ToldStory {
   const lines = text.split('\n')
   const first = lines.findIndex((l) => l.trim())
@@ -52,7 +53,7 @@ export function storyOf(text: string): ToldStory {
 
 /** Records a shown answer, keeping only as many as the prompt uses. The same headline told
  *  again (an automatic answer and an Answer now to one question) moves to the end instead of
- *  taking a second slot. */
+ *  taking a second slot. Expects suggestionPlainText output (filler markers already stripped). */
 export function rememberStory(stories: ToldStory[], text: string): void {
   const story = storyOf(text)
   if (!story.headline) return

@@ -15,6 +15,7 @@ import {
   type TimedLine,
   type TopicSwitchExchange,
 } from '../../src/main/services/assistant/answer-context/topic-switch-fixture'
+import { suggestionPlainText } from '@shared/suggestion/filler-marker'
 import { carriedTerms } from './carried-terms'
 import type { CompletedTurn } from '../../src/main/services/turns/types'
 import type { SuggestionRequest } from '../../src/main/services/meetings/assist/suggestion/suggestion-runner'
@@ -134,7 +135,7 @@ async function oldVersion(root: string): Promise<Version> {
       ]),
     // the old Answer now had no focus turn: it answered from the window alone
     answerNow: (w) => requests.answerRequest(snap(w), settings, 'hotkey'),
-    remember: (text) => contract.rememberHeadline(recent, text),
+    remember: (text) => contract.rememberHeadline(recent, suggestionPlainText({ text })),
     reset: () => {
       recent.length = 0
     },
