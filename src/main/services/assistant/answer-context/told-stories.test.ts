@@ -13,7 +13,9 @@ describe('told stories', () => {
   it('keeps the headline and the first supporting prose line, skipping code', () => {
     expect(
       storyOf(
-        '**At ⟨Acme⟩ I ran the federation.**\n```ts\nconst a = 1\n```\n- **Invoicing** subgraph was mine.\nMore.',
+        suggestionPlainText({
+          text: '**At ⟨Acme⟩ I ran the federation.**\n```ts\nconst a = 1\n```\n- **Invoicing** subgraph was mine.\nMore.',
+        }),
       ),
     ).toEqual({ headline: 'At Acme I ran the federation.', detail: 'Invoicing subgraph was mine.' })
     expect(storyOf('**Just a headline.**')).toEqual({ headline: 'Just a headline.', detail: '' })
