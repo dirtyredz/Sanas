@@ -1,3 +1,8 @@
+vi.mock('../../../db/index', () => ({
+  getDb: () => {
+    throw new Error('db not available in this test')
+  },
+}))
 vi.mock('../../../db/repos/job/memory/approved', () => ({
   getApprovedMemory: () => ({ text: '' }),
   ordinaryJob: () => false,

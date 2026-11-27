@@ -15,6 +15,11 @@ const m = vi.hoisted(() => ({
   revision: 0,
   key: 'key',
 }))
+vi.mock('../../../db/index', () => ({
+  getDb: () => {
+    throw new Error('db not available in this test')
+  },
+}))
 vi.mock('../../../config/settings', () => ({
   loadSettings: () => ({ anthropicApiKey: m.key, answerModel: 'answer' }),
 }))

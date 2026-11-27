@@ -736,3 +736,7 @@ PW_RENDERFULLCONTENT=2)` renders it with the caption buttons even when covered.
   commit when any tracked `.ts`/`.tsx` has unstaged changes or any untracked `.ts`/`.tsx` exists: otherwise an unstaged import
   fix masks a broken index (915bd31 landed that way). Stage or stash them. Hooks are copies in the shared `.git/hooks`; after
   editing `scripts/git-hooks/pre-commit.sh`, re-run `npm run prepare`.
+
+## Unit tests must not import `electron` unmocked
+
+CI runs `npm ci --ignore-scripts`, so the `electron` package has no binary path and `require('electron')` throws. Importing `db/index` (or `config/settings`) pulls it in, so suites `vi.mock` the db singleton or `electron`. `vitest.config.ts` aliases `electron` to `src/main/test-support/electron-stub.ts`, which throws, so a missing mock fails locally too. Versioned DDL lives in `db/migrations/` and must not import from `db/repos/`.
